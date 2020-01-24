@@ -230,7 +230,7 @@ public class PathStoreServerImpl implements PathStoreServer {
 			if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
 				PathStorePushServer server = new PathStorePushServer();
 				server.start();
-				//    server.join();
+				server.join();
 			}
 
 			
