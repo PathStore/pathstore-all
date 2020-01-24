@@ -1,0 +1,6 @@
+Steps to deploy
+	- create /etc/pathstore
+	- copy pathstore.properties to /etc/pathstore
+	- start cassandra
+	- create system_pathstore keyspace (run pathstore.util.PathStoreSchema)
+	

@@ -1,0 +1,9 @@
+RMIRegistryIP=192.168.140.2
+RMIRegistryPort=1099
+
+Role=CLIENT
+CassandraPath=/home/mortazavi/smartpath/pathstore/apache-cassandra-3.9
+
+CassandraIP=192.168.140.2
+CassandraPort=9052
+

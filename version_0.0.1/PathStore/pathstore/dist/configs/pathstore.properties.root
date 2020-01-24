@@ -1,0 +1,10 @@
+RMIRegistryIP=10.50.20.154
+RMIRegistryPort=1099
+Role=ROOTSERVER
+CassandraPath = ~/apache-cassandra-3.9
+CassandraIP=10.50.20.154
+CassandraPort=9052
+NodeID=1
+
+
+
