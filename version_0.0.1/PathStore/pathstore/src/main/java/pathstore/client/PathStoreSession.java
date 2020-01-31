@@ -1,36 +1,31 @@
 /**********
-*
-* Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*
-***********/
+ *
+ * Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ ***********/
 package pathstore.client;
 
 import java.util.List;
 import java.util.Map;
 
-import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
-import pathstore.common.QueryCacheEntry;
 import pathstore.exception.InvalidKeyspaceException;
 import pathstore.exception.InvalidStatementTypeException;
 import pathstore.exception.PathMigrateAlreadyGoneException;
 import pathstore.exception.PathStoreRemoteException;
 import pathstore.system.PathStorePriviledgedCluster;
-import pathstore.util.PathStoreStatus;
-import pathstore.util.SchemaInfo;
-import pathstore.util.SchemaInfo.Column;
 
 import com.datastax.driver.core.CloseFuture;
 import com.datastax.driver.core.Cluster;
@@ -52,269 +47,392 @@ import com.datastax.driver.core.querybuilder.Update.Assignments;
 import com.google.common.util.concurrent.ListenableFuture;
 
 
+/**
+ * TODO: Fix all string literals and move to {@link pathstore.common.Constants}
+ * This is a class is used for communication to the local Cassandra instance
+ *
+ * @apiNote Many of the functions throw {@link UnsupportedOperationException}
+ * @see Session
+ */
 public class PathStoreSession implements Session {
 
-	private Session session; 
-	boolean useColumn = false;//temporary
+    /**
+     * Internal session variable that was gathered from the cassandra cluster object
+     *
+     * @see Cluster
+     */
+    private final Session session;
 
-	public PathStoreSession(Cluster cluster) {
-		session = cluster.connect();
-	}
+    /**
+     * TODO: Find purpose
+     */
+    boolean useColumn = false;//temporary
 
-	public String getLoggedKeyspace() {
-		return session.getLoggedKeyspace();
-		//throw new UnsupportedOperationException();
-	}
+    /**
+     * @param cluster set internal session field to the clusters session
+     */
+    public PathStoreSession(final Cluster cluster) {
+        this.session = cluster.connect();
+    }
 
-	public Session init() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    /**
+     * @return TODO: find purpose
+     */
+    public String getLoggedKeyspace() {
+        return this.session.getLoggedKeyspace();
+    }
 
-	public ListenableFuture<Session> initAsync() {
-		throw new UnsupportedOperationException();
-	}
+    /**
+     * @return nothing
+     * @apiNote Unsupported Operation
+     */
+    public Session init() {
+        throw new UnsupportedOperationException();
+    }
 
-	public ResultSet execute(String query) {
-		if(query.toLowerCase().contains("local_".toLowerCase()))
-			return session.execute(query);
-		else
-			throw new UnsupportedOperationException();
-	}
+    /**
+     * @return nothing
+     * @apiNote Unsupported Operation
+     */
+    public ListenableFuture<Session> initAsync() {
+        throw new UnsupportedOperationException();
+    }
 
-	public ResultSet execute(String query, Object... values) {
-		throw new UnsupportedOperationException();
-	}
+    /**
+     * TODO: Should not throw {@link UnsupportedOperationException} if the operation is supported
+     *
+     * @param query cql string to execute on the local cassandra DB
+     * @return response from local db
+     */
+    public ResultSet execute(final String query) {
+        if (query.toLowerCase().contains("local_".toLowerCase()))
+            return this.session.execute(query);
+        else
+            throw new UnsupportedOperationException();
+    }
 
-	public ResultSet execute(String query, Map<String, Object> values) {
-		throw new UnsupportedOperationException();
-	}  
+    /**
+     * @return nothing
+     * @apiNote Unsupported Operation
+     */
+    public ResultSet execute(final String query, final Object... values) {
+        throw new UnsupportedOperationException();
+    }
 
-	
-	//Hossein: this is only used by PathMigrate and PathAuthenticate
-	public ResultSet executeLocal(Statement statement, String device){
-		String keyspace = statement.getKeyspace();
-		String table="";
-		if (statement instanceof Select) {
-			Select select = (Select)statement;
-			table = select.getTable();
-		}
-		
-		else if (statement instanceof Insert) {
-			Insert insert = (Insert)statement;
-
-			table = insert.getTable();
-
-			if (table.startsWith("local_") == false) {
-				insert.value("pathstore_version", QueryBuilder.now());
-				insert.value("pathstore_parent_timestamp",  QueryBuilder.now());
-				insert.value("pathstore_dirty", false);
-
-				if(device!=null)
-				{
-					if(useColumn)
-						insert.value("pathstore_insert_sid", device);
-					//or 
-					else
-						QueryCache.getInstance().updateDeviceCommandCache(device, keyspace, table, InsertToSelect(insert).where().getClauses(),-1);
-
-				}
-			}
-		} 
-		
-		//hossein here: 
-		statement.setFetchSize(1000);
-		
-		return new PathStoreResultSet(session.execute(statement), keyspace, table);
-	}
+    /**
+     * @return nothing
+     * @apiNote Unsupported Operation
+     */
+    public ResultSet execute(final String query, final Map<String, Object> values) {
+        throw new UnsupportedOperationException();
+    }
 
 
-	
-	
-	public ResultSet execute(Statement statement){
-		return executeNomral(statement, null);	
-	}
+    //Hossein: this is only used by PathMigrate and PathAuthenticate
 
-	public ResultSet execute(Statement statement, String device) throws PathMigrateAlreadyGoneException, PathStoreRemoteException{
-		return executeNomral(statement, device);	
-	}
+    /**
+     * Only used by {@link pathstore.common.PathStoreMigrate} and {@link pathstore.common.PathStoreAuthenticate}
+     * TODO: Potential only allow for internal usage only
+     * TODO: Migrate literal strings to strings in {@link pathstore.common.Constants}
+     *
+     * @param statement statement to execute on local cassandra service
+     * @param device    TODO: Explain
+     * @return result of your query
+     */
+    public ResultSet executeLocal(final Statement statement, final String device) {
+        String keyspace = statement.getKeyspace();
+        String table = "";
+        if (statement instanceof Select) {
+            Select select = (Select) statement;
+            table = select.getTable();
+        } else if (statement instanceof Insert) {
+            Insert insert = (Insert) statement;
 
-	public ResultSet executeNomral(Statement statement, String device) throws PathMigrateAlreadyGoneException, PathStoreRemoteException{
-		String keyspace = statement.getKeyspace();
-		String table="";
-		
-		if (keyspace.startsWith("pathstore")==false)
-			throw new InvalidKeyspaceException("Keyspace does not start with pathstore prefix");
+            table = insert.getTable();
 
-		if (statement instanceof Select) {
-			Select select = (Select)statement;
-			table = select.getTable();
+            if (!table.startsWith("local_")) {
+                insert.value("pathstore_version", QueryBuilder.now());
+                insert.value("pathstore_parent_timestamp", QueryBuilder.now());
+                insert.value("pathstore_dirty", false);
 
-			if (table.startsWith("local_") == false) {
-				List<Clause> clauses = select.where().getClauses();
-				int a = select.getFetchSize();
-				int l=-1;
-				if(select.limit!=null && (select.limit instanceof Integer))
-					l = (Integer)select.limit;
-				QueryCache.getInstance().updateCache(keyspace, table, clauses, l);
-				if(device!=null)
-					QueryCache.getInstance().updateDeviceCommandCache(device, keyspace, table, clauses,l);
-			}
-		} 
-		else if (statement instanceof Insert) {
-			Insert insert = (Insert)statement;
+                if (device != null) {
+                    if (useColumn)
+                        insert.value("pathstore_insert_sid", device);
+                        //or
+                    else
+                        QueryCache.getInstance().updateDeviceCommandCache(device, keyspace, table, InsertToSelect(insert).where().getClauses(), -1);
 
-			table = insert.getTable();
+                }
+            }
+        }
 
-			if (table.startsWith("local_") == false) {
-				insert.value("pathstore_version", QueryBuilder.now());
-				insert.value("pathstore_parent_timestamp",  QueryBuilder.now());
-				insert.value("pathstore_dirty", true);
+        //hossein here:
+        statement.setFetchSize(1000);
 
-				if(device!=null)
-				{
-					if(useColumn)
-						insert.value("pathstore_insert_sid", device);
-					//or 
-					else
-						QueryCache.getInstance().updateDeviceCommandCache(device, keyspace, table, InsertToSelect(insert).where().getClauses(),-1);
-
-				}
-			}
-		} 
-		else if (statement instanceof Delete) {
-			Delete delete = (Delete)statement;
-
-			table = delete.getTable();
-			if (table.startsWith("local_") == false) {
-				Insert insert = QueryBuilder.insertInto(delete.getKeyspace(), delete.getTable());
-
-				insert.value("pathstore_version", QueryBuilder.now());
-				insert.value("pathstore_parent_timestamp",  QueryBuilder.now());
-				insert.value("pathstore_dirty", true);
-				insert.value("pathstore_deleted", true);
-
-				List<Clause> clauses = delete.where().getClauses();
-
-				for (Clause clause : clauses) {
-					String name = clause.getName();
-					Object value = clause.getValue();
-					insert.value(name, value);
-				}
-
-				statement = insert;
-			}
-		} 
-		else if (statement instanceof Update) {
-			Update update = (Update)statement;
-
-			table = update.getTable();
-
-			if (table.startsWith("local_") == false) {
+        return new PathStoreResultSet(this.session.execute(statement), keyspace, table);
+    }
 
 
-				Insert insert = QueryBuilder.insertInto(update.getKeyspace(), update.getTable());
+    /**
+     * @param statement Statement to execute
+     * @return result of query
+     * @see #executeNomral(Statement, String)
+     */
+    public ResultSet execute(final Statement statement) {
+        return executeNomral(statement, null);
+    }
 
-				insert.value("pathstore_version", QueryBuilder.now());
-				insert.value("pathstore_parent_timestamp",  QueryBuilder.now());
-				insert.value("pathstore_dirty", true);
+    /**
+     * @param statement Statement to execute
+     * @param device    TODO: Explain
+     * @return result of query
+     * @see #executeNomral(Statement, String)
+     */
+    public ResultSet execute(final Statement statement, final String device) throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
+        return executeNomral(statement, device);
+    }
 
-				Assignments assignment = update.with();
+    /**
+     * TODO: Explain
+     * TODO: Migrate all string literals to {@link pathstore.common.Constants}
+     *
+     * @param statement statement to execute. This value does get reset
+     * @param device    TODO: Explain
+     * @return result of statement iff one of the following exceptions is not thrown
+     * @throws PathMigrateAlreadyGoneException
+     * @throws PathStoreRemoteException
+     */
+    public ResultSet executeNomral(Statement statement, final String device) throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
+        String keyspace = statement.getKeyspace();
+        String table = "";
 
-				for(Assignment a : assignment.getAssignments()) {
-					String name = a.name;
-					Object value = ((Assignment.SetAssignment)a).value;
-					insert.value(name,value);
-				}
+        if (!keyspace.startsWith("pathstore"))
+            throw new InvalidKeyspaceException("Keyspace does not start with pathstore prefix");
 
-				List<Clause> clauses = Update.where().getClauses();
+        if (statement instanceof Select) {
+            Select select = (Select) statement;
+            table = select.getTable();
 
-				for (Clause clause : clauses) {
-					String name = clause.getName();
-					Object value = clause.getValue();
-					insert.value(name, value);
-				}
-				statement = insert;
-			}
-		}
-		else throw new InvalidStatementTypeException();
+            if (!table.startsWith("local_")) {
+                List<Clause> clauses = select.where().getClauses();
+                int a = select.getFetchSize();
+                int l = -1;
+                if ((select.limit instanceof Integer))
+                    l = (Integer) select.limit;
+                QueryCache.getInstance().updateCache(keyspace, table, clauses, l);
+                if (device != null)
+                    QueryCache.getInstance().updateDeviceCommandCache(device, keyspace, table, clauses, l);
+            }
+        } else if (statement instanceof Insert) {
+            Insert insert = (Insert) statement;
 
-		//hossein here:
-		statement.setFetchSize(1000);
+            table = insert.getTable();
 
-		return new PathStoreResultSet(session.execute(statement), keyspace, table);
-	}
+            if (!table.startsWith("local_")) {
+                insert.value("pathstore_version", QueryBuilder.now());
+                insert.value("pathstore_parent_timestamp", QueryBuilder.now());
+                insert.value("pathstore_dirty", true);
 
-	//Hossein
-	public static Select InsertToSelect(Insert ins)
-	{
-		Select slct = QueryBuilder.select().all().from(ins.getKeyspace()+"."+ins.getTable());
-		List<ColumnMetadata> pkl = PathStorePriviledgedCluster.getInstance().getMetadata().getKeyspace(ins.getKeyspace()).getTable(ins.getTable()).getPrimaryKey();
-		String pk = pkl.get(0).getName();
-		for(int i=0;i<ins.getNamesArrayList().size();i++)
-		{
-			String name = (String) ins.getNamesArrayList().get(i);
-			if(pk.equals(name))
-			{
-				slct.where(QueryBuilder.eq(name, ins.getValuesArrayList().get(i)));
-			}
-		}
-		return slct;
-	}
+                if (device != null) {
+                    if (useColumn)
+                        insert.value("pathstore_insert_sid", device);
+                        //or
+                    else
+                        QueryCache.getInstance().updateDeviceCommandCache(device, keyspace, table, InsertToSelect(insert).where().getClauses(), -1);
 
-	public ResultSetFuture executeAsync(String query) {
-		if(query.toLowerCase().contains("local_".toLowerCase()))
-			return session.executeAsync(query);
-		else
-			throw new UnsupportedOperationException();	}
+                }
+            }
+        } else if (statement instanceof Delete) {
+            Delete delete = (Delete) statement;
 
-	public ResultSetFuture executeAsync(String query, Object... values) {
-		throw new UnsupportedOperationException();
-	}
+            table = delete.getTable();
+            if (!table.startsWith("local_")) {
+                Insert insert = QueryBuilder.insertInto(delete.getKeyspace(), delete.getTable());
 
-	public ResultSetFuture executeAsync(String query, Map<String, Object> values) {
-		throw new UnsupportedOperationException();
-	}
+                insert.value("pathstore_version", QueryBuilder.now());
+                insert.value("pathstore_parent_timestamp", QueryBuilder.now());
+                insert.value("pathstore_dirty", true);
+                insert.value("pathstore_deleted", true);
 
-	public ResultSetFuture executeAsync(Statement statement) {
-		throw new UnsupportedOperationException();
-	}
+                List<Clause> clauses = delete.where().getClauses();
 
-	public PreparedStatement prepare(String query) {
-		throw new UnsupportedOperationException();
-	}
+                for (Clause clause : clauses) {
+                    String name = clause.getName();
+                    Object value = clause.getValue();
+                    insert.value(name, value);
+                }
 
-	public PreparedStatement prepare(RegularStatement statement) {
-		throw new UnsupportedOperationException();
-	}
+                statement = insert;
+            }
+        } else if (statement instanceof Update) {
+            Update update = (Update) statement;
 
-	public ListenableFuture<PreparedStatement> prepareAsync(String query) {
-		throw new UnsupportedOperationException();
-	}
+            table = update.getTable();
 
-	public ListenableFuture<PreparedStatement> prepareAsync(
-			RegularStatement statement) {
-		throw new UnsupportedOperationException();
-	}
+            if (!table.startsWith("local_")) {
 
-	public CloseFuture closeAsync() {
-		throw new UnsupportedOperationException();
-	}
 
-	public void close() {
-		session.close();
-	}
+                Insert insert = QueryBuilder.insertInto(update.getKeyspace(), update.getTable());
 
-	public boolean isClosed() {
-		return session.isClosed();
-	}
+                insert.value("pathstore_version", QueryBuilder.now());
+                insert.value("pathstore_parent_timestamp", QueryBuilder.now());
+                insert.value("pathstore_dirty", true);
 
-	public Cluster getCluster() {
-		throw new UnsupportedOperationException();
-	}
+                Assignments assignment = update.with();
 
-	public State getState() {
-		throw new UnsupportedOperationException();
-	}
+                for (Assignment a : assignment.getAssignments()) {
+                    String name = a.name;
+                    Object value = ((Assignment.SetAssignment) a).value;
+                    insert.value(name, value);
+                }
+
+                List<Clause> clauses = Update.where().getClauses();
+
+                for (Clause clause : clauses) {
+                    String name = clause.getName();
+                    Object value = clause.getValue();
+                    insert.value(name, value);
+                }
+                statement = insert;
+            }
+        } else throw new InvalidStatementTypeException();
+
+        //hossein here:
+        statement.setFetchSize(1000);
+
+        return new PathStoreResultSet(this.session.execute(statement), keyspace, table);
+    }
+
+    /**
+     * TODO: Explain
+     *
+     * @param ins insert statement
+     * @return select?
+     */
+    //Hossein
+    public static Select InsertToSelect(final Insert ins) {
+        Select slct = QueryBuilder.select().all().from(ins.getKeyspace() + "." + ins.getTable());
+        List<ColumnMetadata> pkl = PathStorePriviledgedCluster.getInstance().getMetadata().getKeyspace(ins.getKeyspace()).getTable(ins.getTable()).getPrimaryKey();
+        String pk = pkl.get(0).getName();
+        for (int i = 0; i < ins.getNamesArrayList().size(); i++) {
+            String name = (String) ins.getNamesArrayList().get(i);
+            if (pk.equals(name)) {
+                slct.where(QueryBuilder.eq(name, ins.getValuesArrayList().get(i)));
+            }
+        }
+        return slct;
+    }
+
+    /**
+     * TODO: Should not throw {@link UnsupportedOperationException} when the operation is only supported if a condition holds. Modify to another error
+     *
+     * @param query command to query
+     * @return async result set.
+     */
+    public ResultSetFuture executeAsync(final String query) {
+        if (query.toLowerCase().contains("local_".toLowerCase()))
+            return this.session.executeAsync(query);
+        else
+            throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return null
+     * @apiNote Unsupported Operation
+     */
+    public ResultSetFuture executeAsync(String query, Object... values) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return null
+     * @apiNote Unsupported Operation
+     */
+    public ResultSetFuture executeAsync(String query, Map<String, Object> values) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return null
+     * @apiNote Unsupported Operation
+     */
+    public ResultSetFuture executeAsync(Statement statement) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return null
+     * @apiNote Unsupported Operation
+     */
+    public PreparedStatement prepare(String query) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return null
+     * @apiNote Unsupported Operation
+     */
+    public PreparedStatement prepare(RegularStatement statement) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return null
+     * @apiNote Unsupported Operation
+     */
+    public ListenableFuture<PreparedStatement> prepareAsync(String query) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return null
+     * @apiNote Unsupported Operation
+     */
+    public ListenableFuture<PreparedStatement> prepareAsync(
+            RegularStatement statement) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return null
+     * @apiNote Unsupported Operation
+     */
+    public CloseFuture closeAsync() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Closes the current session
+     *
+     * @see #session
+     */
+    public void close() {
+        this.session.close();
+    }
+
+    /**
+     * You should call this function if you plan on executing something to ensure the session is opened
+     *
+     * @return whether the current session is opened.
+     */
+    public boolean isClosed() {
+        return this.session.isClosed();
+    }
+
+    /**
+     * @return null
+     * @apiNote Unsupported Operation
+     */
+    public Cluster getCluster() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return null
+     * @apiNote Unsupported Operation
+     */
+    public State getState() {
+        throw new UnsupportedOperationException();
+    }
 
 }
