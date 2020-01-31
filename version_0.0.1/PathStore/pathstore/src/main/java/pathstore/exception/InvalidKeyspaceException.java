@@ -17,6 +17,9 @@
 ***********/
 package pathstore.exception;
 
+/**
+ * TODO: Comment
+ */
 public class InvalidKeyspaceException extends RuntimeException {
 
 	public InvalidKeyspaceException() {

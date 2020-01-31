@@ -1,20 +1,20 @@
 /**********
-*
-* Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*
-***********/
+ *
+ * Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ ***********/
 /*
  * Copyright (c) 1995, 2008, Oracle and/or its affiliates. All rights reserved.
  *
@@ -44,12 +44,12 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */ 
+ */
 
 package pathstore.test;
 
-/* 
- * ColorEditor.java (compiles with releases 1.3 and 1.4) is used by 
+/*
+ * ColorEditor.java (compiles with releases 1.3 and 1.4) is used by
  * TableDialogEditDemo.java.
  */
 
@@ -64,9 +64,12 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+/**
+ * TODO: Comment
+ */
 public class ColorEditor extends AbstractCellEditor
-                         implements TableCellEditor,
-			            ActionListener {
+        implements TableCellEditor,
+        ActionListener {
     Color currentColor;
     JButton button;
     JColorChooser colorChooser;
@@ -86,11 +89,11 @@ public class ColorEditor extends AbstractCellEditor
         //Set up the dialog that the button brings up.
         colorChooser = new JColorChooser();
         dialog = JColorChooser.createDialog(button,
-                                        "Pick a Color",
-                                        true,  //modal
-                                        colorChooser,
-                                        this,  //OK button handler
-                                        null); //no CANCEL button handler
+                "Pick a Color",
+                true,  //modal
+                colorChooser,
+                this,  //OK button handler
+                null); //no CANCEL button handler
     }
 
     /**
@@ -124,7 +127,7 @@ public class ColorEditor extends AbstractCellEditor
                                                  boolean isSelected,
                                                  int row,
                                                  int column) {
-        currentColor = (Color)value;
+        currentColor = (Color) value;
         return button;
     }
 }
