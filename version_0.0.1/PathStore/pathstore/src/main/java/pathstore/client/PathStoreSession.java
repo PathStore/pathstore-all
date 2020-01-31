@@ -99,6 +99,7 @@ public class PathStoreSession implements Session {
     }
 
     /**
+     * TODO: Potentially remove functionality to use cql strings as querying
      * TODO: Should not throw {@link UnsupportedOperationException} if the operation is supported
      *
      * @param query cql string to execute on the local cassandra DB
@@ -126,9 +127,6 @@ public class PathStoreSession implements Session {
     public ResultSet execute(final String query, final Map<String, Object> values) {
         throw new UnsupportedOperationException();
     }
-
-
-    //Hossein: this is only used by PathMigrate and PathAuthenticate
 
     /**
      * Only used by {@link pathstore.common.PathStoreMigrate} and {@link pathstore.common.PathStoreAuthenticate}
@@ -193,8 +191,15 @@ public class PathStoreSession implements Session {
     }
 
     /**
-     * TODO: Explain
+     * TODO: Potentially private
      * TODO: Migrate all string literals to {@link pathstore.common.Constants}
+     *
+     * Select: Update query cache to include our current query. TODO: Smart coverage
+     * Insert: Append the hidden values.
+     * Delete: This operation is actually an insert with the row pathstore_deleted added.
+     * Update: This operation is actually an insert with the updated data. To keep our design of a log of data over time
+     *
+     * Then our operation is executed over our database connection and a result set is returned to be iterated over.
      *
      * @param statement statement to execute. This value does get reset
      * @param device    TODO: Explain
@@ -305,6 +310,7 @@ public class PathStoreSession implements Session {
 
     /**
      * TODO: Explain
+     * TODO: This function is only used when executing queries with a device in mind but those aren't used.
      *
      * @param ins insert statement
      * @return select?

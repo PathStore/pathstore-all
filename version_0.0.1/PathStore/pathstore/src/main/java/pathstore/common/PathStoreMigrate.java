@@ -27,6 +27,9 @@ import java.util.UUID;
 import com.datastax.driver.core.querybuilder.Clause;
 
 
+/**
+ * TODO: Not used currently most likely WIP
+ */
 public interface PathStoreMigrate extends Remote {
 	String migrate(String SID, String previousEdge) throws RemoteException;
 	ArrayList<CommandEntryReply> sendData(String sid, String edgeId, boolean neighbors,

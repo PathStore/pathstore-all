@@ -69,6 +69,7 @@ public class PathStoreCluster {
 
 
     /**
+     * TODO: Make private for public implementation. As we have {@link #getInstance()}
      * This is used under the assumption that /etc/pathstore/pathstore.properties is where your pathstore.properties file is located.
      * If it isn't see {@link #PathStoreCluster(PathStoreProperties)}
      * <p>
@@ -96,6 +97,7 @@ public class PathStoreCluster {
 
 
     /**
+     * TODO: Make private for public implementation. As we have {@link #getInstance()} also need to add an instance for custom properties
      * Similar to above but you can pass a custom properties file.
      *
      * @param custom custom properties file

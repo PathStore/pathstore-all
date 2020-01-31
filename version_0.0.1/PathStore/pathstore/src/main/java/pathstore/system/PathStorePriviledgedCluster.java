@@ -25,6 +25,9 @@ import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
 
+/**
+ * TODO: Copy of {@link pathstore.client.PathStoreCluster}
+ */
 public class PathStorePriviledgedCluster {
 
 		static PathStorePriviledgedCluster pathStoreCluster=null;
