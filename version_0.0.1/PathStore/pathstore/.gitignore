@@ -1,10 +1,3 @@
 /target/
 .idea/
-<<<<<<< HEAD
-<<<<<<< HEAD
 *.iml
-=======
->>>>>>> Updated git ignore to remove ide files from repo. Also deleted them from git. Commented the PathStoreCluster file, several TODO's added
-=======
-*.iml
->>>>>>> Updated parent directory git ignore to remove parent level ide files also updated pathstore git ignore to remove iml file associated with the ide project
