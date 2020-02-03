@@ -503,6 +503,12 @@ public class ApplicationSchema {
     }
 
 
+    /**
+     * TODO: The first line still works if you swap to privileged_cluster and schema is still loaded and all.
+     * TODO: Figure out why you query the cluster instead of the privileged_cluster
+     *
+     * @param appId
+     */
     public void createOriginalDB(int appId) {
         Session session = cluster.connect();
 
