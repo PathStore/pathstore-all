@@ -4,6 +4,23 @@ import com.datastax.driver.core.*;
 
 /**
  * TODO: Currently used tables in pathstore_application : apps, stores schema
+ * <p>
+ * Objective of this class is to write the current application schemas to a table in the root server's database
+ * Then when a child is started up the first thing it does is it checks it's parent node to see if it has the same schema's.
+ * If it doesn't then it pulls it's parents schema's and updates it's current databases. During this time there needs to
+ * be a blocker on the session to basically say that if a current request is on the keyspace of a currently updated table wait until that
+ * operation is complete. We also need to check to see if you can update a schema while their is data inside the schema.
+ * <p>
+ * Current Plan of implementation:
+ * <p>
+ * 1. Write function to drop schema of a certain name.
+ * 2. Write function to load pathstore_application schema.
+ * 3. Insert the pathstore_application schema into pathstore_application.apps. This will only be used by other pathstore nodes
+ * 4. Modify {@link pathstore.system.PathStoreServerImpl} to pull schema from parent server if it doesn't exist as this will never change while the pathstore network is alive (I think.)
+ * 5. Write function to augment user defined schemas.
+ * 6. Write function to load augment user defined shcemas into pathstore_application.apps
+ * 7: Modify {@link pathstore.system.PathStoreServerImpl} and {@link pathstore.system.PathStorePullServer} to pull schema from parent server.
+ * 8: Deal with potential use cases that
  */
 public class ApplicationSchemaV2 {
     private static Session session = null;
@@ -48,15 +65,16 @@ public class ApplicationSchemaV2 {
             }
         }
 
-        for(Row row: keyspace_columns){
+        for (Row row : keyspace_columns) {
             printAllDataFromTable(keyspace, row.getString("table_name"));
         }
 
     }
-    private static void printAllDataFromTable(final String keyspace, final String table){
+
+    private static void printAllDataFromTable(final String keyspace, final String table) {
         ResultSet table_data = session.execute("select * from " + keyspace + "." + table);
 
-        for(Row row : table_data){
+        for (Row row : table_data) {
             System.out.println(row);
         }
     }
