@@ -218,10 +218,10 @@ public class PathStoreServerImpl implements PathStoreServer {
         ResultSet resultSet = parent.execute("SELECT * FROM pathstore_applications.apps");
 
         for (Row row : resultSet) {
-            String schemaName = row.getString("schema_name");
+            String keySpace = row.getString("key_space");
             String schema = row.getString("app_schema");
 
-            local.execute("CREATE KEYSPACE IF NOT EXISTS " + schemaName + " WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;");
+            local.execute("CREATE KEYSPACE IF NOT EXISTS " + keySpace + " WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;");
             local.execute(schema);
         }
     }
