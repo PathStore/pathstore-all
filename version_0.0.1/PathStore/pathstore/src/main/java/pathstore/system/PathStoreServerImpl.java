@@ -214,7 +214,7 @@ public class PathStoreServerImpl implements PathStoreServer {
      * @param local  local direct connect session
      */
     private static void getApplicationSchemaFromParent(final Session parent, final Session local) {
-        ResultSet resultSet = parent.execute("SELECT schema_name, app_schema FROM pathstore_applications.apps WHERE appid='0'");
+        ResultSet resultSet = parent.execute("SELECT schema_name, app_schema FROM pathstore_applications.apps WHERE appid=0");
 
         Row data = resultSet.one();
 
