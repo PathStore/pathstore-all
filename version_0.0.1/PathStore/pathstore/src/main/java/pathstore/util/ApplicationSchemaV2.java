@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
-import java.util.Arrays;
+import java.util.*;
 
 /**
  * Objective of this class is to write the current application schemas to a table in the root
@@ -49,16 +49,36 @@ public class ApplicationSchemaV2 {
         public static final String APP_NAME = "app_name";
         public static final String SCHEMA_NAME = "schema_name";
         public static final String APP_SCHEMA = "app_schema";
+        public static final String AUGMENTED_SCHEMA = "augmented_schema";
         public static final String TIME_CREATED = "time_created";
       }
     }
   }
 
+  /** Stored to gather meta data of keyspaces */
+  private final Cluster cluster;
+
+  /**
+   * TODO: Move to {@link pathstore.system.PathStorePriviledgedCluster}
+   *
+   * <p>Local session to local database
+   */
   private final Session session;
+
+  /** Stores info based on the schema's we are loading in */
   private final SchemaInfoV2 schemaInfo;
 
+  /**
+   * TODO: Change cluster to {@link pathstore.system.PathStorePriviledgedCluster}
+   *
+   * <p>TODO: Document command usage
+   *
+   * <p>Executes load schemas based on commands
+   *
+   * @param args commands to execute
+   */
   ApplicationSchemaV2(final String[] args) {
-    Cluster cluster =
+    this.cluster =
         new Cluster.Builder()
             .addContactPoints("127.0.0.1")
             .withPort(9052)
@@ -71,7 +91,7 @@ public class ApplicationSchemaV2 {
                     .setRefreshSchemaIntervalMillis(0))
             .build();
 
-    this.session = cluster.connect();
+    this.session = this.cluster.connect();
 
     this.schemaInfo = new SchemaInfoV2(this.session);
 
@@ -108,13 +128,54 @@ public class ApplicationSchemaV2 {
     cluster.close();
   }
 
+  /**
+   * Loads schemas into the database
+   *
+   * <p>First it parses the file and executes all their commands.
+   *
+   * <p>Then the {@link SchemaInfoV2} is updated to the latest version of the schemas
+   *
+   * <p>Then if the keyspace needs augmentation we augment it and update the database, then the
+   * original schema and the augmented schema are placed into the pathstore_applications.apps table
+   * for reading by the children nodes as this utility should only ever be run on the ROOTSERVER
+   *
+   * @param appIdStart app id to start. If command was init this is 0
+   * @param schemasToLoad list of file names that point to cql files to load
+   */
   private void loadSchemas(final int appIdStart, final String[] schemasToLoad) {
     int appId = appIdStart;
     for (String s : schemasToLoad) {
       File f = new File(s);
       if (f.exists())
         try {
-          insertApplicationSchema(appId++, f.getName(), f.getName(), readFileContents(s));
+          String keyspaceName = f.getName().substring(0, f.getName().indexOf('.'));
+          String schema = readFileContents(s);
+          parseSchema(schema);
+
+          if (!keyspaceName.equals("pathstore_applications")) {
+            this.schemaInfo.generate();
+            for (String tableName : this.schemaInfo.getTablesByKeySpace(keyspaceName)) {
+
+              SchemaInfoV2.Table table = this.schemaInfo.getTableObjectByName(tableName);
+
+              augmentSchema(table);
+
+              insertApplicationSchema(
+                  appId++,
+                  keyspaceName,
+                  keyspaceName,
+                  schema,
+                  this.cluster.getMetadata().getKeyspace(table.keyspace_name).exportAsString());
+            }
+
+          } else
+            insertApplicationSchema(
+                appId++,
+                keyspaceName,
+                keyspaceName,
+                null,
+                this.cluster.getMetadata().getKeyspace(keyspaceName).exportAsString());
+
         } catch (Exception e) {
           System.out.println("There was an error with the file: " + f.getName());
           e.printStackTrace();
@@ -125,13 +186,183 @@ public class ApplicationSchemaV2 {
         System.exit(1);
       }
     }
+
+    this.schemaInfo.generate();
   }
 
+  /**
+   * @param fileName file contents to read
+   * @return returns all contents in a singular string
+   * @throws IOException if the file does not exist
+   */
   private String readFileContents(final String fileName) throws IOException {
     return new String(Files.readAllBytes(Paths.get(fileName)));
   }
 
-  /** TODO: Move string literals */
+  /** @param schema parses original schema file and executes all commands in the schema */
+  private void parseSchema(final String schema) {
+    String[] commands = schema.split(";");
+    for (String c : commands) {
+      String cql = c.trim();
+      if (cql.length() > 0) this.session.execute(cql);
+    }
+  }
+
+  /**
+   * TODO: Maybe remove string literals, This may be an exception
+   *
+   * <p>Rebuilds schema based on data queried by {@link SchemaInfoV2} to include a few extra columns
+   *
+   * <p>These columns are:
+   *
+   * <p>pathstore_version, pathstore_parent_timestamp, pathstore_dirty, pathstore_deleted,
+   * pathstore_insert, pathstore_node
+   *
+   * @param table table to augment
+   */
+  private void augmentSchema(final SchemaInfoV2.Table table) {
+
+    List<String> columnNames = this.schemaInfo.getColumnsByTable(table.table_name);
+    Set<SchemaInfoV2.Column> columns = new HashSet<>();
+
+    for (String columnName : columnNames)
+      columns.add(this.schemaInfo.getColumnObjectByName(columnName));
+
+    dropTable(table);
+
+    StringBuilder query =
+        new StringBuilder("CREATE TABLE " + table.keyspace_name + "." + table.table_name + "(");
+
+    for (SchemaInfoV2.Column col : columns) {
+      String type = col.type.compareTo("counter") == 0 ? "int" : col.type;
+      query.append(col.column_name).append(" ").append(type).append(",");
+    }
+
+    query.append("pathstore_version timeuuid,");
+    query.append("pathstore_parent_timestamp timeuuid,");
+    query.append("pathstore_dirty boolean,");
+    query.append("pathstore_deleted boolean,");
+    query.append("pathstore_insert_sid text,");
+    query.append("pathstore_node int,");
+    query.append("PRIMARY KEY(");
+
+    for (SchemaInfoV2.Column col : columns)
+      if (col.kind.equals("partition_key")) query.append(col.column_name).append(",");
+    for (SchemaInfoV2.Column col : columns)
+      if (col.kind.equals("clustering")) query.append(col.column_name).append(",");
+
+    query.append("pathstore_version) ");
+
+    query.append(")");
+
+    query.append("WITH CLUSTERING ORDER BY (");
+
+    for (SchemaInfoV2.Column col : columns)
+      if (col.kind.compareTo("clustering") == 0)
+        query.append(col.column_name).append(" ").append(col.clustering_order).append(",");
+
+    query.append("pathstore_version DESC) ");
+
+    query
+        .append("	    AND caching = ")
+        .append(mapToString(table.caching))
+        .append("	    AND comment = '")
+        .append(table.comment)
+        .append("'")
+        .append("	    AND compaction = ")
+        .append(mapToString(table.compaction))
+        .append("	    AND compression = ")
+        .append(mapToString(table.compression))
+        .append("	    AND crc_check_chance = ")
+        .append(table.crc_check_chance)
+        .append("	    AND dclocal_read_repair_chance = ")
+        .append(table.dclocal_read_repair_chance)
+        .append("	    AND default_time_to_live = ")
+        .append(table.default_time_to_live)
+        .append("	    AND gc_grace_seconds = ")
+        .append(table.gc_grace_seconds)
+        .append("	    AND max_index_interval = ")
+        .append(table.max_index_interval)
+        .append("	    AND memtable_flush_period_in_ms = ")
+        .append(table.memtable_flush_period_in_ms)
+        .append("	    AND min_index_interval = ")
+        .append(table.min_index_interval)
+        .append("	    AND read_repair_chance = ")
+        .append(table.read_repair_chance)
+        .append("	    AND speculative_retry = '")
+        .append(table.speculative_retry)
+        .append("'");
+
+    session.execute(query.toString());
+
+    query =
+        new StringBuilder(
+            "CREATE INDEX ON "
+                + table.keyspace_name
+                + "."
+                + table.table_name
+                + " (pathstore_dirty)");
+
+    session.execute(query.toString());
+
+    query =
+        new StringBuilder(
+            "CREATE INDEX ON "
+                + table.keyspace_name
+                + "."
+                + table.table_name
+                + " (pathstore_deleted)");
+
+    session.execute(query.toString());
+
+    query =
+        new StringBuilder(
+            "CREATE INDEX ON "
+                + table.keyspace_name
+                + "."
+                + table.table_name
+                + " (pathstore_insert_sid)");
+
+    session.execute(query.toString());
+  }
+
+  /**
+   * Converts a map object from cassandra into a string based representation that is interpretable
+   * by cassandra on re-insert
+   *
+   * @param map object to convert
+   * @return converted version
+   */
+  @SuppressWarnings("unchecked")
+  private String mapToString(final Object map) {
+
+    Map<String, String> m = (Map<String, String>) map;
+
+    StringBuilder result = new StringBuilder("{");
+
+    for (String key : m.keySet())
+      result.append("'").append(key).append("':'").append(m.get(key)).append("',");
+
+    return result.substring(0, result.length() - 1) + "}";
+  }
+
+  /**
+   * TODO: Remove string literals
+   *
+   * @param table table to drop.
+   */
+  private void dropTable(final SchemaInfoV2.Table table) {
+    String query = "DROP TABLE " + table.keyspace_name + "." + table.table_name;
+    this.session.execute(query);
+  }
+
+  /**
+   * TODO: Remove string literals
+   *
+   * <p>Drops entire keyspace
+   *
+   * @param keySpace keyspace to drop
+   */
   private void dropKeySpace(final String keySpace) {
     String dropSchemaStatement = "drop keyspace if exists " + keySpace;
     System.out.println("Dropping keyspace " + keySpace);
@@ -147,14 +378,14 @@ public class ApplicationSchemaV2 {
    * @param appName name of application. Easier identifier then its associated appId
    * @param schemaName name of schema. This is used for version control. I.e $appName-0.0.1
    * @param schema literal contents of schema. This is used to distribute the schema to lower nodes
+   * @param augmentedSchema schema after pathstore augmentation
    */
   private void insertApplicationSchema(
-      final int appId, final String appName, final String schemaName, final String schema) {
-    String[] commands = schema.split(";");
-    for (String c : commands) {
-      String cql = c.trim();
-      if (cql.length() > 0) this.session.execute(cql);
-    }
+      final int appId,
+      final String appName,
+      final String schemaName,
+      final String schema,
+      final String augmentedSchema) {
 
     System.out.println("Inserting schema");
     Insert insert =
@@ -165,6 +396,7 @@ public class ApplicationSchemaV2 {
     insert.value(Constants.PathStoreApplications.Apps.APP_NAME, appName);
     insert.value(Constants.PathStoreApplications.Apps.SCHEMA_NAME, schemaName);
     insert.value(Constants.PathStoreApplications.Apps.APP_SCHEMA, schema);
+    insert.value(Constants.PathStoreApplications.Apps.AUGMENTED_SCHEMA, augmentedSchema);
     insert.value(Constants.PathStoreApplications.Apps.TIME_CREATED, getTimeStamp());
 
     this.session.execute(insert);
@@ -172,10 +404,16 @@ public class ApplicationSchemaV2 {
     System.out.println("Schema inserted");
   }
 
+  /** @return current timestamp to insert into db */
   private Timestamp getTimeStamp() {
     return new Timestamp(System.currentTimeMillis());
   }
 
+  /**
+   * Used to be run as a utility outside of the main pathstore instance
+   *
+   * @param args commands
+   */
   public static void main(String[] args) {
     new ApplicationSchemaV2(args);
   }

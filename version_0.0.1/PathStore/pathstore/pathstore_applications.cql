@@ -3,8 +3,9 @@ CREATE KEYSPACE IF NOT EXISTS pathstore_applications  WITH replication = {'class
                         		appid int PRIMARY KEY, 
                         	    app_name text,
                         	    schema_name text,   
-                        	    app_schema text,   
-                        time_created timestamp,   
+                        	    app_schema text,
+                        	    augmented_schema text,
+                                time_created timestamp,
                         	) WITH bloom_filter_fp_chance = 0.01   
                         	    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}   
                         	    AND comment = 'table definitions'   

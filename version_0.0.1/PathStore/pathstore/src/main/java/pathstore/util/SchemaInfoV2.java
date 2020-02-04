@@ -8,8 +8,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * This class is used to query information about the current state of a database. It allows you to
- * get a list of tables based on keyspace, list of columns based on tables. You can also get the
+ * TODO: Refactor the way data is stored for a more optimal dataset
+ *
+ * <p>This class is used to query information about the current state of a database. It allows you
+ * to get a list of tables based on keyspace, list of columns based on tables. You can also get the
  * entire map that contains all pathstore related tables and columns
  */
 public class SchemaInfoV2 {
@@ -78,6 +80,14 @@ public class SchemaInfoV2 {
   /** @return Map of column names to a object with all their info */
   Map<String, Column> getColumnObjects() {
     return this.columns;
+  }
+
+  Table getTableObjectByName(final String tableName) {
+    return this.tables.get(tableName);
+  }
+
+  Column getColumnObjectByName(final String columnName) {
+    return this.columns.get(columnName);
   }
 
   /**
@@ -274,9 +284,8 @@ public class SchemaInfoV2 {
    * <p>Everything is named the same way as in cassandra
    */
   public static class Column {
-    public final String keyspace_name, table_name, column_name, type, clustering_order;
+    public final String keyspace_name, table_name, column_name, type, clustering_order, kind;
     public final int position;
-    public final boolean is_partion_key;
 
     Column(
         final String clustering_order,
@@ -289,7 +298,7 @@ public class SchemaInfoV2 {
       this.clustering_order = clustering_order;
       this.column_name = column_name;
       this.keyspace_name = keyspace_name;
-      this.is_partion_key = kind.equals("partition_key");
+      this.kind = kind;
       this.position = position;
       this.table_name = table_name;
       this.type = type;
