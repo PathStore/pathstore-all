@@ -1,10 +1,14 @@
 package pathstore.util;
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.core.querybuilder.Insert;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
- * TODO: Currently used tables in pathstore_application : apps, stores schema
- * <p>
  * Objective of this class is to write the current application schemas to a table in the root server's database
  * Then when a child is started up the first thing it does is it checks it's parent node to see if it has the same schema's.
  * If it doesn't then it pulls it's parents schema's and updates it's current databases. During this time there needs to
@@ -23,12 +27,64 @@ import com.datastax.driver.core.*;
  * 8: Deal with potential use cases that
  */
 public class ApplicationSchemaV2 {
+
+    /**
+     * Constants class to represent all the sql strings / column names of tables that are modified throughout this class
+     * TODO: Potential move to a global locations\
+     * TODO: Remove duplicate names
+     */
+    private static class Constants {
+        public static final String PATHSTORE_APPLICATIONS_KEYSPACE_CREATION = "CREATE KEYSPACE IF NOT EXISTS " + PathStoreApplications.KEYSPACE + " WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;";
+        public static final String PATHSTORE_APPLICATIONS_APPS_TABLE =
+                "CREATE TABLE pathstore_applications.apps (" +
+                        "		appid int PRIMARY KEY," +
+                        //   "		code blob," +
+                        //   "		funcs list<int>," +
+                        //   "		owner text," +
+                        //   "		root_domain text," +
+                        "	    app_name text," +
+                        "	    schema_name text," +
+                        "	    app_schema text," +
+                        "time_created timestamp," +
+                        //   "	    app_schema_augmented text" +
+                        "	) WITH bloom_filter_fp_chance = 0.01" +
+                        "	    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}" +
+                        "	    AND comment = 'table definitions'" +
+                        "	    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}" +
+                        "	    AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}" +
+                        "	    AND crc_check_chance = 1.0" +
+                        "	    AND dclocal_read_repair_chance = 0.0" +
+                        "	    AND default_time_to_live = 0" +
+                        "	    AND gc_grace_seconds = 604800" +
+                        "	    AND max_index_interval = 2048" +
+                        "	    AND memtable_flush_period_in_ms = 3600000" +
+                        "	    AND min_index_interval = 128" +
+                        "	    AND read_repair_chance = 0.0" +
+                        "	    AND speculative_retry = '99PERCENTILE';";
+
+        public static final class PathStoreApplications {
+            public static final String KEYSPACE = "pathstore_applications";
+
+            public static final class Apps {
+                public static final String TABLE = "apps";
+                public static final String APPID = "appid";
+                public static final String APP_NAME = "app_name";
+                public static final String SCHEMA_NAME = "schema_name";
+                public static final String APP_SCHEMA = "app_schema";
+                public static final String TIME_CREATED = "time_created";
+            }
+        }
+
+    }
+
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss");
+
     private static Session session = null;
 
     public static void main(String[] args) {
         Cluster cluster = new Cluster.Builder()
                 .addContactPoints("127.0.0.1")
-                .withPort(9062)
+                .withPort(9052)
                 .withSocketOptions(new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
                 .withQueryOptions(
                         new QueryOptions()
@@ -40,43 +96,96 @@ public class ApplicationSchemaV2 {
 
         session = cluster.connect();
 
-        ResultSet keyspaces = session.execute("select * from system_schema.keyspaces");
+        deleteSchema(Constants.PathStoreApplications.KEYSPACE);
+        loadPathStoreApplicationSchema();
+        insertApplicationSchema(
+                0,
+                Constants.PathStoreApplications.KEYSPACE,
+                Constants.PathStoreApplications.KEYSPACE,
+                Constants.PATHSTORE_APPLICATIONS_APPS_TABLE
+        );
 
-        for (Row row : keyspaces) {
-            String keyspace = row.getString("keyspace_name");
-            if (keyspace.startsWith("pathstore_")) {
-                System.out.println(keyspace);
-                printDataFromKeyspace(keyspace);
-            }
-        }
-
-    }
-
-    private static void printDataFromKeyspace(final String keyspace) {
-        ResultSet keyspace_columns = session.execute("select * from system_schema.tables where keyspace_name='" + keyspace + "'");
-
-        for (Row row : keyspace_columns) {
-            String table = row.getString("table_name");
-            System.out.println("\t" + table);
-            ResultSet columns = session.execute("select * from system_schema.columns where keyspace_name='" + keyspace + "' and table_name='" + table + "'");
-            for (Row column : columns) {
-                String column_name = column.getString("column_name");
-                System.out.println("\t\t" + column_name);
-            }
-        }
-
-        for (Row row : keyspace_columns) {
-            printAllDataFromTable(keyspace, row.getString("table_name"));
-        }
+        session.close();
+        cluster.close();
 
     }
 
-    private static void printAllDataFromTable(final String keyspace, final String table) {
-        ResultSet table_data = session.execute("select * from " + keyspace + "." + table);
+    /**
+     * TODO: Move string literals
+     *
+     * @param schemaName
+     */
+    private static void deleteSchema(final String schemaName) {
+        String dropSchemaStatement = "drop keyspace if exists " + schemaName;
+        System.out.println("Dropping keyspace " + schemaName);
+        session.execute(dropSchemaStatement);
+        System.out.println("Keyspace dropped");
+    }
 
-        for (Row row : table_data) {
-            System.out.println(row);
-        }
+    /**
+     * TODO: Export table to file instead of hard coded feature.
+     * <p>
+     * Creates pathstore_applications keyspace
+     * Inserts One table this table is apps it has the following properties
+     * <p>
+     * appid: application id bounds must be greater then or equal to 1
+     * app_name: name of application
+     * schema_name: i.e for version control
+     * app_schema: literal schema stored in plain text
+     * time_created: time of creation for log of schemas
+     */
+    private static void loadPathStoreApplicationSchema() {
+        System.out.println("Creating keyspace");
+        session.execute(Constants.PATHSTORE_APPLICATIONS_KEYSPACE_CREATION);
+        System.out.println("Keyspace created");
+        System.out.println("Creating apps table");
+        session.execute(Constants.PATHSTORE_APPLICATIONS_APPS_TABLE);
+        System.out.println("Apps table created");
+    }
+
+    /**
+     * TODO: Make it so that it does not override current app schema of same name.
+     *
+     * @param appId      application Id. Must be greater then 1 as 0 is reserved for the pathstore_application schema
+     * @param appName    name of application. Easier identifier then its associated appId
+     * @param schemaName name of schema. This is used for version control. I.e $appName-0.0.1
+     * @param schema     literal contents of schema. This is used to distribute the schema to lower nodes
+     */
+    private static void insertApplicationSchema(final int appId, final String appName, final String schemaName, final String schema) {
+        System.out.println("Inserting schema");
+        Insert insert = QueryBuilder.insertInto(
+                Constants.PathStoreApplications.KEYSPACE,
+                Constants.PathStoreApplications.Apps.TABLE
+        );
+
+        insert.value(
+                Constants.PathStoreApplications.Apps.APPID,
+                appId
+        );
+        insert.value(
+                Constants.PathStoreApplications.Apps.APP_NAME
+                , appName
+        );
+        insert.value(
+                Constants.PathStoreApplications.Apps.SCHEMA_NAME
+                , schemaName
+        );
+        insert.value(
+                Constants.PathStoreApplications.Apps.APP_SCHEMA
+                , schema
+        );
+        insert.value(
+                Constants.PathStoreApplications.Apps.TIME_CREATED
+                , getTimeStamp()
+        );
+
+        session.execute(insert);
+
+        System.out.println("Schema inserted");
+    }
+
+    private static Timestamp getTimeStamp() {
+        return new Timestamp(System.currentTimeMillis());
     }
 }
 

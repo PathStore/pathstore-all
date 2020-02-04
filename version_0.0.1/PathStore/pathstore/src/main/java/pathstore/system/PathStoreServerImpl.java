@@ -18,6 +18,7 @@
 package pathstore.system;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.Naming;
@@ -28,6 +29,9 @@ import java.util.List;
 import java.util.UUID;
 
 
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +43,7 @@ import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
 import pathstore.common.Timer;
 import pathstore.exception.PathMigrateAlreadyGoneException;
+import pathstore.util.ApplicationSchemaV2;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 import pathstore.util.SchemaInfo.Table;
@@ -50,9 +55,6 @@ import org.apache.commons.cli.*;
  */
 public class PathStoreServerImpl implements PathStoreServer {
     private final Logger logger = LoggerFactory.getLogger(PathStoreServerImpl.class);
-
-    public PathStoreServerImpl() {
-    }
 
 
     @Override //child calls this (maybe client or child node)
@@ -194,6 +196,35 @@ public class PathStoreServerImpl implements PathStoreServer {
 
     }
 
+    /**
+     * TODO: Move to {@link pathstore.system.PathStoreServerImpl}
+     *
+     * @return whether the pathstore_applications exists or not
+     */
+    private static boolean checkIfApplicationsExist(final Session session) {
+        ResultSet resultSet = session.execute("SELECT * FROM system_schema.keyspaces where keyspace_name='pathstore_applications'");
+        return resultSet.all().size() > 0;
+    }
+
+    /**
+     * TODO: Allow for updates of pathstore_applications schema. Currently this only supports one
+     * TODO: Move static strings
+     *
+     * @param parent parent direct connect session
+     * @param local  local direct connect session
+     */
+    private static void getApplicationSchemaFromParent(final Session parent, final Session local) {
+        ResultSet resultSet = parent.execute("SELECT schema_name, app_schema FROM pathstore_applications.apps WHERE appid='0'");
+
+        Row data = resultSet.one();
+
+        String schemaName = data.getString("schema_name");
+        String schema = data.getString("app_schema");
+
+        local.execute("CREATE KEYSPACE IF NOT EXISTS " + schemaName + " WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;");
+        local.execute(schema);
+    }
+
 
     public static void main(String args[]) {
         try {
@@ -203,14 +234,8 @@ public class PathStoreServerImpl implements PathStoreServer {
             PathStoreServerImpl obj = new PathStoreServerImpl();
             PathStoreServer stub = (PathStoreServer) UnicastRemoteObject.exportObject(obj, 0);
 
-            // Bind the remote object's stub in the registry
-
             System.setProperty("java.rmi.server.hostname", PathStoreProperties.getInstance().RMIRegistryIP);
-
             Registry registry = LocateRegistry.createRegistry(PathStoreProperties.getInstance().RMIRegistryPort);
-
-            //Registry registry = LocateRegistry.createRegistry(PathStoreProperties.getInstance().RMIRegistryPort);
-            //Registry registry = LocateRegistry.getRegistry(PathStoreProperties.getInstance().RMIRegistryIP, PathStoreProperties.getInstance().RMIRegistryPort);
 
             try {
                 registry.bind("PathStoreServer", stub);
@@ -222,15 +247,20 @@ public class PathStoreServerImpl implements PathStoreServer {
 
 
             if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
-                PathStorePullServer server = new PathStorePullServer();
-                server.start();
-                //   server.join();
-            }
+                Session parent_session = PathStoreParentCluster.getInstance().connect();
+                Session local_session = PathStorePriviledgedCluster.getInstance().connect();
 
-            if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
-                PathStorePushServer server = new PathStorePushServer();
-                server.start();
-                server.join();
+                if (!checkIfApplicationsExist(local_session))
+                    getApplicationSchemaFromParent(parent_session, local_session);
+
+                parent_session.close();
+                local_session.close();
+
+                PathStorePullServer pullServer = new PathStorePullServer();
+                pullServer.start();
+                PathStorePushServer pushServer = new PathStorePushServer();
+                pushServer.start();
+                pushServer.join();
             }
 
 
@@ -238,11 +268,6 @@ public class PathStoreServerImpl implements PathStoreServer {
             System.err.println("PathStoreServer exception: " + e.toString());
             e.printStackTrace();
         }
-
-        // Commented 2 lines handle session consistency.
-
-        //PathStoreMigrateImpl.getInstance();
-        //PathStoreAuthenticateImpl.getInstance();
     }
 
 }
