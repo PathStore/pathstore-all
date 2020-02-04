@@ -32,12 +32,14 @@ public class ApplicationSchemaV2 {
      * Constants class to represent all the sql strings / column names of tables that are modified throughout this class
      * TODO: Potential move to a global locations\
      * TODO: Remove duplicate names
+     * TODO: Write loader to load in cql files instead of hard coded tables
      */
     private static class Constants {
         public static final String PATHSTORE_APPLICATIONS_KEYSPACE_CREATION = "CREATE KEYSPACE IF NOT EXISTS " + PathStoreApplications.KEYSPACE + " WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;";
         public static final String PATHSTORE_APPLICATIONS_APPS_TABLE =
                 "CREATE TABLE pathstore_applications.apps (" +
                         "		appid int PRIMARY KEY," +
+                        "       key_space text," +
                         //   "		code blob," +
                         //   "		funcs list<int>," +
                         //   "		owner text," +
@@ -61,6 +63,27 @@ public class ApplicationSchemaV2 {
                         "	    AND min_index_interval = 128" +
                         "	    AND read_repair_chance = 0.0" +
                         "	    AND speculative_retry = '99PERCENTILE';";
+        public static final String PATHSTORE_DEMO_TABLE =
+                "CREATE TABLE pathstore_demo.users (" +
+                        "    name text PRIMARY KEY," +
+                        "    sport text," +
+                        "    years int," +
+                        "    vegetarian Boolean," +
+                        "    color list<int>" +
+                        ") WITH bloom_filter_fp_chance = 0.01" +
+                        "    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}" +
+                        "    AND comment = 'table definitions'" +
+                        "    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}" +
+                        "    AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}" +
+                        "    AND crc_check_chance = 1.0" +
+                        "    AND dclocal_read_repair_chance = 0.0" +
+                        "    AND default_time_to_live = 0" +
+                        "    AND gc_grace_seconds = 604800" +
+                        "    AND max_index_interval = 2048" +
+                        "    AND memtable_flush_period_in_ms = 3600000" +
+                        "    AND min_index_interval = 128" +
+                        "    AND read_repair_chance = 0.0" +
+                        "    AND speculative_retry = '99PERCENTILE';";
 
         public static final class PathStoreApplications {
             public static final String KEYSPACE = "pathstore_applications";
@@ -68,6 +91,7 @@ public class ApplicationSchemaV2 {
             public static final class Apps {
                 public static final String TABLE = "apps";
                 public static final String APPID = "appid";
+                public static final String KEYSPACE = "key_space";
                 public static final String APP_NAME = "app_name";
                 public static final String SCHEMA_NAME = "schema_name";
                 public static final String APP_SCHEMA = "app_schema";
@@ -102,8 +126,12 @@ public class ApplicationSchemaV2 {
                 0,
                 Constants.PathStoreApplications.KEYSPACE,
                 Constants.PathStoreApplications.KEYSPACE,
+                Constants.PathStoreApplications.KEYSPACE,
                 Constants.PATHSTORE_APPLICATIONS_APPS_TABLE
         );
+        deleteSchema("pathstore_demo");
+        createKeySpace("pathstore_demo");
+        insertApplicationSchema(1, "pathstore_demo", "demo", "demo-v1", Constants.PATHSTORE_DEMO_TABLE);
 
         session.close();
         cluster.close();
@@ -130,6 +158,7 @@ public class ApplicationSchemaV2 {
      * <p>
      * appid: application id bounds must be greater then or equal to 1
      * app_name: name of application
+     * keyspace: keyspace name
      * schema_name: i.e for version control
      * app_schema: literal schema stored in plain text
      * time_created: time of creation for log of schemas
@@ -138,20 +167,27 @@ public class ApplicationSchemaV2 {
         System.out.println("Creating keyspace");
         session.execute(Constants.PATHSTORE_APPLICATIONS_KEYSPACE_CREATION);
         System.out.println("Keyspace created");
-        System.out.println("Creating apps table");
-        session.execute(Constants.PATHSTORE_APPLICATIONS_APPS_TABLE);
-        System.out.println("Apps table created");
+    }
+
+    /**
+     * TODO: Move string literal
+     */
+    private static void createKeySpace(final String keySpaceName) {
+        session.execute("CREATE KEYSPACE IF NOT EXISTS " + keySpaceName + " WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;");
     }
 
     /**
      * TODO: Make it so that it does not override current app schema of same name.
      *
      * @param appId      application Id. Must be greater then 1 as 0 is reserved for the pathstore_application schema
+     * @param keyspace   keyspace the schema is apart of
      * @param appName    name of application. Easier identifier then its associated appId
      * @param schemaName name of schema. This is used for version control. I.e $appName-0.0.1
      * @param schema     literal contents of schema. This is used to distribute the schema to lower nodes
      */
-    private static void insertApplicationSchema(final int appId, final String appName, final String schemaName, final String schema) {
+    private static void insertApplicationSchema(final int appId, final String keyspace, final String appName, final String schemaName, final String schema) {
+        session.execute(schema);
+
         System.out.println("Inserting schema");
         Insert insert = QueryBuilder.insertInto(
                 Constants.PathStoreApplications.KEYSPACE,
@@ -161,6 +197,10 @@ public class ApplicationSchemaV2 {
         insert.value(
                 Constants.PathStoreApplications.Apps.APPID,
                 appId
+        );
+        insert.value(
+                Constants.PathStoreApplications.Apps.KEYSPACE,
+                keyspace
         );
         insert.value(
                 Constants.PathStoreApplications.Apps.APP_NAME

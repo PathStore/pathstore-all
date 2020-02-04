@@ -209,20 +209,21 @@ public class PathStoreServerImpl implements PathStoreServer {
     /**
      * TODO: Allow for updates of pathstore_applications schema. Currently this only supports one
      * TODO: Move static strings
+     * TODO: Also insert the perculated schemas into the pathstore_application.apps table
      *
      * @param parent parent direct connect session
      * @param local  local direct connect session
      */
     private static void getApplicationSchemaFromParent(final Session parent, final Session local) {
-        ResultSet resultSet = parent.execute("SELECT schema_name, app_schema FROM pathstore_applications.apps WHERE appid=0");
+        ResultSet resultSet = parent.execute("SELECT * FROM pathstore_applications.apps");
 
-        Row data = resultSet.one();
+        for (Row row : resultSet) {
+            String schemaName = row.getString("schema_name");
+            String schema = row.getString("app_schema");
 
-        String schemaName = data.getString("schema_name");
-        String schema = data.getString("app_schema");
-
-        local.execute("CREATE KEYSPACE IF NOT EXISTS " + schemaName + " WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;");
-        local.execute(schema);
+            local.execute("CREATE KEYSPACE IF NOT EXISTS " + schemaName + " WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;");
+            local.execute(schema);
+        }
     }
 
 
@@ -250,8 +251,10 @@ public class PathStoreServerImpl implements PathStoreServer {
                 Session parent_session = PathStoreParentCluster.getInstance().connect();
                 Session local_session = PathStorePriviledgedCluster.getInstance().connect();
 
-                if (!checkIfApplicationsExist(local_session))
-                    getApplicationSchemaFromParent(parent_session, local_session);
+                local_session.execute("drop keyspace if exists pathstore_applications");
+                local_session.execute("drop keyspace if exists pathstore_demo");
+
+                getApplicationSchemaFromParent(parent_session, local_session);
 
                 parent_session.close();
                 local_session.close();
