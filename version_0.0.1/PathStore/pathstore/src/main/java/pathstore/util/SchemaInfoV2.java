@@ -33,7 +33,7 @@ public class SchemaInfoV2 {
   /**
    * @param session Current cassandra database session. Called is required to close this connection
    */
-  SchemaInfoV2(final Session session) {
+  public SchemaInfoV2(final Session session) {
     this.session = session;
     generate();
   }
@@ -44,7 +44,7 @@ public class SchemaInfoV2 {
   }
 
   /** @return Set of all keyspaces */
-  Set<String> getAllKeySpaces() {
+  public Set<String> getAllKeySpaces() {
     return this.keyspaceTables.keySet();
   }
 
