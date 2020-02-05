@@ -241,6 +241,8 @@ public class PathStoreServerImpl implements PathStoreServer {
       insert.value("app_name", appName);
       insert.value("schema_name", schemaName);
       insert.value("augmented_schema", augmentedSchema);
+
+      local.execute(insert);
     }
   }
 
