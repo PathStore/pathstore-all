@@ -12,7 +12,10 @@ import java.sql.Timestamp;
 import java.util.*;
 
 /**
- * Objective of this class is to write the current application schemas to a table in the root
+ * TODO: Should we augment the pathstore_applications keyspace. If not fix push server to not check
+ * that keyspace
+ *
+ * <p>Objective of this class is to write the current application schemas to a table in the root
  * server's database Then when a child is started up the first thing it does is it checks it's
  * parent node to see if it has the same schema's. If it doesn't then it pulls it's parents schema's
  * and updates it's current databases. During this time there needs to be a blocker on the session
