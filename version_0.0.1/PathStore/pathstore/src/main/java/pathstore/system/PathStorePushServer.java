@@ -102,6 +102,10 @@ public class PathStorePushServer extends Thread {
 
         try {
             for (String keyspace : SchemaInfo.getInstance().getSchemaInfo().keySet()) {
+
+                //TODO: Temporary
+                if(keyspace.equals("pathstore_applications")) continue;
+
                 HashMap<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(keyspace);
 
                 for (Table table : tables.keySet()) {

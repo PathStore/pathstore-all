@@ -224,14 +224,17 @@ public class PathStoreServerImpl implements PathStoreServer {
     for (String keyspace : localInfo.getAllKeySpaces()) local.execute("drop keyspace " + keyspace);
 
     for (Row row : resultSet) {
-      String appId = row.getString("appid");
+      int appId = row.getInt("appid");
       String appName = row.getString("app_name");
       String schemaName = row.getString("schema_name");
       String augmentedSchema = row.getString("augmented_schema");
 
       String[] commands = augmentedSchema.split(";");
 
-      for (String s : commands) if (s.length() > 0) local.execute(s);
+      for (String s : commands) {
+        s = s.trim();
+        if (s.length() > 0) local.execute(s);
+      }
 
       Insert insert = QueryBuilder.insertInto("pathstore_applications", "apps");
       insert.value("appid", appId);
