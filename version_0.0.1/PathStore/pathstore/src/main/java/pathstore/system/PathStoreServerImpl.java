@@ -267,6 +267,12 @@ public class PathStoreServerImpl implements PathStoreServer {
 
       System.err.println("PathStoreServer ready");
 
+      System.out.println(
+          PathStorePriviledgedCluster.getInstance()
+              .getMetadata()
+              .getKeyspace("pathstore_applications")
+              .exportAsString());
+
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
         Session parent_session = PathStoreParentCluster.getInstance().connect();
         Session local_session = PathStorePriviledgedCluster.getInstance().connect();

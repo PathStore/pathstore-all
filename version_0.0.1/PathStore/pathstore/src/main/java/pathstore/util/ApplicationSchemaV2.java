@@ -155,30 +155,21 @@ public class ApplicationSchemaV2 {
           String schema = readFileContents(s);
           parseSchema(schema);
 
-          if (!keyspaceName.equals("pathstore_applications")) {
-            this.schemaInfo.generate();
-            for (String tableName : this.schemaInfo.getTablesByKeySpace(keyspaceName)) {
+          this.schemaInfo.generate();
+          for (String tableName : this.schemaInfo.getTablesByKeySpace(keyspaceName)) {
 
-              SchemaInfoV2.Table table = this.schemaInfo.getTableObjectByName(tableName);
+            SchemaInfoV2.Table table = this.schemaInfo.getTableObjectByName(tableName);
 
-              augmentSchema(table);
-              createViewTable(table);
+            augmentSchema(table);
+            createViewTable(table);
 
-              insertApplicationSchema(
-                  appId++,
-                  keyspaceName,
-                  keyspaceName,
-                  schema,
-                  this.cluster.getMetadata().getKeyspace(table.keyspace_name).exportAsString());
-            }
-
-          } else
             insertApplicationSchema(
                 appId++,
                 keyspaceName,
                 keyspaceName,
-                null,
-                this.cluster.getMetadata().getKeyspace(keyspaceName).exportAsString());
+                schema,
+                this.cluster.getMetadata().getKeyspace(table.keyspace_name).exportAsString());
+          }
 
         } catch (Exception e) {
           System.out.println("There was an error with the file: " + f.getName());
@@ -333,36 +324,37 @@ public class ApplicationSchemaV2 {
   private void createViewTable(final SchemaInfoV2.Table table) {
     final List<String> columns = this.schemaInfo.getColumnsByTable(table.table_name);
 
-    String query = "CREATE TABLE " + table.keyspace_name + ".view_" + table.table_name + "(";
+    StringBuilder query =
+        new StringBuilder(
+            "CREATE TABLE " + table.keyspace_name + ".view_" + table.table_name + "(");
 
-    query += "pathstore_view_id uuid,";
+    query.append("pathstore_view_id uuid,");
 
     for (String column_name : columns) {
       SchemaInfoV2.Column col = this.schemaInfo.getColumnObjectByName(column_name);
       String type = col.type.compareTo("counter") == 0 ? "int" : col.type;
-      query += col.column_name + " " + type + ",";
+      query.append(col.column_name).append(" ").append(type).append(",");
     }
 
     // BUG?!
-    query += "pathstore_version timeuuid,";
-    query += "pathstore_parent_timestamp timeuuid,";
-    query += "pathstore_dirty boolean,";
-    query += "pathstore_deleted boolean,";
-    //		query += "pathstore_insert_device,";
-    query += "pathstore_node int,";
+    query.append("pathstore_version timeuuid,");
+    query.append("pathstore_parent_timestamp timeuuid,");
+    query.append("pathstore_dirty boolean,");
+    query.append("pathstore_deleted boolean,");
+    query.append("pathstore_node int,");
 
-    query += "PRIMARY KEY(pathstore_view_id,";
+    query.append("PRIMARY KEY(pathstore_view_id,");
 
     for (String column_name : columns) {
       SchemaInfoV2.Column col = this.schemaInfo.getColumnObjectByName(column_name);
-      if (col.kind.compareTo("regular") != 0) query += col.column_name + ",";
+      if (col.kind.compareTo("regular") != 0) query.append(col.column_name).append(",");
     }
 
-    query += "pathstore_version) ";
+    query.append("pathstore_version) ");
 
-    query += ")";
+    query.append(")");
 
-    this.session.execute(query);
+    this.session.execute(query.toString());
   }
 
   /**
