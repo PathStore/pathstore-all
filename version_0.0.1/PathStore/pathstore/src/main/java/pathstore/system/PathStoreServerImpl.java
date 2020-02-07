@@ -18,14 +18,10 @@
 package pathstore.system;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
-import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashMap;
-import java.util.List;
 import java.util.UUID;
 
 import com.datastax.driver.core.ResultSet;
@@ -36,20 +32,14 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import pathstore.client.PathStoreCluster;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCache;
-import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
-import pathstore.common.Timer;
 import pathstore.exception.PathMigrateAlreadyGoneException;
-import pathstore.util.ApplicationSchemaV2;
-import pathstore.util.SchemaInfo;
-import pathstore.util.SchemaInfo.Column;
-import pathstore.util.SchemaInfo.Table;
 
 import org.apache.commons.cli.*;
+import pathstore.util.PathStoreSchema;
 import pathstore.util.SchemaInfoV2;
 
 /** TODO: Comment */
@@ -265,20 +255,16 @@ public class PathStoreServerImpl implements PathStoreServer {
         registry.rebind("PathStoreServer", stub);
       }
 
+      Session local = PathStorePriviledgedCluster.getInstance().connect();
+
+      if (!new SchemaInfoV2(local).getAllKeySpaces().contains("pathstore_applications"))
+        PathStoreSchemaLoader.loadApplicationSchema(local);
+
+
+
       System.err.println("PathStoreServer ready");
 
-      System.out.println(
-          PathStorePriviledgedCluster.getInstance()
-              .getMetadata()
-              .getKeyspace("pathstore_applications")
-              .exportAsString());
-
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
-        Session parent_session = PathStoreParentCluster.getInstance().connect();
-        Session local_session = PathStorePriviledgedCluster.getInstance().connect();
-
-        getApplicationSchemaFromParent(parent_session, local_session);
-
         PathStorePullServer pullServer = new PathStorePullServer();
         pullServer.start();
         PathStorePushServer pushServer = new PathStorePushServer();

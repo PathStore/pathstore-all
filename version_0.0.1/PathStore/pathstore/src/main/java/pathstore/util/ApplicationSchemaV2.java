@@ -3,6 +3,8 @@ package pathstore.util;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import pathstore.system.PathStorePriviledgedCluster;
+import pathstore.system.PathStoreSchemaLoader;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,15 +51,14 @@ public class ApplicationSchemaV2 {
       public static final class Apps {
         public static final String TABLE = "apps";
         public static final String APPID = "appid";
-        public static final String APP_NAME = "app_name";
-        public static final String SCHEMA_NAME = "schema_name";
+        public static final String KEYSPACE = "keyspace_name";
         public static final String AUGMENTED_SCHEMA = "augmented_schema";
       }
     }
   }
 
   /** Stored to gather meta data of keyspaces */
-  private final Cluster cluster;
+  private final PathStorePriviledgedCluster cluster;
 
   /**
    * TODO: Move to {@link pathstore.system.PathStorePriviledgedCluster}
@@ -79,19 +80,7 @@ public class ApplicationSchemaV2 {
    * @param args commands to execute
    */
   ApplicationSchemaV2(final String[] args) {
-    this.cluster =
-        new Cluster.Builder()
-            .addContactPoints("127.0.0.1")
-            .withPort(9052)
-            .withSocketOptions(
-                new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
-            .withQueryOptions(
-                new QueryOptions()
-                    .setRefreshNodeIntervalMillis(0)
-                    .setRefreshNodeListIntervalMillis(0)
-                    .setRefreshSchemaIntervalMillis(0))
-            .build();
-
+    this.cluster = PathStorePriviledgedCluster.getInstance();
     this.session = this.cluster.connect();
 
     this.schemaInfo = new SchemaInfoV2(this.session);
@@ -104,11 +93,6 @@ public class ApplicationSchemaV2 {
         this.loadSchemas(0, Arrays.copyOfRange(args, 1, args.length));
         break;
       case "import":
-        if (!this.schemaInfo.getAllKeySpaces().contains("pathstore_applications")) {
-          System.out.println(
-              "You cannot run the import command if your current PathStore instance does not contain the pathstore_applications keyspace. Please run the init command first");
-          System.exit(1);
-        }
         ResultSet set =
             this.session.execute("select max(appid) from pathstore_applications.apps limit 1");
         this.loadSchemas(
@@ -126,7 +110,6 @@ public class ApplicationSchemaV2 {
     }
 
     this.session.close();
-    cluster.close();
   }
 
   /**
@@ -144,6 +127,12 @@ public class ApplicationSchemaV2 {
    * @param schemasToLoad list of file names that point to cql files to load
    */
   private void loadSchemas(final int appIdStart, final String[] schemasToLoad) {
+    this.schemaInfo.generate();
+    if (!this.schemaInfo.getAllKeySpaces().contains("pathstore_applications")) {
+      System.out.println("Loading default applications schema");
+      PathStoreSchemaLoader.loadApplicationSchema(this.session);
+    }
+
     int appId = appIdStart;
     for (String s : schemasToLoad) {
       File f = new File(s);
@@ -151,7 +140,7 @@ public class ApplicationSchemaV2 {
         try {
           String keyspaceName = f.getName().substring(0, f.getName().indexOf('.'));
           String schema = readFileContents(s);
-          parseSchema(schema);
+          PathStoreSchemaLoader.parseSchema(schema).forEach(this.session::execute);
 
           this.schemaInfo.generate();
           for (String tableName : this.schemaInfo.getTablesByKeySpace(keyspaceName)) {
@@ -163,7 +152,6 @@ public class ApplicationSchemaV2 {
 
             insertApplicationSchema(
                 appId++,
-                keyspaceName,
                 keyspaceName,
                 this.cluster.getMetadata().getKeyspace(table.keyspace_name).exportAsString());
           }
@@ -189,15 +177,6 @@ public class ApplicationSchemaV2 {
    */
   private String readFileContents(final String fileName) throws IOException {
     return new String(Files.readAllBytes(Paths.get(fileName)));
-  }
-
-  /** @param schema parses original schema file and executes all commands in the schema */
-  private void parseSchema(final String schema) {
-    String[] commands = schema.split(";");
-    for (String c : commands) {
-      String cql = c.trim();
-      if (cql.length() > 0) this.session.execute(cql);
-    }
   }
 
   /**
@@ -403,15 +382,11 @@ public class ApplicationSchemaV2 {
    *
    * @param appId application Id. Must be greater then 1 as 0 is reserved for the
    *     pathstore_application schema
-   * @param appName name of application. Easier identifier then its associated appId
-   * @param schemaName name of schema. This is used for version control. I.e $appName-0.0.1
+   * @param keyspace name of schema. This is used for version control. I.e $appName-0.0.1
    * @param augmentedSchema schema after pathstore augmentation
    */
   private void insertApplicationSchema(
-      final int appId,
-      final String appName,
-      final String schemaName,
-      final String augmentedSchema) {
+      final int appId, final String keyspace, final String augmentedSchema) {
 
     System.out.println("Inserting schema");
     Insert insert =
@@ -419,8 +394,7 @@ public class ApplicationSchemaV2 {
             Constants.PathStoreApplications.KEYSPACE, Constants.PathStoreApplications.Apps.TABLE);
 
     insert.value(Constants.PathStoreApplications.Apps.APPID, appId);
-    insert.value(Constants.PathStoreApplications.Apps.APP_NAME, appName);
-    insert.value(Constants.PathStoreApplications.Apps.SCHEMA_NAME, schemaName);
+    insert.value(Constants.PathStoreApplications.Apps.KEYSPACE, keyspace);
     insert.value(Constants.PathStoreApplications.Apps.AUGMENTED_SCHEMA, augmentedSchema);
 
     insert.value("pathstore_version", QueryBuilder.now());

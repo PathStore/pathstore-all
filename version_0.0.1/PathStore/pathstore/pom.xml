@@ -7,7 +7,6 @@
 	<packaging>jar</packaging>
 	<name>PathStore</name>
 	<description>Hierarchical data store</description>
-	<url>https://github.com/datastax/java-driver</url>
 
 	<repositories>
 		<repository>
@@ -326,19 +325,5 @@
 			<comments>Apache License Version 2.0</comments>
 		</license>
 	</licenses>
-
-	<scm>
-		<connection>scm:git:git@github.com:datastax/java-driver.git</connection>
-		<developerConnection>scm:git:git@github.com:datastax/java-driver.git</developerConnection>
-		<url>https://github.com/datastax/java-driver</url>
-		<tag>HEAD</tag>
-	</scm>
-
-	<developers>
-		<developer>
-			<name>Various</name>
-			<organization>DataStax</organization>
-		</developer>
-	</developers>
 </project>
 
