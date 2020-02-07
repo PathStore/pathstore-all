@@ -260,11 +260,10 @@ public class PathStoreServerImpl implements PathStoreServer {
       if (!new SchemaInfoV2(local).getAllKeySpaces().contains("pathstore_applications"))
         PathStoreSchemaLoader.loadApplicationSchema(local);
 
-
-
       System.err.println("PathStoreServer ready");
 
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
+        PathStoreSchemaLoader.getInstance();
         PathStorePullServer pullServer = new PathStorePullServer();
         pullServer.start();
         PathStorePushServer pushServer = new PathStorePushServer();
