@@ -51,9 +51,7 @@ public class ApplicationSchemaV2 {
         public static final String APPID = "appid";
         public static final String APP_NAME = "app_name";
         public static final String SCHEMA_NAME = "schema_name";
-        public static final String APP_SCHEMA = "app_schema";
         public static final String AUGMENTED_SCHEMA = "augmented_schema";
-        public static final String TIME_CREATED = "time_created";
       }
     }
   }
@@ -167,7 +165,6 @@ public class ApplicationSchemaV2 {
                 appId++,
                 keyspaceName,
                 keyspaceName,
-                schema,
                 this.cluster.getMetadata().getKeyspace(table.keyspace_name).exportAsString());
           }
 
@@ -408,14 +405,12 @@ public class ApplicationSchemaV2 {
    *     pathstore_application schema
    * @param appName name of application. Easier identifier then its associated appId
    * @param schemaName name of schema. This is used for version control. I.e $appName-0.0.1
-   * @param schema literal contents of schema. This is used to distribute the schema to lower nodes
    * @param augmentedSchema schema after pathstore augmentation
    */
   private void insertApplicationSchema(
       final int appId,
       final String appName,
       final String schemaName,
-      final String schema,
       final String augmentedSchema) {
 
     System.out.println("Inserting schema");
@@ -426,9 +421,10 @@ public class ApplicationSchemaV2 {
     insert.value(Constants.PathStoreApplications.Apps.APPID, appId);
     insert.value(Constants.PathStoreApplications.Apps.APP_NAME, appName);
     insert.value(Constants.PathStoreApplications.Apps.SCHEMA_NAME, schemaName);
-    insert.value(Constants.PathStoreApplications.Apps.APP_SCHEMA, schema);
     insert.value(Constants.PathStoreApplications.Apps.AUGMENTED_SCHEMA, augmentedSchema);
-    insert.value(Constants.PathStoreApplications.Apps.TIME_CREATED, getTimeStamp());
+
+    insert.value("pathstore_version", QueryBuilder.now());
+    insert.value("pathstore_parent_timestamp", QueryBuilder.now());
 
     this.session.execute(insert);
 
