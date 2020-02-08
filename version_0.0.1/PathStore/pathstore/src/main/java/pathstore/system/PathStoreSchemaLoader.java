@@ -3,6 +3,7 @@ package pathstore.system;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
@@ -27,9 +28,12 @@ public class PathStoreSchemaLoader extends Thread {
 
   private final Set<String> schemasToLoad;
 
+  private final Map<String, Row> availableSchemas;
+
   private PathStoreSchemaLoader() {
     this.localSession = PathStorePriviledgedCluster.getInstance().connect();
     this.schemasToLoad = new HashSet<>();
+    this.availableSchemas = new HashMap<>();
     QueryCache.getInstance()
         .updateCache(
             "pathstore_applications",
@@ -39,22 +43,60 @@ public class PathStoreSchemaLoader extends Thread {
             1);
   }
 
+  private void waitForNewSchema(final String keyspace) {
+    this.schemasToLoad.add(keyspace);
+    QueryCache.getInstance()
+        .updateCache(
+            "pathstore_applications",
+            "apps",
+            Collections.singletonList(QueryBuilder.eq("keyspace_name", keyspace)),
+            1);
+  }
+
+  private void loadSchema(final String keyspace) {
+    Row row = this.availableSchemas.get(keyspace);
+    parseSchema(row.getString("augmented_schema")).forEach(this.localSession::execute);
+
+    Insert insert = QueryBuilder.insertInto("pathstore_applications", "apps");
+    insert.value("pathstore_version", QueryBuilder.now());
+    insert.value("pathstore_parent_timestamp", QueryBuilder.now());
+    insert.value("pathstore_dirty", false);
+    insert.value("appid", row.getString("appid"));
+    insert.value("keyspace_name", keyspace);
+    insert.value("augmented_schema", row.getString("augmented_schema"));
+
+    this.localSession.execute(insert);
+  }
+
+  private void insertSchema(final String keyspace, final Row row) {
+    this.availableSchemas.put(keyspace, row);
+  }
+
   @Override
   public void run() {
     while (true) {
-      System.out.println("Running");
-      ResultSet schemas =
+      ResultSet schemas = this.localSession.execute("select * from pathstore_applications.apps");
+
+      for (Row row : schemas) {
+        String keyspace = row.getString("keyspace_name");
+        if (!this.availableSchemas.containsKey(keyspace)) insertSchema(keyspace, row);
+      }
+
+      ResultSet schemasLoad =
           this.localSession.execute(
               "select * from pathstore_applications.node_schemas where nodeid="
                   + PathStoreProperties.getInstance().NodeID);
 
-      for (Row row : schemas) {
-        this.schemasToLoad.add(row.getString("keyspace_name"));
+      for (Row row : schemasLoad) {
+        String keyspace = row.getString("keyspace_name");
+        if (!this.schemasToLoad.contains(keyspace)) waitForNewSchema(keyspace);
+        else if (this.availableSchemas.containsKey(keyspace)) loadSchema(keyspace);
       }
 
       for (String s : this.schemasToLoad) {
         System.out.println(s);
       }
+
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
