@@ -61,7 +61,7 @@ public class PathStoreSchemaLoader extends Thread {
     insert.value("pathstore_version", QueryBuilder.now());
     insert.value("pathstore_parent_timestamp", QueryBuilder.now());
     insert.value("pathstore_dirty", false);
-    insert.value("appid", row.getString("appid"));
+    insert.value("appid", row.getInt("appid"));
     insert.value("keyspace_name", keyspace);
     insert.value("augmented_schema", row.getString("augmented_schema"));
 
