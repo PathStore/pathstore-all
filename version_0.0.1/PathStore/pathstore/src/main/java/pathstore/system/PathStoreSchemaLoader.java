@@ -30,10 +30,13 @@ public class PathStoreSchemaLoader extends Thread {
 
   private final Map<String, Row> availableSchemas;
 
+  private final Set<String> loadedSchemas;
+
   private PathStoreSchemaLoader() {
     this.localSession = PathStorePriviledgedCluster.getInstance().connect();
     this.schemasToLoad = new HashSet<>();
     this.availableSchemas = new HashMap<>();
+    this.loadedSchemas = new HashSet<>();
     QueryCache.getInstance()
         .updateCache(
             "pathstore_applications",
@@ -66,6 +69,8 @@ public class PathStoreSchemaLoader extends Thread {
     insert.value("augmented_schema", row.getString("augmented_schema"));
 
     this.localSession.execute(insert);
+
+    this.loadedSchemas.add(keyspace);
   }
 
   private void insertSchema(final String keyspace, final Row row) {
@@ -90,7 +95,8 @@ public class PathStoreSchemaLoader extends Thread {
       for (Row row : schemasLoad) {
         String keyspace = row.getString("keyspace_name");
         if (!this.schemasToLoad.contains(keyspace)) waitForNewSchema(keyspace);
-        else if (this.availableSchemas.containsKey(keyspace)) loadSchema(keyspace);
+        else if (this.availableSchemas.containsKey(keyspace)
+            && !this.loadedSchemas.contains(keyspace)) loadSchema(keyspace);
       }
 
       for (String s : this.schemasToLoad) {

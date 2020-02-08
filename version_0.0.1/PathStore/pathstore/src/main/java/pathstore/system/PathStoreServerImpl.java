@@ -258,7 +258,15 @@ public class PathStoreServerImpl implements PathStoreServer {
 
       Session local = PathStorePriviledgedCluster.getInstance().connect();
 
-      if (!new SchemaInfoV2(local).getAllKeySpaces().contains("pathstore_applications"))
+      SchemaInfoV2 schemaInfoV2 = new SchemaInfoV2(local);
+
+      if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
+        for (String s : schemaInfoV2.getAllKeySpaces()) {
+          local.execute("drop keyspace " + s);
+        }
+      }
+
+      if (!schemaInfoV2.getAllKeySpaces().contains("pathstore_applications"))
         PathStoreSchemaLoader.loadApplicationSchema(local);
 
       System.err.println("PathStoreServer ready");
