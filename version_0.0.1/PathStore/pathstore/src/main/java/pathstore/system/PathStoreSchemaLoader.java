@@ -59,17 +59,6 @@ public class PathStoreSchemaLoader extends Thread {
   private void loadSchema(final String keyspace) {
     Row row = this.availableSchemas.get(keyspace);
     parseSchema(row.getString("augmented_schema")).forEach(this.localSession::execute);
-
-    Insert insert = QueryBuilder.insertInto("pathstore_applications", "apps");
-    insert.value("pathstore_version", QueryBuilder.now());
-    insert.value("pathstore_parent_timestamp", QueryBuilder.now());
-    insert.value("pathstore_dirty", false);
-    insert.value("appid", row.getInt("appid"));
-    insert.value("keyspace_name", keyspace);
-    insert.value("augmented_schema", row.getString("augmented_schema"));
-
-    this.localSession.execute(insert);
-
     this.loadedSchemas.add(keyspace);
   }
 
