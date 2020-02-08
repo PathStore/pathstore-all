@@ -39,7 +39,7 @@ public class SchemaInfoV2 {
   }
 
   /** Allows you to regenerate this data if a change to the databases schemas has changed. */
-  void generate() {
+  public void generate() {
     loadAllKeySpaceInfo();
   }
 

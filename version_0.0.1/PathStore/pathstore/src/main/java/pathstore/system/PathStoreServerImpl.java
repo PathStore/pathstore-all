@@ -264,6 +264,7 @@ public class PathStoreServerImpl implements PathStoreServer {
         for (String s : schemaInfoV2.getAllKeySpaces()) {
           local.execute("drop keyspace " + s);
         }
+        schemaInfoV2.generate();
       }
 
       if (!schemaInfoV2.getAllKeySpaces().contains("pathstore_applications"))
