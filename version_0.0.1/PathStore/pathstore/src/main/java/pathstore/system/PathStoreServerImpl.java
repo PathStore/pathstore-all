@@ -244,8 +244,9 @@ public class PathStoreServerImpl implements PathStoreServer {
       PathStoreServerImpl obj = new PathStoreServerImpl();
       PathStoreServer stub = (PathStoreServer) UnicastRemoteObject.exportObject(obj, 0);
 
-      System.setProperty(
-          "java.rmi.server.hostname", PathStoreProperties.getInstance().RMIRegistryIP);
+      System.out.println(PathStoreProperties.getInstance().RMIRegistryIP);
+
+      System.setProperty("java.rmi.server.hostname", "127.0.0.1");
       Registry registry =
           LocateRegistry.createRegistry(PathStoreProperties.getInstance().RMIRegistryPort);
 
@@ -263,7 +264,8 @@ public class PathStoreServerImpl implements PathStoreServer {
       System.err.println("PathStoreServer ready");
 
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
-        PathStoreSchemaLoader.getInstance();
+        PathStoreSchemaLoader schemaLoader = PathStoreSchemaLoader.getInstance();
+        schemaLoader.start();
         PathStorePullServer pullServer = new PathStorePullServer();
         pullServer.start();
         PathStorePushServer pushServer = new PathStorePushServer();

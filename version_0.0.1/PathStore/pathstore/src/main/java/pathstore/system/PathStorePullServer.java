@@ -54,10 +54,6 @@ public class PathStorePullServer extends Thread {
 
         try {
           for (QueryCacheEntry cache_entry : cache_entries) {
-            List<Clause> clauses = cache_entry.getClauses();
-            if (clauses.size() == 1) {
-              System.out.println(clauses.get(0).getName() + " " + clauses.get(0).getValue());
-            }
             if (cache_entry.isReady() && cache_entry.getIsCovered() == null)
               QueryCache.getInstance().fetchDelta(cache_entry);
           }

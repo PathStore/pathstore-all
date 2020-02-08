@@ -1,13 +1,13 @@
 package pathstore.system;
 
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -23,14 +23,44 @@ public class PathStoreSchemaLoader extends Thread {
     return schemaLoader == null ? new PathStoreSchemaLoader() : schemaLoader;
   }
 
+  private final Session localSession;
+
+  private final Set<String> schemasToLoad;
+
   private PathStoreSchemaLoader() {
+    this.localSession = PathStorePriviledgedCluster.getInstance().connect();
+    this.schemasToLoad = new HashSet<>();
     QueryCache.getInstance()
         .updateCache(
             "pathstore_applications",
             "node_schemas",
             Collections.singletonList(
-                QueryBuilder.eq("node", PathStoreProperties.getInstance().NodeID)),
+                QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID)),
             1);
+  }
+
+  @Override
+  public void run() {
+    while (true) {
+      System.out.println("Running");
+      ResultSet schemas =
+          this.localSession.execute(
+              "select * from pathstore_applications.node_schemas where nodeid="
+                  + PathStoreProperties.getInstance().NodeID);
+
+      for (Row row : schemas) {
+        this.schemasToLoad.add(row.getString("keyspace_name"));
+      }
+
+      for (String s : this.schemasToLoad) {
+        System.out.println(s);
+      }
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   public static void loadApplicationSchema(final Session session) {
@@ -152,7 +182,4 @@ public class PathStoreSchemaLoader extends Thread {
         .filter(i -> i.length() > 0)
         .collect(Collectors.toList());
   }
-
-  @Override
-  public void run() {}
 }
