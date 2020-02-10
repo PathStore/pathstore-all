@@ -125,7 +125,9 @@ public class PathStoreServerImpl implements PathStoreServer {
         local.execute(
             QueryBuilder.insertInto("pathstore_applications", "node_schemas")
                 .value("nodeid", node_id)
-                .value("keyspace_name", row.getString("keyspace_name")));
+                .value("keyspace_name", row.getString("keyspace_name"))
+                .value("pathstore_version", QueryBuilder.now())
+                .value("pathstore_parent_timestamp", QueryBuilder.now()));
       }
     }
   }
@@ -264,7 +266,7 @@ public class PathStoreServerImpl implements PathStoreServer {
     }
   }
 
-  void getNodeSchemasHelper(final Integer nodeid){
+  void getNodeSchemasHelper(final Integer nodeid) {
     try {
       this.getNodeSchemas(nodeid);
     } catch (RemoteException e) {
@@ -309,7 +311,8 @@ public class PathStoreServerImpl implements PathStoreServer {
       System.err.println("PathStoreServer ready");
 
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
-        PathStoreSchemaLoader schemaLoader = PathStoreSchemaLoader.getInstance(obj::getNodeSchemasHelper);
+        PathStoreSchemaLoader schemaLoader =
+            PathStoreSchemaLoader.getInstance(obj::getNodeSchemasHelper);
         schemaLoader.start();
         PathStorePullServer pullServer = new PathStorePullServer();
         pullServer.start();
