@@ -22,14 +22,12 @@ import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,10 +40,15 @@ import pathstore.common.Role;
 import pathstore.exception.PathMigrateAlreadyGoneException;
 
 import org.apache.commons.cli.*;
-import pathstore.util.PathStoreSchema;
 import pathstore.util.SchemaInfoV2;
 
-/** TODO: Comment */
+/**
+ * TODO: Comment
+ *
+ * <p>TODO: Separate java RMI functions into parent class.
+ *
+ * <p>TODO: Change all daemons to inherit same parent class
+ */
 public class PathStoreServerImpl implements PathStoreServer {
   private final Logger logger = LoggerFactory.getLogger(PathStoreServerImpl.class);
 
@@ -110,6 +113,17 @@ public class PathStoreServerImpl implements PathStoreServer {
     }
   }
 
+  /**
+   * Calls to parent only occur when the server is of the SERVER role. As ROOTSERVER has no parent
+   * after the call is made we can assume that the parent has data we are looking for. We then query
+   * the data that is relevant to us from the parent and then insert said data into our local
+   * database. We also update current_values to include the keyspace we inserted.
+   *
+   * @param node_id node_id to query if there is available schemas
+   * @param current_values set of schemas that need to be loaded. This is specific to the calling
+   *     server.
+   * @throws RemoteException JAVA RMI Requirement
+   */
   @Override
   public void getNodeSchemas(final Integer node_id, final Set<String> current_values)
       throws RemoteException {
@@ -133,14 +147,25 @@ public class PathStoreServerImpl implements PathStoreServer {
               QueryBuilder.insertInto("pathstore_applications", "node_schemas")
                   .value("nodeid", node_id)
                   .value("keyspace_name", keyspace)
-                  .value("pathstore_version", QueryBuilder.now())
-                  .value("pathstore_parent_timestamp", QueryBuilder.now()));
+                  .value("pathstore_version", row.getUUID("pathstore_version"))
+                  .value("pathstore_parent_timestamp", row.getUUID("pathstore_parent_timestamp")));
           current_values.add(keyspace);
         }
       }
     }
   }
 
+  /**
+   * This class only calls the parent class if the server has the role SERVER. We first check if we
+   * currently have the schema we are looking for in our local database. If we do, do nothing. Else
+   * we query the parent instance to see if they have the data (This can go as far as the root
+   * node). We then query the schema based on keyspace name and insert it into our local database.
+   * The schema gets initialized inside {@link PathStoreSchemaLoader}
+   *
+   * @param keyspace keyspace to query
+   * @see pathstore.system.PathStoreSchemaLoader
+   * @throws RemoteException JAVA RMI Requirement
+   */
   @Override
   public void getSchema(final String keyspace) throws RemoteException {
     if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
@@ -166,8 +191,8 @@ public class PathStoreServerImpl implements PathStoreServer {
                 .value("appid", row.getInt("appid"))
                 .value("keyspace_name", keyspace)
                 .value("augmented_schema", schema)
-                .value("pathstore_version", QueryBuilder.now())
-                .value("pathstore_parent_timestamp", QueryBuilder.now()));
+                .value("pathstore_version", row.getUUID("pathstore_version"))
+                .value("pathstore_parent_timestamp", row.getUUID("pathstore_parent_timestamp")));
         schemaLoader.getAvailableSchemas().put(keyspace, schema);
       }
     }
@@ -278,6 +303,7 @@ public class PathStoreServerImpl implements PathStoreServer {
 
       SchemaInfoV2 schemaInfoV2 = new SchemaInfoV2(local);
 
+      // TODO: Temporary, implement reloading
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
         for (String s : schemaInfoV2.getAllKeySpaces()) {
           local.execute("drop keyspace " + s);
@@ -292,7 +318,7 @@ public class PathStoreServerImpl implements PathStoreServer {
 
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
         schemaLoader =
-            PathStoreSchemaLoader.getInstance(
+            new PathStoreSchemaLoader(
                 (nodeid, current_values) -> {
                   try {
                     obj.getNodeSchemas(nodeid, current_values);

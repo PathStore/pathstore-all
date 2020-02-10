@@ -7,22 +7,46 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-/** TODO: Comment TODO: Make it so you can add to node_schema in child node */
+/**
+ * TODO: Make it so that if a current schema is loaded on a current node it can be deleted
+ *
+ * <p>Our assumption for this class is that all schema allocations for each node occurs on the root
+ * node. We can assume this as in our design we want our "management" decisions to be performed on
+ * the root node or at lest all management operations to be directly injected into the root nodes
+ * database.
+ *
+ * <p>This class is one of 3 daemons running alongside pathstore. This daemons sole purpose is to
+ * handle the loading and offloading of schemas. This is because we anticipate a system where
+ * applications and their corresponding database schemas can be loaded and offloaded.
+ *
+ * <p>This thread gets started upon startup of {@link PathStoreServerImpl}
+ */
 public class PathStoreSchemaLoader extends Thread {
 
+  /**
+   * This is a simple interface to allow for a double parameter consumer
+   *
+   * @param <T1> Parameter type 1
+   * @param <T2> Parameter type 2
+   */
   public interface PathstoreConsumer<T1, T2> {
+    /**
+     * Function to implement either literally or via lamabda
+     *
+     * @param t1 parameter 1
+     * @param t2 parameter 2
+     */
     void function(final T1 t1, final T2 t2);
 
+    /**
+     * Function to invoke said function above
+     *
+     * @param t1 parameter 1
+     * @param t2 parameter 2
+     */
     default void apply(final T1 t1, final T2 t2) {
       this.function(t1, t2);
     }
-  }
-
-  private static PathStoreSchemaLoader schemaLoader = null;
-
-  public static PathStoreSchemaLoader getInstance(
-      final PathstoreConsumer<Integer, Set<String>> getNodeInfo, final Consumer<String> getSchema) {
-    return schemaLoader == null ? new PathStoreSchemaLoader(getNodeInfo, getSchema) : schemaLoader;
   }
 
   private final PathstoreConsumer<Integer, Set<String>> getNodeInfo;
@@ -37,7 +61,7 @@ public class PathStoreSchemaLoader extends Thread {
 
   private final Set<String> loadedSchemas;
 
-  private PathStoreSchemaLoader(
+  public PathStoreSchemaLoader(
       final PathstoreConsumer<Integer, Set<String>> getNodeInfo, final Consumer<String> getSchema) {
     this.getNodeInfo = getNodeInfo;
     this.getSchema = getSchema;
@@ -51,6 +75,16 @@ public class PathStoreSchemaLoader extends Thread {
     return this.availableSchemas;
   }
 
+  /**
+   * This functions runs every second
+   *
+   * <p>It first queries any node info which resides in pathstore_applications.node_schemas this
+   * table represents a node id which is our node identifier and a keyspace_name of the schema it
+   * needs. There can be many entries for a singular nodeid. Then we gather all schemas that aren't
+   * currently available in our local pathstore_applications.apps table. Then if we haven't already
+   * loaded the schema we first parse it and load it directly into our local database then we ensure
+   * that we have denoted that schema name in our loadedSchemas set
+   */
   @Override
   public void run() {
     while (true) {
@@ -62,10 +96,9 @@ public class PathStoreSchemaLoader extends Thread {
         if (!this.loadedSchemas.contains(s)) {
           parseSchema(this.availableSchemas.get(s)).forEach(this.localSession::execute);
           this.loadedSchemas.add(s);
+          System.out.println(this.schemasToLoad);
         }
       }
-
-      System.out.println(this.schemasToLoad);
 
       try {
         Thread.sleep(1000);
@@ -75,6 +108,13 @@ public class PathStoreSchemaLoader extends Thread {
     }
   }
 
+  /**
+   * This is a hardcoded function that allows for loading the base application schema.
+   *
+   * <p>Its keyspace name is pathstore_applications.
+   *
+   * @param session database session to execute on
+   */
   public static void loadApplicationSchema(final Session session) {
     String schema =
         "CREATE KEYSPACE pathstore_applications WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = false;\n"
@@ -188,6 +228,12 @@ public class PathStoreSchemaLoader extends Thread {
     parseSchema(schema).forEach(session::execute);
   }
 
+  /**
+   * Simple function to filter out commands when a schema is passed
+   *
+   * @param schema schema to parse
+   * @return list of commands from passed schema
+   */
   public static List<String> parseSchema(final String schema) {
     return Arrays.stream(schema.split(";"))
         .map(String::trim)
