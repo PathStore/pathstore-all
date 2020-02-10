@@ -22,6 +22,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -137,9 +138,9 @@ public class PathStoreServerClient {
     }
   }
 
-  public void getSchema(final String keyspace) {
+  public void getSchema(final String keyspace, final Map<String, String> current_schemas) {
     try {
-      this.stub.getSchema(keyspace);
+      this.stub.getSchema(keyspace, current_schemas);
     } catch (RemoteException e) {
       throw new PathStoreRemoteException();
     }
