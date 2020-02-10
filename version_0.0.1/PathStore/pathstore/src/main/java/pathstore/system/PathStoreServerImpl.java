@@ -143,6 +143,9 @@ public class PathStoreServerImpl implements PathStoreServer {
   public void getSchema(final String keyspace, final Map<String, String> current_schemas)
       throws RemoteException {
     if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
+
+      if (current_schemas.containsKey(keyspace)) return;
+
       PathStoreServerClient.getInstance().getSchema(keyspace, current_schemas);
 
       Session parent = PathStoreParentCluster.getInstance().connect();
@@ -156,17 +159,15 @@ public class PathStoreServerImpl implements PathStoreServer {
                   .where(QueryBuilder.eq("keyspace_name", keyspace)));
 
       for (Row row : set) {
-        if (!current_schemas.containsKey(keyspace)) {
-          String schema = row.getString("augmented_schema");
-          local.execute(
-              QueryBuilder.insertInto("pathstore_applications", "apps")
-                  .value("appid", row.getInt("appid"))
-                  .value("keyspace_name", keyspace)
-                  .value("augmented_schema", schema)
-                  .value("pathstore_version", QueryBuilder.now())
-                  .value("pathstore_parent_timestamp", QueryBuilder.now()));
-          current_schemas.put(keyspace, schema);
-        }
+        String schema = row.getString("augmented_schema");
+        local.execute(
+            QueryBuilder.insertInto("pathstore_applications", "apps")
+                .value("appid", row.getInt("appid"))
+                .value("keyspace_name", keyspace)
+                .value("augmented_schema", schema)
+                .value("pathstore_version", QueryBuilder.now())
+                .value("pathstore_parent_timestamp", QueryBuilder.now()));
+        current_schemas.put(keyspace, schema);
       }
     }
   }
