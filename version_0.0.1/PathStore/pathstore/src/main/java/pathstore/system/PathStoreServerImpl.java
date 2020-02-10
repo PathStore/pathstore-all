@@ -105,6 +105,16 @@ public class PathStoreServerImpl implements PathStoreServer {
     }
   }
 
+  @Override
+  public boolean getNodeSchemas(int node_id) throws RemoteException {
+    return false;
+  }
+
+  @Override
+  public boolean getSchema(String keyspace) throws RemoteException {
+    return false;
+  }
+
   private static void parseCommandLineArguments(String args[]) {
     Options options = new Options();
 
