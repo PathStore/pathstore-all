@@ -22,6 +22,7 @@ import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Set;
 import java.util.UUID;
 
 import com.datastax.driver.core.ResultSet;
@@ -107,9 +108,10 @@ public class PathStoreServerImpl implements PathStoreServer {
   }
 
   @Override
-  public void getNodeSchemas(Integer node_id) throws RemoteException {
+  public void getNodeSchemas(final Integer node_id, final Set<String> current_values)
+      throws RemoteException {
     if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
-      PathStoreServerClient.getInstance().getNodeSchemas(node_id);
+      PathStoreServerClient.getInstance().getNodeSchemas(node_id, current_values);
 
       Session parent = PathStoreParentCluster.getInstance().connect();
       Session local = PathStorePriviledgedCluster.getInstance().connect();
@@ -122,12 +124,16 @@ public class PathStoreServerImpl implements PathStoreServer {
                   .where(QueryBuilder.eq("nodeid", node_id)));
 
       for (Row row : set) {
-        local.execute(
-            QueryBuilder.insertInto("pathstore_applications", "node_schemas")
-                .value("nodeid", node_id)
-                .value("keyspace_name", row.getString("keyspace_name"))
-                .value("pathstore_version", QueryBuilder.now())
-                .value("pathstore_parent_timestamp", QueryBuilder.now()));
+        String keyspace = row.getString("keyspace_name");
+        if (!current_values.contains(keyspace)) {
+          local.execute(
+              QueryBuilder.insertInto("pathstore_applications", "node_schemas")
+                  .value("nodeid", node_id)
+                  .value("keyspace_name", keyspace)
+                  .value("pathstore_version", QueryBuilder.now())
+                  .value("pathstore_parent_timestamp", QueryBuilder.now()));
+          current_values.add(keyspace);
+        }
       }
     }
   }
@@ -216,64 +222,6 @@ public class PathStoreServerImpl implements PathStoreServer {
       PathStoreProperties.getInstance().NodeID = Integer.parseInt(cmd.getOptionValue("nodeid"));
   }
 
-  /**
-   * TODO: Move to {@link pathstore.system.PathStoreServerImpl}
-   *
-   * @return whether the pathstore_applications exists or not
-   */
-  private static boolean checkIfApplicationsExist(final Session session) {
-    ResultSet resultSet =
-        session.execute(
-            "SELECT * FROM system_schema.keyspaces where keyspace_name='pathstore_applications'");
-    return resultSet.all().size() > 0;
-  }
-
-  /**
-   * TODO: Allow for updates of pathstore_applications schema. Currently this only supports one
-   * TODO: Move static strings TODO: Also insert the perculated schemas into the
-   * pathstore_application.apps table
-   *
-   * @param parent parent direct connect session
-   * @param local local direct connect session
-   */
-  private static void getApplicationSchemaFromParent(final Session parent, final Session local) {
-    ResultSet resultSet = parent.execute("SELECT * FROM pathstore_applications.apps");
-
-    SchemaInfoV2 localInfo = new SchemaInfoV2(local);
-
-    for (String keyspace : localInfo.getAllKeySpaces()) local.execute("drop keyspace " + keyspace);
-
-    for (Row row : resultSet) {
-      int appId = row.getInt("appid");
-      String appName = row.getString("app_name");
-      String schemaName = row.getString("schema_name");
-      String augmentedSchema = row.getString("augmented_schema");
-
-      String[] commands = augmentedSchema.split(";");
-
-      for (String s : commands) {
-        s = s.trim();
-        if (s.length() > 0) local.execute(s);
-      }
-
-      Insert insert = QueryBuilder.insertInto("pathstore_applications", "apps");
-      insert.value("appid", appId);
-      insert.value("app_name", appName);
-      insert.value("schema_name", schemaName);
-      insert.value("augmented_schema", augmentedSchema);
-
-      local.execute(insert);
-    }
-  }
-
-  void getNodeSchemasHelper(final Integer nodeid) {
-    try {
-      this.getNodeSchemas(nodeid);
-    } catch (RemoteException e) {
-      e.printStackTrace();
-    }
-  }
-
   public static void main(String args[]) {
     try {
 
@@ -312,7 +260,14 @@ public class PathStoreServerImpl implements PathStoreServer {
 
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
         PathStoreSchemaLoader schemaLoader =
-            PathStoreSchemaLoader.getInstance(obj::getNodeSchemasHelper);
+            PathStoreSchemaLoader.getInstance(
+                (nodeid, current_values) -> {
+                  try {
+                    obj.getNodeSchemas(nodeid, current_values);
+                  } catch (RemoteException e) {
+                    e.printStackTrace();
+                  }
+                });
         schemaLoader.start();
         PathStorePullServer pullServer = new PathStorePullServer();
         pullServer.start();

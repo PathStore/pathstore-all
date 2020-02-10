@@ -19,6 +19,7 @@ package pathstore.common;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.Set;
 import java.util.UUID;
 
 import pathstore.exception.PathMigrateAlreadyGoneException;
@@ -34,7 +35,7 @@ public interface PathStoreServer extends Remote {
       String keyspace, String table, byte[] clauses, UUID parentTimestamp, int nodeID, int limit)
       throws RemoteException;
 
-  void getNodeSchemas(final Integer node_id) throws RemoteException;
+  void getNodeSchemas(final Integer node_id, final Set<String> current_values) throws RemoteException;
 
   void getSchema(final String keyspace) throws RemoteException;
 }

@@ -14,13 +14,22 @@ import java.util.stream.Collectors;
 /** TODO: Comment TODO: Make it so you can add to node_schema in child node */
 public class PathStoreSchemaLoader extends Thread {
 
+  public interface PathstoreConsumer<T1, T2> {
+    void function(final T1 t1, final T2 t2);
+
+    default void apply(final T1 t1, final T2 t2) {
+      this.function(t1, t2);
+    }
+  }
+
   private static PathStoreSchemaLoader schemaLoader = null;
 
-  public static PathStoreSchemaLoader getInstance(final Consumer<Integer> getNodeInfo) {
+  public static PathStoreSchemaLoader getInstance(
+      final PathstoreConsumer<Integer, Set<String>> getNodeInfo) {
     return schemaLoader == null ? new PathStoreSchemaLoader(getNodeInfo) : schemaLoader;
   }
 
-  private final Consumer<Integer> getNodeInfo;
+  private final PathstoreConsumer<Integer, Set<String>> getNodeInfo;
 
   private final Session localSession;
 
@@ -30,32 +39,12 @@ public class PathStoreSchemaLoader extends Thread {
 
   private final Set<String> loadedSchemas;
 
-  private PathStoreSchemaLoader(final Consumer<Integer> getNodeInfo) {
+  private PathStoreSchemaLoader(final PathstoreConsumer<Integer, Set<String>> getNodeInfo) {
     this.getNodeInfo = getNodeInfo;
     this.localSession = PathStorePriviledgedCluster.getInstance().connect();
     this.schemasToLoad = new HashSet<>();
     this.availableSchemas = new HashMap<>();
     this.loadedSchemas = new HashSet<>();
-  }
-
-  private void waitForNewSchema(final String keyspace) {
-    this.schemasToLoad.add(keyspace);
-    QueryCache.getInstance()
-        .updateCache(
-            "pathstore_applications",
-            "apps",
-            Collections.singletonList(QueryBuilder.eq("keyspace_name", keyspace)),
-            1);
-  }
-
-  private void loadSchema(final String keyspace) {
-    Row row = this.availableSchemas.get(keyspace);
-    parseSchema(row.getString("augmented_schema")).forEach(this.localSession::execute);
-    this.loadedSchemas.add(keyspace);
-  }
-
-  private void insertSchema(final String keyspace, final Row row) {
-    this.availableSchemas.put(keyspace, row);
   }
 
   @Override
@@ -89,7 +78,9 @@ public class PathStoreSchemaLoader extends Thread {
         System.out.println(s);
       }
        */
-      this.getNodeInfo.accept(PathStoreProperties.getInstance().NodeID);
+      this.getNodeInfo.apply(PathStoreProperties.getInstance().NodeID, this.schemasToLoad);
+
+      System.out.println(this.schemasToLoad);
 
       try {
         Thread.sleep(1000);

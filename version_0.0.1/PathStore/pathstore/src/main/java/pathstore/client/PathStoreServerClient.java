@@ -22,6 +22,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.Set;
 import java.util.UUID;
 
 import pathstore.common.PathStoreProperties;
@@ -128,9 +129,9 @@ public class PathStoreServerClient {
     }
   }
 
-  public void getNodeSchemas(final Integer node_id) {
+  public void getNodeSchemas(final Integer node_id, final Set<String> current_values) {
     try {
-      this.stub.getNodeSchemas(node_id);
+      this.stub.getNodeSchemas(node_id, current_values);
     } catch (RemoteException e) {
       throw new PathStoreRemoteException();
     }
