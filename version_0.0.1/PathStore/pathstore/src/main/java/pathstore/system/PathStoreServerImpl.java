@@ -49,6 +49,8 @@ import pathstore.util.SchemaInfoV2;
 public class PathStoreServerImpl implements PathStoreServer {
   private final Logger logger = LoggerFactory.getLogger(PathStoreServerImpl.class);
 
+  private static PathStoreSchemaLoader schemaLoader = null;
+
   @Override // child calls this (maybe client or child node)
   public String addUserCommandEntry(
       String user, String keyspace, String table, byte[] clauses, int limit)
@@ -140,13 +142,12 @@ public class PathStoreServerImpl implements PathStoreServer {
   }
 
   @Override
-  public void getSchema(final String keyspace, final Map<String, String> current_schemas)
-      throws RemoteException {
+  public void getSchema(final String keyspace) throws RemoteException {
     if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
 
-      if (current_schemas.containsKey(keyspace)) return;
+      if (schemaLoader.getAvailableSchemas().containsKey(keyspace)) return;
 
-      PathStoreServerClient.getInstance().getSchema(keyspace, current_schemas);
+      PathStoreServerClient.getInstance().getSchema(keyspace);
 
       Session parent = PathStoreParentCluster.getInstance().connect();
       Session local = PathStorePriviledgedCluster.getInstance().connect();
@@ -167,7 +168,7 @@ public class PathStoreServerImpl implements PathStoreServer {
                 .value("augmented_schema", schema)
                 .value("pathstore_version", QueryBuilder.now())
                 .value("pathstore_parent_timestamp", QueryBuilder.now()));
-        current_schemas.put(keyspace, schema);
+        schemaLoader.getAvailableSchemas().put(keyspace, schema);
       }
     }
   }
@@ -290,7 +291,7 @@ public class PathStoreServerImpl implements PathStoreServer {
       System.err.println("PathStoreServer ready");
 
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
-        PathStoreSchemaLoader schemaLoader =
+        schemaLoader =
             PathStoreSchemaLoader.getInstance(
                 (nodeid, current_values) -> {
                   try {
@@ -299,9 +300,9 @@ public class PathStoreServerImpl implements PathStoreServer {
                     e.printStackTrace();
                   }
                 },
-                (keyspace, current_schemas) -> {
+                (keyspace) -> {
                   try {
-                    obj.getSchema(keyspace, current_schemas);
+                    obj.getSchema(keyspace);
                   } catch (RemoteException e) {
                     e.printStackTrace();
                   }

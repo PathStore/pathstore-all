@@ -138,9 +138,9 @@ public class PathStoreServerClient {
     }
   }
 
-  public void getSchema(final String keyspace, final Map<String, String> current_schemas) {
+  public void getSchema(final String keyspace) {
     try {
-      this.stub.getSchema(keyspace, current_schemas);
+      this.stub.getSchema(keyspace);
     } catch (RemoteException e) {
       throw new PathStoreRemoteException();
     }

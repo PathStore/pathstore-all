@@ -4,6 +4,7 @@ import com.datastax.driver.core.Session;
 import pathstore.common.PathStoreProperties;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /** TODO: Comment TODO: Make it so you can add to node_schema in child node */
@@ -20,14 +21,13 @@ public class PathStoreSchemaLoader extends Thread {
   private static PathStoreSchemaLoader schemaLoader = null;
 
   public static PathStoreSchemaLoader getInstance(
-      final PathstoreConsumer<Integer, Set<String>> getNodeInfo,
-      final PathstoreConsumer<String, Map<String, String>> getSchema) {
+      final PathstoreConsumer<Integer, Set<String>> getNodeInfo, final Consumer<String> getSchema) {
     return schemaLoader == null ? new PathStoreSchemaLoader(getNodeInfo, getSchema) : schemaLoader;
   }
 
   private final PathstoreConsumer<Integer, Set<String>> getNodeInfo;
 
-  private final PathstoreConsumer<String, Map<String, String>> getSchema;
+  private final Consumer<String> getSchema;
 
   private final Session localSession;
 
@@ -38,8 +38,7 @@ public class PathStoreSchemaLoader extends Thread {
   private final Set<String> loadedSchemas;
 
   private PathStoreSchemaLoader(
-      final PathstoreConsumer<Integer, Set<String>> getNodeInfo,
-      final PathstoreConsumer<String, Map<String, String>> getSchema) {
+      final PathstoreConsumer<Integer, Set<String>> getNodeInfo, final Consumer<String> getSchema) {
     this.getNodeInfo = getNodeInfo;
     this.getSchema = getSchema;
     this.localSession = PathStorePriviledgedCluster.getInstance().connect();
@@ -48,13 +47,17 @@ public class PathStoreSchemaLoader extends Thread {
     this.loadedSchemas = new HashSet<>();
   }
 
+  public Map<String, String> getAvailableSchemas() {
+    return this.availableSchemas;
+  }
+
   @Override
   public void run() {
     while (true) {
       this.getNodeInfo.apply(PathStoreProperties.getInstance().NodeID, this.schemasToLoad);
 
       for (String s : this.schemasToLoad) {
-        if (!this.availableSchemas.containsKey(s)) this.getSchema.apply(s, this.availableSchemas);
+        if (!this.availableSchemas.containsKey(s)) this.getSchema.accept(s);
 
         if (!this.loadedSchemas.contains(s)) {
           parseSchema(this.availableSchemas.get(s)).forEach(this.localSession::execute);

@@ -38,5 +38,5 @@ public interface PathStoreServer extends Remote {
 
   void getNodeSchemas(final Integer node_id, final Set<String> current_values) throws RemoteException;
 
-  void getSchema(final String keyspace, final Map<String, String> current_schemas) throws RemoteException;
+  void getSchema(final String keyspace) throws RemoteException;
 }
