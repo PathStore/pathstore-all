@@ -107,7 +107,7 @@ public class PathStoreServerImpl implements PathStoreServer {
   }
 
   @Override
-  public void getNodeSchemas(int node_id) throws RemoteException {
+  public void getNodeSchemas(Integer node_id) {
     if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
       PathStoreServerClient.getInstance().getNodeSchemas(node_id);
 
@@ -301,7 +301,7 @@ public class PathStoreServerImpl implements PathStoreServer {
       System.err.println("PathStoreServer ready");
 
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
-        PathStoreSchemaLoader schemaLoader = PathStoreSchemaLoader.getInstance();
+        PathStoreSchemaLoader schemaLoader = PathStoreSchemaLoader.getInstance(obj::getNodeSchemas);
         schemaLoader.start();
         PathStorePullServer pullServer = new PathStorePullServer();
         pullServer.start();

@@ -128,7 +128,7 @@ public class PathStoreServerClient {
     }
   }
 
-  public void getNodeSchemas(final int node_id) {
+  public void getNodeSchemas(final Integer node_id) {
     try {
       this.stub.getNodeSchemas(node_id);
     } catch (RemoteException e) {
