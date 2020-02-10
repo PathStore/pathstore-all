@@ -34,7 +34,7 @@ public interface PathStoreServer extends Remote {
       String keyspace, String table, byte[] clauses, UUID parentTimestamp, int nodeID, int limit)
       throws RemoteException;
 
-  boolean getNodeSchemas(final int node_id) throws RemoteException;
+  void getNodeSchemas(final int node_id) throws RemoteException;
 
-  boolean getSchema(final String keyspace) throws RemoteException;
+  void getSchema(final String keyspace) throws RemoteException;
 }

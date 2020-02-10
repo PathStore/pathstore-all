@@ -32,6 +32,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import pathstore.client.PathStoreServerClient;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCache;
@@ -106,14 +107,31 @@ public class PathStoreServerImpl implements PathStoreServer {
   }
 
   @Override
-  public boolean getNodeSchemas(int node_id) throws RemoteException {
-    return false;
+  public void getNodeSchemas(int node_id) throws RemoteException {
+    if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
+      PathStoreServerClient.getInstance().getNodeSchemas(node_id);
+
+      Session parent = PathStoreParentCluster.getInstance().connect();
+      Session local = PathStorePriviledgedCluster.getInstance().connect();
+
+      ResultSet set =
+          parent.execute(
+              QueryBuilder.select()
+                  .all()
+                  .from("pathstore_applications", "node_schemas")
+                  .where(QueryBuilder.eq("nodeid", node_id)));
+
+      for (Row row : set) {
+        local.execute(
+            QueryBuilder.insertInto("pathstore_applications", "node_schemas")
+                .value("nodeid", node_id)
+                .value("keyspace_name", row.getString("keyspace_name")));
+      }
+    }
   }
 
   @Override
-  public boolean getSchema(String keyspace) throws RemoteException {
-    return false;
-  }
+  public void getSchema(String keyspace) throws RemoteException {}
 
   private static void parseCommandLineArguments(String args[]) {
     Options options = new Options();

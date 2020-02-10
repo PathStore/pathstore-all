@@ -3,26 +3,24 @@ package pathstore.system;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-/**
- * TODO: First load all schemas into database.
- *
- * <p>TODO: Then make it so that you only load in the schemas based on the node_schemas table
- */
+/** TODO: Comment TODO: Make it so you can add to node_schema in child node */
 public class PathStoreSchemaLoader extends Thread {
 
   private static PathStoreSchemaLoader schemaLoader = null;
 
-  public static PathStoreSchemaLoader getInstance() {
-    return schemaLoader == null ? new PathStoreSchemaLoader() : schemaLoader;
+  public static PathStoreSchemaLoader getInstance(final Consumer<Integer> getNodeInfo) {
+    return schemaLoader == null ? new PathStoreSchemaLoader(getNodeInfo) : schemaLoader;
   }
+
+  private final Consumer<Integer> getNodeInfo;
 
   private final Session localSession;
 
@@ -32,18 +30,12 @@ public class PathStoreSchemaLoader extends Thread {
 
   private final Set<String> loadedSchemas;
 
-  private PathStoreSchemaLoader() {
+  private PathStoreSchemaLoader(final Consumer<Integer> getNodeInfo) {
+    this.getNodeInfo = getNodeInfo;
     this.localSession = PathStorePriviledgedCluster.getInstance().connect();
     this.schemasToLoad = new HashSet<>();
     this.availableSchemas = new HashMap<>();
     this.loadedSchemas = new HashSet<>();
-    QueryCache.getInstance()
-        .updateCache(
-            "pathstore_applications",
-            "node_schemas",
-            Collections.singletonList(
-                QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID)),
-            1);
   }
 
   private void waitForNewSchema(final String keyspace) {
@@ -69,7 +61,10 @@ public class PathStoreSchemaLoader extends Thread {
   @Override
   public void run() {
     while (true) {
-      ResultSet schemas = this.localSession.execute("select * from pathstore_applications.apps");
+      /*
+      ResultSet schemas =
+          this.localSession.execute(
+              QueryBuilder.select().all().from("pathstore_applications", "apps"));
 
       for (Row row : schemas) {
         String keyspace = row.getString("keyspace_name");
@@ -78,8 +73,10 @@ public class PathStoreSchemaLoader extends Thread {
 
       ResultSet schemasLoad =
           this.localSession.execute(
-              "select * from pathstore_applications.node_schemas where nodeid="
-                  + PathStoreProperties.getInstance().NodeID);
+              QueryBuilder.select()
+                  .all()
+                  .from("pathstore_application", "node_schemas")
+                  .where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID)));
 
       for (Row row : schemasLoad) {
         String keyspace = row.getString("keyspace_name");
@@ -91,6 +88,8 @@ public class PathStoreSchemaLoader extends Thread {
       for (String s : this.schemasToLoad) {
         System.out.println(s);
       }
+       */
+      this.getNodeInfo.accept(PathStoreProperties.getInstance().NodeID);
 
       try {
         Thread.sleep(1000);

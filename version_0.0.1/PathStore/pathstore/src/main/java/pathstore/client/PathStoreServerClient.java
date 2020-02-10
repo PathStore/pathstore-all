@@ -128,17 +128,17 @@ public class PathStoreServerClient {
     }
   }
 
-  public boolean getNodeSchemas(final int node_id) {
+  public void getNodeSchemas(final int node_id) {
     try {
-      return this.stub.getNodeSchemas(node_id);
+      this.stub.getNodeSchemas(node_id);
     } catch (RemoteException e) {
       throw new PathStoreRemoteException();
     }
   }
 
-  public boolean getSchema(final String keyspace) {
+  public void getSchema(final String keyspace) {
     try {
-      return this.stub.getSchema(keyspace);
+      this.stub.getSchema(keyspace);
     } catch (RemoteException e) {
       throw new PathStoreRemoteException();
     }
