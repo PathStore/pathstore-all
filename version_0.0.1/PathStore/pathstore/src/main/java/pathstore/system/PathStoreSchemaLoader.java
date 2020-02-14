@@ -54,7 +54,7 @@ public class PathStoreSchemaLoader extends Thread {
   @Override
   public void run() {
     while (true) {
-      PathStoreSession session = PathStoreCluster.getInstance().connect();
+      Session session = PathStoreCluster.getInstance().connect();
 
       Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
       select.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
