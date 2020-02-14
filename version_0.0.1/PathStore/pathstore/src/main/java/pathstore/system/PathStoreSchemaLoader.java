@@ -3,7 +3,9 @@ package pathstore.system;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.client.PathStoreSession;
 import pathstore.common.PathStoreProperties;
@@ -53,25 +55,22 @@ public class PathStoreSchemaLoader extends Thread {
   public void run() {
     while (true) {
       PathStoreSession session = PathStoreCluster.getInstance().connect();
-      ResultSet set =
-          session.execute(
-              QueryBuilder.select()
-                  .all()
-                  .from("pathstore_applications", "node_schemas")
-                  .where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID)));
 
-      for (Row row : set) {
+      Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
+      select.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
+
+      for (Row row : session.execute(select)) {
         this.schemasToLoad.add(row.getString("keyspace_name"));
       }
 
       for (String keyspace : this.schemasToLoad) {
         if (!this.availableSchemas.containsKey(keyspace)) {
-          ResultSet schemas =
-              session.execute(
-                  QueryBuilder.select("augmented_schema")
-                      .from("pathstore_applications", "apps")
-                      .where(QueryBuilder.eq("keyspace_name", keyspace)));
-          for (Row row : schemas) {
+
+          Select select1 =
+              QueryBuilder.select("augmented_schema").from("pathstore_applications", "apps");
+          select1.where(QueryBuilder.eq("keyspace_name", keyspace));
+
+          for (Row row : session.execute(select1)) {
             this.availableSchemas.put(keyspace, row.getString("augmented_schema"));
           }
         } else {
