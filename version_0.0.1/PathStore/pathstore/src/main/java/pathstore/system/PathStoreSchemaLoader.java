@@ -66,8 +66,7 @@ public class PathStoreSchemaLoader extends Thread {
       for (String keyspace : this.schemasToLoad) {
         if (!this.availableSchemas.containsKey(keyspace)) {
 
-          Select select1 =
-              QueryBuilder.select("augmented_schema").from("pathstore_applications", "apps");
+          Select select1 = QueryBuilder.select().all().from("pathstore_applications", "apps");
           select1.where(QueryBuilder.eq("keyspace_name", keyspace));
 
           for (Row row : session.execute(select1)) {
