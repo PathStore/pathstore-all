@@ -35,8 +35,4 @@ public interface PathStoreServer extends Remote {
   UUID createQueryDelta(
       String keyspace, String table, byte[] clauses, UUID parentTimestamp, int nodeID, int limit)
       throws RemoteException;
-
-  void getNodeSchemas(final Integer node_id, final Set<String> current_values) throws RemoteException;
-
-  void getSchema(final String keyspace) throws RemoteException;
 }

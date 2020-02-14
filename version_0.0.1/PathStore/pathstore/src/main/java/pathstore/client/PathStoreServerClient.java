@@ -129,20 +129,4 @@ public class PathStoreServerClient {
       throw new PathStoreRemoteException();
     }
   }
-
-  public void getNodeSchemas(final Integer node_id, final Set<String> current_values) {
-    try {
-      this.stub.getNodeSchemas(node_id, current_values);
-    } catch (RemoteException e) {
-      throw new PathStoreRemoteException();
-    }
-  }
-
-  public void getSchema(final String keyspace) {
-    try {
-      this.stub.getSchema(keyspace);
-    } catch (RemoteException e) {
-      throw new PathStoreRemoteException();
-    }
-  }
 }

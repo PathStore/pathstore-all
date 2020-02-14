@@ -1,10 +1,14 @@
 package pathstore.system;
 
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreSession;
 import pathstore.common.PathStoreProperties;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -23,56 +27,16 @@ import java.util.stream.Collectors;
  */
 public class PathStoreSchemaLoader extends Thread {
 
-  /**
-   * This is a simple interface to allow for a double parameter consumer
-   *
-   * @param <T1> Parameter type 1
-   * @param <T2> Parameter type 2
-   */
-  public interface PathstoreConsumer<T1, T2> {
-    /**
-     * Function to implement either literally or via lamabda
-     *
-     * @param t1 parameter 1
-     * @param t2 parameter 2
-     */
-    void function(final T1 t1, final T2 t2);
-
-    /**
-     * Function to invoke said function above
-     *
-     * @param t1 parameter 1
-     * @param t2 parameter 2
-     */
-    default void apply(final T1 t1, final T2 t2) {
-      this.function(t1, t2);
-    }
-  }
-
-  private final PathstoreConsumer<Integer, Set<String>> getNodeInfo;
-
-  private final Consumer<String> getSchema;
-
-  private final Session localSession;
-
   private final Set<String> schemasToLoad;
 
   private final Map<String, String> availableSchemas;
 
   private final Set<String> loadedSchemas;
 
-  public PathStoreSchemaLoader(
-      final PathstoreConsumer<Integer, Set<String>> getNodeInfo, final Consumer<String> getSchema) {
-    this.getNodeInfo = getNodeInfo;
-    this.getSchema = getSchema;
-    this.localSession = PathStorePriviledgedCluster.getInstance().connect();
+  public PathStoreSchemaLoader() {
     this.schemasToLoad = new HashSet<>();
     this.availableSchemas = new HashMap<>();
     this.loadedSchemas = new HashSet<>();
-  }
-
-  public Map<String, String> getAvailableSchemas() {
-    return this.availableSchemas;
   }
 
   /**
@@ -88,15 +52,34 @@ public class PathStoreSchemaLoader extends Thread {
   @Override
   public void run() {
     while (true) {
-      this.getNodeInfo.apply(PathStoreProperties.getInstance().NodeID, this.schemasToLoad);
+      PathStoreSession session = PathStoreCluster.getInstance().connect();
+      ResultSet set =
+          session.execute(
+              QueryBuilder.select()
+                  .all()
+                  .from("pathstore_applications", "node_schemas")
+                  .where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID)));
 
-      for (String s : this.schemasToLoad) {
-        if (!this.availableSchemas.containsKey(s)) this.getSchema.accept(s);
+      for (Row row : set) {
+        this.schemasToLoad.add(row.getString("keyspace_name"));
+      }
 
-        if (!this.loadedSchemas.contains(s)) {
-          parseSchema(this.availableSchemas.get(s)).forEach(this.localSession::execute);
-          this.loadedSchemas.add(s);
-          System.out.println(this.schemasToLoad);
+      for (String keyspace : this.schemasToLoad) {
+        if (!this.availableSchemas.containsKey(keyspace)) {
+          ResultSet schemas =
+              session.execute(
+                  QueryBuilder.select("augmented_schema")
+                      .from("pathstore_applications", "apps")
+                      .where(QueryBuilder.eq("keyspace_name", keyspace)));
+          for (Row row : schemas) {
+            this.availableSchemas.put(keyspace, row.getString("augmented_schema"));
+          }
+        } else {
+          if (!this.loadedSchemas.contains(keyspace)) {
+            Session privilegedSession = PathStorePriviledgedCluster.getInstance().connect();
+            parseSchema(this.availableSchemas.get(keyspace)).forEach(privilegedSession::execute);
+            this.loadedSchemas.add(keyspace);
+          }
         }
       }
 
