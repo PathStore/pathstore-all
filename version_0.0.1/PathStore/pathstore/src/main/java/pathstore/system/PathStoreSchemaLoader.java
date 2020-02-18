@@ -11,10 +11,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * TODO: Example you have the topology [1 <- 2 <- 3] where <- represents a pointer to the parent. If
- * node 1 and 3 have some schema called A you cannot propagate data from node 3 to node 1
- *
- * <p>TODO: Make it so that if a current schema is loaded on a current node it can be deleted
+ * TODO: (1) Make it so that if a current schema is loaded on a current node it can be deleted
  *
  * <p>Our assumption for this class is that all schema allocations for each node occurs on the root
  * node. We can assume this as in our design we want our "management" decisions to be performed on
@@ -39,6 +36,37 @@ public class PathStoreSchemaLoader extends Thread {
     this.schemasToLoad = new HashSet<>();
     this.availableSchemas = new HashMap<>();
     this.loadedSchemas = new HashSet<>();
+    this.recover();
+  }
+
+  /** This function is used to recover the state of the internal schemas on restart */
+  private void recover() {
+    // TODO: Handle logs of data for node_schemas (1)
+    // Load values into schemasToLoad
+    for (Row row :
+        PathStorePriviledgedCluster.getInstance()
+            .connect()
+            .execute(QueryBuilder.select().all().from("pathstore_applications", "node_schemas"))) {
+      this.schemasToLoad.add(row.getString("keyspace_name"));
+    }
+
+    // Load values into availableSchemas
+    for (String keyspace : this.schemasToLoad) {
+      for (Row row :
+          PathStorePriviledgedCluster.getInstance()
+              .connect()
+              .execute(QueryBuilder.select().all().from("pathstore_applications", "apps"))) {
+        this.availableSchemas.put(keyspace, row.getString("augmented_schema"));
+      }
+    }
+
+    // Load values into loadedSchemas
+    for (Row row :
+        PathStorePriviledgedCluster.getInstance()
+            .connect()
+            .execute(QueryBuilder.select("keyspace_name").from("system_schema", "keyspaces"))) {
+      this.loadedSchemas.add(row.getString("keyspace_name"));
+    }
   }
 
   /**
@@ -56,6 +84,7 @@ public class PathStoreSchemaLoader extends Thread {
     while (true) {
       Session session = PathStoreCluster.getInstance().connect();
 
+      // Load schemas dependent on the this specific node
       Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
       select.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
 
@@ -63,6 +92,8 @@ public class PathStoreSchemaLoader extends Thread {
         this.schemasToLoad.add(row.getString("keyspace_name"));
       }
 
+      // Load schemas that this nodes child need. So the path from root to edge node is complete
+      // TODO: (1)
       for (Row row :
           PathStorePriviledgedCluster.getInstance()
               .connect()
