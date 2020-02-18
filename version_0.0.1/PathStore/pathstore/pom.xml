@@ -310,6 +310,22 @@
 							<finalName>pathstore_RobbusTest</finalName>
 						</configuration>
 					</execution>
+					<execution>
+						<id>build-sixth</id>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<transformers>
+								<transformer
+										implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>pathstore.test.CLIDemo</mainClass>
+								</transformer>
+							</transformers>
+							<finalName>pathstore_clidemo</finalName>
+						</configuration>
+					</execution>
 
 				</executions>
 			</plugin>
