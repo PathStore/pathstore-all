@@ -83,7 +83,7 @@ public class CLIDemo {
             "%s %s %s %d %d",
             row.getString("name"),
             row.getString("sport"),
-            ((List<Integer>) row.getObject("rgb")).toString(),
+            ((List<Integer>) row.getObject("color")).toString(),
             row.getInt("years"),
             row.getBool("vegetarian") ? 1 : 0);
       }
