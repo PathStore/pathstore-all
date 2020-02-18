@@ -33,7 +33,7 @@ import pathstore.util.SchemaInfoV2;
  *
  * <p>TODO: Change all daemons to inherit same parent class
  */
-public class PathStoreServerImpl extends PathStoreServerImplRMI {
+public class PathStoreServerImpl {
 
   private static void parseCommandLineArguments(String args[]) {
     Options options = new Options();
@@ -116,12 +116,12 @@ public class PathStoreServerImpl extends PathStoreServerImplRMI {
       PathStoreProperties.getInstance().NodeID = Integer.parseInt(cmd.getOptionValue("nodeid"));
   }
 
-  public static void main(String args[]) {
+  public static void main(final String args[]) {
     try {
 
       parseCommandLineArguments(args);
 
-      PathStoreServerImpl obj = new PathStoreServerImpl();
+      PathStoreServerImplRMI obj = new PathStoreServerImplRMI();
       PathStoreServer stub = (PathStoreServer) UnicastRemoteObject.exportObject(obj, 0);
 
       System.out.println(PathStoreProperties.getInstance().RMIRegistryIP);
