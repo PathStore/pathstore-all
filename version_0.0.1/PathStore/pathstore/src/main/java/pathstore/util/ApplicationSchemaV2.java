@@ -3,14 +3,13 @@ package pathstore.util;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import pathstore.system.PathStorePriviledgedCluster;
+import pathstore.common.PathStoreProperties;
 import pathstore.system.PathStoreSchemaLoader;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.Timestamp;
 import java.util.*;
 
 /**
@@ -58,7 +57,7 @@ public class ApplicationSchemaV2 {
   }
 
   /** Stored to gather meta data of keyspaces */
-  private final PathStorePriviledgedCluster cluster;
+  private final Cluster cluster;
 
   /**
    * TODO: Move to {@link pathstore.system.PathStorePriviledgedCluster}
@@ -80,7 +79,18 @@ public class ApplicationSchemaV2 {
    * @param args commands to execute
    */
   ApplicationSchemaV2(final String[] args) {
-    this.cluster = PathStorePriviledgedCluster.getInstance();
+    this.cluster =
+        new Cluster.Builder()
+            .addContactPoints(PathStoreProperties.getInstance().CassandraIP)
+            .withPort(PathStoreProperties.getInstance().CassandraPort)
+            .withSocketOptions(
+                new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
+            .withQueryOptions(
+                new QueryOptions()
+                    .setRefreshNodeIntervalMillis(0)
+                    .setRefreshNodeListIntervalMillis(0)
+                    .setRefreshSchemaIntervalMillis(0))
+            .build();
     this.session = this.cluster.connect();
 
     this.schemaInfo = new SchemaInfoV2(this.session);
@@ -110,6 +120,7 @@ public class ApplicationSchemaV2 {
     }
 
     this.session.close();
+    this.cluster.close();
   }
 
   /**
@@ -403,11 +414,6 @@ public class ApplicationSchemaV2 {
     this.session.execute(insert);
 
     System.out.println("Schema inserted");
-  }
-
-  /** @return current timestamp to insert into db */
-  private Timestamp getTimeStamp() {
-    return new Timestamp(System.currentTimeMillis());
   }
 
   /**

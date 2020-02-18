@@ -28,14 +28,9 @@ import pathstore.common.Role;
 import org.apache.commons.cli.*;
 import pathstore.util.SchemaInfoV2;
 
-/**
- * TODO: Comment
- *
- * <p>TODO: Change all daemons to inherit same parent class
- */
 public class PathStoreServerImpl {
 
-  private static void parseCommandLineArguments(String args[]) {
+  private static void parseCommandLineArguments(final String args[]) {
     Options options = new Options();
 
     // options.addOption( "a", "all", false, "do not hide entries starting with ." );
