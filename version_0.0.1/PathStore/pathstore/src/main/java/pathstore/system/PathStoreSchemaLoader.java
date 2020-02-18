@@ -1,20 +1,20 @@
 package pathstore.system;
 
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
-import pathstore.client.PathStoreSession;
 import pathstore.common.PathStoreProperties;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * TODO: Make it so that if a current schema is loaded on a current node it can be deleted
+ * TODO: Example you have the topology [1 <- 2 <- 3] where <- represents a pointer to the parent. If
+ * node 1 and 3 have some schema called A you cannot propagate data from node 3 to node 1
+ *
+ * <p>TODO: Make it so that if a current schema is loaded on a current node it can be deleted
  *
  * <p>Our assumption for this class is that all schema allocations for each node occurs on the root
  * node. We can assume this as in our design we want our "management" decisions to be performed on
@@ -63,6 +63,12 @@ public class PathStoreSchemaLoader extends Thread {
         this.schemasToLoad.add(row.getString("keyspace_name"));
       }
 
+      for (Row row :
+          PathStorePriviledgedCluster.getInstance()
+              .connect()
+              .execute(QueryBuilder.select().all().from("pathstore_applications", "node_schemas")))
+        this.schemasToLoad.add(row.getString("keyspace_name"));
+
       for (String keyspace : this.schemasToLoad) {
         if (!this.availableSchemas.containsKey(keyspace)) {
 
@@ -74,8 +80,8 @@ public class PathStoreSchemaLoader extends Thread {
           }
         } else {
           if (!this.loadedSchemas.contains(keyspace)) {
-            Session privilegedSession = PathStorePriviledgedCluster.getInstance().connect();
-            parseSchema(this.availableSchemas.get(keyspace)).forEach(privilegedSession::execute);
+            parseSchema(this.availableSchemas.get(keyspace))
+                .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
             this.loadedSchemas.add(keyspace);
           }
         }

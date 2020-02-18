@@ -13,6 +13,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * TODO: Implement update
+ *
+ * <p>Basic CLI demo that allows you to see the data propagation throughout the nodes. The best test
+ * case is to have more then 2 nodes in any config. This allows for a more real world example
+ */
 public class CLIDemo {
 
   private static class Event extends Thread {
@@ -31,7 +37,7 @@ public class CLIDemo {
             break;
           case "D":
             display(session);
-            break;  
+            break;
           case "U":
             break;
           case "Exit":
@@ -80,7 +86,7 @@ public class CLIDemo {
       Select select = QueryBuilder.select().all().from("pathstore_demo", "users");
       for (Row row : session.execute(select)) {
         System.out.format(
-            "%s %s %s %d %d",
+            "%s %s %s %d %d\n",
             row.getString("name"),
             row.getString("sport"),
             ((List<Integer>) row.getObject("color")).toString(),
