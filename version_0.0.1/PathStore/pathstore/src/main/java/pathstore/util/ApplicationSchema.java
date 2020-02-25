@@ -330,7 +330,7 @@ public class ApplicationSchema {
     }
 
     private void augmentSchema(String schemaName) throws IOException, InterruptedException {
-        HashMap<Table, List<Column>> keyspaceInfo = SchemaInfo.getInstance().getKeySpaceInfo(schemaName);
+        Map<Table, List<Column>> keyspaceInfo = SchemaInfo.getInstance().getKeySpaceInfo(schemaName);
 
         for (Table table : keyspaceInfo.keySet()) {
 

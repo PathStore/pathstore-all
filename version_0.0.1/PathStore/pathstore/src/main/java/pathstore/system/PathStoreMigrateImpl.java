@@ -26,11 +26,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -212,7 +208,7 @@ public class PathStoreMigrateImpl implements PathStoreMigrate {
 
                     try {
                         System.out.println("connecting to src PathstoreMigrate at: " + ce.RmiIP + ":" + ce.PortRmi);
-                        HashMap<String, HashMap<Object, UUID>> differenceList = null;
+                        Map<String, Map<Object, UUID>> differenceList = null;
                         long wastedDst = 0;
                         if (onlyDifferences) {
                             long dd = System.nanoTime();
@@ -367,7 +363,7 @@ public class PathStoreMigrateImpl implements PathStoreMigrate {
     }
 
     public ArrayList<CommandEntryReply> sendData(String sid, String dstEdge, boolean neighbors,
-                                                 HashMap<String, HashMap<Object, UUID>> rowsOnDest) {
+                                                 Map<String, Map<Object, UUID>> rowsOnDest) {
 
 
         long totalTime = System.nanoTime();
@@ -440,7 +436,7 @@ public class PathStoreMigrateImpl implements PathStoreMigrate {
             tableNames.add("users");
             tableNames.add("submissions");
             tableNames.add("moderator_log");
-            HashMap<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(keyspace);
+            Map<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(keyspace);
             int allRowsNum = 0;
             for (String table : tableNames) {
                 if (table.startsWith("view_"))
@@ -492,8 +488,8 @@ public class PathStoreMigrateImpl implements PathStoreMigrate {
         } else // not all tables!
         {
             for (String keyspace : keypsaces.keySet()) {
-                HashMap<String, List<QueryCacheEntry>> tableNames = keypsaces.get(keyspace);
-                HashMap<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(keyspace);
+                Map<String, List<QueryCacheEntry>> tableNames = keypsaces.get(keyspace);
+                Map<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(keyspace);
 
                 for (String table : tableNames.keySet()) {
                     List<QueryCacheEntry> cache_entries = tableNames.get(table);
@@ -516,7 +512,7 @@ public class PathStoreMigrateImpl implements PathStoreMigrate {
                     //Reading from QueryEntryCache
                     if (!neighbors) {
                         System.out.println("not neighbors");
-                        HashMap<Object, UUID> tableOnDestination = null;
+                        Map<Object, UUID> tableOnDestination = null;
                         String primary = null;
                         if (rowsOnDest != null) {
                             long tmp = System.nanoTime();
@@ -786,10 +782,10 @@ public class PathStoreMigrateImpl implements PathStoreMigrate {
         tasks.clear();
     }
 
-    public HashMap<String, HashMap<Object, UUID>> createLatestListForKeyspace(String keyspace) {
+    public Map<String, Map<Object, UUID>> createLatestListForKeyspace(String keyspace) {
         PathStorePriviledgedCluster cluster = PathStorePriviledgedCluster.getInstance();
-        HashMap<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(keyspace);
-        HashMap<String, HashMap<Object, UUID>> differenceList = new HashMap<>();
+        Map<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(keyspace);
+        Map<String, Map<Object, UUID>> differenceList = new HashMap<>();
 
         for (Table table : tables.keySet()) {
             String tableName = table.getTable_name();
@@ -907,7 +903,7 @@ public class PathStoreMigrateImpl implements PathStoreMigrate {
             System.out.println(" in the middle 1: " + Timer.getTime(d));
 
 
-            HashMap<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(queriesToExecute.get(0).getKeyspace());
+            Map<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(queriesToExecute.get(0).getKeyspace());
 
             ConnectionEntry ce = connectionCache.get(previousEdge);
             if (ce == null)

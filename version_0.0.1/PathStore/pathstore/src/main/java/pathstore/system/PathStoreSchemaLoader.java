@@ -153,10 +153,10 @@ public class PathStoreSchemaLoader extends Thread {
           if (!this.loadedSchemas.contains(keyspace)) {
             SchemaInfo info = SchemaInfo.getInstance();
             info.removeKeyspace(keyspace);
-            info.getKeySpaceInfo(keyspace);
             parseSchema(this.availableSchemas.get(keyspace))
                 .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
             this.loadedSchemas.add(keyspace);
+            info.getKeySpaceInfo(keyspace);
           }
         }
       }

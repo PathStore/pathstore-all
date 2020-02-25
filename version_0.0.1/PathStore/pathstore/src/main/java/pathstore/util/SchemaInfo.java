@@ -17,10 +17,8 @@
  */
 package pathstore.util;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import pathstore.exception.InvalidKeyspaceException;
 import pathstore.system.PathStorePriviledgedCluster;
@@ -48,13 +46,13 @@ public class SchemaInfo {
     return PathStorePriviledgedCluster.getInstance().getMetadata();
   }
 
-  final HashMap<String, HashMap<Table, List<Column>>> schemaInfo = new HashMap<>();
+  final Map<String, Map<Table, List<Column>>> schemaInfo = new ConcurrentHashMap<>();
 
   public SchemaInfo() {
     loadSchemas();
   }
 
-  public HashMap<String, HashMap<Table, List<Column>>> getSchemaInfo() {
+  public Map<String, Map<Table, List<Column>>> getSchemaInfo() {
     return schemaInfo;
   }
 
@@ -82,58 +80,56 @@ public class SchemaInfo {
     }
   }
 
-  public HashMap<Table, List<Column>> getKeySpaceInfo(String keyspaceName) {
+  public Map<Table, List<Column>> getKeySpaceInfo(String keyspaceName) {
     if (schemaInfo.get(keyspaceName) != null) return schemaInfo.get(keyspaceName);
 
     PathStorePriviledgedCluster cluster = PathStorePriviledgedCluster.getInstance();
     Session session = cluster.connect();
 
-    HashMap<Table, List<Column>> keyspaceInfo = new HashMap<>();
-    synchronized (this.schemaInfo) {
-      schemaInfo.put(keyspaceName, keyspaceInfo);
+    Map<Table, List<Column>> keyspaceInfo = new ConcurrentHashMap<>();
+    schemaInfo.put(keyspaceName, keyspaceInfo);
 
-      PreparedStatement prepared =
-          session.prepare("select * from system_schema.tables where keyspace_name=?");
+    PreparedStatement prepared =
+        session.prepare("select * from system_schema.tables where keyspace_name=?");
 
-      BoundStatement bound = prepared.bind(keyspaceName);
-      ResultSet results = session.execute(bound);
+    BoundStatement bound = prepared.bind(keyspaceName);
+    ResultSet results = session.execute(bound);
 
-      List<Column> columns = null;
+    List<Column> columns = null;
 
-      for (Row row : results) {
-        Table table = Table.buildFromRow(row);
-        columns = new ArrayList<Column>();
-        keyspaceInfo.put(table, columns);
-      }
+    for (Row row : results) {
+      Table table = Table.buildFromRow(row);
+      columns = new ArrayList<Column>();
+      keyspaceInfo.put(table, columns);
+    }
 
-      prepared = session.prepare("select * from system_schema.columns where keyspace_name=?");
+    prepared = session.prepare("select * from system_schema.columns where keyspace_name=?");
 
-      bound = prepared.bind(keyspaceName);
-      results = session.execute(bound);
+    bound = prepared.bind(keyspaceName);
+    results = session.execute(bound);
 
-      for (Row row : results) {
-        String keyspace_name = row.getString("keyspace_name");
-        String table_name = row.getString("table_name");
-        String column_name = row.getString("column_name");
-        String clustering_order = row.getString("clustering_order");
-        String kind = row.getString("kind");
-        int position = row.getInt("position");
-        String type = row.getString("type");
+    for (Row row : results) {
+      String keyspace_name = row.getString("keyspace_name");
+      String table_name = row.getString("table_name");
+      String column_name = row.getString("column_name");
+      String clustering_order = row.getString("clustering_order");
+      String kind = row.getString("kind");
+      int position = row.getInt("position");
+      String type = row.getString("type");
 
-        Column column =
-            new Column(
-                keyspace_name, table_name, column_name, clustering_order, kind, position, type);
+      Column column =
+          new Column(
+              keyspace_name, table_name, column_name, clustering_order, kind, position, type);
 
-        columns = getColumns(keyspaceInfo, table_name);
+      columns = getColumns(keyspaceInfo, table_name);
 
-        columns.add(column);
-      }
+      columns.add(column);
     }
 
     return keyspaceInfo;
   }
 
-  private List<Column> getColumns(HashMap<Table, List<Column>> keyspaceInfo, String tableName) {
+  private List<Column> getColumns(Map<Table, List<Column>> keyspaceInfo, String tableName) {
     for (Table t : keyspaceInfo.keySet()) {
       if (t.table_name.compareTo(tableName) == 0) return keyspaceInfo.get(t);
     }

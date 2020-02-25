@@ -20,6 +20,7 @@ package pathstore.system;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.SchemaChangeListener;
@@ -104,7 +105,7 @@ public class PathStorePushServer extends Thread {
         try {
             for (String keyspace : SchemaInfo.getInstance().getSchemaInfo().keySet()) {
 
-                HashMap<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(keyspace);
+                Map<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(keyspace);
 
                 for (Table table : tables.keySet()) {
                     if (table.getTable_name().startsWith("view_") || table.getTable_name().startsWith("local_"))
