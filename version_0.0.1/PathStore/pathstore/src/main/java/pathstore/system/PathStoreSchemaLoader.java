@@ -115,12 +115,18 @@ public class PathStoreSchemaLoader extends Thread {
         comparison_set.add(keyspace);
       }
 
+      System.out.println("Currently queired schemas: " + comparison_set);
+
       this.schemasToLoad.removeAll(comparison_set);
 
-      for (String keyspace : this.schemasToLoad)
+      System.out.println("Difference: " + this.schemasToLoad);
+
+      for (String keyspace : this.schemasToLoad) {
         PathStorePriviledgedCluster.getInstance()
             .connect()
             .execute("drop keyspace if exists" + keyspace);
+        this.loadedSchemas.remove(keyspace);
+      }
 
       for (String keyspace : comparison_set) {
         if (!this.availableSchemas.containsKey(keyspace)) {

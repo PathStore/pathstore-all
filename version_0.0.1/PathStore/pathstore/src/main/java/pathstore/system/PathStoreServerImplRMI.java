@@ -34,7 +34,6 @@ public class PathStoreServerImplRMI implements PathStoreServer {
   }
 
   void startDaemons() {
-    if (PathStoreProperties.getInstance().role != Role.ROOTSERVER)
       try {
         this.schemaLoader.start();
         this.pushServer.start();
