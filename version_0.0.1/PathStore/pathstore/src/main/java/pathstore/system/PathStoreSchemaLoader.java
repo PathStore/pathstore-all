@@ -53,29 +53,25 @@ public class PathStoreSchemaLoader extends Thread {
     System.out.println("Recovered schemas to load: " + this.schemasToLoad);
 
     // Load values into availableSchemas
-    for (String keyspace : this.schemasToLoad) {
+    for (String keyspace : this.schemasToLoad)
       for (Row row :
           new PathStoreResultSet(
               PathStorePriviledgedCluster.getInstance()
                   .connect()
                   .execute(QueryBuilder.select().all().from("pathstore_applications", "apps")),
               "pathstore_applications",
-              "apps")) {
-        this.availableSchemas.put(keyspace, row.getString("augmented_schema"));
-      }
-    }
+              "apps")) this.availableSchemas.put(keyspace, row.getString("augmented_schema"));
 
     System.out.println("Recovered available schemas: " + this.availableSchemas);
 
     // Load values into loadedSchemas
     for (Row row :
-        new PathStoreResultSet(
-            PathStorePriviledgedCluster.getInstance()
-                .connect()
-                .execute(QueryBuilder.select("keyspace_name").from("system_schema", "keyspaces")),
-            "system_schema",
-            "keyspaces")) {
-      this.loadedSchemas.add(row.getString("keyspace_name"));
+        PathStorePriviledgedCluster.getInstance()
+            .connect()
+            .execute(QueryBuilder.select("keyspace_name").from("system_schema", "keyspaces"))) {
+      String keyspace = row.getString("keyspace_name");
+      if (keyspace.startsWith("pathstore_") && !keyspace.equals("pathstore_applications"))
+        this.loadedSchemas.add(keyspace);
     }
 
     System.out.println("Recovered loaded schemas: " + this.loadedSchemas);
