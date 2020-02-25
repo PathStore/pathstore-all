@@ -77,10 +77,6 @@ public class SchemaInfo {
     }
   }
 
-  public void removeKeyspace(final String keyspace) {
-    this.schemaInfo.remove(keyspace);
-  }
-
   public HashMap<Table, List<Column>> getKeySpaceInfo(String keyspaceName) {
     if (schemaInfo.get(keyspaceName) != null) return schemaInfo.get(keyspaceName);
 
