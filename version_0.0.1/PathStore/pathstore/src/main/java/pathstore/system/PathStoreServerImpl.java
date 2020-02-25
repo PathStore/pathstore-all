@@ -135,14 +135,6 @@ public class PathStoreServerImpl {
 
       SchemaInfoV2 schemaInfoV2 = new SchemaInfoV2(local);
 
-      // TODO: Temporary, implement reloading
-      if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
-        for (String s : schemaInfoV2.getAllKeySpaces()) {
-          local.execute("drop keyspace " + s);
-        }
-        schemaInfoV2.generate();
-      }
-
       if (!schemaInfoV2.getAllKeySpaces().contains("pathstore_applications"))
         PathStoreSchemaLoader.loadApplicationSchema(local);
 
