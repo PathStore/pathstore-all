@@ -118,14 +118,14 @@ public class PathStoreSchemaLoader extends Thread {
         comparison_set.add(keyspace);
       }
 
-      System.out.println("Currently queried schemas: " + comparison_set);
+      //System.out.println("Currently queried schemas: " + comparison_set);
 
       List<String> differences = new LinkedList<>();
 
       // if a keyspace is not in the current values then add it as a difference
       for (String s : this.schemasToLoad) if (!comparison_set.contains(s)) differences.add(s);
 
-      System.out.println("Difference: " + differences);
+      //System.out.println("Difference: " + differences);
 
       // Drop all differences and remove from loadedschemas if the schema was actually loaded. This
       // is simply a sanity check
