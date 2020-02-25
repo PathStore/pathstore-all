@@ -125,7 +125,7 @@ public class PathStoreSchemaLoader extends Thread {
       for (String keyspace : this.schemasToLoad)
         PathStorePriviledgedCluster.getInstance()
             .connect()
-            .execute("drop keyspace if exist" + keyspace);
+            .execute("drop keyspace if exists" + keyspace);
 
       for (String keyspace : comparison_set) {
         if (!this.availableSchemas.containsKey(keyspace)) {
