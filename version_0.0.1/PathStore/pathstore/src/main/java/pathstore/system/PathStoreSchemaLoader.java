@@ -99,6 +99,7 @@ public class PathStoreSchemaLoader extends Thread {
       for (Row row : session.execute(select))
         this.schemasToLoad.add(row.getString("keyspace_name"));
 
+      // Get current schemas from the database
       Set<String> comparison_set = new HashSet<>();
 
       // Load schemas that this nodes child need. So the path from root to edge node is complete
@@ -115,20 +116,28 @@ public class PathStoreSchemaLoader extends Thread {
         comparison_set.add(keyspace);
       }
 
-      System.out.println("Currently queired schemas: " + comparison_set);
+      System.out.println("Currently queried schemas: " + comparison_set);
 
-      this.schemasToLoad.removeAll(comparison_set);
+      List<String> differences = new LinkedList<>();
 
-      System.out.println("Difference: " + this.schemasToLoad);
+      // if a keyspace is not in the current values then add it as a difference
+      for (String s : this.schemasToLoad) if (!comparison_set.contains(s)) differences.add(s);
 
-      for (String keyspace : this.schemasToLoad) {
-        PathStorePriviledgedCluster.getInstance()
-            .connect()
-            .execute("drop keyspace if exists" + keyspace);
-        this.loadedSchemas.remove(keyspace);
+      System.out.println("Difference: " + differences);
+
+      // Drop all differences and remove from loadedschemas if the schema was actually loaded. This
+      // is simply a sanity check
+      for (String keyspace : differences) {
+        if (this.loadedSchemas.contains(keyspace)) {
+          PathStorePriviledgedCluster.getInstance()
+              .connect()
+              .execute("drop keyspace if exists" + keyspace);
+          this.loadedSchemas.remove(keyspace);
+        }
+        this.schemasToLoad.remove(keyspace);
       }
 
-      for (String keyspace : comparison_set) {
+      for (String keyspace : this.schemasToLoad) {
         if (!this.availableSchemas.containsKey(keyspace)) {
 
           Select select1 = QueryBuilder.select().all().from("pathstore_applications", "apps");
@@ -145,8 +154,6 @@ public class PathStoreSchemaLoader extends Thread {
           }
         }
       }
-
-      this.schemasToLoad.clear();
 
       try {
         // TODO: Find some more optimal timing for this
