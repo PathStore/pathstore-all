@@ -35,11 +35,10 @@ public class PathStoreSchemaLoader extends Thread {
     this.schemasToLoad = new HashSet<>();
     this.availableSchemas = new HashMap<>();
     this.loadedSchemas = new HashSet<>();
-    this.recover();
   }
 
   /** This function is used to recover the state of the internal schemas on restart */
-  private void recover() {
+  public void recover() {
     // TODO: (1)
     // Load values into schemasToLoad
     for (Row row :

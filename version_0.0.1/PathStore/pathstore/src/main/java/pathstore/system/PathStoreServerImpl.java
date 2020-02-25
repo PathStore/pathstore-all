@@ -138,6 +138,8 @@ public class PathStoreServerImpl {
       if (!schemaInfoV2.getAllKeySpaces().contains("pathstore_applications"))
         PathStoreSchemaLoader.loadApplicationSchema(local);
 
+      obj.recover();
+
       obj.startDaemons();
 
       System.err.println("PathStoreServer ready");

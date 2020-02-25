@@ -28,6 +28,11 @@ public class PathStoreServerImplRMI implements PathStoreServer {
     }
   }
 
+  void recover() {
+    // TODO: Implement any recovery needed for any other sub-system
+    this.schemaLoader.recover();
+  }
+
   void startDaemons() {
     if (PathStoreProperties.getInstance().role != Role.ROOTSERVER)
       try {
