@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.datastax.driver.core.SchemaChangeListener;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -102,9 +103,6 @@ public class PathStorePushServer extends Thread {
 
         try {
             for (String keyspace : SchemaInfo.getInstance().getSchemaInfo().keySet()) {
-
-                //TODO: Temporary
-                if(keyspace.equals("pathstore_applications")) continue;
 
                 HashMap<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(keyspace);
 

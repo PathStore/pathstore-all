@@ -7,6 +7,7 @@ import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.client.PathStoreResultSet;
 import pathstore.common.PathStoreProperties;
+import pathstore.util.SchemaInfo;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -129,6 +130,7 @@ public class PathStoreSchemaLoader extends Thread {
       // is simply a sanity check
       for (String keyspace : differences) {
         if (this.loadedSchemas.contains(keyspace)) {
+          SchemaInfo.getInstance().removeKeyspace(keyspace);
           PathStorePriviledgedCluster.getInstance()
               .connect()
               .execute("drop keyspace if exists " + keyspace);
