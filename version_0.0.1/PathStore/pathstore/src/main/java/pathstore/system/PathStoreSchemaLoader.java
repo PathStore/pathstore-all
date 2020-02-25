@@ -27,21 +27,24 @@ import java.util.stream.Collectors;
  */
 public class PathStoreSchemaLoader extends Thread {
 
+  /** Set of strings that denote the keyspaces to load */
   private final Set<String> schemasToLoad;
 
+  /** Map of keyspaces and their respective augmented schemas */
   private final Map<String, String> availableSchemas;
 
+  /** Set of strings that denote the keyspaces already loaded into the database */
   private final Set<String> loadedSchemas;
 
-  public PathStoreSchemaLoader() {
+  /** Initialize all hashmaps */
+  PathStoreSchemaLoader() {
     this.schemasToLoad = new HashSet<>();
     this.availableSchemas = new HashMap<>();
     this.loadedSchemas = new HashSet<>();
   }
 
   /** This function is used to recover the state of the internal schemas on restart */
-  public void recover() {
-    // TODO: (1)
+  void recover() {
     // Load values into schemasToLoad
     for (Row row :
         new PathStoreResultSet(
@@ -80,86 +83,138 @@ public class PathStoreSchemaLoader extends Thread {
   }
 
   /**
-   * This functions runs every second
+   * This function loads schemas specifically related to this node, this acts as a pathstore client
+   * and will move up the node hierarchy. Adds all {@link #schemasToLoad}
    *
-   * <p>It first queries any node info which resides in pathstore_applications.node_schemas this
-   * table represents a node id which is our node identifier and a keyspace_name of the schema it
-   * needs. There can be many entries for a singular nodeid. Then we gather all schemas that aren't
-   * currently available in our local pathstore_applications.apps table. Then if we haven't already
-   * loaded the schema we first parse it and load it directly into our local database then we ensure
-   * that we have denoted that schema name in our loadedSchemas set
+   * <p>TODO: Make this function a 1 time call, implement immutable querycache entries
+   *
+   * @param session {@link PathStoreCluster#connect()}
+   */
+  private void load_node_related_schemas(final Session session) {
+    Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
+    select.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
+
+    for (Row row : session.execute(select)) this.schemasToLoad.add(row.getString("keyspace_name"));
+  }
+
+  /**
+   * This function loads all needed schemas for itself and its children nodes
+   *
+   * @return a set of strings denoting all schemas needed to load this is used to calculate the
+   *     difference between {@link #schemasToLoad}
+   * @see #calculate_difference(Set)
+   */
+  private Set<String> load_path_related_schemas() {
+    Set<String> comparison_set = new HashSet<>();
+
+    for (Row row :
+        new PathStoreResultSet(
+            PathStorePriviledgedCluster.getInstance()
+                .connect()
+                .execute(
+                    QueryBuilder.select().all().from("pathstore_applications", "node_schemas")),
+            "pathstore_applications",
+            "node_schemas")) {
+      String keyspace = row.getString("keyspace_name");
+      this.schemasToLoad.add(keyspace);
+      comparison_set.add(keyspace);
+    }
+
+    return comparison_set;
+  }
+
+  /**
+   * This function calculates a list of differences between what schemas are required to be loaded
+   * and what schemas are actually loaded. If a schema is loaded but is no longer needed it is added
+   * to the difference list
+   *
+   * @param current_keyspaces set of current keyspaces
+   * @return list of difference
+   * @see #remove_all_difference(List)
+   */
+  private List<String> calculate_difference(final Set<String> current_keyspaces) {
+    List<String> differences = new LinkedList<>();
+
+    for (String s : this.schemasToLoad) if (!current_keyspaces.contains(s)) differences.add(s);
+
+    return differences;
+  }
+
+  /**
+   * This function takes in a list of differences that was calculated {@link
+   * #calculate_difference(Set)} removes all keyspaces that are no longer required
+   *
+   * <p>TODO: Needs to delete all querycache entries from current node that are related to each
+   * keyspace
+   *
+   * @param differences list of differences
+   */
+  private void remove_all_difference(final List<String> differences) {
+    for (String keyspace : differences) {
+      if (this.loadedSchemas.contains(keyspace)) {
+        SchemaInfo.getInstance().removeKeyspace(keyspace);
+        PathStorePriviledgedCluster.getInstance()
+            .connect()
+            .execute("drop keyspace if exists " + keyspace);
+        this.loadedSchemas.remove(keyspace);
+      }
+      this.schemasToLoad.remove(keyspace);
+    }
+  }
+
+  /**
+   * This function loads a required augmented schema if not already present in {@link
+   * #availableSchemas}
+   *
+   * @param session {@link PathStoreCluster#connect()}
+   * @param keyspace keyspace to load
+   */
+  private void load_required_augmented_schemas(final Session session, final String keyspace) {
+
+    Select select1 = QueryBuilder.select().all().from("pathstore_applications", "apps");
+    select1.where(QueryBuilder.eq("keyspace_name", keyspace));
+
+    for (Row row : session.execute(select1)) {
+      this.availableSchemas.put(keyspace, row.getString("augmented_schema"));
+    }
+  }
+
+  /**
+   * Load schema from {@link #availableSchemas} and execute all commands on the database
+   *
+   * @param keyspace keyspace to load into database
+   */
+  private void load_schema_into_database(final String keyspace) {
+    if (!this.loadedSchemas.contains(keyspace)) {
+      SchemaInfo info = SchemaInfo.getInstance();
+      info.removeKeyspace(keyspace);
+      parseSchema(this.availableSchemas.get(keyspace))
+          .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
+      this.loadedSchemas.add(keyspace);
+      info.getKeySpaceInfo(keyspace);
+    }
+  }
+
+  /**
+   * Load schemas for this node
+   *
+   * <p>Remove all differences
+   *
+   * <p>load schemas not already loaded into database
    */
   @Override
   public void run() {
     while (true) {
       Session session = PathStoreCluster.getInstance().connect();
 
-      // Load schemas dependent on the this specific node
-      Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
-      select.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
+      this.load_node_related_schemas(session);
 
-      for (Row row : session.execute(select))
-        this.schemasToLoad.add(row.getString("keyspace_name"));
+      this.remove_all_difference(this.calculate_difference(this.load_path_related_schemas()));
 
-      // Get current schemas from the database
-      Set<String> comparison_set = new HashSet<>();
-
-      // Load schemas that this nodes child need. So the path from root to edge node is complete
-      for (Row row :
-          new PathStoreResultSet(
-              PathStorePriviledgedCluster.getInstance()
-                  .connect()
-                  .execute(
-                      QueryBuilder.select().all().from("pathstore_applications", "node_schemas")),
-              "pathstore_applications",
-              "node_schemas")) {
-        String keyspace = row.getString("keyspace_name");
-        this.schemasToLoad.add(keyspace);
-        comparison_set.add(keyspace);
-      }
-
-      //System.out.println("Currently queried schemas: " + comparison_set);
-
-      List<String> differences = new LinkedList<>();
-
-      // if a keyspace is not in the current values then add it as a difference
-      for (String s : this.schemasToLoad) if (!comparison_set.contains(s)) differences.add(s);
-
-      //System.out.println("Difference: " + differences);
-
-      // Drop all differences and remove from loadedschemas if the schema was actually loaded. This
-      // is simply a sanity check
-      for (String keyspace : differences) {
-        if (this.loadedSchemas.contains(keyspace)) {
-          SchemaInfo.getInstance().removeKeyspace(keyspace);
-          PathStorePriviledgedCluster.getInstance()
-              .connect()
-              .execute("drop keyspace if exists " + keyspace);
-          this.loadedSchemas.remove(keyspace);
-        }
-        this.schemasToLoad.remove(keyspace);
-      }
-
-      for (String keyspace : this.schemasToLoad) {
-        if (!this.availableSchemas.containsKey(keyspace)) {
-
-          Select select1 = QueryBuilder.select().all().from("pathstore_applications", "apps");
-          select1.where(QueryBuilder.eq("keyspace_name", keyspace));
-
-          for (Row row : session.execute(select1)) {
-            this.availableSchemas.put(keyspace, row.getString("augmented_schema"));
-          }
-        } else {
-          if (!this.loadedSchemas.contains(keyspace)) {
-            SchemaInfo info = SchemaInfo.getInstance();
-            info.removeKeyspace(keyspace);
-            parseSchema(this.availableSchemas.get(keyspace))
-                .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
-            this.loadedSchemas.add(keyspace);
-            info.getKeySpaceInfo(keyspace);
-          }
-        }
-      }
+      for (String keyspace : this.schemasToLoad)
+        if (!this.availableSchemas.containsKey(keyspace))
+          this.load_required_augmented_schemas(session, keyspace);
+        else this.load_schema_into_database(keyspace);
 
       try {
         // TODO: Find some more optimal timing for this
