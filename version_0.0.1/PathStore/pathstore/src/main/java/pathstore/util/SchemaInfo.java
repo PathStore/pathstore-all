@@ -48,8 +48,7 @@ public class SchemaInfo {
     return PathStorePriviledgedCluster.getInstance().getMetadata();
   }
 
-  HashMap<String, HashMap<Table, List<Column>>> schemaInfo =
-      new HashMap<String, HashMap<Table, List<Column>>>();
+  final HashMap<String, HashMap<Table, List<Column>>> schemaInfo = new HashMap<>();
 
   public SchemaInfo() {
     loadSchemas();
@@ -77,14 +76,20 @@ public class SchemaInfo {
     }
   }
 
+  public void removeKeyspace(final String keyspace) {
+    synchronized (this.schemaInfo) {
+      this.schemaInfo.remove(keyspace);
+    }
+  }
+
   public HashMap<Table, List<Column>> getKeySpaceInfo(String keyspaceName) {
     if (schemaInfo.get(keyspaceName) != null) return schemaInfo.get(keyspaceName);
 
     PathStorePriviledgedCluster cluster = PathStorePriviledgedCluster.getInstance();
     Session session = cluster.connect();
 
-    try {
-      HashMap<Table, List<Column>> keyspaceInfo = new HashMap<Table, List<Column>>();
+    HashMap<Table, List<Column>> keyspaceInfo = new HashMap<>();
+    synchronized (this.schemaInfo) {
       schemaInfo.put(keyspaceName, keyspaceInfo);
 
       PreparedStatement prepared =
@@ -123,11 +128,9 @@ public class SchemaInfo {
 
         columns.add(column);
       }
-
-      return keyspaceInfo;
-    } finally {
-      // session.close();
     }
+
+    return keyspaceInfo;
   }
 
   private List<Column> getColumns(HashMap<Table, List<Column>> keyspaceInfo, String tableName) {

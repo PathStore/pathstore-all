@@ -131,7 +131,7 @@ public class PathStoreSchemaLoader extends Thread {
       // is simply a sanity check
       for (String keyspace : differences) {
         if (this.loadedSchemas.contains(keyspace)) {
-          SchemaInfo.getInstance().getSchemaInfo().remove(keyspace);
+          SchemaInfo.getInstance().removeKeyspace(keyspace);
           PathStorePriviledgedCluster.getInstance()
               .connect()
               .execute("drop keyspace if exists " + keyspace);
@@ -152,7 +152,7 @@ public class PathStoreSchemaLoader extends Thread {
         } else {
           if (!this.loadedSchemas.contains(keyspace)) {
             SchemaInfo info = SchemaInfo.getInstance();
-            info.getSchemaInfo().remove(keyspace);
+            info.removeKeyspace(keyspace);
             info.getKeySpaceInfo(keyspace);
             parseSchema(this.availableSchemas.get(keyspace))
                 .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
