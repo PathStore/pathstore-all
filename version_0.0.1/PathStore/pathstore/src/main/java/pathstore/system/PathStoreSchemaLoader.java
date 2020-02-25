@@ -1,6 +1,7 @@
 package pathstore.system;
 
 import com.datastax.driver.core.Row;
+import com.datastax.driver.core.SchemaChangeListener;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
@@ -150,6 +151,9 @@ public class PathStoreSchemaLoader extends Thread {
           }
         } else {
           if (!this.loadedSchemas.contains(keyspace)) {
+            SchemaInfo info = SchemaInfo.getInstance();
+            info.removeKeyspace(keyspace);
+            info.getKeySpaceInfo(keyspace);
             parseSchema(this.availableSchemas.get(keyspace))
                 .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
             this.loadedSchemas.add(keyspace);
