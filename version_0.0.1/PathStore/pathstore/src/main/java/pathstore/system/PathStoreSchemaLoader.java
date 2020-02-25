@@ -131,7 +131,7 @@ public class PathStoreSchemaLoader extends Thread {
         if (this.loadedSchemas.contains(keyspace)) {
           PathStorePriviledgedCluster.getInstance()
               .connect()
-              .execute("drop keyspace if exists" + keyspace);
+              .execute("drop keyspace if exists " + keyspace);
           this.loadedSchemas.remove(keyspace);
         }
         this.schemasToLoad.remove(keyspace);
