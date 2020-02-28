@@ -264,6 +264,8 @@ public class PathStoreSchemaLoader extends Thread {
             + "    nodeid int,\n"
             + "    pathstore_version timeuuid,\n"
             + "    keyspace_name text,\n"
+            + "    process_status text,\n"
+            + "    wait_for int,\n"
             + "    pathstore_deleted boolean,\n"
             + "    pathstore_dirty boolean,\n"
             + "    pathstore_insert_sid text,\n"

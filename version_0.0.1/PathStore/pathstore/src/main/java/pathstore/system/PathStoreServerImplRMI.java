@@ -16,32 +16,35 @@ import java.util.UUID;
 public class PathStoreServerImplRMI implements PathStoreServer {
   private final Logger logger = LoggerFactory.getLogger(PathStoreServerImplRMI.class);
 
-  private PathStoreSchemaLoader schemaLoader = null;
+  private PathStoreMasterSchemaServer masterSchemaServer = null;
+  private PathStoreSlaveSchemaServer slaveSchemaServer;
   private PathStorePullServer pullServer = null;
   private PathStorePushServer pushServer = null;
 
   public PathStoreServerImplRMI() {
+    this.slaveSchemaServer = new PathStoreSlaveSchemaServer();
     if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
-      this.schemaLoader = new PathStoreSchemaLoader();
       this.pullServer = new PathStorePullServer();
       this.pushServer = new PathStorePushServer();
+    } else {
+      this.masterSchemaServer = new PathStoreMasterSchemaServer();
     }
   }
 
   void recover() {
     // TODO: Implement any recovery needed for any other sub-system
-    this.schemaLoader.recover();
   }
 
   void startDaemons() {
-      try {
-        this.schemaLoader.start();
-        this.pushServer.start();
-        this.pullServer.start();
-        this.pullServer.join();
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
+    try {
+      if (this.masterSchemaServer != null) this.masterSchemaServer.start();
+      this.slaveSchemaServer.start();
+      this.pushServer.start();
+      this.pullServer.start();
+      this.pullServer.join();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
   }
 
   @Override // child calls this (maybe client or child node)

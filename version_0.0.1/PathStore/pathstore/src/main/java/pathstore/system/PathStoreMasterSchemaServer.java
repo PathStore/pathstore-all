@@ -4,11 +4,10 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -44,13 +43,6 @@ import java.util.stream.Collectors;
  */
 public class PathStoreMasterSchemaServer extends Thread {
 
-  enum ProccessStatus {
-    INIT,
-    WAITING,
-    RUNNING,
-    STOPPED
-  }
-
   private static class Node {
     final int node_id;
     final ProccessStatus proccess_status;
@@ -63,44 +55,68 @@ public class PathStoreMasterSchemaServer extends Thread {
     }
   }
 
+  private void initiate_application(final int nodeid, final String keyspace_name) {
+    System.out.println(
+        "Initiating application for: " + nodeid + " with application: " + keyspace_name);
+    Session client_session = PathStoreCluster.getInstance().connect();
+
+    Update update = QueryBuilder.update("pathstore_applications", "node_schemas");
+    update
+        .onlyIf(QueryBuilder.eq("nodeid", nodeid))
+        .with(QueryBuilder.set("process_status", ProccessStatus.INIT.toString()));
+
+    client_session.execute(update);
+  }
+
   @Override
   public void run() {
     while (true) {
 
       // First we will query the database to read from pathstore_applications.node_schemas
 
-      Session client_session = PathStoreCluster.getInstance().connect();
+      Session privileged_session = PathStorePriviledgedCluster.getInstance().connect();
 
       Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
 
-      HashMap<String, List<Node>> data = new HashMap<>();
+      Map<String, List<Node>> data = new HashMap<>();
 
-      for (Row row : client_session.execute(select)) {
+      for (Row row : privileged_session.execute(select)) {
         String keyspace = row.getString("keyspace_name");
+
         if (!data.containsKey(keyspace)) data.put(keyspace, new ArrayList<>());
-        else
-          data.get(keyspace)
-              .add(
-                  new Node(
-                      row.getInt("nodeid"),
-                      ProccessStatus.valueOf(row.getString("process_status")),
-                      row.getInt("waiting_for")));
+
+        data.get(keyspace)
+            .add(
+                new Node(
+                    row.getInt("nodeid"),
+                    ProccessStatus.valueOf(row.getString("process_status")),
+                    row.getInt("waiting_for")));
       }
 
+      // Can we make any assumptions about the node id? Currently my assumption is we can't
       for (String keyspace : data.keySet()) {
+        System.out.println("Checking for schema: " + keyspace);
         List<Node> nodes = data.get(keyspace);
-        List<Node> init =
+
+        Set<Node> running =
             nodes.stream()
-                .filter(i -> i.proccess_status != ProccessStatus.INIT)
-                .collect(Collectors.toList());
-        List<Node> waiting =
+                .filter(i -> i.proccess_status != ProccessStatus.RUNNING)
+                .collect(Collectors.toSet());
+
+        Set<Node> waiting =
             nodes.stream()
                 .filter(i -> i.proccess_status != ProccessStatus.WAITING)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
+
+        // Maybe break here?
+        for (Node node : waiting) {
+          if (node.waiting_for == -1 || running.contains(node))
+            this.initiate_application(node.node_id, keyspace);
+        }
       }
 
       try {
-        Thread.sleep(1000);
+        Thread.sleep(5000);
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
