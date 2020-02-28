@@ -37,11 +37,15 @@ public class PathStoreServerImplRMI implements PathStoreServer {
 
   void startDaemons() {
     try {
-      if (this.masterSchemaServer != null) this.masterSchemaServer.start();
       this.slaveSchemaServer.start();
-      this.pushServer.start();
-      this.pullServer.start();
-      this.pullServer.join();
+      if (PathStoreProperties.getInstance().role == Role.ROOTSERVER) {
+        this.masterSchemaServer.start();
+        this.masterSchemaServer.join();
+      } else {
+        this.pushServer.start();
+        this.pullServer.start();
+        this.pullServer.join();
+      }
     } catch (InterruptedException e) {
       e.printStackTrace();
     }

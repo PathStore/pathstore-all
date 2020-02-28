@@ -151,7 +151,8 @@ public class ApplicationSchemaV2 {
         try {
           String keyspaceName = f.getName().substring(0, f.getName().indexOf('.'));
           String schema = readFileContents(s);
-          PathStoreSchemaLoader.parseSchema(schema).forEach(this.session::execute);
+
+          //PathStoreSchemaLoader.parseSchema(schema).forEach(this.session::execute);
 
           this.schemaInfo.generate();
           for (String tableName : this.schemaInfo.getTablesByKeySpace(keyspaceName)) {

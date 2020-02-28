@@ -138,13 +138,10 @@ public class PathStoreServerImpl {
       if (!schemaInfoV2.getAllKeySpaces().contains("pathstore_applications"))
         PathStoreSchemaLoader.loadApplicationSchema(local);
 
-      if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
-        obj.recover();
-
-        obj.startDaemons();
-      }
 
       System.err.println("PathStoreServer ready");
+
+      obj.startDaemons();
 
     } catch (Exception e) {
       System.err.println("PathStoreServer exception: " + e.toString());
