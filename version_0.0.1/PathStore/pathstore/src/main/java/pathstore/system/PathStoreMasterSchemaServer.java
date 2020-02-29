@@ -43,31 +43,6 @@ import java.util.stream.Collectors;
  * slave will start the installation process
  */
 public class PathStoreMasterSchemaServer extends Thread {
-
-  private static class Node {
-    final int node_id;
-    final ProccessStatus proccess_status;
-    final int waiting_for;
-
-    Node(final int node_id, final ProccessStatus proccess_status, final int waiting_for) {
-      this.node_id = node_id;
-      this.proccess_status = proccess_status;
-      this.waiting_for = waiting_for;
-    }
-
-    @Override
-    public String toString() {
-      return "Node{"
-          + "node_id="
-          + node_id
-          + ", proccess_status="
-          + proccess_status
-          + ", waiting_for="
-          + waiting_for
-          + '}';
-    }
-  }
-
   @Override
   public void run() {
     while (true) {
@@ -78,7 +53,7 @@ public class PathStoreMasterSchemaServer extends Thread {
 
       Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
 
-      Map<String, List<Node>> data = new HashMap<>();
+      Map<String, List<ApplicationEntry>> data = new HashMap<>();
 
       for (Row row :
           new PathStoreResultSet(
@@ -89,7 +64,7 @@ public class PathStoreMasterSchemaServer extends Thread {
 
         data.get(keyspace)
             .add(
-                new Node(
+                new ApplicationEntry(
                     row.getInt("nodeid"),
                     ProccessStatus.valueOf(row.getString("process_status")),
                     row.getInt("wait_for")));
@@ -99,7 +74,7 @@ public class PathStoreMasterSchemaServer extends Thread {
       // Can we make any assumptions about the node id? Currently my assumption is we can't
       for (String keyspace : data.keySet()) {
         System.out.println("Checking for schema: " + keyspace);
-        List<Node> nodes = data.get(keyspace);
+        List<ApplicationEntry> nodes = data.get(keyspace);
         System.out.println(nodes);
 
         Set<Integer> running =
@@ -108,13 +83,13 @@ public class PathStoreMasterSchemaServer extends Thread {
                 .map(i -> i.node_id)
                 .collect(Collectors.toSet());
 
-        Set<Node> waiting =
+        Set<ApplicationEntry> waiting =
             nodes.stream()
                 .filter(i -> i.proccess_status == ProccessStatus.WAITING_INSTALL)
                 .collect(Collectors.toSet());
 
         // Maybe break here?
-        for (Node node : waiting) {
+        for (ApplicationEntry node : waiting) {
           if (node.waiting_for == -1 || running.contains(node.waiting_for))
             this.install_application(node.node_id, keyspace);
         }
@@ -125,13 +100,13 @@ public class PathStoreMasterSchemaServer extends Thread {
                 .map(i -> i.node_id)
                 .collect(Collectors.toSet());
 
-        Set<Node> waiting_remove =
+        Set<ApplicationEntry> waiting_remove =
             nodes.stream()
                 .filter(i -> i.proccess_status == ProccessStatus.WAITING_REMOVE)
                 .collect(Collectors.toSet());
 
         // Maybe break here?
-        for (Node node : waiting_remove) {
+        for (ApplicationEntry node : waiting_remove) {
           if (node.waiting_for == -1 || removed.contains(node.waiting_for))
             this.remove_application(node.node_id, keyspace);
         }

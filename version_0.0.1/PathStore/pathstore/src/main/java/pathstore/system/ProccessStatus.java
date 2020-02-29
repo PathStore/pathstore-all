@@ -11,7 +11,7 @@ package pathstore.system;
  *
  * <p>WAITING_REMOVE -> REMOVING -> REMOVED
  */
-enum ProccessStatus {
+public enum ProccessStatus {
   WAITING_INSTALL,
   INSTALLING,
   INSTALLED,

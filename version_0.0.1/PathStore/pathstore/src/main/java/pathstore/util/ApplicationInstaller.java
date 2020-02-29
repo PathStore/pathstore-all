@@ -1,5 +1,18 @@
 package pathstore.util;
 
+import com.datastax.driver.core.BatchStatement;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import pathstore.client.PathStoreResultSet;
+import pathstore.system.ApplicationEntry;
+import pathstore.system.PathStorePriviledgedCluster;
+import pathstore.system.ProccessStatus;
+
 /**
  * The point of this class is to calculate the path from one node to another and write to
  * pathstore_applications.node_schemas to either install an application along the path or delete an
@@ -10,9 +23,54 @@ package pathstore.util;
  */
 public class ApplicationInstaller {
 
-  private void install_application(final int nodeid, final String keyspace_name) {}
+  private static void install_application(final int nodeid, final String keyspace_name) {
 
-  private void remove_application(final int nodeid, final String keyspace_name) {}
+    // TODO: Check if keyspace_name is a valid keyspace
 
-  public static void main(String[] args) {}
+    Map<Integer, Integer> node_to_parent_node = new HashMap<>();
+
+    Session session = PathStorePriviledgedCluster.getInstance().connect();
+
+    // Creates map from current nodeid to parent's node id
+    for (Row row :
+        new PathStoreResultSet(
+            session.execute(QueryBuilder.select().all().from("pahtstore_applications", "topolgy")),
+            "pathstore_applications",
+            "topology")) node_to_parent_node.put(row.getInt("nodeid"), row.getInt("parent_nodeid"));
+
+    List<ApplicationEntry> applicationEntryList = new LinkedList<>();
+
+    int current_nodeid = nodeid;
+
+    while (current_nodeid != -1) {
+      int parent_nodeid = node_to_parent_node.get(current_nodeid);
+      applicationEntryList.add(
+          new ApplicationEntry(current_nodeid, ProccessStatus.WAITING_INSTALL, parent_nodeid));
+      current_nodeid = parent_nodeid;
+    }
+
+    BatchStatement batchStatement = new BatchStatement();
+
+    for (ApplicationEntry entry : applicationEntryList)
+      batchStatement.add(
+          QueryBuilder.insertInto("pathstore_applications", "node_schemas")
+              .value("keyspace_name", keyspace_name)
+              .value("nodeid", entry.node_id)
+              .value("process_status", entry.proccess_status.toString())
+              .value("wait_for", entry.waiting_for));
+
+    session.execute(batchStatement);
+  }
+
+  private static void remove_application(final int nodeid, final String keyspace_name) {}
+
+  public static void main(String[] args) {
+    switch (args[0]) {
+      case "insert":
+        install_application(Integer.valueOf(args[1]), args[2]);
+        break;
+      case "remove":
+        break;
+    }
+  }
 }
