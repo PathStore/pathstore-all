@@ -14,12 +14,11 @@ public class PathStoreSlaveSchemaServer extends Thread {
   public void run() {
     Session session = PathStoreCluster.getInstance().connect();
     Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
-    select
-        .where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID))
-        .and(QueryBuilder.eq("process_status", ProccessStatus.INIT.toString()));
+    select.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
 
     for (Row row : session.execute(select)) {
-      this.instantiate_application(session, row.getString("keyspace_name"));
+      if (row.getString("process_status").equals(ProccessStatus.INIT.toString()))
+        this.instantiate_application(session, row.getString("keyspace_name"));
     }
 
     try {
