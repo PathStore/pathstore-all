@@ -90,7 +90,7 @@ public class PathStoreMasterSchemaServer extends Thread {
                 new Node(
                     row.getInt("nodeid"),
                     ProccessStatus.valueOf(row.getString("process_status")),
-                    row.getInt("waiting_for")));
+                    row.getInt("wait_for")));
       }
 
       // Can we make any assumptions about the node id? Currently my assumption is we can't
