@@ -42,7 +42,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
 
       Update update = QueryBuilder.update("pathstore_applications", "node_schemas");
       update.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
-      update.with(QueryBuilder.set("process_status", ProccessStatus.RUNNING));
+      update.with(QueryBuilder.set("process_status", ProccessStatus.RUNNING.toString()));
 
       session.execute(update);
     }
