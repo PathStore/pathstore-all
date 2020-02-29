@@ -152,7 +152,7 @@ public class ApplicationSchemaV2 {
           String keyspaceName = f.getName().substring(0, f.getName().indexOf('.'));
           String schema = readFileContents(s);
 
-          //PathStoreSchemaLoader.parseSchema(schema).forEach(this.session::execute);
+          PathStoreSchemaLoader.parseSchema(schema).forEach(this.session::execute);
 
           this.schemaInfo.generate();
           for (String tableName : this.schemaInfo.getTablesByKeySpace(keyspaceName)) {
@@ -167,6 +167,8 @@ public class ApplicationSchemaV2 {
                 keyspaceName,
                 this.cluster.getMetadata().getKeyspace(table.keyspace_name).exportAsString());
           }
+
+          session.execute("drop keyspace if exists " + keyspaceName);
 
         } catch (Exception e) {
           System.out.println("There was an error with the file: " + f.getName());
