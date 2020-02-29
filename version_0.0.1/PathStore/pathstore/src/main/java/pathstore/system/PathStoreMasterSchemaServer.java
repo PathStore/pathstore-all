@@ -101,9 +101,10 @@ public class PathStoreMasterSchemaServer extends Thread {
         List<Node> nodes = data.get(keyspace);
         System.out.println(nodes);
 
-        Set<Node> running =
+        Set<Integer> running =
             nodes.stream()
                 .filter(i -> i.proccess_status == ProccessStatus.RUNNING)
+                .map(i -> i.node_id)
                 .collect(Collectors.toSet());
 
         Set<Node> waiting =
@@ -114,7 +115,7 @@ public class PathStoreMasterSchemaServer extends Thread {
         // Maybe break here?
         for (Node node : waiting) {
           System.out.println(node.node_id + " " + node.waiting_for);
-          if (node.waiting_for == -1 || running.contains(node))
+          if (node.waiting_for == -1 || running.contains(node.node_id))
             this.initiate_application(node.node_id, keyspace);
         }
       }
