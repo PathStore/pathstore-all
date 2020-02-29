@@ -14,7 +14,9 @@ public class PathStoreSlaveSchemaServer extends Thread {
   public void run() {
     Session session = PathStoreCluster.getInstance().connect();
     Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
-    select.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
+    select
+        .where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID))
+        .and(QueryBuilder.eq("process_status", ProccessStatus.INIT.toString()));
 
     for (Row row : session.execute(select)) {
       this.instantiate_application(session, row.getString("keyspace_name"));

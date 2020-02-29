@@ -55,19 +55,6 @@ public class PathStoreMasterSchemaServer extends Thread {
     }
   }
 
-  private void initiate_application(final int nodeid, final String keyspace_name) {
-    System.out.println(
-        "Initiating application for: " + nodeid + " with application: " + keyspace_name);
-    Session client_session = PathStoreCluster.getInstance().connect();
-
-    Update update = QueryBuilder.update("pathstore_applications", "node_schemas");
-    update
-        .onlyIf(QueryBuilder.eq("nodeid", nodeid))
-        .with(QueryBuilder.set("process_status", ProccessStatus.INIT.toString()));
-
-    client_session.execute(update);
-  }
-
   @Override
   public void run() {
     while (true) {
@@ -121,5 +108,18 @@ public class PathStoreMasterSchemaServer extends Thread {
         e.printStackTrace();
       }
     }
+  }
+
+  private void initiate_application(final int nodeid, final String keyspace_name) {
+    System.out.println(
+        "Initiating application for: " + nodeid + " with application: " + keyspace_name);
+    Session client_session = PathStoreCluster.getInstance().connect();
+
+    Update update = QueryBuilder.update("pathstore_applications", "node_schemas");
+    update
+        .where(QueryBuilder.eq("nodeid", nodeid))
+        .with(QueryBuilder.set("process_status", ProccessStatus.INIT.toString()));
+
+    client_session.execute(update);
   }
 }
