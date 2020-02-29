@@ -12,19 +12,21 @@ public class PathStoreSlaveSchemaServer extends Thread {
 
   @Override
   public void run() {
-    Session session = PathStoreCluster.getInstance().connect();
-    Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
-    select.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
+    while (true) {
+      Session session = PathStoreCluster.getInstance().connect();
+      Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
+      select.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
 
-    for (Row row : session.execute(select)) {
-      if (row.getString("process_status").equals(ProccessStatus.INIT.toString()))
-        this.instantiate_application(session, row.getString("keyspace_name"));
-    }
+      for (Row row : session.execute(select)) {
+        if (row.getString("process_status").equals(ProccessStatus.INIT.toString()))
+          this.instantiate_application(session, row.getString("keyspace_name"));
+      }
 
-    try {
-      Thread.sleep(1000);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
     }
   }
 
