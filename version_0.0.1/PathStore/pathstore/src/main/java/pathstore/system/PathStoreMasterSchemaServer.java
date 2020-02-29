@@ -97,6 +97,7 @@ public class PathStoreMasterSchemaServer extends Thread {
 
         // Maybe break here?
         for (Node node : waiting) {
+          System.out.println(node.node_id + " " + node.waiting_for);
           if (node.waiting_for == -1 || running.contains(node))
             this.initiate_application(node.node_id, keyspace);
         }
