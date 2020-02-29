@@ -53,6 +53,18 @@ public class PathStoreMasterSchemaServer extends Thread {
       this.proccess_status = proccess_status;
       this.waiting_for = waiting_for;
     }
+
+    @Override
+    public String toString() {
+      return "Node{"
+          + "node_id="
+          + node_id
+          + ", proccess_status="
+          + proccess_status
+          + ", waiting_for="
+          + waiting_for
+          + '}';
+    }
   }
 
   @Override
@@ -84,15 +96,16 @@ public class PathStoreMasterSchemaServer extends Thread {
       for (String keyspace : data.keySet()) {
         System.out.println("Checking for schema: " + keyspace);
         List<Node> nodes = data.get(keyspace);
+        System.out.println(nodes);
 
         Set<Node> running =
             nodes.stream()
-                .filter(i -> i.proccess_status != ProccessStatus.RUNNING)
+                .filter(i -> i.proccess_status == ProccessStatus.RUNNING)
                 .collect(Collectors.toSet());
 
         Set<Node> waiting =
             nodes.stream()
-                .filter(i -> i.proccess_status != ProccessStatus.WAITING)
+                .filter(i -> i.proccess_status == ProccessStatus.WAITING)
                 .collect(Collectors.toSet());
 
         // Maybe break here?
