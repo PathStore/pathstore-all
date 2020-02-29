@@ -6,6 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreResultSet;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -79,7 +80,9 @@ public class PathStoreMasterSchemaServer extends Thread {
 
       Map<String, List<Node>> data = new HashMap<>();
 
-      for (Row row : privileged_session.execute(select)) {
+      for (Row row :
+          new PathStoreResultSet(
+              privileged_session.execute(select), "pathstore_applications", "node_schemas")) {
         String keyspace = row.getString("keyspace_name");
 
         if (!data.containsKey(keyspace)) data.put(keyspace, new ArrayList<>());
