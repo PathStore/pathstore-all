@@ -18,8 +18,16 @@ public class PathStoreSlaveSchemaServer extends Thread {
       select.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
 
       for (Row row : session.execute(select)) {
-        if (row.getString("process_status").equals(ProccessStatus.INSTALLING.toString()))
-          this.instantiate_application(session, row.getString("keyspace_name"));
+        ProccessStatus current_process_status =
+            ProccessStatus.valueOf(row.getString("process_status"));
+        switch (current_process_status) {
+          case INSTALLING:
+            this.install_application(session, row.getString("keyspace_name"));
+            break;
+          case REMOVING:
+            this.remove_application(session, row.getString("keyspace_name"));
+            break;
+        }
       }
 
       try {
@@ -30,7 +38,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
     }
   }
 
-  private void instantiate_application(final Session session, final String keyspace) {
+  private void install_application(final Session session, final String keyspace) {
     // Query application, if not exist then just continue and wait for it to exist
     Select select = QueryBuilder.select().all().from("pathstore_applications", "apps");
     select.where(QueryBuilder.eq("keyspace_name", keyspace));
@@ -46,5 +54,18 @@ public class PathStoreSlaveSchemaServer extends Thread {
 
       session.execute(update);
     }
+  }
+
+  private void remove_application(final Session session, final String keyspace) {
+    System.out.println("Removing application " + keyspace);
+    PathStorePriviledgedCluster.getInstance()
+        .connect()
+        .execute("drop keyspace if exists " + keyspace);
+
+    Update update = QueryBuilder.update("pathstore_applications", "node_schemas");
+    update.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
+    update.with(QueryBuilder.set("process_status", ProccessStatus.REMOVED.toString()));
+
+    session.execute(update);
   }
 }

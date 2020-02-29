@@ -95,6 +95,7 @@ public class PathStoreMasterSchemaServer extends Thread {
                     row.getInt("wait_for")));
       }
 
+      // TODO: Clean this up. Lots of duplicate code
       // Can we make any assumptions about the node id? Currently my assumption is we can't
       for (String keyspace : data.keySet()) {
         System.out.println("Checking for schema: " + keyspace);
@@ -115,7 +116,24 @@ public class PathStoreMasterSchemaServer extends Thread {
         // Maybe break here?
         for (Node node : waiting) {
           if (node.waiting_for == -1 || running.contains(node.waiting_for))
-            this.initiate_application(node.node_id, keyspace);
+            this.install_application(node.node_id, keyspace);
+        }
+
+        Set<Integer> removed =
+            nodes.stream()
+                .filter(i -> i.proccess_status == ProccessStatus.REMOVED)
+                .map(i -> i.node_id)
+                .collect(Collectors.toSet());
+
+        Set<Node> waiting_remove =
+            nodes.stream()
+                .filter(i -> i.proccess_status == ProccessStatus.WAITING_REMOVE)
+                .collect(Collectors.toSet());
+
+        // Maybe break here?
+        for (Node node : waiting_remove) {
+          if (node.waiting_for == -1 || removed.contains(node.waiting_for))
+            this.remove_application(node.node_id, keyspace);
         }
       }
 
@@ -127,7 +145,7 @@ public class PathStoreMasterSchemaServer extends Thread {
     }
   }
 
-  private void initiate_application(final int nodeid, final String keyspace_name) {
+  private void install_application(final int nodeid, final String keyspace_name) {
     System.out.println(
         "Initiating application for: " + nodeid + " with application: " + keyspace_name);
     Session client_session = PathStoreCluster.getInstance().connect();
@@ -136,6 +154,19 @@ public class PathStoreMasterSchemaServer extends Thread {
     update
         .where(QueryBuilder.eq("nodeid", nodeid))
         .with(QueryBuilder.set("process_status", ProccessStatus.INSTALLING.toString()));
+
+    client_session.execute(update);
+  }
+
+  private void remove_application(final int nodeid, final String keyspace_name) {
+    System.out.println(
+        "Removing application for: " + nodeid + " with application: " + keyspace_name);
+    Session client_session = PathStoreCluster.getInstance().connect();
+
+    Update update = QueryBuilder.update("pathstore_applications", "node_schemas");
+    update
+        .where(QueryBuilder.eq("nodeid", nodeid))
+        .with(QueryBuilder.set("process_status", ProccessStatus.REMOVING.toString()));
 
     client_session.execute(update);
   }
