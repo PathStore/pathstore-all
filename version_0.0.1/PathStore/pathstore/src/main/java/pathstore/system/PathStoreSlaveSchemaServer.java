@@ -18,7 +18,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
       select.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
 
       for (Row row : session.execute(select)) {
-        if (row.getString("process_status").equals(ProccessStatus.INIT.toString()))
+        if (row.getString("process_status").equals(ProccessStatus.INSTALLING.toString()))
           this.instantiate_application(session, row.getString("keyspace_name"));
       }
 
@@ -42,7 +42,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
 
       Update update = QueryBuilder.update("pathstore_applications", "node_schemas");
       update.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
-      update.with(QueryBuilder.set("process_status", ProccessStatus.RUNNING.toString()));
+      update.with(QueryBuilder.set("process_status", ProccessStatus.INSTALLED.toString()));
 
       session.execute(update);
     }

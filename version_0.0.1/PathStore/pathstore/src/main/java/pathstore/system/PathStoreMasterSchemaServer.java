@@ -103,13 +103,13 @@ public class PathStoreMasterSchemaServer extends Thread {
 
         Set<Integer> running =
             nodes.stream()
-                .filter(i -> i.proccess_status == ProccessStatus.RUNNING)
+                .filter(i -> i.proccess_status == ProccessStatus.INSTALLED)
                 .map(i -> i.node_id)
                 .collect(Collectors.toSet());
 
         Set<Node> waiting =
             nodes.stream()
-                .filter(i -> i.proccess_status == ProccessStatus.WAITING)
+                .filter(i -> i.proccess_status == ProccessStatus.WAITING_INSTALL)
                 .collect(Collectors.toSet());
 
         // Maybe break here?
@@ -135,7 +135,7 @@ public class PathStoreMasterSchemaServer extends Thread {
     Update update = QueryBuilder.update("pathstore_applications", "node_schemas");
     update
         .where(QueryBuilder.eq("nodeid", nodeid))
-        .with(QueryBuilder.set("process_status", ProccessStatus.INIT.toString()));
+        .with(QueryBuilder.set("process_status", ProccessStatus.INSTALLING.toString()));
 
     client_session.execute(update);
   }
