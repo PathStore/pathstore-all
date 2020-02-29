@@ -35,10 +35,11 @@ public class PathStoreSlaveSchemaServer extends Thread {
     for (Row row : session.execute(select)) {
       System.out.println("Loading application: " + keyspace);
       PathStoreSchemaLoader.parseSchema(row.getString("augmented_schema"))
-          .forEach(session::execute);
+          .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
 
       Update update = QueryBuilder.update("pathstore_applications", "node_schemas");
-      update.where(QueryBuilder.eq("process_status", ProccessStatus.RUNNING.toString()));
+      update.where(QueryBuilder.eq("nodeid", PathStoreProperties.getInstance().NodeID));
+      update.with(QueryBuilder.set("process_status", ProccessStatus.RUNNING));
 
       session.execute(update);
     }
