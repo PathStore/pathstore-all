@@ -106,6 +106,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
    */
   private void remove_application(final Session session, final String keyspace) {
     System.out.println("Removing application " + keyspace);
+    SchemaInfo.getInstance().removeKeyspace(keyspace);
     PathStorePriviledgedCluster.getInstance()
         .connect()
         .execute("drop keyspace if exists " + keyspace);
@@ -119,8 +120,6 @@ public class PathStoreSlaveSchemaServer extends Thread {
         .with(
             QueryBuilder.set(
                 Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, ProccessStatus.REMOVED.toString()));
-
-    SchemaInfo.getInstance().removeKeyspace(keyspace);
     session.execute(update);
   }
 }
