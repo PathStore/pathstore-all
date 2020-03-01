@@ -1,16 +1,14 @@
 package pathstore.util;
 
-import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import pathstore.client.PathStoreResultSet;
+
+import pathstore.common.PathStoreProperties;
 import pathstore.system.ApplicationEntry;
-import pathstore.system.PathStorePriviledgedCluster;
 import pathstore.system.ProccessStatus;
 
 /**
@@ -24,15 +22,14 @@ import pathstore.system.ProccessStatus;
 public class ApplicationInstaller {
 
   // TODO: Modify hashmaps to list of integers as values
-  private static void install_application(final int nodeid, final String keyspace_name) {
+  private static void install_application(
+      final Session session, final int nodeid, final String keyspace_name) {
 
     System.out.println("Installing for Node: " + nodeid + " with application " + keyspace_name);
 
     // TODO: Check if keyspace_name is a valid keyspace
 
     Map<Integer, Integer> node_to_parent_node = new HashMap<>();
-
-    Session session = PathStorePriviledgedCluster.getInstance().connect();
 
     // Creates map from current nodeid to parent's node id
     for (Row row :
@@ -74,7 +71,24 @@ public class ApplicationInstaller {
   public static void main(String[] args) {
     switch (args[0]) {
       case "install":
-        install_application(Integer.parseInt(args[1]), args[2]);
+        Cluster cluster =
+            new Cluster.Builder()
+                .addContactPoints(PathStoreProperties.getInstance().CassandraIP)
+                .withPort(PathStoreProperties.getInstance().CassandraPort)
+                .withSocketOptions(
+                    new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
+                .withQueryOptions(
+                    new QueryOptions()
+                        .setRefreshNodeIntervalMillis(0)
+                        .setRefreshNodeListIntervalMillis(0)
+                        .setRefreshSchemaIntervalMillis(0))
+                .build();
+        Session session = cluster.connect();
+
+        install_application(session, Integer.parseInt(args[1]), args[2]);
+
+        session.close();
+        cluster.close();
         break;
       case "remove":
         break;

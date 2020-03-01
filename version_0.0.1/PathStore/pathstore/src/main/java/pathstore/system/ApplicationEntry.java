@@ -6,8 +6,8 @@ public class ApplicationEntry {
   public final ProccessStatus proccess_status;
   public final int waiting_for;
 
-  public ApplicationEntry(final int node_id, final ProccessStatus proccess_status,
-      final int waiting_for) {
+  public ApplicationEntry(
+      final int node_id, final ProccessStatus proccess_status, final int waiting_for) {
     this.node_id = node_id;
     this.proccess_status = proccess_status;
     this.waiting_for = waiting_for;
