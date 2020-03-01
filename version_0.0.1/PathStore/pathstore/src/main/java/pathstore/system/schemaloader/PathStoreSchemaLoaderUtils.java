@@ -75,6 +75,7 @@ public class PathStoreSchemaLoaderUtils {
             + "CREATE INDEX node_schemas_pathstore_dirty_idx ON pathstore_applications.node_schemas (pathstore_dirty);\n"
             + "CREATE INDEX node_schemas_pathstore_insert_sid_idx ON pathstore_applications.node_schemas (pathstore_insert_sid);\n"
             + "CREATE INDEX node_schemas_nodeid_idx ON pathstore_applications.node_schemas (nodeid);\n"
+            + "CREATE INDEX node_schemas_process_status_idx ON pathstore_applications.node_schemas (process_status);\n"
             + "\n"
             + "CREATE TABLE pathstore_applications.view_topology (\n"
             + "    pathstore_view_id uuid,\n"

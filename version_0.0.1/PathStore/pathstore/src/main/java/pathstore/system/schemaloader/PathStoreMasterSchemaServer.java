@@ -25,13 +25,13 @@ import java.util.stream.Collectors;
  * <p>Waiting_Remove -> Removing -> Removed
  */
 public class PathStoreMasterSchemaServer extends Thread {
+
   /**
-   * The logic behind this is that it will read all data from the node_schemas table and parse it
-   * into a hashmap of keyspace -> list of {@link ApplicationEntry}
+   * Queries all rows in the node_schemas table, parses them into a map by keyspace to set of
+   * entries
    *
-   * <p>Then it will check all the waiting entries if what it is waiting for has completed if it has
-   * completed it will update their status to either INSTALLING or REMOVING and the slave loader
-   * will handle that
+   * <p>Then iterates over each keyspace and updates the waiting processes if what they are waiting
+   * for is finished
    */
   @Override
   public void run() {
@@ -41,23 +41,20 @@ public class PathStoreMasterSchemaServer extends Thread {
 
       Session privileged_session = PathStorePriviledgedCluster.getInstance().connect();
 
-      Select select =
-          QueryBuilder.select()
-              .all()
-              .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-
-      Map<String, List<ApplicationEntry>> data = new HashMap<>();
+      Map<String, Set<ApplicationEntry>> keyspace_to_rows = new HashMap<>();
 
       for (Row row :
-          new PathStoreResultSet(
-              privileged_session.execute(select),
-              Constants.PATHSTORE_APPLICATIONS,
-              Constants.NODE_SCHEMAS)) {
+          privileged_session.execute(
+              QueryBuilder.select()
+                  .all()
+                  .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS))) {
         String keyspace = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
+        ProccessStatus status =
+            ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
 
-        if (!data.containsKey(keyspace)) data.put(keyspace, new ArrayList<>());
-
-        data.get(keyspace)
+        keyspace_to_rows.computeIfAbsent(keyspace, k -> new HashSet<>());
+        keyspace_to_rows
+            .get(keyspace)
             .add(
                 new ApplicationEntry(
                     row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID),
@@ -66,41 +63,21 @@ public class PathStoreMasterSchemaServer extends Thread {
                     row.getInt(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
       }
 
-      // TODO: Clean this up. Lots of duplicate code
-      // Can we make any assumptions about the node id? Currently my assumption is we can't
-      for (String keyspace : data.keySet()) {
-        List<ApplicationEntry> application_entries = data.get(keyspace);
+      for (String keyspace : keyspace_to_rows.keySet()) {
 
-        Set<Integer> installed =
-            this.filter_application_entries_to_nodeids(
-                application_entries, ProccessStatus.INSTALLED);
+        this.update(
+            ProccessStatus.INSTALLED,
+            ProccessStatus.INSTALLING,
+            ProccessStatus.WAITING_INSTALL,
+            keyspace,
+            keyspace_to_rows.get(keyspace));
 
-        Set<ApplicationEntry> waiting =
-            this.filter_application_entries(application_entries, ProccessStatus.WAITING_INSTALL);
-
-        // Maybe break here?
-        for (ApplicationEntry node : waiting) {
-          if (node.waiting_for == -1 || installed.contains(node.waiting_for)) {
-            System.out.println(
-                "Initiating application for: " + node.node_id + " with application: " + keyspace);
-            this.update_application_status(node.node_id, keyspace, ProccessStatus.INSTALLING);
-          }
-        }
-
-        Set<Integer> removed =
-            this.filter_application_entries_to_nodeids(application_entries, ProccessStatus.REMOVED);
-
-        Set<ApplicationEntry> waiting_remove =
-            this.filter_application_entries(application_entries, ProccessStatus.WAITING_REMOVE);
-
-        // Maybe break here?
-        for (ApplicationEntry node : waiting_remove) {
-          if (node.waiting_for == -1 || removed.contains(node.waiting_for)) {
-            System.out.println(
-                "Removing application for: " + node.node_id + " with application: " + keyspace);
-            this.update_application_status(node.node_id, keyspace, ProccessStatus.REMOVING);
-          }
-        }
+        this.update(
+            ProccessStatus.REMOVED,
+            ProccessStatus.REMOVING,
+            ProccessStatus.WAITING_REMOVE,
+            keyspace,
+            keyspace_to_rows.get(keyspace));
       }
 
       try {
@@ -112,30 +89,64 @@ public class PathStoreMasterSchemaServer extends Thread {
   }
 
   /**
-   * Filters application entires based on a status and returns a set of nodeids
+   * This function updates all entries that were waiting for something to occur, once that task has
+   * finished we change their processing state for the slave loader to install or remove an
+   * application
    *
-   * @param application_entries application entries to filter
-   * @param filter_status what to filter by
-   * @return set of nodeids of filtered data
+   * @param finished finished state either {@link ProccessStatus#INSTALLED} or {@link
+   *     ProccessStatus#REMOVED}
+   * @param processing processing state either {@link ProccessStatus#INSTALLING} or {@link
+   *     ProccessStatus#REMOVING}
+   * @param waiting waiting state either {@link ProccessStatus#WAITING_INSTALL} or {@link
+   *     ProccessStatus#WAITING_REMOVE}
+   * @param keyspace application this is occuring on
+   * @param entries list of all entries
    */
-  private Set<Integer> filter_application_entries_to_nodeids(
-      final List<ApplicationEntry> application_entries, final ProccessStatus filter_status) {
-    return this.filter_application_entries(application_entries, filter_status).stream()
-        .map(i -> i.node_id)
-        .collect(Collectors.toSet());
+  private void update(
+      final ProccessStatus finished,
+      final ProccessStatus processing,
+      final ProccessStatus waiting,
+      final String keyspace,
+      final Set<ApplicationEntry> entries) {
+    Set<Integer> finished_ids = this.filter_entries_to_node_id(entries, finished);
+
+    Set<Integer> processing_ids = this.filter_entries_to_node_id(entries, processing);
+
+    Set<ApplicationEntry> waiting_entries = this.filter_entries(entries, waiting);
+
+    for (ApplicationEntry entry : waiting_entries) {
+      if (!finished_ids.contains(entry.node_id) && !processing_ids.contains(entry.node_id)) {
+        if (entry.waiting_for == -1 || finished_ids.contains(entry.waiting_for)) {
+          this.update_application_status(entry.node_id, keyspace, processing);
+        }
+      }
+    }
   }
 
   /**
-   * Filters application entires based on a status and returns a set of entries
+   * Filters a set of application entries by their process status
    *
-   * @param application_entries application entries to filter
-   * @param filter_status what to filter by
-   * @return set of entries that met the criteria
+   * @param entries entries to filter
+   * @param status status to filter by
+   * @return a filtered set of entries
    */
-  private Set<ApplicationEntry> filter_application_entries(
-      final List<ApplicationEntry> application_entries, final ProccessStatus filter_status) {
-    return application_entries.stream()
-        .filter(i -> i.proccess_status == filter_status)
+  private Set<ApplicationEntry> filter_entries(
+      final Set<ApplicationEntry> entries, final ProccessStatus status) {
+    return entries.stream().filter(i -> i.proccess_status == status).collect(Collectors.toSet());
+  }
+
+  /**
+   * Filters a set of application entries by a process status and collects them to a set of their
+   * node id's
+   *
+   * @param entries entries to filter
+   * @param status status to filter by
+   * @return a filtered set of entries to their node ids
+   */
+  private Set<Integer> filter_entries_to_node_id(
+      final Set<ApplicationEntry> entries, final ProccessStatus status) {
+    return this.filter_entries(entries, status).stream()
+        .map(i -> i.node_id)
         .collect(Collectors.toSet());
   }
 
