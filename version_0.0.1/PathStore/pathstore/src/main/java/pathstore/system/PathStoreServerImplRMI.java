@@ -7,6 +7,8 @@ import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCache;
 import pathstore.common.Role;
 import pathstore.exception.PathMigrateAlreadyGoneException;
+import pathstore.system.schemaloader.PathStoreMasterSchemaServer;
+import pathstore.system.schemaloader.PathStoreSlaveSchemaServer;
 
 import java.io.IOException;
 import java.rmi.RemoteException;

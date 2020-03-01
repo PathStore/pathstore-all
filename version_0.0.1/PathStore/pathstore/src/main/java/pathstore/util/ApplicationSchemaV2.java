@@ -4,7 +4,7 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.common.PathStoreProperties;
-import pathstore.system.PathStoreSchemaLoader;
+import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -141,7 +141,7 @@ public class ApplicationSchemaV2 {
     this.schemaInfo.generate();
     if (!this.schemaInfo.getAllKeySpaces().contains("pathstore_applications")) {
       System.out.println("Loading default applications schema");
-      PathStoreSchemaLoader.loadApplicationSchema(this.session);
+      PathStoreSchemaLoaderUtils.loadApplicationSchema(this.session);
     }
 
     int appId = appIdStart;
@@ -152,7 +152,7 @@ public class ApplicationSchemaV2 {
           String keyspaceName = f.getName().substring(0, f.getName().indexOf('.'));
           String schema = readFileContents(s);
 
-          PathStoreSchemaLoader.parseSchema(schema).forEach(this.session::execute);
+          PathStoreSchemaLoaderUtils.parseSchema(schema).forEach(this.session::execute);
 
           this.schemaInfo.generate();
           for (String tableName : this.schemaInfo.getTablesByKeySpace(keyspaceName)) {

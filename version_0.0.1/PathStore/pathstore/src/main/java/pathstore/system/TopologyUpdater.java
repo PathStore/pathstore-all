@@ -5,6 +5,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.client.PathStoreCluster;
+import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 
 /**
@@ -39,10 +40,12 @@ public class TopologyUpdater {
         PathStorePriviledgedCluster.getInstance()
             .connect()
             .execute(
-                QueryBuilder.select("nodeid", "parent_nodeid")
-                    .from("pathstore_applications", "topology"))) {
-      int row_nodeid = row.getInt("nodeid");
-      int row_parent_nodeid = row.getInt("parent_nodeid");
+                QueryBuilder.select(
+                        Constants.TOPOLOGY_COLUMNS.NODE_ID,
+                        Constants.TOPOLOGY_COLUMNS.PARENT_NODE_ID)
+                    .from(Constants.PATHSTORE_APPLICATIONS, Constants.TOPOLOGY))) {
+      int row_nodeid = row.getInt(Constants.TOPOLOGY_COLUMNS.NODE_ID);
+      int row_parent_nodeid = row.getInt(Constants.TOPOLOGY_COLUMNS.PARENT_NODE_ID);
 
       if (nodeid == row_nodeid && parent_nodeid == row_parent_nodeid) return;
       else {
@@ -54,9 +57,9 @@ public class TopologyUpdater {
 
     Session session = PathStoreCluster.getInstance().connect();
 
-    Insert insert = QueryBuilder.insertInto("pathstore_applications", "topology");
-    insert.value("nodeid", nodeid);
-    insert.value("parent_nodeid", parent_nodeid);
+    Insert insert = QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.TOPOLOGY);
+    insert.value(Constants.TOPOLOGY_COLUMNS.NODE_ID, nodeid);
+    insert.value(Constants.TOPOLOGY_COLUMNS.PARENT_NODE_ID, parent_nodeid);
 
     session.execute(insert);
   }

@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 import pathstore.common.PathStoreProperties;
-import pathstore.system.ApplicationEntry;
-import pathstore.system.ProccessStatus;
+import pathstore.system.schemaloader.ApplicationEntry;
+import pathstore.system.schemaloader.ProccessStatus;
 
 /**
  * The point of this class is to calculate the path from one node to another and write to
@@ -18,6 +18,8 @@ import pathstore.system.ProccessStatus;
  *
  * <p>Disclaimer: This should only ever be ran on the root node otherwise you most likely will get
  * unexpected behaviour
+ *
+ * <p>TODO: Convert over to website
  */
 public class ApplicationInstaller {
 

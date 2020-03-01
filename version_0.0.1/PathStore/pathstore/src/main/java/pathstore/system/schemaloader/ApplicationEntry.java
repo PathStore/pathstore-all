@@ -1,4 +1,4 @@
-package pathstore.system;
+package pathstore.system.schemaloader;
 
 public class ApplicationEntry {
 

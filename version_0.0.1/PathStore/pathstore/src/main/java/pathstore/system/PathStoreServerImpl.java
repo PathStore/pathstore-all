@@ -26,6 +26,7 @@ import pathstore.common.PathStoreServer;
 import pathstore.common.Role;
 
 import org.apache.commons.cli.*;
+import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
 import pathstore.util.SchemaInfoV2;
 
 public class PathStoreServerImpl {
@@ -136,7 +137,7 @@ public class PathStoreServerImpl {
       SchemaInfoV2 schemaInfoV2 = new SchemaInfoV2(local);
 
       if (!schemaInfoV2.getAllKeySpaces().contains("pathstore_applications"))
-        PathStoreSchemaLoader.loadApplicationSchema(local);
+        PathStoreSchemaLoaderUtils.loadApplicationSchema(local);
 
       new TopologyUpdater();
 
