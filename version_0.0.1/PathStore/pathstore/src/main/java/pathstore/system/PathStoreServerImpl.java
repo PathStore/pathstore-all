@@ -137,6 +137,8 @@ public class PathStoreServerImpl {
       if (!SchemaInfo.getInstance().getSchemaInfo().containsKey("pathstore_applications"))
         PathStoreSchemaLoaderUtils.loadApplicationSchema(local);
 
+      SchemaInfo.getInstance().reset();
+
       new TopologyUpdater();
 
       System.err.println("PathStoreServer ready");

@@ -81,6 +81,8 @@ public class PathStoreSlaveSchemaServer extends Thread {
       PathStoreSchemaLoaderUtils.parseSchema(row.getString(Constants.APPS_COLUMNS.AUGMENTED_SCHEMA))
           .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
 
+      SchemaInfo.getInstance().getKeySpaceInfo(keyspace);
+
       Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
       update
           .where(
