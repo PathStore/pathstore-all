@@ -36,7 +36,7 @@ public class ApplicationInstaller {
 
     // Creates map from current nodeid to parent's node id
     for (Row row :
-        session.execute(QueryBuilder.select().all().from("pahtstore_applications", "topolgy")))
+        session.execute(QueryBuilder.select().all().from("pathstore_applications", "topolgy")))
       node_to_parent_node.put(row.getInt("nodeid"), row.getInt("parent_nodeid"));
 
     System.out.println(node_to_parent_node);
@@ -71,10 +71,13 @@ public class ApplicationInstaller {
 
   public static void main(String[] args) {
     switch (args[0]) {
-      case "insert":
-        install_application(Integer.valueOf(args[1]), args[2]);
+      case "install":
+        install_application(Integer.parseInt(args[1]), args[2]);
         break;
       case "remove":
+        break;
+      default:
+        System.err.println(args[0] + " is not an option");
         break;
     }
   }
