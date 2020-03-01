@@ -59,6 +59,8 @@ public class ApplicationInstaller {
     for (ApplicationEntry entry : applicationEntryList)
       batchStatement.add(
           QueryBuilder.insertInto("pathstore_applications", "node_schemas")
+              .value("pathstore_version", QueryBuilder.now())
+              .value("pathstore_parent_timestamp", QueryBuilder.now())
               .value("keyspace_name", keyspace_name)
               .value("nodeid", entry.node_id)
               .value("process_status", entry.proccess_status.toString())
