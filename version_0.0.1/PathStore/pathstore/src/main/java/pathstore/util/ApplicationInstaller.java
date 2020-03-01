@@ -97,7 +97,6 @@ public class ApplicationInstaller {
       current_nodeid = child_nodeid;
     }
 
-    /*
     BatchStatement batchStatement = new BatchStatement();
 
     for (ApplicationEntry entry : applicationEntryList)
@@ -111,7 +110,6 @@ public class ApplicationInstaller {
               .value("wait_for", entry.waiting_for));
 
     session.execute(batchStatement);
-     */
   }
 
   public static void main(String[] args) {
