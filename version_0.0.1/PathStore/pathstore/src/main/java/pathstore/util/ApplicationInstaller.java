@@ -26,6 +26,8 @@ public class ApplicationInstaller {
   // TODO: Modify hashmaps to list of integers as values
   private static void install_application(final int nodeid, final String keyspace_name) {
 
+    System.out.println("Installing for Node: " + nodeid + " with application " + keyspace_name);
+
     // TODO: Check if keyspace_name is a valid keyspace
 
     Map<Integer, Integer> node_to_parent_node = new HashMap<>();
@@ -34,10 +36,10 @@ public class ApplicationInstaller {
 
     // Creates map from current nodeid to parent's node id
     for (Row row :
-        new PathStoreResultSet(
-            session.execute(QueryBuilder.select().all().from("pahtstore_applications", "topolgy")),
-            "pathstore_applications",
-            "topology")) node_to_parent_node.put(row.getInt("nodeid"), row.getInt("parent_nodeid"));
+        session.execute(QueryBuilder.select().all().from("pahtstore_applications", "topolgy")))
+      node_to_parent_node.put(row.getInt("nodeid"), row.getInt("parent_nodeid"));
+
+    System.out.println(node_to_parent_node);
 
     List<ApplicationEntry> applicationEntryList = new LinkedList<>();
 
@@ -45,8 +47,10 @@ public class ApplicationInstaller {
 
     while (current_nodeid != -1) {
       int parent_nodeid = node_to_parent_node.get(current_nodeid);
-      applicationEntryList.add(
-          new ApplicationEntry(current_nodeid, ProccessStatus.WAITING_INSTALL, parent_nodeid));
+      ApplicationEntry new_entry =
+          new ApplicationEntry(current_nodeid, ProccessStatus.WAITING_INSTALL, parent_nodeid);
+      applicationEntryList.add(new_entry);
+      System.out.println(new_entry);
       current_nodeid = parent_nodeid;
     }
 
