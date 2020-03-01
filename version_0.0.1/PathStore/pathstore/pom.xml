@@ -253,7 +253,7 @@
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pathstore.util.ApplicationSchemaV2</mainClass>
+                                    <mainClass>pathstore.util.ApplicationSchema</mainClass>
                                 </transformer>
                             </transformers>
                             <finalName>pathstore_schema</finalName>

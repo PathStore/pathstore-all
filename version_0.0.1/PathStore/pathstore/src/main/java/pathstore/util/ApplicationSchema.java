@@ -1,816 +1,410 @@
-/**********
- *
- * Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- ***********/
 package pathstore.util;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-
-import pathstore.client.PathStoreCluster;
-import pathstore.common.PathStoreProperties;
-import pathstore.common.Role;
-import pathstore.system.PathStorePriviledgedCluster;
-import pathstore.util.SchemaInfo.Column;
-import pathstore.util.SchemaInfo.Table;
-
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
-import com.google.common.io.Files;
+import pathstore.system.PathStorePriviledgedCluster;
+import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
 
 /**
- * TODO: Comment
+ * TODO: Should we augment the pathstore_applications keyspace. If not fix push server to not check
+ * that keyspace
+ *
+ * <p>Objective of this class is to write the current application schemas to a table in the root
+ * server's database Then when a child is started up the first thing it does is it checks it's
+ * parent node to see if it has the same schema's. If it doesn't then it pulls it's parents schema's
+ * and updates it's current databases. During this time there needs to be a blocker on the session
+ * to basically say that if a current request is on the keyspace of a currently updated table wait
+ * until that operation is complete. We also need to check to see if you can update a schema while
+ * their is data inside the schema.
+ *
+ * <p>Current Plan of implementation:
+ *
+ * <p>1. Write function to drop schema of a certain name. 2. Write function to load
+ * pathstore_application schema. 3. Insert the pathstore_application schema into
+ * pathstore_application.apps. This will only be used by other pathstore nodes 4. Modify {@link
+ * pathstore.system.PathStoreServerImpl} to pull schema from parent server if it doesn't exist as
+ * this will never change while the pathstore network is alive (I think.) 5. Write function to
+ * augment user defined schemas. 6. Write function to load augment user defined shcemas into
+ * pathstore_application.apps 7: Modify {@link pathstore.system.PathStoreServerImpl} and {@link
+ * pathstore.system.PathStorePullServer} to pull schema from parent server. 8: Deal with potential
+ * use cases that
  */
 public class ApplicationSchema {
-    static private ApplicationSchema instance = null;
 
-    static private String command;
+  /**
+   * Constants class to represent all the sql strings / column names of tables that are modified
+   * throughout this class TODO: Potential move to a global locations\ TODO: Write loader to load in
+   * cql files instead of hard coded tables
+   */
+  private static class Constants {
+    public static final class PathStoreApplications {
+      public static final String KEYSPACE = "pathstore_applications";
 
-    private static int appid = 1;
-    private static String filename = "/tmp/pathstore_demo.cql";
-    private static String schemaname = "pathstore_demo";
-    private static String appname = "demo";
+      public static final class Apps {
+        public static final String TABLE = "apps";
+        public static final String APPID = "appid";
+        public static final String KEYSPACE = "keyspace_name";
+        public static final String AUGMENTED_SCHEMA = "augmented_schema";
+      }
+    }
+  }
 
+  /**
+   * TODO: Move to {@link pathstore.system.PathStorePriviledgedCluster}
+   *
+   * <p>Local session to local database
+   */
+  private final Session session;
 
-    static public ApplicationSchema getInstance() {
-        if (ApplicationSchema.instance == null)
-            ApplicationSchema.instance = new ApplicationSchema();
-        return ApplicationSchema.instance;
+  /** Stores info based on the schema's we are loading in */
+  private final SchemaInfo schemaInfo;
+
+  /**
+   * TODO: Change cluster to {@link pathstore.system.PathStorePriviledgedCluster}
+   *
+   * <p>TODO: Document command usage
+   *
+   * <p>Executes load schemas based on commands
+   *
+   * @param args commands to execute
+   */
+  ApplicationSchema(final String[] args) {
+    this.session = PathStorePriviledgedCluster.getInstance().connect();
+
+    this.schemaInfo = SchemaInfo.getInstance();
+
+    switch (args[0]) {
+      case "init":
+        for (String s : this.schemaInfo.getSchemaInfo().keySet()) {
+          dropKeySpace(s);
+        }
+        this.loadSchemas(0, Arrays.copyOfRange(args, 1, args.length));
+        break;
+      case "import":
+        ResultSet set =
+            this.session.execute("select max(appid) from pathstore_applications.apps limit 1");
+        this.loadSchemas(
+            set != null
+                ? set.one().getInt("system.max(" + Constants.PathStoreApplications.Apps.APPID + ")")
+                    + 1
+                : 0,
+            Arrays.copyOfRange(args, 1, args.length));
+        break;
+      default:
+        System.out.println(
+            "Unknown Operation, the valid operations are init, and import, followed by the cql schemas you wish to import");
+        System.exit(1);
+        break;
+    }
+    PathStorePriviledgedCluster.getInstance().close();
+  }
+
+  /**
+   * Loads schemas into the database
+   *
+   * <p>First it parses the file and executes all their commands.
+   *
+   * <p>Then the {@link SchemaInfo} is updated to the latest version of the schemas
+   *
+   * <p>Then if the keyspace needs augmentation we augment it and update the database, then the
+   * original schema and the augmented schema are placed into the pathstore_applications.apps table
+   * for reading by the children nodes as this utility should only ever be run on the ROOTSERVER
+   *
+   * @param appIdStart app id to start. If command was init this is 0
+   * @param schemasToLoad list of file names that point to cql files to load
+   */
+  private void loadSchemas(final int appIdStart, final String[] schemasToLoad) {
+    this.schemaInfo.reset();
+    if (!this.schemaInfo.getSchemaInfo().containsKey("pathstore_applications")) {
+      System.out.println("Loading default applications schema");
+      PathStoreSchemaLoaderUtils.loadApplicationSchema(this.session);
     }
 
-    PathStorePriviledgedCluster priviledged_cluster;
-    PathStoreCluster cluster;
-
-
-    public ApplicationSchema() {
-        priviledged_cluster = PathStorePriviledgedCluster.getInstance();
-        cluster = PathStoreCluster.getInstance();
-    }
-
-
-    private static String readFileContents(String fileName) throws IOException {
-        File file = new File(fileName);
-        int lenght = (int) file.length();
-        byte[] buffer = new byte[lenght];
-
-        FileInputStream inStream = new FileInputStream(file);
-
-        for (int offset = 0; offset < lenght; )
-            offset += inStream.read(buffer, offset, lenght);
-
-        inStream.close();
-        return new String(buffer);
-    }
-
-    public void ImportFromFile(String fileName) {
+    int appId = appIdStart;
+    for (String s : schemasToLoad) {
+      File f = new File(s);
+      if (f.exists())
         try {
-            Session session = priviledged_cluster.connect();
+          String keyspaceName = f.getName().substring(0, f.getName().indexOf('.'));
+          String schema = readFileContents(s);
 
-            String script = readFileContents(fileName);
+          PathStoreSchemaLoaderUtils.parseSchema(schema).forEach(this.session::execute);
 
-            String[] commands = script.split(";");
+          this.schemaInfo.reset();
+          for (SchemaInfo.Table table :
+              this.schemaInfo.getSchemaInfo().get(keyspaceName).keySet()) {
 
-            for (String s : commands) {
-                String s2 = s.trim();
-                System.out.println(s2);
-                if (s2.length() > 0)
-                    session.execute(s2);
-            }
+            augmentSchema(table);
+            createViewTable(table);
+
+            insertApplicationSchema(
+                appId++,
+                keyspaceName,
+                PathStorePriviledgedCluster.getInstance()
+                    .getMetadata()
+                    .getKeyspace(table.keyspace_name)
+                    .exportAsString());
+          }
+
+          session.execute("drop keyspace if exists " + keyspaceName);
+
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+          System.out.println("There was an error with the file: " + f.getName());
+          e.printStackTrace();
+          System.exit(1);
         }
+      else {
+        System.out.println("File " + f.getName() + " does not exist");
+        System.exit(1);
+      }
     }
 
-    //Hossein
-    public static void setParameters(String serverIp, int serverPort, String rmiServer, int rmiPort, String role) {
-        if (role.equals("ROOTSERVER")) {
-            PathStoreProperties.getInstance().RMIRegistryParentPort = rmiPort;
-            PathStoreProperties.getInstance().RMIRegistryParentIP = rmiServer;
-            PathStoreProperties.getInstance().CassandraParentIP = serverIp;
-            PathStoreProperties.getInstance().CassandraParentPort = serverPort;
-            PathStoreProperties.getInstance().RMIRegistryPort = rmiPort;
-            PathStoreProperties.getInstance().RMIRegistryIP = rmiServer;
-            PathStoreProperties.getInstance().CassandraIP = serverIp;
-            PathStoreProperties.getInstance().CassandraPort = serverPort;
-            PathStoreProperties.getInstance().role = Role.ROOTSERVER;
-        }
-        ApplicationSchema.getInstance();
+    this.schemaInfo.reset();
+  }
+
+  /**
+   * @param fileName file contents to read
+   * @return returns all contents in a singular string
+   * @throws IOException if the file does not exist
+   */
+  private String readFileContents(final String fileName) throws IOException {
+    return new String(Files.readAllBytes(Paths.get(fileName)));
+  }
+
+  /**
+   * TODO: Maybe remove string literals, This may be an exception
+   *
+   * <p>Rebuilds schema based on data queried by {@link SchemaInfo} to include a few extra columns
+   *
+   * <p>These columns are:
+   *
+   * <p>pathstore_version, pathstore_parent_timestamp, pathstore_dirty, pathstore_deleted,
+   * pathstore_insert, pathstore_node
+   *
+   * @param table table to augment
+   */
+  private void augmentSchema(final SchemaInfo.Table table) {
+    dropTable(table);
+
+    List<SchemaInfo.Column> columns =
+        this.schemaInfo.getTableColumns(table.keyspace_name, table.table_name);
+
+    StringBuilder query =
+        new StringBuilder("CREATE TABLE " + table.keyspace_name + "." + table.table_name + "(");
+
+    for (SchemaInfo.Column col : columns) {
+      String type = col.type.compareTo("counter") == 0 ? "int" : col.type;
+      query.append(col.column_name).append(" ").append(type).append(",");
     }
 
+    query.append("pathstore_version timeuuid,");
+    query.append("pathstore_parent_timestamp timeuuid,");
+    query.append("pathstore_dirty boolean,");
+    query.append("pathstore_deleted boolean,");
+    query.append("pathstore_insert_sid text,");
+    query.append("pathstore_node int,");
+    query.append("PRIMARY KEY(");
 
-    private static void parseCommandLineArguments(String args[]) {
-        Options options = new Options();
+    for (SchemaInfo.Column col : columns)
+      if (col.kind.equals("partition_key")) query.append(col.column_name).append(",");
+    for (SchemaInfo.Column col : columns)
+      if (col.kind.equals("clustering")) query.append(col.column_name).append(",");
 
-        options.addOption(Option.builder().longOpt("command")
-                .desc("STRING")
-                .hasArg()
-                .argName("cmdname")
-                .build());
+    query.append("pathstore_version) ");
 
+    query.append(")");
 
-        options.addOption(Option.builder().longOpt("appid")
-                .desc("NUMBER")
-                .hasArg()
-                .argName("id")
-                .build());
+    query.append("WITH CLUSTERING ORDER BY (");
 
-        options.addOption(Option.builder().longOpt("filename")
-                .desc("STRING")
-                .hasArg()
-                .argName("filename")
-                .build());
+    for (SchemaInfo.Column col : columns)
+      if (col.kind.compareTo("clustering") == 0)
+        query.append(col.column_name).append(" ").append(col.clustering_order).append(",");
 
-        options.addOption(Option.builder().longOpt("cassandraport")
-                .desc("NUMBER")
-                .hasArg()
-                .argName("cassandraport")
-                .build());
+    query.append("pathstore_version DESC) ");
 
-        options.addOption(Option.builder().longOpt("rmiport")
-                .desc("NUMBER")
-                .hasArg()
-                .argName("PORT")
-                .build());
+    query
+        .append("	    AND caching = ")
+        .append(mapToString(table.caching))
+        .append("	    AND comment = '")
+        .append(table.comment)
+        .append("'")
+        .append("	    AND compaction = ")
+        .append(mapToString(table.compaction))
+        .append("	    AND compression = ")
+        .append(mapToString(table.compression))
+        .append("	    AND crc_check_chance = ")
+        .append(table.crc_check_chance)
+        .append("	    AND dclocal_read_repair_chance = ")
+        .append(table.dclocal_read_repair_chance)
+        .append("	    AND default_time_to_live = ")
+        .append(table.default_time_to_live)
+        .append("	    AND gc_grace_seconds = ")
+        .append(table.gc_grace_seconds)
+        .append("	    AND max_index_interval = ")
+        .append(table.max_index_interval)
+        .append("	    AND memtable_flush_period_in_ms = ")
+        .append(table.memtable_flush_period_in_ms)
+        .append("	    AND min_index_interval = ")
+        .append(table.min_index_interval)
+        .append("	    AND read_repair_chance = ")
+        .append(table.read_repair_chance)
+        .append("	    AND speculative_retry = '")
+        .append(table.speculative_retry)
+        .append("'");
 
-        options.addOption(Option.builder().longOpt("appname")
-                .desc("STRING")
-                .hasArg()
-                .argName("appname")
-                .build());
+    session.execute(query.toString());
 
+    query =
+        new StringBuilder(
+            "CREATE INDEX ON "
+                + table.keyspace_name
+                + "."
+                + table.table_name
+                + " (pathstore_dirty)");
 
-        CommandLineParser parser = new DefaultParser();
-        HelpFormatter formatter = new HelpFormatter();
-        CommandLine cmd;
+    session.execute(query.toString());
 
-        try {
-            cmd = parser.parse(options, args);
-        } catch (ParseException e) {
-            System.out.println(e.getMessage());
-            formatter.printHelp("utility-name", options);
-            System.exit(1);
-            return;
-        }
+    query =
+        new StringBuilder(
+            "CREATE INDEX ON "
+                + table.keyspace_name
+                + "."
+                + table.table_name
+                + " (pathstore_deleted)");
 
-        if (cmd.hasOption("command"))
-            ApplicationSchema.command = cmd.getOptionValue("command");
+    session.execute(query.toString());
 
-        if (cmd.hasOption("appid"))
-            ApplicationSchema.appid = Integer.parseInt(cmd.getOptionValue("appid"));
+    query =
+        new StringBuilder(
+            "CREATE INDEX ON "
+                + table.keyspace_name
+                + "."
+                + table.table_name
+                + " (pathstore_insert_sid)");
 
-        if (cmd.hasOption("filename"))
-            ApplicationSchema.filename = cmd.getOptionValue("filename");
+    session.execute(query.toString());
+  }
 
-        if (cmd.hasOption("appname")) {
-            ApplicationSchema.appname = cmd.getOptionValue("appname");
-            ApplicationSchema.schemaname = "pathstore_" + ApplicationSchema.appname;
-            ;
-        }
+  private void createViewTable(final SchemaInfo.Table table) {
+    StringBuilder query =
+        new StringBuilder(
+            "CREATE TABLE " + table.keyspace_name + ".view_" + table.table_name + "(");
 
-        if (cmd.hasOption("cassandraport"))
-            PathStoreProperties.getInstance().CassandraPort = Integer.parseInt(cmd.getOptionValue("cassandraport"));
+    query.append("pathstore_view_id uuid,");
 
-        if (cmd.hasOption("rmiport"))
-            PathStoreProperties.getInstance().RMIRegistryPort = Integer.parseInt(cmd.getOptionValue("rmiport"));
+    List<SchemaInfo.Column> columns =
+        this.schemaInfo.getTableColumns(table.keyspace_name, table.table_name);
 
-
+    for (SchemaInfo.Column col : columns) {
+      String type = col.type.compareTo("counter") == 0 ? "int" : col.type;
+      query.append(col.column_name).append(" ").append(type).append(",");
     }
 
-    static private void initPathStoreApplicationSchema() throws IOException, InterruptedException {
-        System.out.println("start drop schema");
-        ApplicationSchema.getInstance().dropSchema("pathstore_applications");
-        System.out.println("end drop schema");
-        ApplicationSchema.getInstance().createPathStoreApplicationSchema();
-        //	String orginalSchema = ApplicationSchema.getInstance().getSchema("pathstore_applications");
-        ApplicationSchema.getInstance().augmentSchema("pathstore_applications");
-        //	ApplicationSchema.getInstance().newApp("applications", "pathstore_applications", orginalSchema);
-        //	String augmentedSchema = ApplicationSchema.getInstance().getSchema("pathstore_applications");
-        //	ApplicationSchema.getInstance().storeAugmentedSchema("applications",augmentedSchema);
+    // BUG?!
+    query.append("pathstore_version timeuuid,");
+    query.append("pathstore_parent_timestamp timeuuid,");
+    query.append("pathstore_dirty boolean,");
+    query.append("pathstore_deleted boolean,");
+    query.append("pathstore_node int,");
+
+    query.append("PRIMARY KEY(pathstore_view_id,");
+
+    for (SchemaInfo.Column col : columns) {
+      if (col.kind.compareTo("regular") != 0) query.append(col.column_name).append(",");
     }
 
-    //Hossein
-    static public String importApplicationUsingSchemaString(int appId, String appName, String schemaName, String schema) throws IOException, InterruptedException {
-        ApplicationSchema.getInstance().dropSchema(schemaName);
-        //ApplicationSchema.getInstance().newApp(appId, appName, schemaName, schema);
-        ApplicationSchema.getInstance().createNewDB(schema);
-        ApplicationSchema.getInstance().augmentSchema(schemaName);
-        return ApplicationSchema.getInstance().getSchema(schemaName);
-        //ApplicationSchema.getInstance().storeAugmentedSchema(appId,schema);
-    }
-
-
-    static private void importApplication(int appId, String appName, String schemaName, String schemaFileName) throws IOException, InterruptedException {
-        ApplicationSchema.getInstance().dropSchema(schemaName);
-        String schema = readFileContents(schemaFileName);
-        ApplicationSchema.getInstance().newApp(appId, appName, schemaName, schema);
-        ApplicationSchema.getInstance().createOriginalDB(appId);
-        ApplicationSchema.getInstance().augmentSchema(schemaName);
-        schema = ApplicationSchema.getInstance().getSchema(schemaName);
-        ApplicationSchema.getInstance().storeAugmentedSchema(appId, schema);
-    }
-
-    //Manager calls this
-    static private void deployApplication(int appId, boolean dropSchema) {
-        ApplicationSchema.getInstance().createAugmentedDB(appId, dropSchema);
-    }
-
-
-    static public void main(String args[]) {
-        try {
-
-            parseCommandLineArguments(args);
-
-            switch (ApplicationSchema.command) {
-                case "init":
-                    // call to startup a new pathstore node
-                    initPathStoreApplicationSchema();
-                    break;
-
-                case "import":
-                    // import a 3rd party application into pathstore
-                    // arguments
-                    // --filename /opt/file.cql --appid 1
-                    System.out.println("importing application with appid: " + appid + " appname: " + appname + " schemaname: " + schemaname + " filenam:" + filename);
-                    importApplication(ApplicationSchema.appid, ApplicationSchema.appname, ApplicationSchema.schemaname, ApplicationSchema.filename);
-                    break;
-
-                case "deploy":
-                    // creates schema of a given 3rd party application on a specific pathstore node
-                    // arguments
-                    // --appid 1
-                    long d = System.nanoTime();
-                    deployApplication(ApplicationSchema.appid, true);
-                    System.out.println("deployment took: " + (System.nanoTime() - d) / 1000000.0);
-                    break;
-            }
-
-            System.exit(0);
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-    }
-
-    private void storeAugmentedSchema(int appId, String augmentedSchema) {
-        Session session = cluster.connect();
-
-        Insert insert = QueryBuilder.insertInto("pathstore_applications", "apps");
-        insert.value("appid", appId);
-        insert.value("app_schema_augmented", augmentedSchema);
-
-
-        session.execute(insert);
-    }
-
-
-    private String getSchema(String schemaName) throws IOException, InterruptedException {
-
-        //		File file = File.createTempFile("pathstore", ".tmp");
-        //		String command = "describe keyspace " + schemaName + "\n";
-        //		Files.write(command.getBytes(), file);
-        //	    file.deleteOnExit();
-        //
-        //		String path =  PathStoreProperties.getInstance().CassandraPath +  "/bin";
-        //		command = path + "/cqlsh.py " + PathStoreProperties.getInstance().CassandraParentIP  + "  " +
-        //				PathStoreProperties.getInstance().CassandraPort + " -f " + file.getPath();
-        //
-        //		System.out.println("command is: " + command);
-        //
-        //		Process p = Runtime.getRuntime().exec(command);
-        //	    p.waitFor();
-        //
-        //	    BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-        //
-        //	    String line = "";
-        //	    String schema = "";
-        //	    while ((line = reader.readLine())!= null)
-        //	    	schema += line + "\n";
-
-
-        String schema = cluster.getMetadata().getKeyspace(schemaName).exportAsString();
-        System.out.println("schema is: " + schema);
-
-        return schema;
-    }
-
-    private void augmentSchema(String schemaName) throws IOException, InterruptedException {
-        Map<Table, List<Column>> keyspaceInfo = SchemaInfo.getInstance().getKeySpaceInfo(schemaName);
-
-        for (Table table : keyspaceInfo.keySet()) {
-
-            System.out.println(table.table_name);
-
-            if (table.table_name.startsWith("local_") == false) {
-                //System.out.println("table not starting with local!!");
-                createAugmentedTable(table, keyspaceInfo.get(table));
-                createViewTable(table, keyspaceInfo.get(table));
-            }
-
-        }
-    }
-
-    private void dropTable(Table table) {
-        Session session = priviledged_cluster.connect();
-
-        String query = "DROP TABLE " + table.keyspace_name + "." + table.table_name;
-        session.execute(query);
-    }
-
-    private void createAugmentedTable(Table table, List<Column> columns) {
-        Session session = priviledged_cluster.connect();
-
-        dropTable(table);
-
-        String query = "CREATE TABLE " + table.keyspace_name + "." + table.table_name + "(";
-
-        for (Column col : columns) {
-            String type = col.type.compareTo("counter") == 0 ? "int" : col.type;
-            query += col.column_name + " " + type + ",";
-        }
-
-        query += "pathstore_version timeuuid,";
-        query += "pathstore_parent_timestamp timeuuid,";
-        query += "pathstore_dirty boolean,";
-        query += "pathstore_deleted boolean,";
-        query += "pathstore_insert_sid text,";
-        query += "pathstore_node int,";
-        query += "PRIMARY KEY(";
-
-        for (Column col : columns)
-            if (col.kind.compareTo("partition_key") == 0)
-                query += col.column_name + ",";
-        for (Column col : columns)
-            if (col.kind.compareTo("clustering") == 0)
-                query += col.column_name + ",";
-
-        query += "pathstore_version) ";
-
-        query += ")";
-
-        query += "WITH CLUSTERING ORDER BY (";
-
-
-        //Hossein
-        int i = 0;
-        for (Column col : columns)
-            if (col.kind.compareTo("clustering") == 0)
-                query += col.column_name + " " + col.clustering_order + ",";
-
-        query += "pathstore_version DESC) ";
-
-        query += "	    AND caching = " + mapToString(table.caching) +
-                "	    AND comment = '" + table.comment + "'" +
-                "	    AND compaction = " + mapToString(table.compaction) +
-                "	    AND compression = " + mapToString(table.compression) +
-                "	    AND crc_check_chance = " + table.crc_check_chance +
-                "	    AND dclocal_read_repair_chance = " + table.dclocal_read_repair_chance +
-                "	    AND default_time_to_live = " + table.default_time_to_live +
-                "	    AND gc_grace_seconds = " + table.gc_grace_seconds +
-                "	    AND max_index_interval = " + table.max_index_interval +
-                "	    AND memtable_flush_period_in_ms = " + table.memtable_flush_period_in_ms +
-                "	    AND min_index_interval = " + table.min_index_interval +
-                "	    AND read_repair_chance = " + table.read_repair_chance +
-                "	    AND speculative_retry = '" + table.speculative_retry + "'";
-
-        System.out.println("query: \n\n\n" + query);
-        session.execute(query);
-
-        query = "CREATE INDEX ON " + table.keyspace_name + "." + table.table_name + " (pathstore_dirty)";
-
-        session.execute(query);
-
-        query = "CREATE INDEX ON " + table.keyspace_name + "." + table.table_name + " (pathstore_deleted)";
-
-        session.execute(query);
-
-        query = "CREATE INDEX ON " + table.keyspace_name + "." + table.table_name + " (pathstore_insert_sid)";
-
-        session.execute(query);
-
-    }
-
-    private void createViewTable(Table table, List<Column> columns) {
-        Session session = priviledged_cluster.connect();
-
-        String query = "CREATE TABLE " + table.keyspace_name + ".view_" + table.table_name + "(";
-
-        query += "pathstore_view_id uuid,";
-
-        for (Column col : columns) {
-            String type = col.type.compareTo("counter") == 0 ? "int" : col.type;
-            query += col.column_name + " " + type + ",";
-        }
-
-        //BUG?!
-        query += "pathstore_version timeuuid,";
-        query += "pathstore_parent_timestamp timeuuid,";
-        query += "pathstore_dirty boolean,";
-        query += "pathstore_deleted boolean,";
-        //		query += "pathstore_insert_device,";
-        query += "pathstore_node int,";
-
-        query += "PRIMARY KEY(pathstore_view_id,";
-
-        for (Column col : columns)
-            if (col.kind.compareTo("regular") != 0)
-                query += col.column_name + ",";
-
-        query += "pathstore_version) ";
-
-        query += ")";
-
-        session.execute(query);
-    }
-
-
-    private String mapToString(Object map) {
-
-        Map<String, String> m = (Map<String, String>) map;
-
-        String result = "{";
-
-        for (String key : m.keySet())
-            result += "'" + key + "':'" + m.get(key) + "',";
-
-        return result.substring(0, result.length() - 1) + "}";
-    }
-
-    private void newApp(int appId, String appName, String schemaName, String script) throws IOException {
-        Session session = cluster.connect();
-
-        Insert insert = QueryBuilder.insertInto("pathstore_applications", "apps");
-        insert.value("appid", appId);
-        insert.value("app_name", appName);
-        insert.value("schema_name", schemaName);
-        insert.value("app_schema", script);
-
-        session.execute(insert);
-
-    }
-
-    public void dropSchema(String schemaName) {
-        long d = System.nanoTime();
-
-        Session session = priviledged_cluster.connect();
-        System.out.println(((System.nanoTime() - d) / 1000000.0) + "preparing...");
-        PreparedStatement prepared = session.prepare("drop keyspace if exists " + schemaName);
-        BoundStatement bound = prepared.bind();
-        System.out.println(((System.nanoTime() - d) / 1000000.0) + "executing...");
-        session.execute(bound);
-
-        //		String query = ("drop keyspace if exists " + schemaName);
-        //		Session session = priviledged_cluster.connect();
-        //		System.out.println(((System.nanoTime()-d)/1000000.0)+"connected...");
-        //		session.execute(query);
-
-        System.out.println(((System.nanoTime() - d) / 1000000.0) + "executing done");
-    }
-
-
-    /**
-     * TODO: The first line still works if you swap to privileged_cluster and schema is still loaded and all.
-     * TODO: Figure out why you query the cluster instead of the privileged_cluster
-     *
-     * @param appId
-     */
-    public void createOriginalDB(int appId) {
-        Session session = cluster.connect();
-
-        Select select = QueryBuilder.select().all().from("pathstore_applications", "apps");
-        select.where(QueryBuilder.eq("appid", appId));
-        ResultSet results = session.execute(select);
-
-        // switch to priviledged session
-        session = priviledged_cluster.connect();
-
-
-        for (Row row : results) {
-            String script = row.getString("app_schema");
-            String schemaName = row.getString("schema_name");
-
-            dropSchema(schemaName);
-
-            String[] commands = script.split(";");
-
-            for (String s : commands) {
-                String s2 = s.trim();
-                //System.out.println(s2);
-                if (s2.length() > 0)
-                    session.execute(s2);
-            }
-        }
-    }
-
-    //Hossein
-    public void createNewDB(String schema) {
-        Session session = priviledged_cluster.connect();
-        String[] commands = schema.split(";");
-
-        for (String s : commands) {
-            String s2 = s.trim();
-            System.out.println(s2);
-            if (s2.length() > 0)
-                session.execute(s2);
-        }
-    }
-
-    public void createAugmentedDB(int appId, boolean dropSchema) {
-        Session session = cluster.connect();
-
-        Select select = QueryBuilder.select().all().from("pathstore_applications", "apps");
-        select.where(QueryBuilder.eq("appid", appId));
-        ResultSet results = session.execute(select);
-
-        // switch to priviledged session
-        session = priviledged_cluster.connect();
-
-
-        for (Row row : results) {
-            String script = row.getString("app_schema_augmented");
-            String schemaName = row.getString("schema_name");
-
-            if (dropSchema) {
-                dropSchema(schemaName);
-            }
-
-
-            String[] commands = script.split(";");
-            int i = 0;
-            for (String s : commands) {
-                String s2 = s.trim();
-                System.out.println(s2);
-                if (s2.length() > 0) {
-                    if (i == 0) {
-                        session.execute(s2);
-                        i++;
-                    } else
-                        session.execute(s2);
-                }
-            }
-        }
-    }
-
-
-    private void createPathStoreApplicationSchema() {
-        Session session = priviledged_cluster.connect();
-
-        try {
-            session.execute("DROP KEYSPACE pathstore_applications");
-        } catch (Exception ex) {
-
-        }
-
-
-        session.execute("CREATE KEYSPACE IF NOT EXISTS pathstore_applications WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;");
-
-        String table = "" +
-                "CREATE TABLE pathstore_applications.apps (" +
-                "		appid int PRIMARY KEY," +
-                "		code blob," +
-                "		funcs list<int>," +
-                "		owner text," +
-                "		root_domain text," +
-                "	    app_name text," +
-                "	    schema_name text," +
-                "	    app_schema text," +
-                "	    app_schema_augmented text" +
-                "	) WITH bloom_filter_fp_chance = 0.01" +
-                "	    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}" +
-                "	    AND comment = 'table definitions'" +
-                "	    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}" +
-                "	    AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}" +
-                "	    AND crc_check_chance = 1.0" +
-                "	    AND dclocal_read_repair_chance = 0.0" +
-                "	    AND default_time_to_live = 0" +
-                "	    AND gc_grace_seconds = 604800" +
-                "	    AND max_index_interval = 2048" +
-                "	    AND memtable_flush_period_in_ms = 3600000" +
-                "	    AND min_index_interval = 128" +
-                "	    AND read_repair_chance = 0.0" +
-                "	    AND speculative_retry = '99PERCENTILE';";
-
-        session.execute(table);
-
-
-        session.execute("CREATE INDEX rroot_domain ON pathstore_applications.apps (root_domain);");
-
-
-        table = "" +
-                "CREATE TABLE pathstore_applications.funcs (" +
-                "	    funcid int PRIMARY KEY," +
-                "	    appid int," +
-                "	    deploy_strategy text," +
-                "	    path text," +
-                "	    sub_domain text" +
-                "	) WITH bloom_filter_fp_chance = 0.01" +
-                "	    AND caching = {'keys':'ALL', 'rows_per_partition':'NONE'}" +
-                "	    AND comment = ''" +
-                "	    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy'}" +
-                "	    AND compression = {'sstable_compression': 'org.apache.cassandra.io.compress.LZ4Compressor'}" +
-                "	    AND dclocal_read_repair_chance = 0.1" +
-                "	    AND default_time_to_live = 0" +
-                "	    AND gc_grace_seconds = 864000" +
-                "	    AND max_index_interval = 2048" +
-                "	    AND memtable_flush_period_in_ms = 0" +
-                "	    AND min_index_interval = 128" +
-                "	    AND read_repair_chance = 0.0" +
-                "	    AND speculative_retry = '99.0PERCENTILE';";
-
-        session.execute(table);
-
-        session.execute("CREATE INDEX aappid ON pathstore_applications.funcs (appid);");
-
-
-        //creating path-monitor table:
-
-
-        table = "" +
-                "CREATE TABLE pathstore_applications.metrics (" +
-                "    entity_type text," +
-                "    entity_name text," +
-                "    time_logged timestamp," +
-                "    metric_id text," +
-                "    metric_value double," +
-                "    PRIMARY KEY (entity_type, entity_name, time_logged, metric_id)" +
-                "	) WITH bloom_filter_fp_chance = 0.01" +
-                "	    AND caching = {'keys':'ALL', 'rows_per_partition':'NONE'}" +
-                "	    AND comment = ''" +
-                "	    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy'}" +
-                "	    AND compression = {'sstable_compression': 'org.apache.cassandra.io.compress.LZ4Compressor'}" +
-                "	    AND dclocal_read_repair_chance = 0.1" +
-                "	    AND default_time_to_live = 0" +
-                "	    AND gc_grace_seconds = 864000" +
-                "	    AND max_index_interval = 2048" +
-                "	    AND memtable_flush_period_in_ms = 0" +
-                "	    AND min_index_interval = 128" +
-                "	    AND read_repair_chance = 0.0" +
-                "	    AND speculative_retry = '99.0PERCENTILE';";
-
-
-        System.out.println(table);
-
-
-        table = "CREATE TABLE pathstore_applications.logs ("
-                + "    entity_type text,"
-                + "    entity_name text,"
-                + "    time_logged timestamp,"
-                + "    log text,"
-                + "    PRIMARY KEY (entity_type, entity_name, time_logged))"
-                + "    WITH bloom_filter_fp_chance = 0.01"
-                + "    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}"
-                + "    AND comment = ''"
-                + "    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}"
-                + "    AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}"
-                + "    AND crc_check_chance = 1.0"
-                + "    AND dclocal_read_repair_chance = 0.1"
-                + "    AND default_time_to_live = 0"
-                + "    AND gc_grace_seconds = 864000"
-                + "    AND max_index_interval = 2048"
-                + "    AND memtable_flush_period_in_ms = 0"
-                + "    AND min_index_interval = 128"
-                + "    AND read_repair_chance = 0.0"
-                + "    AND speculative_retry = '99PERCENTILE';";
-
-        session.execute(table);
-
-
-        table = "CREATE TABLE pathstore_applications.users ("
-                + "    name text,"
-                + "    lastname text,"
-                + "    username text,"
-                + "    password text,"
-                + "    email text,"
-                + "    log text,"
-                + "    PRIMARY KEY (username))"
-                + "    WITH bloom_filter_fp_chance = 0.01"
-                + "    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}"
-                + "    AND comment = ''"
-                + "    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}"
-                + "    AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}"
-                + "    AND crc_check_chance = 1.0"
-                + "    AND dclocal_read_repair_chance = 0.1"
-                + "    AND default_time_to_live = 0"
-                + "    AND gc_grace_seconds = 864000"
-                + "    AND max_index_interval = 2048"
-                + "    AND memtable_flush_period_in_ms = 0"
-                + "    AND min_index_interval = 128"
-                + "    AND read_repair_chance = 0.0"
-                + "    AND speculative_retry = '99PERCENTILE';";
-
-        session.execute(table);
-
-
-        table = "CREATE TABLE pathstore_applications.session ("
-                + "    sid text,"
-                + "    username text,"
-                + "    sesstion_timestamp timestamp,"
-                + "    state text,"
-                + "    current_edge text,"
-                + "    PRIMARY KEY (sid))"
-                + "    WITH bloom_filter_fp_chance = 0.01"
-                + "    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}"
-                + "    AND comment = ''"
-                + "    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}"
-                + "    AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}"
-                + "    AND crc_check_chance = 1.0"
-                + "    AND dclocal_read_repair_chance = 0.1"
-                + "    AND default_time_to_live = 0"
-                + "    AND gc_grace_seconds = 864000"
-                + "    AND max_index_interval = 2048"
-                + "    AND memtable_flush_period_in_ms = 0"
-                + "    AND min_index_interval = 128"
-                + "    AND read_repair_chance = 0.0"
-                + "    AND speculative_retry = '99PERCENTILE';";
-
-        session.execute(table);
-
-
-        table = "CREATE TABLE pathstore_applications.state(" +
-                "    nodeid int," +
-                "    hostid int," +
-                "    containerid int," +
-                "    appid int," +
-                "    functionid int," +
-                "    PRIMARY KEY (nodeid, hostid, containerid, appid, functionid))   "
-                + "    WITH bloom_filter_fp_chance = 0.01"
-                + "    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}"
-                + "    AND comment = ''"
-                + "    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}"
-                + "    AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}"
-                + "    AND crc_check_chance = 1.0"
-                + "    AND dclocal_read_repair_chance = 0.1"
-                + "    AND default_time_to_live = 0"
-                + "    AND gc_grace_seconds = 864000"
-                + "    AND max_index_interval = 2048"
-                + "    AND memtable_flush_period_in_ms = 0"
-                + "    AND min_index_interval = 128"
-                + "    AND read_repair_chance = 0.0"
-                + "    AND speculative_retry = '99PERCENTILE';";
-
-        session.execute(table);
-
-
-        table = "CREATE TABLE pathstore_applications.nodes (" +
-                "    nodeid int PRIMARY KEY," +
-                "    name text," +
-                "    ps_ip text," +
-                "    ps_port int," +
-                "    role text," +
-                "    parentid int)"
-                + "    WITH bloom_filter_fp_chance = 0.01"
-                + "    AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}"
-                + "    AND comment = ''"
-                + "    AND compaction = {'class': 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold': '32', 'min_threshold': '4'}"
-                + "    AND compression = {'chunk_length_in_kb': '64', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}"
-                + "    AND crc_check_chance = 1.0"
-                + "    AND dclocal_read_repair_chance = 0.1"
-                + "    AND default_time_to_live = 0"
-                + "    AND gc_grace_seconds = 864000"
-                + "    AND max_index_interval = 2048"
-                + "    AND memtable_flush_period_in_ms = 0"
-                + "    AND min_index_interval = 128"
-                + "    AND read_repair_chance = 0.0"
-                + "    AND speculative_retry = '99PERCENTILE';";
-
-        session.execute(table);
-
-    }
-
-
+    query.append("pathstore_version) ");
+
+    query.append(")");
+
+    this.session.execute(query.toString());
+  }
+
+  /**
+   * Converts a map object from cassandra into a string based representation that is interpretable
+   * by cassandra on re-insert
+   *
+   * @param map object to convert
+   * @return converted version
+   */
+  @SuppressWarnings("unchecked")
+  private String mapToString(final Object map) {
+
+    Map<String, String> m = (Map<String, String>) map;
+
+    StringBuilder result = new StringBuilder("{");
+
+    for (String key : m.keySet())
+      result.append("'").append(key).append("':'").append(m.get(key)).append("',");
+
+    return result.substring(0, result.length() - 1) + "}";
+  }
+
+  /**
+   * TODO: Remove string literals
+   *
+   * @param table table to drop.
+   */
+  private void dropTable(final SchemaInfo.Table table) {
+    String query = "DROP TABLE " + table.keyspace_name + "." + table.table_name;
+    this.session.execute(query);
+  }
+
+  /**
+   * TODO: Remove string literals
+   *
+   * <p>Drops entire keyspace
+   *
+   * @param keySpace keyspace to drop
+   */
+  private void dropKeySpace(final String keySpace) {
+    String dropSchemaStatement = "drop keyspace if exists " + keySpace;
+    System.out.println("Dropping keyspace " + keySpace);
+    this.session.execute(dropSchemaStatement);
+    System.out.println("Keyspace dropped");
+  }
+
+  /**
+   * TODO: Make it so that it does not override current app schema of same name.
+   *
+   * @param appId application Id. Must be greater then 1 as 0 is reserved for the
+   *     pathstore_application schema
+   * @param keyspace name of schema. This is used for version control. I.e $appName-0.0.1
+   * @param augmentedSchema schema after pathstore augmentation
+   */
+  private void insertApplicationSchema(
+      final int appId, final String keyspace, final String augmentedSchema) {
+
+    System.out.println("Inserting schema");
+    Insert insert =
+        QueryBuilder.insertInto(
+            Constants.PathStoreApplications.KEYSPACE, Constants.PathStoreApplications.Apps.TABLE);
+
+    insert.value(Constants.PathStoreApplications.Apps.APPID, appId);
+    insert.value(Constants.PathStoreApplications.Apps.KEYSPACE, keyspace);
+    insert.value(Constants.PathStoreApplications.Apps.AUGMENTED_SCHEMA, augmentedSchema);
+
+    insert.value("pathstore_version", QueryBuilder.now());
+    insert.value("pathstore_parent_timestamp", QueryBuilder.now());
+
+    this.session.execute(insert);
+
+    System.out.println("Schema inserted");
+  }
+
+  /**
+   * Used to be run as a utility outside of the main pathstore instance
+   *
+   * @param args commands
+   */
+  public static void main(String[] args) {
+    new ApplicationSchema(args);
+  }
 }
