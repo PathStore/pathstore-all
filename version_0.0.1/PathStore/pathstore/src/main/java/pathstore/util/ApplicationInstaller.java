@@ -36,7 +36,7 @@ public class ApplicationInstaller {
 
     // Creates map from current nodeid to parent's node id
     for (Row row :
-        session.execute(QueryBuilder.select().all().from("pathstore_applications", "topolgy")))
+        session.execute(QueryBuilder.select().all().from("pathstore_applications", "topology")))
       node_to_parent_node.put(row.getInt("nodeid"), row.getInt("parent_nodeid"));
 
     System.out.println(node_to_parent_node);
