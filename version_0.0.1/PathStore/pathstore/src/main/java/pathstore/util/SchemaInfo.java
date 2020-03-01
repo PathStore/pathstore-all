@@ -19,10 +19,7 @@ package pathstore.util;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
-import pathstore.exception.InvalidKeyspaceException;
 import pathstore.system.PathStorePriviledgedCluster;
-import pathstore.util.SchemaInfo.Column;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Metadata;
@@ -30,7 +27,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.utils.UUIDs;
 
 /** TODO: Comment */
 public class SchemaInfo {
@@ -54,6 +50,11 @@ public class SchemaInfo {
 
   public Map<String, Map<Table, List<Column>>> getSchemaInfo() {
     return schemaInfo;
+  }
+
+  public void reset() {
+    this.schemaInfo.clear();
+    this.loadSchemas();
   }
 
   private void loadSchemas() {

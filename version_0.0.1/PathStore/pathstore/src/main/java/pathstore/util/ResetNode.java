@@ -3,6 +3,7 @@ package pathstore.util;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.common.PathStoreProperties;
+import pathstore.system.PathStorePriviledgedCluster;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -26,29 +27,18 @@ public class ResetNode {
   }
 
   private static void remove_keyspaces(final Session session, final List<String> keyspaces) {
-    for (String s : keyspaces) {
-      session.execute("drop keyspace if exists " + s);
-    }
+    keyspaces.forEach(
+        i -> {
+          System.out.println("Dropping keyspace " + i);
+          session.execute("drop keyspace if exists " + i);
+        });
   }
 
   public static void main(String[] args) {
-    Cluster cluster =
-        new Cluster.Builder()
-            .addContactPoints(PathStoreProperties.getInstance().CassandraIP)
-            .withPort(PathStoreProperties.getInstance().CassandraPort)
-            .withSocketOptions(
-                new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
-            .withQueryOptions(
-                new QueryOptions()
-                    .setRefreshNodeIntervalMillis(0)
-                    .setRefreshNodeListIntervalMillis(0)
-                    .setRefreshSchemaIntervalMillis(0))
-            .build();
-    Session session = cluster.connect();
+    Session session = PathStorePriviledgedCluster.getInstance().connect();
 
     remove_keyspaces(session, get_keyspaces(session));
 
-    session.close();
-    cluster.close();
+    PathStorePriviledgedCluster.getInstance().close();
   }
 }

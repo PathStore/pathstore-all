@@ -4,6 +4,7 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.common.PathStoreProperties;
+import pathstore.system.PathStorePriviledgedCluster;
 import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
 
 import java.io.File;
@@ -56,9 +57,6 @@ public class ApplicationSchemaV2 {
     }
   }
 
-  /** Stored to gather meta data of keyspaces */
-  private final Cluster cluster;
-
   /**
    * TODO: Move to {@link pathstore.system.PathStorePriviledgedCluster}
    *
@@ -67,7 +65,7 @@ public class ApplicationSchemaV2 {
   private final Session session;
 
   /** Stores info based on the schema's we are loading in */
-  private final SchemaInfoV2 schemaInfo;
+  private final SchemaInfo schemaInfo;
 
   /**
    * TODO: Change cluster to {@link pathstore.system.PathStorePriviledgedCluster}
@@ -79,25 +77,13 @@ public class ApplicationSchemaV2 {
    * @param args commands to execute
    */
   ApplicationSchemaV2(final String[] args) {
-    this.cluster =
-        new Cluster.Builder()
-            .addContactPoints(PathStoreProperties.getInstance().CassandraIP)
-            .withPort(PathStoreProperties.getInstance().CassandraPort)
-            .withSocketOptions(
-                new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
-            .withQueryOptions(
-                new QueryOptions()
-                    .setRefreshNodeIntervalMillis(0)
-                    .setRefreshNodeListIntervalMillis(0)
-                    .setRefreshSchemaIntervalMillis(0))
-            .build();
-    this.session = this.cluster.connect();
+    this.session = PathStorePriviledgedCluster.getInstance().connect();
 
-    this.schemaInfo = new SchemaInfoV2(this.session);
+    this.schemaInfo = SchemaInfo.getInstance();
 
     switch (args[0]) {
       case "init":
-        for (String s : this.schemaInfo.getAllKeySpaces()) {
+        for (String s : this.schemaInfo.getSchemaInfo().keySet()) {
           dropKeySpace(s);
         }
         this.loadSchemas(0, Arrays.copyOfRange(args, 1, args.length));
@@ -118,9 +104,7 @@ public class ApplicationSchemaV2 {
         System.exit(1);
         break;
     }
-
-    this.session.close();
-    this.cluster.close();
+    PathStorePriviledgedCluster.getInstance().close();
   }
 
   /**
@@ -128,7 +112,7 @@ public class ApplicationSchemaV2 {
    *
    * <p>First it parses the file and executes all their commands.
    *
-   * <p>Then the {@link SchemaInfoV2} is updated to the latest version of the schemas
+   * <p>Then the {@link SchemaInfo} is updated to the latest version of the schemas
    *
    * <p>Then if the keyspace needs augmentation we augment it and update the database, then the
    * original schema and the augmented schema are placed into the pathstore_applications.apps table
@@ -138,8 +122,8 @@ public class ApplicationSchemaV2 {
    * @param schemasToLoad list of file names that point to cql files to load
    */
   private void loadSchemas(final int appIdStart, final String[] schemasToLoad) {
-    this.schemaInfo.generate();
-    if (!this.schemaInfo.getAllKeySpaces().contains("pathstore_applications")) {
+    this.schemaInfo.reset();
+    if (!this.schemaInfo.getSchemaInfo().containsKey("pathstore_applications")) {
       System.out.println("Loading default applications schema");
       PathStoreSchemaLoaderUtils.loadApplicationSchema(this.session);
     }
@@ -154,10 +138,9 @@ public class ApplicationSchemaV2 {
 
           PathStoreSchemaLoaderUtils.parseSchema(schema).forEach(this.session::execute);
 
-          this.schemaInfo.generate();
-          for (String tableName : this.schemaInfo.getTablesByKeySpace(keyspaceName)) {
-
-            SchemaInfoV2.Table table = this.schemaInfo.getTableObjectByName(tableName);
+          this.schemaInfo.reset();
+          for (SchemaInfo.Table table :
+              this.schemaInfo.getSchemaInfo().get(keyspaceName).keySet()) {
 
             augmentSchema(table);
             createViewTable(table);
@@ -165,7 +148,10 @@ public class ApplicationSchemaV2 {
             insertApplicationSchema(
                 appId++,
                 keyspaceName,
-                this.cluster.getMetadata().getKeyspace(table.keyspace_name).exportAsString());
+                PathStorePriviledgedCluster.getInstance()
+                    .getMetadata()
+                    .getKeyspace(table.keyspace_name)
+                    .exportAsString());
           }
 
           session.execute("drop keyspace if exists " + keyspaceName);
@@ -181,7 +167,7 @@ public class ApplicationSchemaV2 {
       }
     }
 
-    this.schemaInfo.generate();
+    this.schemaInfo.reset();
   }
 
   /**
@@ -196,7 +182,7 @@ public class ApplicationSchemaV2 {
   /**
    * TODO: Maybe remove string literals, This may be an exception
    *
-   * <p>Rebuilds schema based on data queried by {@link SchemaInfoV2} to include a few extra columns
+   * <p>Rebuilds schema based on data queried by {@link SchemaInfo} to include a few extra columns
    *
    * <p>These columns are:
    *
@@ -205,20 +191,16 @@ public class ApplicationSchemaV2 {
    *
    * @param table table to augment
    */
-  private void augmentSchema(final SchemaInfoV2.Table table) {
-
-    List<String> columnNames = this.schemaInfo.getColumnsByTable(table.table_name);
-    Set<SchemaInfoV2.Column> columns = new HashSet<>();
-
-    for (String columnName : columnNames)
-      columns.add(this.schemaInfo.getColumnObjectByName(columnName));
-
+  private void augmentSchema(final SchemaInfo.Table table) {
     dropTable(table);
+
+    List<SchemaInfo.Column> columns =
+        this.schemaInfo.getTableColumns(table.keyspace_name, table.table_name);
 
     StringBuilder query =
         new StringBuilder("CREATE TABLE " + table.keyspace_name + "." + table.table_name + "(");
 
-    for (SchemaInfoV2.Column col : columns) {
+    for (SchemaInfo.Column col : columns) {
       String type = col.type.compareTo("counter") == 0 ? "int" : col.type;
       query.append(col.column_name).append(" ").append(type).append(",");
     }
@@ -231,9 +213,9 @@ public class ApplicationSchemaV2 {
     query.append("pathstore_node int,");
     query.append("PRIMARY KEY(");
 
-    for (SchemaInfoV2.Column col : columns)
+    for (SchemaInfo.Column col : columns)
       if (col.kind.equals("partition_key")) query.append(col.column_name).append(",");
-    for (SchemaInfoV2.Column col : columns)
+    for (SchemaInfo.Column col : columns)
       if (col.kind.equals("clustering")) query.append(col.column_name).append(",");
 
     query.append("pathstore_version) ");
@@ -242,7 +224,7 @@ public class ApplicationSchemaV2 {
 
     query.append("WITH CLUSTERING ORDER BY (");
 
-    for (SchemaInfoV2.Column col : columns)
+    for (SchemaInfo.Column col : columns)
       if (col.kind.compareTo("clustering") == 0)
         query.append(col.column_name).append(" ").append(col.clustering_order).append(",");
 
@@ -311,17 +293,17 @@ public class ApplicationSchemaV2 {
     session.execute(query.toString());
   }
 
-  private void createViewTable(final SchemaInfoV2.Table table) {
-    final List<String> columns = this.schemaInfo.getColumnsByTable(table.table_name);
-
+  private void createViewTable(final SchemaInfo.Table table) {
     StringBuilder query =
         new StringBuilder(
             "CREATE TABLE " + table.keyspace_name + ".view_" + table.table_name + "(");
 
     query.append("pathstore_view_id uuid,");
 
-    for (String column_name : columns) {
-      SchemaInfoV2.Column col = this.schemaInfo.getColumnObjectByName(column_name);
+    List<SchemaInfo.Column> columns =
+        this.schemaInfo.getTableColumns(table.keyspace_name, table.table_name);
+
+    for (SchemaInfo.Column col : columns) {
       String type = col.type.compareTo("counter") == 0 ? "int" : col.type;
       query.append(col.column_name).append(" ").append(type).append(",");
     }
@@ -335,8 +317,7 @@ public class ApplicationSchemaV2 {
 
     query.append("PRIMARY KEY(pathstore_view_id,");
 
-    for (String column_name : columns) {
-      SchemaInfoV2.Column col = this.schemaInfo.getColumnObjectByName(column_name);
+    for (SchemaInfo.Column col : columns) {
       if (col.kind.compareTo("regular") != 0) query.append(col.column_name).append(",");
     }
 
@@ -372,7 +353,7 @@ public class ApplicationSchemaV2 {
    *
    * @param table table to drop.
    */
-  private void dropTable(final SchemaInfoV2.Table table) {
+  private void dropTable(final SchemaInfo.Table table) {
     String query = "DROP TABLE " + table.keyspace_name + "." + table.table_name;
     this.session.execute(query);
   }

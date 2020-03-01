@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import pathstore.common.PathStoreProperties;
+import pathstore.system.PathStorePriviledgedCluster;
 import pathstore.system.schemaloader.ApplicationEntry;
 import pathstore.system.schemaloader.ProccessStatus;
 
@@ -115,50 +116,18 @@ public class ApplicationInstaller {
   }
 
   public static void main(String[] args) {
+    Session session = PathStorePriviledgedCluster.getInstance().connect();
     switch (args[0]) {
       case "install":
-        Cluster cluster =
-            new Cluster.Builder()
-                .addContactPoints(PathStoreProperties.getInstance().CassandraIP)
-                .withPort(PathStoreProperties.getInstance().CassandraPort)
-                .withSocketOptions(
-                    new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
-                .withQueryOptions(
-                    new QueryOptions()
-                        .setRefreshNodeIntervalMillis(0)
-                        .setRefreshNodeListIntervalMillis(0)
-                        .setRefreshSchemaIntervalMillis(0))
-                .build();
-        Session session = cluster.connect();
-
         install_application(session, Integer.parseInt(args[1]), args[2]);
-
-        session.close();
-        cluster.close();
         break;
       case "remove":
-        cluster =
-            new Cluster.Builder()
-                .addContactPoints(PathStoreProperties.getInstance().CassandraIP)
-                .withPort(PathStoreProperties.getInstance().CassandraPort)
-                .withSocketOptions(
-                    new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
-                .withQueryOptions(
-                    new QueryOptions()
-                        .setRefreshNodeIntervalMillis(0)
-                        .setRefreshNodeListIntervalMillis(0)
-                        .setRefreshSchemaIntervalMillis(0))
-                .build();
-        session = cluster.connect();
-
         remove_application(session, Integer.parseInt(args[1]), args[2]);
-
-        session.close();
-        cluster.close();
         break;
       default:
         System.err.println(args[0] + " is not an option");
         break;
     }
+    PathStorePriviledgedCluster.getInstance().close();
   }
 }

@@ -27,7 +27,7 @@ import pathstore.common.Role;
 
 import org.apache.commons.cli.*;
 import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
-import pathstore.util.SchemaInfoV2;
+import pathstore.util.SchemaInfo;
 
 public class PathStoreServerImpl {
 
@@ -134,9 +134,7 @@ public class PathStoreServerImpl {
 
       Session local = PathStorePriviledgedCluster.getInstance().connect();
 
-      SchemaInfoV2 schemaInfoV2 = new SchemaInfoV2(local);
-
-      if (!schemaInfoV2.getAllKeySpaces().contains("pathstore_applications"))
+      if (!SchemaInfo.getInstance().getSchemaInfo().containsKey("pathstore_applications"))
         PathStoreSchemaLoaderUtils.loadApplicationSchema(local);
 
       new TopologyUpdater();
