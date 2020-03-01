@@ -23,6 +23,7 @@ import pathstore.system.ProccessStatus;
  */
 public class ApplicationInstaller {
 
+  // TODO: Modify hashmaps to list of integers as values
   private static void install_application(final int nodeid, final String keyspace_name) {
 
     // TODO: Check if keyspace_name is a valid keyspace
