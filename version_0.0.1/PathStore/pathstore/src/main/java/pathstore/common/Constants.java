@@ -40,7 +40,7 @@ public class Constants {
     public static String WAIT_FOR = "wait_for";
   }
 
-  public static String APPS = "APPS";
+  public static String APPS = "apps";
 
   public static class APPS_COLUMNS {
     public static String APP_ID = "app_id";
