@@ -52,30 +52,12 @@ public class PathStoreMasterSchemaServer extends Thread {
                     row.getInt(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
       }
 
-      List<String> to_delete = new LinkedList<>();
-
-      // Filter out garbage process_ids
-      for (String process_uuid : process_uuid_to_set_of_entries.keySet()) {
-        int num_of_waiting = 0;
-        int num_of_installing = 0;
-
-        for (ApplicationEntry current_entry : process_uuid_to_set_of_entries.get(process_uuid)) {
-          switch (current_entry.proccess_status) {
-            case WAITING_INSTALL:
-              num_of_waiting += 1;
-              break;
-            case INSTALLING:
-              num_of_installing += 1;
-              break;
-          }
-        }
-
-        if (num_of_waiting == num_of_installing) to_delete.add(process_uuid);
-      }
-
-      to_delete.forEach(process_uuid_to_set_of_entries::remove);
+      this.get_finished_ids(process_uuid_to_set_of_entries)
+          .forEach(process_uuid_to_set_of_entries::remove);
 
       for (String process_uuid : process_uuid_to_set_of_entries.keySet()) {
+
+        System.out.println("Checking: " + process_uuid);
 
         this.update(
             ProccessStatus.INSTALLED,
@@ -96,6 +78,41 @@ public class PathStoreMasterSchemaServer extends Thread {
         e.printStackTrace();
       }
     }
+  }
+
+  private List<String> get_finished_ids(
+      final Map<String, Set<ApplicationEntry>> process_uuid_to_set_of_entries) {
+    List<String> to_delete = new LinkedList<>();
+
+    // Filter out garbage process_ids
+    for (String process_uuid : process_uuid_to_set_of_entries.keySet()) {
+      int num_of_waiting_install = 0;
+      int num_of_installing = 0;
+      int num_waiting_remove = 0;
+      int num_removing = 0;
+
+      for (ApplicationEntry current_entry : process_uuid_to_set_of_entries.get(process_uuid)) {
+        switch (current_entry.proccess_status) {
+          case WAITING_INSTALL:
+            num_of_waiting_install += 1;
+            break;
+          case INSTALLING:
+            num_of_installing += 1;
+            break;
+          case WAITING_REMOVE:
+            num_waiting_remove += 1;
+            break;
+          case REMOVING:
+            num_removing += 1;
+            break;
+        }
+      }
+
+      if ((num_of_waiting_install != 0 && num_of_waiting_install == num_of_installing)
+          || (num_waiting_remove != 0 && num_waiting_remove == num_removing))
+        to_delete.add(process_uuid);
+    }
+    return to_delete;
   }
 
   /**
