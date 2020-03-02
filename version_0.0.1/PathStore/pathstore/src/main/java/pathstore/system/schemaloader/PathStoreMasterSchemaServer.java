@@ -35,7 +35,9 @@ public class PathStoreMasterSchemaServer extends Thread {
       // Query all application rows
       for (Row row :
           privileged_session.execute(
-              QueryBuilder.select().all().from(Constants.APPS, Constants.NODE_SCHEMAS))) {
+              QueryBuilder.select()
+                  .all()
+                  .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS))) {
         String process_uuid = row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID);
         process_uuid_to_set_of_entries.computeIfAbsent(process_uuid, k -> new HashSet<>());
         process_uuid_to_set_of_entries
