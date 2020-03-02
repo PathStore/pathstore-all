@@ -82,19 +82,26 @@ public class PathStoreMasterSchemaServer extends Thread {
                 .map(i -> i.node_id)
                 .collect(Collectors.toSet());
 
+        Set<Integer> installing =
+            process_uuid_to_set_of_entries.get(process_uuid).stream()
+                .filter(i -> i.proccess_status == ProccessStatus.INSTALLING)
+                .map(i -> i.node_id)
+                .collect(Collectors.toSet());
+
         Set<ApplicationEntry> waiting_install =
             process_uuid_to_set_of_entries.get(process_uuid).stream()
                 .filter(i -> i.proccess_status == ProccessStatus.WAITING_INSTALL)
                 .collect(Collectors.toSet());
 
         for (ApplicationEntry current_entry : waiting_install) {
-          if (current_entry.waiting_for == -1 || installed.contains(current_entry.waiting_for)) {
-            this.update_application_status(
-                current_entry.node_id,
-                current_entry.keyspace_name,
-                ProccessStatus.INSTALLING,
-                current_entry.process_uuid);
-          }
+          if (!installed.contains(current_entry.node_id)
+              && !installing.contains(current_entry.node_id))
+            if (current_entry.waiting_for == -1 || installed.contains(current_entry.waiting_for))
+              this.update_application_status(
+                  current_entry.node_id,
+                  current_entry.keyspace_name,
+                  ProccessStatus.INSTALLING,
+                  current_entry.process_uuid);
         }
       }
 
