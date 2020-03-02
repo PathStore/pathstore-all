@@ -38,6 +38,7 @@ public class Constants {
     public static String KEYSPACE_NAME = "keyspace_name";
     public static String PROCESS_STATUS = "process_status";
     public static String WAIT_FOR = "wait_for";
+    public static String PROCESS_UUID = "process_uuid";
   }
 
   public static String APPS = "apps";

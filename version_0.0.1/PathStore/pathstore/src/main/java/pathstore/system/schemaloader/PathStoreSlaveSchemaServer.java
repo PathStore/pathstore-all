@@ -46,11 +46,15 @@ public class PathStoreSlaveSchemaServer extends Thread {
         switch (current_process_status) {
           case INSTALLING:
             this.install_application(
-                session, row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME));
+                session,
+                row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
+                row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID));
             break;
           case REMOVING:
             this.remove_application(
-                session, row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME));
+                session,
+                row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
+                row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID));
             break;
         }
       }
@@ -70,7 +74,8 @@ public class PathStoreSlaveSchemaServer extends Thread {
    * @param session {@link PathStoreCluster#connect()}
    * @param keyspace application to install
    */
-  private void install_application(final Session session, final String keyspace) {
+  private void install_application(
+      final Session session, final String keyspace, final String process_uuid) {
     // Query application, if not exist then just continue and wait for it to exist
     Select select =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);
@@ -89,6 +94,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
               QueryBuilder.eq(
                   Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID))
           .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace))
+          .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, process_uuid))
           .with(
               QueryBuilder.set(
                   Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
@@ -104,7 +110,8 @@ public class PathStoreSlaveSchemaServer extends Thread {
    * @param session {@link PathStoreCluster#connect()}
    * @param keyspace application to remove
    */
-  private void remove_application(final Session session, final String keyspace) {
+  private void remove_application(
+      final Session session, final String keyspace, final String process_uuid) {
     System.out.println("Removing application " + keyspace);
     SchemaInfo.getInstance().removeKeyspace(keyspace);
     PathStorePriviledgedCluster.getInstance()
@@ -117,6 +124,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
             QueryBuilder.eq(
                 Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID))
         .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace))
+        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, process_uuid))
         .with(
             QueryBuilder.set(
                 Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, ProccessStatus.REMOVED.toString()));

@@ -2,10 +2,8 @@ package pathstore.util;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 import pathstore.common.PathStoreProperties;
 import pathstore.system.PathStorePriviledgedCluster;
@@ -43,12 +41,19 @@ public class ApplicationInstaller {
 
     List<ApplicationEntry> applicationEntryList = new LinkedList<>();
 
+    UUID uuid = UUID.randomUUID();
+
     int current_nodeid = nodeid;
 
     while (current_nodeid != -1) {
       int parent_nodeid = node_to_parent_node.get(current_nodeid);
       ApplicationEntry new_entry =
-          new ApplicationEntry(current_nodeid, ProccessStatus.WAITING_INSTALL, parent_nodeid);
+          new ApplicationEntry(
+              current_nodeid,
+              keyspace_name,
+              ProccessStatus.WAITING_INSTALL,
+              uuid.toString(),
+              parent_nodeid);
       applicationEntryList.add(new_entry);
       System.out.println(new_entry);
       current_nodeid = parent_nodeid;
@@ -64,7 +69,8 @@ public class ApplicationInstaller {
               .value("keyspace_name", keyspace_name)
               .value("nodeid", entry.node_id)
               .value("process_status", entry.proccess_status.toString())
-              .value("wait_for", entry.waiting_for));
+              .value("wait_for", entry.waiting_for)
+              .value("process_uuid", entry.process_uuid));
 
     session.execute(batchStatement);
   }
@@ -88,12 +94,16 @@ public class ApplicationInstaller {
 
     Integer current_nodeid = nodeid;
 
+    UUID uuid = UUID.randomUUID();
+
     while (current_nodeid != null) {
       Integer child_nodeid = parent_to_node.get(current_nodeid);
       ApplicationEntry new_entry =
           new ApplicationEntry(
               current_nodeid,
+              keyspace_name,
               ProccessStatus.WAITING_REMOVE,
+              uuid.toString(),
               child_nodeid == null ? -1 : child_nodeid);
       applicationEntryList.add(new_entry);
       System.out.println(new_entry);
@@ -110,7 +120,8 @@ public class ApplicationInstaller {
               .value("keyspace_name", keyspace_name)
               .value("nodeid", entry.node_id)
               .value("process_status", entry.proccess_status.toString())
-              .value("wait_for", entry.waiting_for));
+              .value("wait_for", entry.waiting_for)
+              .value("process_uuid", entry.process_uuid));
 
     session.execute(batchStatement);
   }
