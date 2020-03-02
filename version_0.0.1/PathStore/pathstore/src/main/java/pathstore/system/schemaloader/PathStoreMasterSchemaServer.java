@@ -25,6 +25,15 @@ import java.util.stream.Collectors;
  * <p>Waiting_Remove -> Removing -> Removed
  */
 public class PathStoreMasterSchemaServer extends Thread {
+  /**
+   * First sort all rows into groups based on their process id's
+   *
+   * <p>Then remove all groups that are complete see {@link #get_finished_ids(Map)} for a definition
+   * on what a finished group is considered to be
+   *
+   * <p>Then call {@link #update(ProccessStatus, ProccessStatus, ProccessStatus, Set)} on all groups
+   * that remain to either update the next node in the chain or do nothing
+   */
   @Override
   public void run() {
     while (true) {
@@ -56,9 +65,6 @@ public class PathStoreMasterSchemaServer extends Thread {
           .forEach(process_uuid_to_set_of_entries::remove);
 
       for (String process_uuid : process_uuid_to_set_of_entries.keySet()) {
-
-        System.out.println("Checking: " + process_uuid);
-
         this.update(
             ProccessStatus.INSTALLED,
             ProccessStatus.INSTALLING,
@@ -80,7 +86,19 @@ public class PathStoreMasterSchemaServer extends Thread {
     }
   }
 
-  private List<String> get_finished_ids(
+  /**
+   * Simple filter that removes process groups that have already been completed. I.e the master
+   * schema loader cannot do anything else with that process group.
+   *
+   * <p>The cases that we consider a process group to complete is that when every node in the chain
+   * has a waiting and installing/removing row. This means we have told every row to install or
+   * remove. This won't filter out processes that have stalled because of a disconnected node
+   *
+   * @param process_uuid_to_set_of_entries process_uuid to a set of application entries part of that
+   *     process batch
+   * @return a list of process uuid's that are complete
+   */
+  List<String> get_finished_ids(
       final Map<String, Set<ApplicationEntry>> process_uuid_to_set_of_entries) {
     List<String> to_delete = new LinkedList<>();
 
@@ -190,6 +208,15 @@ public class PathStoreMasterSchemaServer extends Thread {
       final String keyspace_name,
       final ProccessStatus status,
       final String process_uuid) {
+
+    System.out.println(
+        (status == ProccessStatus.INSTALLING ? "Installing application " : "Removing application ")
+            + keyspace_name
+            + " on node "
+            + nodeid
+            + " which is part of the process group: "
+            + process_uuid);
+
     Session client_session = PathStoreCluster.getInstance().connect();
 
     Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
