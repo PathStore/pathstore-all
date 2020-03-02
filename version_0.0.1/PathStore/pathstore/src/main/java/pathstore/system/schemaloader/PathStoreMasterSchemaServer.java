@@ -48,7 +48,7 @@ public class PathStoreMasterSchemaServer extends Thread {
                     row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
                     ProccessStatus.valueOf(
                         row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)),
-                    row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS),
+                    process_uuid,
                     row.getInt(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
       }
 
@@ -82,26 +82,34 @@ public class PathStoreMasterSchemaServer extends Thread {
                 .map(i -> i.node_id)
                 .collect(Collectors.toSet());
 
+        System.out.println(installed);
+
         Set<Integer> installing =
             process_uuid_to_set_of_entries.get(process_uuid).stream()
                 .filter(i -> i.proccess_status == ProccessStatus.INSTALLING)
                 .map(i -> i.node_id)
                 .collect(Collectors.toSet());
 
+        System.out.println(installing);
+
         Set<ApplicationEntry> waiting_install =
             process_uuid_to_set_of_entries.get(process_uuid).stream()
                 .filter(i -> i.proccess_status == ProccessStatus.WAITING_INSTALL)
                 .collect(Collectors.toSet());
 
+        System.out.println(waiting_install);
+
         for (ApplicationEntry current_entry : waiting_install) {
           if (!installed.contains(current_entry.node_id)
               && !installing.contains(current_entry.node_id))
-            if (current_entry.waiting_for == -1 || installed.contains(current_entry.waiting_for))
+            if (current_entry.waiting_for == -1 || installed.contains(current_entry.waiting_for)) {
+              System.out.println("Installing on node: " + current_entry.node_id);
               this.update_application_status(
                   current_entry.node_id,
                   current_entry.keyspace_name,
                   ProccessStatus.INSTALLING,
                   current_entry.process_uuid);
+            }
         }
       }
 
