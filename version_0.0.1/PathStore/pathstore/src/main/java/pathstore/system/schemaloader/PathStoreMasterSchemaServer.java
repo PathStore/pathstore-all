@@ -76,41 +76,18 @@ public class PathStoreMasterSchemaServer extends Thread {
       to_delete.forEach(process_uuid_to_set_of_entries::remove);
 
       for (String process_uuid : process_uuid_to_set_of_entries.keySet()) {
-        Set<Integer> installed =
-            process_uuid_to_set_of_entries.get(process_uuid).stream()
-                .filter(i -> i.proccess_status == ProccessStatus.INSTALLED)
-                .map(i -> i.node_id)
-                .collect(Collectors.toSet());
 
-        System.out.println(installed);
+        this.update(
+            ProccessStatus.INSTALLED,
+            ProccessStatus.INSTALLING,
+            ProccessStatus.WAITING_INSTALL,
+            process_uuid_to_set_of_entries.get(process_uuid));
 
-        Set<Integer> installing =
-            process_uuid_to_set_of_entries.get(process_uuid).stream()
-                .filter(i -> i.proccess_status == ProccessStatus.INSTALLING)
-                .map(i -> i.node_id)
-                .collect(Collectors.toSet());
-
-        System.out.println(installing);
-
-        Set<ApplicationEntry> waiting_install =
-            process_uuid_to_set_of_entries.get(process_uuid).stream()
-                .filter(i -> i.proccess_status == ProccessStatus.WAITING_INSTALL)
-                .collect(Collectors.toSet());
-
-        System.out.println(waiting_install);
-
-        for (ApplicationEntry current_entry : waiting_install) {
-          if (!installed.contains(current_entry.node_id)
-              && !installing.contains(current_entry.node_id))
-            if (current_entry.waiting_for == -1 || installed.contains(current_entry.waiting_for)) {
-              System.out.println("Installing on node: " + current_entry.node_id);
-              this.update_application_status(
-                  current_entry.node_id,
-                  current_entry.keyspace_name,
-                  ProccessStatus.INSTALLING,
-                  current_entry.process_uuid);
-            }
-        }
+        this.update(
+            ProccessStatus.REMOVED,
+            ProccessStatus.REMOVING,
+            ProccessStatus.WAITING_REMOVE,
+            process_uuid_to_set_of_entries.get(process_uuid));
       }
 
       try {
@@ -119,6 +96,67 @@ public class PathStoreMasterSchemaServer extends Thread {
         e.printStackTrace();
       }
     }
+  }
+
+  /**
+   * This function updates all entries that were waiting for something to occur, once that task has
+   * finished we change their processing state for the slave loader to install or remove an
+   * application
+   *
+   * @param finished finished state either {@link ProccessStatus#INSTALLED} or {@link
+   *     ProccessStatus#REMOVED}
+   * @param processing processing state either {@link ProccessStatus#INSTALLING} or {@link
+   *     ProccessStatus#REMOVING}
+   * @param waiting waiting state either {@link ProccessStatus#WAITING_INSTALL} or {@link
+   *     ProccessStatus#WAITING_REMOVE}
+   * @param entries list of all entries
+   */
+  private void update(
+      final ProccessStatus finished,
+      final ProccessStatus processing,
+      final ProccessStatus waiting,
+      final Set<ApplicationEntry> entries) {
+    Set<Integer> finished_ids = this.filter_entries_to_node_id(entries, finished);
+
+    Set<Integer> processing_ids = this.filter_entries_to_node_id(entries, processing);
+
+    Set<ApplicationEntry> waiting_entries = this.filter_entries(entries, waiting);
+
+    for (ApplicationEntry entry : waiting_entries) {
+      if (!finished_ids.contains(entry.node_id) && !processing_ids.contains(entry.node_id)) {
+        if (entry.waiting_for == -1 || finished_ids.contains(entry.waiting_for)) {
+          this.update_application_status(
+              entry.node_id, entry.keyspace_name, processing, entry.process_uuid);
+        }
+      }
+    }
+  }
+
+  /**
+   * Filters a set of application entries by their process status
+   *
+   * @param entries entries to filter
+   * @param status status to filter by
+   * @return a filtered set of entries
+   */
+  private Set<ApplicationEntry> filter_entries(
+      final Set<ApplicationEntry> entries, final ProccessStatus status) {
+    return entries.stream().filter(i -> i.proccess_status == status).collect(Collectors.toSet());
+  }
+
+  /**
+   * Filters a set of application entries by a process status and collects them to a set of their
+   * node id's
+   *
+   * @param entries entries to filter
+   * @param status status to filter by
+   * @return a filtered set of entries to their node ids
+   */
+  private Set<Integer> filter_entries_to_node_id(
+      final Set<ApplicationEntry> entries, final ProccessStatus status) {
+    return this.filter_entries(entries, status).stream()
+        .map(i -> i.node_id)
+        .collect(Collectors.toSet());
   }
 
   /**
