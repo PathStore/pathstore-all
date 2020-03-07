@@ -36,11 +36,11 @@ public class PathStoreSlaveSchemaServer extends Thread {
           QueryBuilder.select()
               .all()
               .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-      select.where(
-          QueryBuilder.eq(
-              Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID));
 
       for (Row row : session.execute(select)) {
+        if (row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID)
+            != PathStoreProperties.getInstance().NodeID) continue;
+
         ProccessStatus current_process_status =
             ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
         switch (current_process_status) {

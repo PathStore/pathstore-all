@@ -1,7 +1,5 @@
 package pathstore.system.schemaloader;
 
-import java.util.Map;
-
 /**
  * This class describes a row in the node_schemas table.
  *
@@ -21,10 +19,7 @@ public class ApplicationEntry {
   /** Action to take. */
   public final ProccessStatus proccess_status;
 
-  /**
-   * Process group that this is apart of see {@link
-   * PathStoreMasterSchemaServer#get_finished_ids(Map)} for definition
-   */
+  /** Process group that this is apart of see */
   public final String process_uuid;
 
   /**

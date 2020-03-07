@@ -6,9 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
-import pathstore.client.PathStoreResultSet;
 import pathstore.common.Constants;
-import pathstore.system.PathStorePriviledgedCluster;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,54 +26,49 @@ public class PathStoreMasterSchemaServer extends Thread {
   /**
    * First sort all rows into groups based on their process id's
    *
-   * <p>Then remove all groups that are complete see {@link #get_finished_ids(Map)} for a definition
-   * on what a finished group is considered to be
-   *
    * <p>Then call {@link #update(ProccessStatus, ProccessStatus, ProccessStatus, Set)} on all groups
    * that remain to either update the next node in the chain or do nothing
    */
   @Override
   public void run() {
     while (true) {
-      Session privileged_session = PathStorePriviledgedCluster.getInstance().connect();
+      Session client_session = PathStoreCluster.getInstance().connect();
 
-      Map<String, Set<ApplicationEntry>> process_uuid_to_set_of_entries = new HashMap<>();
+      Map<String, Set<ApplicationEntry>> keyspace_name_to_application_set = new HashMap<>();
+
+      Select query_all_node_schema =
+          QueryBuilder.select()
+              .all()
+              .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
       // Query all application rows
-      for (Row row :
-          privileged_session.execute(
-              QueryBuilder.select()
-                  .all()
-                  .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS))) {
-        String process_uuid = row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID);
-        process_uuid_to_set_of_entries.computeIfAbsent(process_uuid, k -> new HashSet<>());
-        process_uuid_to_set_of_entries
-            .get(process_uuid)
+      for (Row row : client_session.execute(query_all_node_schema)) {
+        String keyspace_name = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
+        keyspace_name_to_application_set.computeIfAbsent(keyspace_name, k -> new HashSet<>());
+        keyspace_name_to_application_set
+            .get(keyspace_name)
             .add(
                 new ApplicationEntry(
                     row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID),
-                    row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
+                    keyspace_name,
                     ProccessStatus.valueOf(
                         row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)),
-                    process_uuid,
+                    row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID),
                     row.getInt(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
       }
 
-      this.get_finished_ids(process_uuid_to_set_of_entries)
-          .forEach(process_uuid_to_set_of_entries::remove);
-
-      for (String process_uuid : process_uuid_to_set_of_entries.keySet()) {
+      for (String keyspace_name : keyspace_name_to_application_set.keySet()) {
         this.update(
             ProccessStatus.INSTALLED,
             ProccessStatus.INSTALLING,
             ProccessStatus.WAITING_INSTALL,
-            process_uuid_to_set_of_entries.get(process_uuid));
+            keyspace_name_to_application_set.get(keyspace_name));
 
         this.update(
             ProccessStatus.REMOVED,
             ProccessStatus.REMOVING,
             ProccessStatus.WAITING_REMOVE,
-            process_uuid_to_set_of_entries.get(process_uuid));
+            keyspace_name_to_application_set.get(keyspace_name));
       }
 
       try {
@@ -84,53 +77,6 @@ public class PathStoreMasterSchemaServer extends Thread {
         e.printStackTrace();
       }
     }
-  }
-
-  /**
-   * Simple filter that removes process groups that have already been completed. I.e the master
-   * schema loader cannot do anything else with that process group.
-   *
-   * <p>The cases that we consider a process group to complete is that when every node in the chain
-   * has a waiting and installing/removing row. This means we have told every row to install or
-   * remove. This won't filter out processes that have stalled because of a disconnected node
-   *
-   * @param process_uuid_to_set_of_entries process_uuid to a set of application entries part of that
-   *     process batch
-   * @return a list of process uuid's that are complete
-   */
-  List<String> get_finished_ids(
-      final Map<String, Set<ApplicationEntry>> process_uuid_to_set_of_entries) {
-    List<String> to_delete = new LinkedList<>();
-
-    // Filter out garbage process_ids
-    for (String process_uuid : process_uuid_to_set_of_entries.keySet()) {
-      int num_of_waiting_install = 0;
-      int num_of_installing = 0;
-      int num_waiting_remove = 0;
-      int num_removing = 0;
-
-      for (ApplicationEntry current_entry : process_uuid_to_set_of_entries.get(process_uuid)) {
-        switch (current_entry.proccess_status) {
-          case WAITING_INSTALL:
-            num_of_waiting_install += 1;
-            break;
-          case INSTALLING:
-            num_of_installing += 1;
-            break;
-          case WAITING_REMOVE:
-            num_waiting_remove += 1;
-            break;
-          case REMOVING:
-            num_removing += 1;
-            break;
-        }
-      }
-
-      if ((num_of_waiting_install != 0 && num_of_waiting_install == num_of_installing)
-          || (num_waiting_remove != 0 && num_waiting_remove == num_removing))
-        to_delete.add(process_uuid);
-    }
-    return to_delete;
   }
 
   /**
@@ -153,18 +99,12 @@ public class PathStoreMasterSchemaServer extends Thread {
       final Set<ApplicationEntry> entries) {
     Set<Integer> finished_ids = this.filter_entries_to_node_id(entries, finished);
 
-    Set<Integer> processing_ids = this.filter_entries_to_node_id(entries, processing);
-
     Set<ApplicationEntry> waiting_entries = this.filter_entries(entries, waiting);
 
-    for (ApplicationEntry entry : waiting_entries) {
-      if (!finished_ids.contains(entry.node_id) && !processing_ids.contains(entry.node_id)) {
-        if (entry.waiting_for == -1 || finished_ids.contains(entry.waiting_for)) {
-          this.update_application_status(
-              entry.node_id, entry.keyspace_name, processing, entry.process_uuid);
-        }
-      }
-    }
+    for (ApplicationEntry entry : waiting_entries)
+      if (entry.waiting_for == -1 || finished_ids.contains(entry.waiting_for))
+        this.update_application_status(
+            entry.node_id, entry.keyspace_name, processing, entry.process_uuid);
   }
 
   /**
