@@ -158,9 +158,8 @@ public class PathStoreMasterSchemaServer extends Thread {
             QueryBuilder.select()
                 .all()
                 .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
-        select
-            .where(QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid))
-            .and(QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.KEYSPACE_NAME, keyspace_name));
+        select.where(
+            QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid));
 
         if (client_session.execute(select).one() == null) {
           System.out.println("Inserting: " + process_uuid);
