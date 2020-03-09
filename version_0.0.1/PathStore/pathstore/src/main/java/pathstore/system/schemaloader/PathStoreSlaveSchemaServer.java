@@ -38,6 +38,8 @@ public class PathStoreSlaveSchemaServer extends Thread {
               .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
 
       for (Row current_process_row : session.execute(current_processes_select_all)) {
+        String keyspace_name =
+            current_process_row.getString(Constants.CURRENT_PROCESSES_COLUMNS.KEYSPACE_NAME);
         Select node_schemas_specific_select =
             QueryBuilder.select()
                 .all()
@@ -47,11 +49,9 @@ public class PathStoreSlaveSchemaServer extends Thread {
                 QueryBuilder.eq(
                     Constants.NODE_SCHEMAS_COLUMNS.NODE_ID,
                     PathStoreProperties.getInstance().NodeID))
-            .and(
-                QueryBuilder.eq(
-                    Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME,
-                    current_process_row.getString(
-                        Constants.CURRENT_PROCESSES_COLUMNS.KEYSPACE_NAME)));
+            .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace_name));
+
+        System.out.println("Found: " + keyspace_name);
 
         for (Row node_schemas_select : session.execute(node_schemas_specific_select)) {
           ProccessStatus current_process_status =

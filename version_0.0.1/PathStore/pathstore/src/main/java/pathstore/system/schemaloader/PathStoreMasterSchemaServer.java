@@ -149,14 +149,28 @@ public class PathStoreMasterSchemaServer extends Thread {
       final String process_uuid,
       final String keyspace_name) {
 
+    System.out.println("Checking for: " + process_uuid + " " + keyspace_name);
+
     if (num_of_processing == 0) {
       Session client_session = PathStoreCluster.getInstance().connect();
       if (num_of_finished == 0) {
-        Insert insert =
-            QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
-        insert.value(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid);
-        insert.value(Constants.CURRENT_PROCESSES_COLUMNS.KEYSPACE_NAME, keyspace_name);
-        client_session.execute(insert);
+        Select select =
+            QueryBuilder.select()
+                .all()
+                .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
+        select
+            .where(QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid))
+            .and(QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.KEYSPACE_NAME, keyspace_name));
+
+        if (client_session.execute(select).one() == null) {
+          System.out.println("Inserting: " + process_uuid);
+          Insert insert =
+              QueryBuilder.insertInto(
+                  Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
+          insert.value(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid);
+          insert.value(Constants.CURRENT_PROCESSES_COLUMNS.KEYSPACE_NAME, keyspace_name);
+          client_session.execute(insert);
+        } else System.out.println("Not inserting");
       } else if (num_of_waiting == 0) {
         Delete delete =
             QueryBuilder.delete()
