@@ -169,13 +169,22 @@ public class PathStoreMasterSchemaServer extends Thread {
           client_session.execute(insert);
         }
       } else if (num_of_waiting == 0) {
-        System.out.println("Removing process: " + process_uuid);
-        Delete delete =
-            QueryBuilder.delete()
+        Select select =
+            QueryBuilder.select()
+                .all()
                 .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
-        delete.where(
+        select.where(
             QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid));
-        client_session.execute(delete);
+
+        if (client_session.execute(select).one() != null) {
+          System.out.println("Removing process: " + process_uuid);
+          Delete delete =
+              QueryBuilder.delete()
+                  .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
+          delete.where(
+              QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid));
+          client_session.execute(delete);
+        }
       }
     }
   }
