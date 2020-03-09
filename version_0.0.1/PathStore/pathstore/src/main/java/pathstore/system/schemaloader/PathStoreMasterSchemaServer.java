@@ -176,7 +176,10 @@ public class PathStoreMasterSchemaServer extends Thread {
         select.where(
             QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid));
 
-        if (client_session.execute(select).one() != null) {
+        int num_of_rows = 0;
+        for (Row ignored : client_session.execute(select)) num_of_rows += 1;
+
+        if (num_of_rows == 1) {
           System.out.println("Removing process: " + process_uuid);
           Delete delete =
               QueryBuilder.delete()
