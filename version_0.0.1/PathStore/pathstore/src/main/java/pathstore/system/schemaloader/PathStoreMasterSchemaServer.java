@@ -115,8 +115,8 @@ public class PathStoreMasterSchemaServer extends Thread {
         finished_ids.size(),
         processing_ids.size(),
         waiting_entries.size(),
-        keyspace_name,
-        processing_uuid);
+        processing_uuid,
+        keyspace_name);
 
     for (ApplicationEntry entry : waiting_entries)
       if (entry.waiting_for == -1 || finished_ids.contains(entry.waiting_for))
@@ -149,8 +149,6 @@ public class PathStoreMasterSchemaServer extends Thread {
       final String process_uuid,
       final String keyspace_name) {
 
-    System.out.println("Checking for: " + process_uuid + " " + keyspace_name);
-
     if (num_of_processing == 0) {
       Session client_session = PathStoreCluster.getInstance().connect();
       if (num_of_finished == 0) {
@@ -162,15 +160,16 @@ public class PathStoreMasterSchemaServer extends Thread {
             QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid));
 
         if (client_session.execute(select).one() == null) {
-          System.out.println("Inserting: " + process_uuid);
+          System.out.println("Inserting process: " + process_uuid);
           Insert insert =
               QueryBuilder.insertInto(
                   Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
           insert.value(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid);
           insert.value(Constants.CURRENT_PROCESSES_COLUMNS.KEYSPACE_NAME, keyspace_name);
           client_session.execute(insert);
-        } else System.out.println("Not inserting");
+        }
       } else if (num_of_waiting == 0) {
+        System.out.println("Removing process: " + process_uuid);
         Delete delete =
             QueryBuilder.delete()
                 .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);

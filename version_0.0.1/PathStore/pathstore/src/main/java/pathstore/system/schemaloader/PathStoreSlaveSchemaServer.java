@@ -51,8 +51,6 @@ public class PathStoreSlaveSchemaServer extends Thread {
                     PathStoreProperties.getInstance().NodeID))
             .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace_name));
 
-        System.out.println("Found: " + keyspace_name);
-
         for (Row node_schemas_select : session.execute(node_schemas_specific_select)) {
           ProccessStatus current_process_status =
               ProccessStatus.valueOf(
