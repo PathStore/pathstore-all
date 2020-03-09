@@ -2,14 +2,11 @@ package pathstore.system.schemaloader;
 
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
-import com.datastax.driver.core.querybuilder.Update;
+import com.datastax.driver.core.querybuilder.*;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * This is the master schema server which will only run on the ROOTSERVER
@@ -23,6 +20,7 @@ import java.util.stream.Collectors;
  * <p>Waiting_Remove -> Removing -> Removed
  */
 public class PathStoreMasterSchemaServer extends Thread {
+
   /**
    * First sort all rows into groups based on their process id's
    *
@@ -97,9 +95,28 @@ public class PathStoreMasterSchemaServer extends Thread {
       final ProccessStatus processing,
       final ProccessStatus waiting,
       final Set<ApplicationEntry> entries) {
-    Set<Integer> finished_ids = this.filter_entries_to_node_id(entries, finished);
 
-    Set<ApplicationEntry> waiting_entries = this.filter_entries(entries, waiting);
+    String keyspace_name = null, processing_uuid = null;
+    Set<Integer> finished_ids = new HashSet<>(), processing_ids = new HashSet<>();
+    Set<ApplicationEntry> waiting_entries = new HashSet<>();
+
+    for (ApplicationEntry entry : entries) {
+      ProccessStatus current_status = entry.proccess_status;
+
+      if (keyspace_name == null) keyspace_name = entry.keyspace_name;
+      if (processing_uuid == null) processing_uuid = entry.process_uuid;
+
+      if (current_status == finished) finished_ids.add(entry.node_id);
+      else if (current_status == processing) processing_ids.add(entry.node_id);
+      else if (current_status == waiting) waiting_entries.add(entry);
+    }
+
+    this.handle_current_process_table(
+        finished_ids.size(),
+        processing_ids.size(),
+        waiting_entries.size(),
+        keyspace_name,
+        processing_uuid);
 
     for (ApplicationEntry entry : waiting_entries)
       if (entry.waiting_for == -1 || finished_ids.contains(entry.waiting_for))
@@ -108,30 +125,47 @@ public class PathStoreMasterSchemaServer extends Thread {
   }
 
   /**
-   * Filters a set of application entries by their process status
+   * This function will add or remove an entry from the current_processes table under certain
+   * conditions.
    *
-   * @param entries entries to filter
-   * @param status status to filter by
-   * @return a filtered set of entries
+   * <p>there must be 0 rows currently be processed for either case to occur
+   *
+   * <p>if there are no finished entries then we know that the process has just been started. Thus
+   * we add to the table
+   *
+   * <p>if there are no waiting entires then we know that the process has finished. Thus we remove
+   * from the table
+   *
+   * @param num_of_finished # of finished entries
+   * @param num_of_processing # of processing entries
+   * @param num_of_waiting # of waiting entries
+   * @param process_uuid process_uuid
+   * @param keyspace_name keyspace_name
    */
-  private Set<ApplicationEntry> filter_entries(
-      final Set<ApplicationEntry> entries, final ProccessStatus status) {
-    return entries.stream().filter(i -> i.proccess_status == status).collect(Collectors.toSet());
-  }
+  private void handle_current_process_table(
+      final int num_of_finished,
+      final int num_of_processing,
+      final int num_of_waiting,
+      final String process_uuid,
+      final String keyspace_name) {
 
-  /**
-   * Filters a set of application entries by a process status and collects them to a set of their
-   * node id's
-   *
-   * @param entries entries to filter
-   * @param status status to filter by
-   * @return a filtered set of entries to their node ids
-   */
-  private Set<Integer> filter_entries_to_node_id(
-      final Set<ApplicationEntry> entries, final ProccessStatus status) {
-    return this.filter_entries(entries, status).stream()
-        .map(i -> i.node_id)
-        .collect(Collectors.toSet());
+    if (num_of_processing == 0) {
+      Session client_session = PathStoreCluster.getInstance().connect();
+      if (num_of_finished == 0) {
+        Insert insert =
+            QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
+        insert.value(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid);
+        insert.value(Constants.CURRENT_PROCESSES_COLUMNS.KEYSPACE_NAME, keyspace_name);
+        client_session.execute(insert);
+      } else if (num_of_waiting == 0) {
+        Delete delete =
+            QueryBuilder.delete()
+                .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
+        delete.where(
+            QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid));
+        client_session.execute(delete);
+      }
+    }
   }
 
   /**

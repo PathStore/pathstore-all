@@ -32,30 +32,45 @@ public class PathStoreSlaveSchemaServer extends Thread {
   public void run() {
     while (true) {
       Session session = PathStoreCluster.getInstance().connect();
-      Select select =
+      Select current_processes_select_all =
           QueryBuilder.select()
               .all()
-              .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+              .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
 
-      for (Row row : session.execute(select)) {
-        if (row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID)
-            != PathStoreProperties.getInstance().NodeID) continue;
+      for (Row current_process_row : session.execute(current_processes_select_all)) {
+        Select node_schemas_specific_select =
+            QueryBuilder.select()
+                .all()
+                .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+        node_schemas_specific_select
+            .where(
+                QueryBuilder.eq(
+                    Constants.NODE_SCHEMAS_COLUMNS.NODE_ID,
+                    PathStoreProperties.getInstance().NodeID))
+            .and(
+                QueryBuilder.eq(
+                    Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME,
+                    current_process_row.getString(
+                        Constants.CURRENT_PROCESSES_COLUMNS.KEYSPACE_NAME)));
 
-        ProccessStatus current_process_status =
-            ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
-        switch (current_process_status) {
-          case INSTALLING:
-            this.install_application(
-                session,
-                row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
-                row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID));
-            break;
-          case REMOVING:
-            this.remove_application(
-                session,
-                row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
-                row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID));
-            break;
+        for (Row node_schemas_select : session.execute(node_schemas_specific_select)) {
+          ProccessStatus current_process_status =
+              ProccessStatus.valueOf(
+                  node_schemas_select.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
+          switch (current_process_status) {
+            case INSTALLING:
+              this.install_application(
+                  session,
+                  node_schemas_select.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
+                  node_schemas_select.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID));
+              break;
+            case REMOVING:
+              this.remove_application(
+                  session,
+                  node_schemas_select.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
+                  node_schemas_select.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID));
+              break;
+          }
         }
       }
 

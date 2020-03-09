@@ -41,6 +41,13 @@ public class Constants {
     public static String PROCESS_UUID = "process_uuid";
   }
 
+  public static String CURRENT_PROCESSES = "current_processes";
+
+  public static class CURRENT_PROCESSES_COLUMNS {
+    public static String PROCESS_UUID = "process_uuid";
+    public static String KEYSPACE_NAME = "keyspace_name";
+  }
+
   public static String APPS = "apps";
 
   public static class APPS_COLUMNS {
