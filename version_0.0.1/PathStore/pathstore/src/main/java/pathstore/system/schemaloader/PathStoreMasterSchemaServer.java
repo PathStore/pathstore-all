@@ -170,14 +170,14 @@ public class PathStoreMasterSchemaServer extends Thread {
                 .all()
                 .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
         select.where(
-            QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid));
+            QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString()));
 
         if (client_session.execute(select).one() == null) {
           System.out.println("Inserting process: " + process_uuid);
           Insert insert =
               QueryBuilder.insertInto(
                   Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
-          insert.value(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid);
+          insert.value(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString());
           insert.value(Constants.CURRENT_PROCESSES_COLUMNS.KEYSPACE_NAME, keyspace_name);
           client_session.execute(insert);
         }
@@ -187,7 +187,7 @@ public class PathStoreMasterSchemaServer extends Thread {
                 .all()
                 .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
         select.where(
-            QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid));
+            QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString()));
 
         int num_of_rows = 0;
         for (Row ignored : client_session.execute(select)) num_of_rows += 1;
@@ -198,7 +198,7 @@ public class PathStoreMasterSchemaServer extends Thread {
               QueryBuilder.delete()
                   .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
           delete.where(
-              QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid));
+              QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString()));
           client_session.execute(delete);
         }
       }
