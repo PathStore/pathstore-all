@@ -1,5 +1,8 @@
 package pathstore.system.schemaloader;
 
+import java.util.List;
+import java.util.UUID;
+
 /**
  * This class describes a row in the node_schemas table.
  *
@@ -20,13 +23,13 @@ public class ApplicationEntry {
   public final ProccessStatus proccess_status;
 
   /** Process group that this is apart of see */
-  public final String process_uuid;
+  public final UUID process_uuid;
 
   /**
    * Node identification for node we are waiting for. If this is set {@link #proccess_status} must
    * be either {@link ProccessStatus#WAITING_INSTALL} or {@link ProccessStatus#WAITING_REMOVE}
    */
-  public final int waiting_for;
+  public final List<Integer> waiting_for;
 
   /**
    * Set all values
@@ -41,8 +44,8 @@ public class ApplicationEntry {
       final int node_id,
       final String keyspace_name,
       final ProccessStatus proccess_status,
-      final String process_uuid,
-      final int waiting_for) {
+      final UUID process_uuid,
+      final List<Integer> waiting_for) {
     this.node_id = node_id;
     this.keyspace_name = keyspace_name;
     this.proccess_status = proccess_status;
@@ -66,7 +69,7 @@ public class ApplicationEntry {
         + ", proccess_status="
         + proccess_status
         + ", process_uuid='"
-        + process_uuid
+        + process_uuid.toString()
         + '\''
         + ", waiting_for="
         + waiting_for

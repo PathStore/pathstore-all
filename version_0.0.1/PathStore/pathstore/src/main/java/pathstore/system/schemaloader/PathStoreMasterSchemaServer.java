@@ -51,8 +51,8 @@ public class PathStoreMasterSchemaServer extends Thread {
                     keyspace_name,
                     ProccessStatus.valueOf(
                         row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)),
-                    row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID),
-                    row.getInt(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
+                    UUID.fromString(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID)),
+                    (List<Integer>) row.getObject(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
       }
 
       for (String keyspace_name : keyspace_name_to_application_set.keySet()) {
@@ -96,7 +96,8 @@ public class PathStoreMasterSchemaServer extends Thread {
       final ProccessStatus waiting,
       final Set<ApplicationEntry> entries) {
 
-    String keyspace_name = null, processing_uuid = null;
+    String keyspace_name = null;
+    UUID processing_uuid = null;
     Set<Integer> finished_ids = new HashSet<>(), processing_ids = new HashSet<>();
     Set<ApplicationEntry> waiting_entries = new HashSet<>();
 
@@ -118,10 +119,22 @@ public class PathStoreMasterSchemaServer extends Thread {
         processing_uuid,
         keyspace_name);
 
-    for (ApplicationEntry entry : waiting_entries)
-      if (entry.waiting_for == -1 || finished_ids.contains(entry.waiting_for))
+    for (ApplicationEntry entry : waiting_entries) {
+      boolean ready = true;
+
+      for (int wait_for : entry.waiting_for) {
+        if (wait_for == -1) break;
+
+        if (!finished_ids.contains(wait_for)) {
+          ready = false;
+          break;
+        }
+      }
+
+      if (ready)
         this.update_application_status(
             entry.node_id, entry.keyspace_name, processing, entry.process_uuid);
+    }
   }
 
   /**
@@ -146,7 +159,7 @@ public class PathStoreMasterSchemaServer extends Thread {
       final int num_of_finished,
       final int num_of_processing,
       final int num_of_waiting,
-      final String process_uuid,
+      final UUID process_uuid,
       final String keyspace_name) {
 
     if (num_of_processing == 0) {
@@ -205,7 +218,7 @@ public class PathStoreMasterSchemaServer extends Thread {
       final int nodeid,
       final String keyspace_name,
       final ProccessStatus status,
-      final String process_uuid) {
+      final UUID process_uuid) {
 
     System.out.println(
         (status == ProccessStatus.INSTALLING ? "Installing application " : "Removing application ")
@@ -221,7 +234,7 @@ public class PathStoreMasterSchemaServer extends Thread {
     update
         .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, nodeid))
         .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace_name))
-        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, process_uuid))
+        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, process_uuid.toString()))
         .with(QueryBuilder.set(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, status.toString()));
 
     client_session.execute(update);

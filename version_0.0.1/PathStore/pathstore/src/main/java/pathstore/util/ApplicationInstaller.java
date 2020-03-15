@@ -52,8 +52,8 @@ public class ApplicationInstaller {
               current_nodeid,
               keyspace_name,
               ProccessStatus.WAITING_INSTALL,
-              uuid.toString(),
-              parent_nodeid);
+              uuid,
+              Collections.singletonList(parent_nodeid));
       applicationEntryList.add(new_entry);
       System.out.println(new_entry);
       current_nodeid = parent_nodeid;
@@ -103,8 +103,8 @@ public class ApplicationInstaller {
               current_nodeid,
               keyspace_name,
               ProccessStatus.WAITING_REMOVE,
-              uuid.toString(),
-              child_nodeid == null ? -1 : child_nodeid);
+              uuid,
+              Collections.singletonList(child_nodeid == null ? -1 : child_nodeid));
       applicationEntryList.add(new_entry);
       System.out.println(new_entry);
       current_nodeid = child_nodeid;
