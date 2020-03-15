@@ -11,27 +11,54 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.schemaloader.ApplicationEntry;
 import pathstore.system.schemaloader.ProccessStatus;
+import pathstoreweb.pathstoreadminpanel.formatter.applicationmanagement.DeployApplicationFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/** TODO: Create validations on input params */
+/**
+ * TODO: Create validations on input params
+ *
+ * <p>TODO: If installation is actually possible on that chain (check if a deletion is going on
+ * currently)
+ *
+ * <p>This class is used for deploy an application from the root node to a set of nodes in {@link
+ * #nodes} with application {@link #keyspace}
+ *
+ * @see DeployApplicationFormatter
+ * @see Constants#NODE_SCHEMAS
+ * @see Constants.NODE_SCHEMAS_COLUMNS
+ */
 public class DeployApplication implements IService {
 
+  /** TODO: Fix logger. */
   private static final Logger logger = LoggerFactory.getLogger(DeployApplication.class);
 
+  /** Application to install */
   private final String keyspace;
+
+  /** Final nodes in the path to install on */
   private final int[] nodes;
+
+  /** Session to {@link PathStoreCluster} */
   private final Session session;
 
+  /**
+   * @param keyspace {@link #keyspace}
+   * @param nodes {@link #nodes}
+   */
   public DeployApplication(final String keyspace, final int[] nodes) {
     this.keyspace = keyspace;
     this.nodes = nodes;
     this.session = PathStoreCluster.getInstance().connect();
   }
 
+  /**
+   * @return json response
+   * @see DeployApplicationFormatter
+   */
   @Override
   public String response() {
 
@@ -39,12 +66,17 @@ public class DeployApplication implements IService {
         this.insertRequestToDb(
             this.getCurrentState(this.getChildToParentMap(), this.getPreviousState()));
 
-    return "Number of applications insert:" + applicationInserted;
+    return new DeployApplicationFormatter(applicationInserted).response();
   }
 
-  // TODO: Do this
+  /** TODO: Implement */
   private void isInstallationPossible() {}
 
+  /**
+   * Generates a map from the topology table. Keys are child id's, value is parent id
+   *
+   * @return map of child to parent
+   */
   private Map<Integer, Integer> getChildToParentMap() {
     HashMap<Integer, Integer> childToParent = new HashMap<>();
 
@@ -59,6 +91,12 @@ public class DeployApplication implements IService {
     return childToParent;
   }
 
+  /**
+   * Queries the previous state of the entire topology for {@link #keyspace}. This is done to avoid
+   * duplicate records being produced. See readme for additional info.
+   *
+   * @return map of nodeid to application entire if app is {@link #keyspace}
+   */
   private Map<Integer, ApplicationEntry> getPreviousState() {
     Map<Integer, ApplicationEntry> previousState = new HashMap<>();
 
@@ -86,6 +124,14 @@ public class DeployApplication implements IService {
     return previousState;
   }
 
+  /**
+   * Generates a current state map of node id to application state. These are the records that will
+   * be written to the node schemas table
+   *
+   * @param childToParent {@link #getChildToParentMap()}
+   * @param previousState {@link #getPreviousState()}
+   * @return map of records to be written to table
+   */
   private Map<Integer, ApplicationEntry> getCurrentState(
       final Map<Integer, Integer> childToParent,
       final Map<Integer, ApplicationEntry> previousState) {
@@ -127,6 +173,14 @@ public class DeployApplication implements IService {
     return currentState;
   }
 
+  /**
+   * TODO: Rollback on ERROR.
+   *
+   * <p>This function inserts the current state records into the database.
+   *
+   * @param currentState {@link #getCurrentState(Map, Map)}
+   * @return number of records written to the database
+   */
   private int insertRequestToDb(final Map<Integer, ApplicationEntry> currentState) {
     for (Map.Entry<Integer, ApplicationEntry> current_entry : currentState.entrySet()) {
       ApplicationEntry applicationEntry = current_entry.getValue();
