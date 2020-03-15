@@ -121,7 +121,7 @@ public class ApplicationInstaller {
               .value("nodeid", entry.node_id)
               .value("process_status", entry.proccess_status.toString())
               .value("wait_for", entry.waiting_for)
-              .value("process_uuid", entry.process_uuid));
+              .value("process_uuid", entry.process_uuid.toString()));
 
     session.execute(batchStatement);
   }
