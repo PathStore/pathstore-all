@@ -66,8 +66,8 @@ public class RemoveApplication implements IService {
   }
 
   /** @return map of network topology from parent to child */
-  private Map<Integer, LinkedList<Integer>> getParentToChildMap() {
-    HashMap<Integer, LinkedList<Integer>> parentToChild = new HashMap<>();
+  private Map<Integer, Set<Integer>> getParentToChildMap() {
+    HashMap<Integer, Set<Integer>> parentToChild = new HashMap<>();
 
     Select queryTopology =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.TOPOLOGY);
@@ -75,8 +75,8 @@ public class RemoveApplication implements IService {
     for (Row row : this.session.execute(queryTopology)) {
       int parentNodeId = row.getInt(Constants.TOPOLOGY_COLUMNS.PARENT_NODE_ID);
       parentToChild
-          .computeIfAbsent(parentNodeId, k -> new LinkedList<>())
-          .addFirst(row.getInt(Constants.TOPOLOGY_COLUMNS.NODE_ID));
+          .computeIfAbsent(parentNodeId, k -> new HashSet<>())
+          .add(row.getInt(Constants.TOPOLOGY_COLUMNS.NODE_ID));
     }
 
     return parentToChild;
@@ -91,7 +91,7 @@ public class RemoveApplication implements IService {
    * @return map of entries to add. Null if there is a conflict
    */
   private Map<Integer, ApplicationEntry> getCurrentState(
-      final Map<Integer, LinkedList<Integer>> parentToChild,
+      final Map<Integer, Set<Integer>> parentToChild,
       final Map<Integer, ApplicationEntry> previousState) {
 
     Map<Integer, ApplicationEntry> entryMap = new HashMap<>();
@@ -99,22 +99,48 @@ public class RemoveApplication implements IService {
     UUID processUUID = UUID.randomUUID();
 
     for (int currentNode : this.nodes)
-      if (this.currentStateHelper(currentNode, processUUID, parentToChild, previousState, entryMap))
-        return null;
+      if (this.currentStateHelper(currentNode, processUUID, parentToChild, previousState, entryMap)
+          == HelperResponse.CONFLICT) return null;
 
     return entryMap;
   }
 
   /**
-   * This function will setup a map of entries to execute in the db. It will start from a node and
-   * work down the tree. The logic for collisions is as follows
+   * Simple enum to state the responses that can occur
    *
-   * <p>If the node has children recursively call the function with each child id. If any child
-   * fails then return true.
+   * <p>Conflict for another job is currently in process (i.e a job is installing the keyspace on a
+   * node that we were requested to remove from)
    *
-   * <p>If the node is a leaf node (no children) then it must have a previous state which is
-   * installed. As it would be impossible to remove an application that was never installed. If this
-   * is true we add an entry else we return true
+   * <p>Already_Added is for when a node was already removed from
+   *
+   * <p>Added denotes we added that node for removal in the current state
+   */
+  private enum HelperResponse {
+    CONFLICT,
+    ALREADY_ADDED,
+    ADDED
+  }
+
+  /**
+   * If the current node that was passed has children then we recursively call this function for all
+   * children. If there response is a conflict then we return a conflict to the original caller.
+   * This will result in the user receiving a conflict error. (Only when another process is in the
+   * middle of a job). The logic is as follows:
+   *
+   * <p>If a children returns already added we remove it from the children set. This is because when
+   * we create that entry we don't want to say we are waiting on a node that is already removed or
+   * has no record of installation / removal
+   *
+   * <p>Then we create the parent entry. The entry is only inserted if the previous state is
+   * installed. If the previous state is waiting_remove, removing or removed we return already added
+   * or if there is no prior state (thus not needing removal). If the state is Waiting_install or
+   * installing there is a conflict.
+   *
+   * <p>If the children set is of size 0 then non of the nodes children have that keyspace installed
+   * so we can treat it like a leaf node and set waiting to -1
+   *
+   * <p>If it is a leaf node then we create the new entry with waiting for -1. This is because there
+   * are no children with that process_installed
    *
    * @param currentNode current node to check
    * @param processUUID current processUUID for this job
@@ -124,49 +150,63 @@ public class RemoveApplication implements IService {
    *     jobs entries
    * @return true if there is an error else false
    */
-  private boolean currentStateHelper(
+  private HelperResponse currentStateHelper(
       final int currentNode,
       final UUID processUUID,
-      final Map<Integer, LinkedList<Integer>> parentToChild,
+      final Map<Integer, Set<Integer>> parentToChild,
       final Map<Integer, ApplicationEntry> previousState,
       final Map<Integer, ApplicationEntry> currentState) {
 
+    ApplicationEntry newEntry;
+
     if (parentToChild.containsKey(currentNode)) { // has children
 
-      List<Integer> children = parentToChild.get(currentNode);
+      Set<Integer> children = new HashSet<>(parentToChild.get(currentNode));
+      Set<Integer> toRemove = new HashSet<>();
 
-      for (int childNode : children)
-        if (this.currentStateHelper(
-            childNode, processUUID, parentToChild, previousState, currentState)) return true;
-
-      currentState.put(
-          currentNode,
-          new ApplicationEntry(
-              currentNode, this.keyspace, ProccessStatus.WAITING_REMOVE, processUUID, children));
-    } else { // leaf node
-      if (previousState.containsKey(currentNode)) {
-        switch (previousState.get(currentNode).proccess_status) {
-          case INSTALLED:
-            currentState.put(
-                currentNode,
-                new ApplicationEntry(
-                    currentNode,
-                    this.keyspace,
-                    ProccessStatus.WAITING_REMOVE,
-                    processUUID,
-                    Collections.singletonList(-1)));
-            break;
-          case WAITING_REMOVE:
-          case REMOVING:
-          case REMOVED:
-            return false;
-          default:
-            return true;
+      for (int childNode : children) {
+        switch (this.currentStateHelper(
+            childNode, processUUID, parentToChild, previousState, currentState)) {
+          case CONFLICT:
+            return HelperResponse.CONFLICT;
+          case ALREADY_ADDED:
+            toRemove.add(childNode);
         }
+      }
 
-      } else return true;
+      children.removeAll(toRemove);
+
+      newEntry =
+          new ApplicationEntry(
+              currentNode,
+              this.keyspace,
+              ProccessStatus.WAITING_REMOVE,
+              processUUID,
+              children.size() > 0 ? new LinkedList<>(children) : Collections.singletonList(-1));
+    } else
+      newEntry =
+          new ApplicationEntry(
+              currentNode,
+              this.keyspace,
+              ProccessStatus.WAITING_REMOVE,
+              processUUID,
+              Collections.singletonList(-1));
+
+    if (previousState.containsKey(currentNode))
+      switch (previousState.get(currentNode).proccess_status) {
+        case INSTALLED:
+          currentState.put(currentNode, newEntry);
+          return HelperResponse.ADDED;
+        case WAITING_REMOVE:
+        case REMOVING:
+        case REMOVED:
+          return HelperResponse.ALREADY_ADDED;
+        default:
+          return HelperResponse.CONFLICT;
+      }
+    else { // if there is no previous state for a node in a removal remove it from the list of
+      // children to wait for
+      return HelperResponse.ALREADY_ADDED;
     }
-
-    return false;
   }
 }
