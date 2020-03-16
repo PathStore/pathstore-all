@@ -13,6 +13,7 @@ import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * TODO: Maybe only include states that aren't current at the {@link ProccessStatus#REMOVED} state
@@ -41,6 +42,7 @@ public class ApplicationState implements IService {
    * @return list of application entries
    * @see ApplicationEntry
    */
+  @SuppressWarnings("ALL")
   private List<ApplicationEntry> getApplicationStates() {
     Session session = PathStoreCluster.getInstance().connect();
 
@@ -55,8 +57,8 @@ public class ApplicationState implements IService {
               row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID),
               row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
               ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)),
-              row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID),
-              row.getInt(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
+              UUID.fromString(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID)),
+              (List<Integer>) row.getObject(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
 
     return entries;
   }

@@ -4,8 +4,10 @@ import org.springframework.web.bind.annotation.*;
 import pathstoreweb.pathstoreadminpanel.Endpoints;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.ApplicationState;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.DeployApplication;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.RemoveApplication;
 import pathstoreweb.pathstoreadminpanel.services.topology.NetworkTopology;
 
+/** Main controller for api. TODO: split up to sub functions */
 @RestController
 @RequestMapping(Endpoints.API)
 public class ApiV1 {
@@ -29,14 +31,26 @@ public class ApiV1 {
   }
 
   /**
-   * @param keyspace Valid pathstore keyspace
+   * @param keyspace keyspace to deploy
    * @param nodes array of nodes to install on.
-   * @return either successful or non-successful
+   * @return todo
    * @see DeployApplication
    */
   @PostMapping(Endpoints.APPLICATION_MANAGEMENT)
   public String applicationManagementInstall(
-      @RequestParam("keyspace") String keyspace, @RequestParam("node") int[] nodes) {
+      @RequestParam("keyspace") final String keyspace, @RequestParam("node") final int[] nodes) {
     return new DeployApplication(keyspace, nodes).response();
+  }
+
+  /**
+   * @param keyspace keyspace to remove
+   * @param nodes array of nodes to remove from.
+   * @return todo
+   * @see RemoveApplication
+   */
+  @DeleteMapping(Endpoints.APPLICATION_MANAGEMENT)
+  public String applicationManagementRemove(
+      @RequestParam("keyspace") final String keyspace, @RequestParam("node") final int[] nodes) {
+    return new RemoveApplication(keyspace, nodes).response();
   }
 }

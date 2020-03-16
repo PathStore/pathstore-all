@@ -40,7 +40,7 @@ public class ApplicationStateFormatter implements IFormatter {
           .put(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.node_id)
           .put(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, entry.keyspace_name)
           .put(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, entry.proccess_status.toString())
-          .put(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, entry.proccess_status)
+          .put(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, entry.process_uuid.toString())
           .put(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, entry.waiting_for);
 
       array.put(object);

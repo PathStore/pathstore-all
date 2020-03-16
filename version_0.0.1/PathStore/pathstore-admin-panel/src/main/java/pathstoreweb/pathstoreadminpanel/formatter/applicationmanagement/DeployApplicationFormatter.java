@@ -1,14 +1,14 @@
 package pathstoreweb.pathstoreadminpanel.formatter.applicationmanagement;
 
 import org.json.JSONObject;
-import pathstoreweb.pathstoreadminpanel.services.IService;
+import pathstoreweb.pathstoreadminpanel.formatter.IFormatter;
 
 /**
  * Formatter for DeployApplication
  *
  * @see pathstoreweb.pathstoreadminpanel.services.applicationmanagement.DeployApplication
  */
-public class DeployApplicationFormatter implements IService {
+public class DeployApplicationFormatter implements IFormatter {
 
   /** Number of inserts that occurred */
   private final int numOfInserts;
@@ -24,7 +24,7 @@ public class DeployApplicationFormatter implements IService {
    * @return json response
    */
   @Override
-  public String response() {
+  public String format() {
 
     JSONObject object = new JSONObject();
 
