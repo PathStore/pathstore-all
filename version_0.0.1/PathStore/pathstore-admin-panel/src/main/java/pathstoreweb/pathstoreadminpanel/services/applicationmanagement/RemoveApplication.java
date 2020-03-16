@@ -144,17 +144,27 @@ public class RemoveApplication implements IService {
           new ApplicationEntry(
               currentNode, this.keyspace, ProccessStatus.WAITING_REMOVE, processUUID, children));
     } else { // leaf node
-      if (previousState.containsKey(currentNode)
-          && previousState.get(currentNode).proccess_status == ProccessStatus.INSTALLED)
-        currentState.put(
-            currentNode,
-            new ApplicationEntry(
+      if (previousState.containsKey(currentNode)) {
+        switch (previousState.get(currentNode).proccess_status) {
+          case INSTALLED:
+            currentState.put(
                 currentNode,
-                this.keyspace,
-                ProccessStatus.WAITING_REMOVE,
-                processUUID,
-                Collections.singletonList(-1)));
-      else return true;
+                new ApplicationEntry(
+                    currentNode,
+                    this.keyspace,
+                    ProccessStatus.WAITING_REMOVE,
+                    processUUID,
+                    Collections.singletonList(-1)));
+            break;
+          case WAITING_REMOVE:
+          case REMOVING:
+          case REMOVED:
+            return false;
+          default:
+            return true;
+        }
+
+      } else return true;
     }
 
     return false;

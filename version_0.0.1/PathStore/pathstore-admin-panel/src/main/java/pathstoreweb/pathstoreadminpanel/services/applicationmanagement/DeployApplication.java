@@ -157,28 +157,27 @@ public class DeployApplication implements IService {
         switch (previousState.get(processingNode).proccess_status) {
             // keep going up the tree.
           case REMOVED:
+            currentState.put(
+                processingNode,
+                new ApplicationEntry(
+                    processingNode,
+                    this.keyspace,
+                    ProccessStatus.INSTALLED,
+                    processUUID,
+                    Collections.singletonList(childToParent.get(processingNode))));
             break;
             // Return true as we know that if a node is installed then all its parents are also
             // installed
           case WAITING_INSTALL:
           case INSTALLING:
           case INSTALLED:
-            return true;
+            return false;
             // don't keep going up the tree, nothing you can do as another process is conflicting
             // with the new installation.
           default:
-            return false;
+            return true;
         }
       }
-
-      currentState.put(
-          processingNode,
-          new ApplicationEntry(
-              processingNode,
-              this.keyspace,
-              ProccessStatus.WAITING_INSTALL,
-              processUUID,
-              Collections.singletonList(childToParent.get(processingNode))));
     }
 
     return false;
