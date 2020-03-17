@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Utility class of shared functions between {@link DeployApplication} and {@link RemoveApplication}
+ * Utility class of shared functions between {@link InstallApplication} and {@link UnInstallApplication}
  */
 public class ApplicationUtil {
 
@@ -59,7 +59,7 @@ public class ApplicationUtil {
    *
    * <p>This function inserts the current state records into the database.
    *
-   * @param currentState state gathered from {@link DeployApplication} or {@link RemoveApplication}
+   * @param currentState state gathered from {@link InstallApplication} or {@link UnInstallApplication}
    * @return number of records written to the database
    */
   public static int insertRequestToDb(

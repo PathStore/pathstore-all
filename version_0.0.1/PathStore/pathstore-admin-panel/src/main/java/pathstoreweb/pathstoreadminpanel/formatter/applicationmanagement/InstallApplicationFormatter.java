@@ -2,19 +2,20 @@ package pathstoreweb.pathstoreadminpanel.formatter.applicationmanagement;
 
 import org.json.JSONObject;
 import pathstoreweb.pathstoreadminpanel.formatter.IFormatter;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.InstallApplication;
 
 /**
  * Formatter for DeployApplication
  *
- * @see pathstoreweb.pathstoreadminpanel.services.applicationmanagement.DeployApplication
+ * @see InstallApplication
  */
-public class DeployApplicationFormatter implements IFormatter {
+public class InstallApplicationFormatter implements IFormatter {
 
   /** Number of inserts that occurred */
   private final int numOfInserts;
 
   /** @param numOfInserts {@link #numOfInserts} */
-  public DeployApplicationFormatter(final int numOfInserts) {
+  public InstallApplicationFormatter(final int numOfInserts) {
     this.numOfInserts = numOfInserts;
   }
 

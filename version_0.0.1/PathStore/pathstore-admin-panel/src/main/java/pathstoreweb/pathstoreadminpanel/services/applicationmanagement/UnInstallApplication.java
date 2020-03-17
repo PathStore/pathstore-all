@@ -8,7 +8,7 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.schemaloader.ApplicationEntry;
 import pathstore.system.schemaloader.ProccessStatus;
-import pathstoreweb.pathstoreadminpanel.formatter.applicationmanagement.DeployApplicationFormatter;
+import pathstoreweb.pathstoreadminpanel.formatter.applicationmanagement.InstallApplicationFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.*;
@@ -19,7 +19,7 @@ import java.util.*;
  * <p>It will check to see if there are any conflicts. If there is no state will be changed. Else a
  * set of new entries will be added to the database
  */
-public class RemoveApplication implements IService {
+public class UnInstallApplication implements IService {
 
   /** Keyspace to remove */
   private final String keyspace;
@@ -34,7 +34,7 @@ public class RemoveApplication implements IService {
    * @param keyspace {@link #keyspace}
    * @param nodes {@link #nodes}
    */
-  public RemoveApplication(final String keyspace, final int[] nodes) {
+  public UnInstallApplication(final String keyspace, final int[] nodes) {
     this.keyspace = keyspace;
     this.nodes = nodes;
     this.session = PathStoreCluster.getInstance().connect();
@@ -58,7 +58,7 @@ public class RemoveApplication implements IService {
     if (currentState != null) {
       ApplicationUtil.insertRequestToDb(this.session, currentState);
       // todo
-      return new DeployApplicationFormatter(currentState.size()).format();
+      return new InstallApplicationFormatter(currentState.size()).format();
     } else {
       // todo
       return "Conflict";

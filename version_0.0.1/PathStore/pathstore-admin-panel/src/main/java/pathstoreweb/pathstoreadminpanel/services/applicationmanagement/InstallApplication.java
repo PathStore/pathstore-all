@@ -10,7 +10,7 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.schemaloader.ApplicationEntry;
 import pathstore.system.schemaloader.ProccessStatus;
-import pathstoreweb.pathstoreadminpanel.formatter.applicationmanagement.DeployApplicationFormatter;
+import pathstoreweb.pathstoreadminpanel.formatter.applicationmanagement.InstallApplicationFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.Collections;
@@ -27,14 +27,14 @@ import java.util.UUID;
  * <p>This class is used for deploy an application from the root node to a set of nodes in {@link
  * #nodes} with application {@link #keyspace}
  *
- * @see DeployApplicationFormatter
+ * @see InstallApplicationFormatter
  * @see Constants#NODE_SCHEMAS
  * @see Constants.NODE_SCHEMAS_COLUMNS
  */
-public class DeployApplication implements IService {
+public class InstallApplication implements IService {
 
   /** TODO: Fix logger. */
-  private static final Logger logger = LoggerFactory.getLogger(DeployApplication.class);
+  private static final Logger logger = LoggerFactory.getLogger(InstallApplication.class);
 
   /** Application to install */
   private final String keyspace;
@@ -49,7 +49,7 @@ public class DeployApplication implements IService {
    * @param keyspace {@link #keyspace}
    * @param nodes {@link #nodes}
    */
-  public DeployApplication(final String keyspace, final int[] nodes) {
+  public InstallApplication(final String keyspace, final int[] nodes) {
     this.keyspace = keyspace;
     this.nodes = nodes;
     this.session = PathStoreCluster.getInstance().connect();
@@ -57,7 +57,7 @@ public class DeployApplication implements IService {
 
   /**
    * @return json response
-   * @see DeployApplicationFormatter
+   * @see InstallApplicationFormatter
    */
   @Override
   public String response() {
@@ -70,7 +70,7 @@ public class DeployApplication implements IService {
     if (currentState != null) {
       int applicationInserted = ApplicationUtil.insertRequestToDb(this.session, currentState);
 
-      return new DeployApplicationFormatter(applicationInserted).format();
+      return new InstallApplicationFormatter(applicationInserted).format();
     } else {
       // todo
       return "Conflict";
