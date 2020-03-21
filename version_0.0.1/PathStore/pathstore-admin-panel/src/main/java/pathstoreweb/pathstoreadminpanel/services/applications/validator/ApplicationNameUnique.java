@@ -17,18 +17,32 @@ import pathstore.common.Constants;
 import pathstore.common.Constants.APPS_COLUMNS;
 import pathstoreweb.pathstoreadminpanel.services.applications.validator.ApplicationNameUnique.Validator;
 
+/** Validator to check to see if an application name already exists withint the apps table */
 @Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = Validator.class)
 public @interface ApplicationNameUnique {
+
+  /** @return error message to display to user */
   String message() default "error";
 
+  /** @return todo */
   Class<?>[] groups() default {};
 
+  /** @return todo */
   Class<? extends Payload>[] payload() default {};
 
+  /**
+   * Validator class to check the application name. Returns true iff the name is not inside the apps
+   * table of the rootserver already
+   */
   class Validator implements ConstraintValidator<ApplicationNameUnique, String> {
 
+    /**
+     * @param applicationName application name
+     * @param constraintValidatorContext todo
+     * @return iff name doesn't already exist
+     */
     @Override
     public boolean isValid(
         final String applicationName, final ConstraintValidatorContext constraintValidatorContext) {
