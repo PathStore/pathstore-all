@@ -1,7 +1,7 @@
-package pathstoreweb.pathstoreadminpanel.formatter.applications;
+package pathstoreweb.pathstoreadminpanel.services.applications.formatter;
 
 import org.json.JSONObject;
-import pathstoreweb.pathstoreadminpanel.formatter.IFormatter;
+import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 
 /**
  * Response for {@link pathstoreweb.pathstoreadminpanel.services.applications.AddApplication}.

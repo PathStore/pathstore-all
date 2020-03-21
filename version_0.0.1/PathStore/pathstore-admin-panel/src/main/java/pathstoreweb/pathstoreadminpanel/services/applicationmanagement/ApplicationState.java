@@ -8,7 +8,7 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.schemaloader.ApplicationEntry;
 import pathstore.system.schemaloader.ProccessStatus;
-import pathstoreweb.pathstoreadminpanel.formatter.applicationmanagement.ApplicationStateFormatter;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.ApplicationStateFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.LinkedList;

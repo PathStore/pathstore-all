@@ -5,7 +5,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstoreweb.pathstoreadminpanel.formatter.applications.AvailableApplicationsFormatter;
+import pathstoreweb.pathstoreadminpanel.services.applications.formatter.AvailableApplicationsFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.LinkedList;
@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Gathers a list of all available applications that can be installed on the pathstore network
  *
- * @see pathstoreweb.pathstoreadminpanel.formatter.applications.AvailableApplicationsFormatter
+ * @see AvailableApplicationsFormatter
  */
 public class AvailableApplications implements IService {
 

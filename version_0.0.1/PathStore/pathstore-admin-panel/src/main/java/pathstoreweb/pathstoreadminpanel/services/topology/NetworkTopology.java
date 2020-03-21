@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstoreweb.pathstoreadminpanel.formatter.topology.NetworkTopologyFormatter;
+import pathstoreweb.pathstoreadminpanel.services.topology.formatter.NetworkTopologyFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.LinkedList;

@@ -1,13 +1,28 @@
 package pathstoreweb.pathstoreadminpanel.controllers;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.validation.Constraint;
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
+import javax.validation.Payload;
+import javax.validation.Valid;
+import org.springframework.ui.Model;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pathstoreweb.pathstoreadminpanel.Endpoints;
+import pathstoreweb.pathstoreadminpanel.services.ErrorFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.ApplicationState;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.InstallApplication;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.UnInstallApplication;
 import pathstoreweb.pathstoreadminpanel.services.applications.AddApplication;
 import pathstoreweb.pathstoreadminpanel.services.applications.AvailableApplications;
+import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
 import pathstoreweb.pathstoreadminpanel.services.topology.NetworkTopology;
 
 /** Main controller for api. TODO: split up to sub functions */
@@ -68,16 +83,17 @@ public class ApiV1 {
   }
 
   /**
-   * TODO: User input validation / error handling
+   * TODO: Handle if schema is bad.
    *
    * @return todo
    */
-  @PostMapping(value = Endpoints.APPLICATIONS)
+  @PostMapping(Endpoints.APPLICATIONS)
   public String addApplication(
-      @RequestParam("application_name") final String applicationName,
-      @RequestParam("application") final MultipartFile multipart) {
+      @Valid final AddApplicationPayload payload, final BindingResult bindingResult) {
 
-    return new AddApplication(applicationName, multipart).response();
+    return bindingResult.hasErrors()
+        ? new ErrorFormatter(bindingResult.getAllErrors()).format()
+        : new AddApplication(payload).response();
   }
 
   /**

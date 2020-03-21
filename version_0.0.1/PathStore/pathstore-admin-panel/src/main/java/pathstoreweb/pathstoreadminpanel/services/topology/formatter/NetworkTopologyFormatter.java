@@ -1,9 +1,9 @@
-package pathstoreweb.pathstoreadminpanel.formatter.topology;
+package pathstoreweb.pathstoreadminpanel.services.topology.formatter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import pathstore.common.Constants;
-import pathstoreweb.pathstoreadminpanel.formatter.IFormatter;
+import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 import pathstoreweb.pathstoreadminpanel.services.topology.TopologyEntry;
 
 import java.util.List;

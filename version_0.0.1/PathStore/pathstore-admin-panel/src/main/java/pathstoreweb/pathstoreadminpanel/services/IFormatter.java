@@ -1,4 +1,4 @@
-package pathstoreweb.pathstoreadminpanel.formatter;
+package pathstoreweb.pathstoreadminpanel.services;
 
 /** All formatters must implement this interface */
 public interface IFormatter {

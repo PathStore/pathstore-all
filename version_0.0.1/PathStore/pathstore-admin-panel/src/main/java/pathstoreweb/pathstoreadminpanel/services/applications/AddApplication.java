@@ -9,12 +9,13 @@ import pathstore.common.Constants;
 import pathstore.system.PathStorePriviledgedCluster;
 import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
 import pathstore.util.SchemaInfo;
-import pathstoreweb.pathstoreadminpanel.formatter.applications.AddApplicationFormatter;
+import pathstoreweb.pathstoreadminpanel.services.applications.formatter.AddApplicationFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.io.*;
 import java.util.List;
 import java.util.Map;
+import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
 
 /**
  * Creates an available application for the user to deploy on the network.
@@ -23,11 +24,8 @@ import java.util.Map;
  */
 public class AddApplication implements IService {
 
-  /** Application name to store this application under. (Same name as keyspace it creates) */
-  private final String applicationName;
-
-  /** File passed by user to parse */
-  private final MultipartFile file;
+  /** {@link AddApplicationPayload} */
+  private final AddApplicationPayload addApplicationPayload;
 
   /** Privileged session to access */
   private final Session session;
@@ -35,13 +33,9 @@ public class AddApplication implements IService {
   /** Schema info on current database */
   private final SchemaInfo schemaInfo;
 
-  /**
-   * @param applicationName {@link #applicationName}
-   * @param file {@link #file}
-   */
-  public AddApplication(final String applicationName, final MultipartFile file) {
-    this.applicationName = applicationName;
-    this.file = file;
+  /** @param payload {@link #addApplicationPayload} */
+  public AddApplication(final AddApplicationPayload payload) {
+    this.addApplicationPayload = payload;
     this.session = PathStorePriviledgedCluster.getInstance().connect();
     this.schemaInfo = SchemaInfo.getInstance();
   }
@@ -59,7 +53,7 @@ public class AddApplication implements IService {
     try {
 
       String line;
-      InputStream is = this.file.getInputStream();
+      InputStream is = this.addApplicationPayload.getApplicationSchema().getInputStream();
       br = new BufferedReader(new InputStreamReader(is));
 
       while ((line = br.readLine()) != null) schema.append(line).append("\n");
@@ -111,21 +105,21 @@ public class AddApplication implements IService {
 
     this.schemaInfo.reset();
     for (SchemaInfo.Table table :
-        this.schemaInfo.getSchemaInfo().get(this.applicationName).keySet()) {
+        this.schemaInfo.getSchemaInfo().get(this.addApplicationPayload.applicationName).keySet()) {
 
       augmentSchema(table);
       createViewTable(table);
 
       insertApplicationSchema(
           appId++,
-          this.applicationName,
+          this.addApplicationPayload.applicationName,
           PathStorePriviledgedCluster.getInstance()
               .getMetadata()
               .getKeyspace(table.getKeyspace_name())
               .exportAsString());
     }
 
-    session.execute("drop keyspace if exists " + this.applicationName);
+    session.execute("drop keyspace if exists " + this.addApplicationPayload.applicationName);
 
     this.schemaInfo.reset();
   }

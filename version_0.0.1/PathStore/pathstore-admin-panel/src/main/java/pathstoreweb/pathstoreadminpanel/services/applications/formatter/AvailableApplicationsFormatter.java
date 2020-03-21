@@ -1,9 +1,9 @@
-package pathstoreweb.pathstoreadminpanel.formatter.applications;
+package pathstoreweb.pathstoreadminpanel.services.applications.formatter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import pathstore.common.Constants;
-import pathstoreweb.pathstoreadminpanel.formatter.IFormatter;
+import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applications.Application;
 
 import java.util.List;
