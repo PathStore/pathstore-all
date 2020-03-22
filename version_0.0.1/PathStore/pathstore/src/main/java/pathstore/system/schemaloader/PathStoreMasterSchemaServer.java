@@ -25,14 +25,17 @@ public class PathStoreMasterSchemaServer extends Thread {
    * First sort all rows into groups based on their process id's
    *
    * <p>Then call {@link #update(ProccessStatus, ProccessStatus, ProccessStatus, Set)} on all groups
-   * that remain to either update the next node in the chain or do nothing
+   * that remain to either update the next node(s) in the chain or do nothing
    */
   @Override
+  @SuppressWarnings("ALL")
   public void run() {
     while (true) {
       Session client_session = PathStoreCluster.getInstance().connect();
 
-      Map<String, Set<ApplicationEntry>> keyspace_name_to_application_set = new HashMap<>();
+      Map<UUID, Set<ApplicationEntry>> processIdToApplicationSet = new HashMap<>();
+
+      Map<UUID, ProccessStatus> proccessStatusMap = new HashMap<>();
 
       Select query_all_node_schema =
           QueryBuilder.select()
@@ -41,32 +44,50 @@ public class PathStoreMasterSchemaServer extends Thread {
 
       // Query all application rows
       for (Row row : client_session.execute(query_all_node_schema)) {
-        String keyspace_name = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
-        keyspace_name_to_application_set.computeIfAbsent(keyspace_name, k -> new HashSet<>());
-        keyspace_name_to_application_set
-            .get(keyspace_name)
+        UUID processUUID =
+            UUID.fromString(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID));
+
+        ProccessStatus currentProcessStatus =
+            ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
+
+        proccessStatusMap.computeIfAbsent(processUUID, k -> currentProcessStatus);
+
+        processIdToApplicationSet.computeIfAbsent(processUUID, k -> new HashSet<>());
+        processIdToApplicationSet
+            .get(processUUID)
             .add(
                 new ApplicationEntry(
                     row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID),
-                    keyspace_name,
-                    ProccessStatus.valueOf(
-                        row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)),
-                    UUID.fromString(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID)),
+                    row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
+                    currentProcessStatus,
+                    processUUID,
                     (List<Integer>) row.getObject(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
       }
 
-      for (String keyspace_name : keyspace_name_to_application_set.keySet()) {
-        this.update(
-            ProccessStatus.INSTALLED,
-            ProccessStatus.INSTALLING,
-            ProccessStatus.WAITING_INSTALL,
-            keyspace_name_to_application_set.get(keyspace_name));
+      for (UUID processUUID : processIdToApplicationSet.keySet()) {
 
-        this.update(
-            ProccessStatus.REMOVED,
-            ProccessStatus.REMOVING,
-            ProccessStatus.WAITING_REMOVE,
-            keyspace_name_to_application_set.get(keyspace_name));
+        final Set<ApplicationEntry> applicationEntries = processIdToApplicationSet.get(processUUID);
+
+        switch (proccessStatusMap.get(processUUID)) {
+          case WAITING_INSTALL:
+          case INSTALLING:
+          case INSTALLED:
+            this.update(
+                ProccessStatus.INSTALLED,
+                ProccessStatus.INSTALLING,
+                ProccessStatus.WAITING_INSTALL,
+                applicationEntries);
+            break;
+          case WAITING_REMOVE:
+          case REMOVING:
+          case REMOVED:
+            this.update(
+                ProccessStatus.REMOVED,
+                ProccessStatus.REMOVING,
+                ProccessStatus.WAITING_REMOVE,
+                applicationEntries);
+            break;
+        }
       }
 
       try {
@@ -88,7 +109,7 @@ public class PathStoreMasterSchemaServer extends Thread {
    *     ProccessStatus#REMOVING}
    * @param waiting waiting state either {@link ProccessStatus#WAITING_INSTALL} or {@link
    *     ProccessStatus#WAITING_REMOVE}
-   * @param entries list of all entries
+   * @param entries list of all entries based on processUUID
    */
   private void update(
       final ProccessStatus finished,
@@ -119,22 +140,10 @@ public class PathStoreMasterSchemaServer extends Thread {
         processing_uuid,
         keyspace_name);
 
-    for (ApplicationEntry entry : waiting_entries) {
-      boolean ready = true;
-
-      for (int wait_for : entry.waiting_for) {
-        if (wait_for == -1) break;
-
-        if (!finished_ids.contains(wait_for)) {
-          ready = false;
-          break;
-        }
-      }
-
-      if (ready)
+    for (ApplicationEntry entry : waiting_entries)
+      if (finished_ids.containsAll(entry.waiting_for) || finished_ids.contains(-1))
         this.update_application_status(
             entry.node_id, entry.keyspace_name, processing, entry.process_uuid);
-    }
   }
 
   /**
@@ -170,7 +179,8 @@ public class PathStoreMasterSchemaServer extends Thread {
                 .all()
                 .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
         select.where(
-            QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString()));
+            QueryBuilder.eq(
+                Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString()));
 
         if (client_session.execute(select).one() == null) {
           System.out.println("Inserting process: " + process_uuid);
@@ -187,7 +197,8 @@ public class PathStoreMasterSchemaServer extends Thread {
                 .all()
                 .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
         select.where(
-            QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString()));
+            QueryBuilder.eq(
+                Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString()));
 
         int num_of_rows = 0;
         for (Row ignored : client_session.execute(select)) num_of_rows += 1;
@@ -198,7 +209,8 @@ public class PathStoreMasterSchemaServer extends Thread {
               QueryBuilder.delete()
                   .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
           delete.where(
-              QueryBuilder.eq(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString()));
+              QueryBuilder.eq(
+                  Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString()));
           client_session.execute(delete);
         }
       }

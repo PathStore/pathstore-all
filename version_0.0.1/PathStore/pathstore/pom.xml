@@ -327,22 +327,6 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>build-seventh</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pathstore.util.ApplicationInstaller</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>pathstore_applicationinstaller</finalName>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>build-eighth</id>
                         <phase>package</phase>
                         <goals>
