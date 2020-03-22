@@ -161,7 +161,8 @@ public class PathStoreMasterSchemaServer extends Thread {
         finishedIds.size(), processingIds.size(), waitingEntries.size(), processingUUID, keyspace);
 
     for (ApplicationEntry entry : waitingEntries)
-      if (finishedIds.containsAll(entry.waiting_for) || finishedIds.contains(-1))
+      if (finishedIds.containsAll(entry.waiting_for)
+          || (entry.waiting_for.size() == 1 && entry.waiting_for.get(0) == -1))
         this.update_application_status(
             entry.node_id, entry.keyspace_name, processing, entry.process_uuid);
   }
