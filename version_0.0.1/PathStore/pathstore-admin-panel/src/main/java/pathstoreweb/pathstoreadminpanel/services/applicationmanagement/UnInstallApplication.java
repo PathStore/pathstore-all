@@ -12,6 +12,7 @@ import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.*;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.ApplicationManagementPayload;
 
 /**
  * This class is called when you want to remove an application from the network.
@@ -21,22 +22,15 @@ import java.util.*;
  */
 public class UnInstallApplication implements IService {
 
-  /** Keyspace to remove */
-  private final String keyspace;
-
-  /** Nodes at the top of the tree. All nodes beneath will be removed from aswell */
-  private final int[] nodes;
+  /** @see ApplicationManagementPayload */
+  private final ApplicationManagementPayload applicationManagementPayload;
 
   /** Db connection session to pathstore network */
   private final Session session;
 
-  /**
-   * @param keyspace {@link #keyspace}
-   * @param nodes {@link #nodes}
-   */
-  public UnInstallApplication(final String keyspace, final int[] nodes) {
-    this.keyspace = keyspace;
-    this.nodes = nodes;
+  /** @param applicationManagementPayload {@link #applicationManagementPayload} */
+  public UnInstallApplication(final ApplicationManagementPayload applicationManagementPayload) {
+    this.applicationManagementPayload = applicationManagementPayload;
     this.session = PathStoreCluster.getInstance().connect();
   }
 
@@ -53,7 +47,8 @@ public class UnInstallApplication implements IService {
     Map<Integer, ApplicationEntry> currentState =
         this.getCurrentState(
             this.getParentToChildMap(),
-            ApplicationUtil.getPreviousState(this.session, this.keyspace));
+            ApplicationUtil.getPreviousState(
+                this.session, this.applicationManagementPayload.applicationName));
 
     if (currentState != null) {
       ApplicationUtil.insertRequestToDb(this.session, currentState);
@@ -83,8 +78,8 @@ public class UnInstallApplication implements IService {
   }
 
   /**
-   * Loops through all nodes in {@link #nodes} if any fails return null else return the entry map
-   * created
+   * Loops through all nodes in {@link ApplicationManagementPayload#node} if any fails return null
+   * else return the entry map created
    *
    * @param parentToChild {@link #getParentToChildMap()}
    * @param previousState {@link ApplicationUtil#getPreviousState(Session, String)}
@@ -98,7 +93,7 @@ public class UnInstallApplication implements IService {
 
     UUID processUUID = UUID.randomUUID();
 
-    for (int currentNode : this.nodes)
+    for (int currentNode : this.applicationManagementPayload.node)
       if (this.currentStateHelper(currentNode, processUUID, parentToChild, previousState, entryMap)
           == HelperResponse.CONFLICT) return null;
 
@@ -179,7 +174,7 @@ public class UnInstallApplication implements IService {
       newEntry =
           new ApplicationEntry(
               currentNode,
-              this.keyspace,
+              this.applicationManagementPayload.applicationName,
               ProccessStatus.WAITING_REMOVE,
               processUUID,
               children.size() > 0 ? new LinkedList<>(children) : Collections.singletonList(-1));
@@ -187,7 +182,7 @@ public class UnInstallApplication implements IService {
       newEntry =
           new ApplicationEntry(
               currentNode,
-              this.keyspace,
+              this.applicationManagementPayload.applicationName,
               ProccessStatus.WAITING_REMOVE,
               processUUID,
               Collections.singletonList(-1));

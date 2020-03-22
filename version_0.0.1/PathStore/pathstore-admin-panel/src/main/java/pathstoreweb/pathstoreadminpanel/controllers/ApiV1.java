@@ -1,25 +1,14 @@
 package pathstoreweb.pathstoreadminpanel.controllers;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import javax.validation.Constraint;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
-import javax.validation.Payload;
 import javax.validation.Valid;
-import org.springframework.ui.Model;
-import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import pathstoreweb.pathstoreadminpanel.Endpoints;
 import pathstoreweb.pathstoreadminpanel.services.ErrorFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.ApplicationState;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.InstallApplication;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.UnInstallApplication;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.ApplicationManagementPayload;
 import pathstoreweb.pathstoreadminpanel.services.applications.AddApplication;
 import pathstoreweb.pathstoreadminpanel.services.applications.AvailableApplications;
 import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
@@ -49,31 +38,35 @@ public class ApiV1 {
   }
 
   /**
-   * TODO: User input validation / error handling
+   * TODO: Handle conflict errors
    *
-   * @param keyspace keyspace to deploy
-   * @param nodes array of nodes to install on.
-   * @return todo
-   * @see InstallApplication
+   * @param applicationManagementPayload {@link ApplicationManagementPayload}
+   * @param bindingResult result of validation
+   * @return response
    */
   @PostMapping(Endpoints.APPLICATION_MANAGEMENT)
   public String applicationManagementInstall(
-      @RequestParam("keyspace") final String keyspace, @RequestParam("node") final int[] nodes) {
-    return new InstallApplication(keyspace, nodes).response();
+      @Valid final ApplicationManagementPayload applicationManagementPayload,
+      final BindingResult bindingResult) {
+    return bindingResult.hasErrors()
+        ? new ErrorFormatter(bindingResult.getAllErrors()).format()
+        : new InstallApplication(applicationManagementPayload).response();
   }
 
   /**
-   * TODO: User input validation / error handling
+   * TODO: Handle conflict errors
    *
-   * @param keyspace keyspace to remove
-   * @param nodes array of nodes to remove from.
-   * @return todo
-   * @see UnInstallApplication
+   * @param applicationManagementPayload {@link ApplicationManagementPayload}
+   * @param bindingResult result of validation
+   * @return response
    */
   @DeleteMapping(Endpoints.APPLICATION_MANAGEMENT)
   public String applicationManagementRemove(
-      @RequestParam("keyspace") final String keyspace, @RequestParam("node") final int[] nodes) {
-    return new UnInstallApplication(keyspace, nodes).response();
+      @Valid final ApplicationManagementPayload applicationManagementPayload,
+      final BindingResult bindingResult) {
+    return bindingResult.hasErrors()
+        ? new ErrorFormatter(bindingResult.getAllErrors()).format()
+        : new UnInstallApplication(applicationManagementPayload).response();
   }
 
   /** @return todo */
@@ -85,6 +78,10 @@ public class ApiV1 {
   /**
    * TODO: Handle if schema is bad.
    *
+   * <p>TODO: Handle if schema name is not the same as passed application name
+   *
+   * @param payload user passed payload
+   * @param bindingResult results from validation
    * @return todo
    */
   @PostMapping(Endpoints.APPLICATIONS)

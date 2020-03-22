@@ -17,15 +17,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.ApplicationManagementPayload;
 
 /**
- * TODO: Create validations on input params
- *
  * <p>TODO: If installation is actually possible on that chain (check if a deletion is going on
  * currently)
  *
  * <p>This class is used for deploy an application from the root node to a set of nodes in {@link
- * #nodes} with application {@link #keyspace}
+ * ApplicationManagementPayload#node} with application {@link
+ * ApplicationManagementPayload#applicationName}
  *
  * @see InstallApplicationFormatter
  * @see Constants#NODE_SCHEMAS
@@ -33,25 +33,15 @@ import java.util.UUID;
  */
 public class InstallApplication implements IService {
 
-  /** TODO: Fix logger. */
-  private static final Logger logger = LoggerFactory.getLogger(InstallApplication.class);
-
-  /** Application to install */
-  private final String keyspace;
-
-  /** Final nodes in the path to install on */
-  private final int[] nodes;
+  /** @see ApplicationManagementPayload */
+  private final ApplicationManagementPayload applicationManagementPayload;
 
   /** Session to {@link PathStoreCluster} */
   private final Session session;
 
-  /**
-   * @param keyspace {@link #keyspace}
-   * @param nodes {@link #nodes}
-   */
-  public InstallApplication(final String keyspace, final int[] nodes) {
-    this.keyspace = keyspace;
-    this.nodes = nodes;
+  /** @param applicationManagementPayload {@link #applicationManagementPayload} */
+  public InstallApplication(final ApplicationManagementPayload applicationManagementPayload) {
+    this.applicationManagementPayload = applicationManagementPayload;
     this.session = PathStoreCluster.getInstance().connect();
   }
 
@@ -65,7 +55,8 @@ public class InstallApplication implements IService {
     Map<Integer, ApplicationEntry> currentState =
         this.getCurrentState(
             this.getChildToParentMap(),
-            ApplicationUtil.getPreviousState(this.session, this.keyspace));
+            ApplicationUtil.getPreviousState(
+                this.session, this.applicationManagementPayload.applicationName));
 
     if (currentState != null) {
       int applicationInserted = ApplicationUtil.insertRequestToDb(this.session, currentState);
@@ -114,7 +105,7 @@ public class InstallApplication implements IService {
 
     // todo: potentially make it so that you keep track of which jobs failed and return them. As
     // maybe 1 out of x jobs passed and you still want to execute it
-    for (int currentNode : this.nodes)
+    for (int currentNode : this.applicationManagementPayload.node)
       if (this.currentStateHelper(
           currentNode, processUUID, childToParent, previousState, currentState)) return null;
 
@@ -135,7 +126,7 @@ public class InstallApplication implements IService {
    * <p>If a node has a waiting_remove or removing we need to wait for that process job to finish,
    * Thus this job will fail and you can try again once the previous conflicting job has finished
    *
-   * @param currentNode current node to check from {@link #nodes}
+   * @param currentNode current node to check from {@link ApplicationManagementPayload#node}
    * @param processUUID our processUUID for the current job
    * @param childToParent {@link #getChildToParentMap()}
    * @param previousState {@link ApplicationUtil#getPreviousState(Session, String)}
@@ -174,7 +165,7 @@ public class InstallApplication implements IService {
           processingNode,
           new ApplicationEntry(
               processingNode,
-              this.keyspace,
+              this.applicationManagementPayload.applicationName,
               ProccessStatus.WAITING_INSTALL,
               processUUID,
               Collections.singletonList(childToParent.get(processingNode))));
