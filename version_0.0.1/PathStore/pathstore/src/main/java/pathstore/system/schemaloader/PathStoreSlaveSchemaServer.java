@@ -33,13 +33,14 @@ public class PathStoreSlaveSchemaServer extends Thread {
     while (true) {
       Session session = PathStoreCluster.getInstance().connect();
       Select current_processes_select_all =
-          QueryBuilder.select()
-              .all()
-              .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
+          QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);
 
       for (Row current_process_row : session.execute(current_processes_select_all)) {
-        String keyspace_name =
-            current_process_row.getString(Constants.CURRENT_PROCESSES_COLUMNS.KEYSPACE_NAME);
+        String keyspace_name = current_process_row.getString(Constants.APPS_COLUMNS.KEYSPACE_NAME);
+
+        String augmentedSchema =
+            current_process_row.getString(Constants.APPS_COLUMNS.AUGMENTED_SCHEMA);
+
         Select node_schemas_specific_select =
             QueryBuilder.select()
                 .all()
@@ -60,6 +61,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
               this.install_application(
                   session,
                   node_schemas_select.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
+                  augmentedSchema,
                   node_schemas_select.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID));
               break;
             case REMOVING:
@@ -88,33 +90,31 @@ public class PathStoreSlaveSchemaServer extends Thread {
    * @param keyspace application to install
    */
   private void install_application(
-      final Session session, final String keyspace, final String process_uuid) {
+      final Session session,
+      final String keyspace,
+      final String augmentedSchema,
+      final String process_uuid) {
     // Query application, if not exist then just continue and wait for it to exist
-    Select select =
-        QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);
-    select.where(QueryBuilder.eq(Constants.APPS_COLUMNS.KEYSPACE_NAME, keyspace));
+    System.out.println("Loading application: " + keyspace);
 
-    for (Row row : session.execute(select)) {
-      System.out.println("Loading application: " + keyspace);
-      PathStoreSchemaLoaderUtils.parseSchema(row.getString(Constants.APPS_COLUMNS.AUGMENTED_SCHEMA))
-          .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
+    PathStoreSchemaLoaderUtils.parseSchema(augmentedSchema)
+        .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
 
-      SchemaInfo.getInstance().getKeySpaceInfo(keyspace);
+    SchemaInfo.getInstance().getKeySpaceInfo(keyspace);
 
-      Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-      update
-          .where(
-              QueryBuilder.eq(
-                  Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID))
-          .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace))
-          .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, process_uuid))
-          .with(
-              QueryBuilder.set(
-                  Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
-                  ProccessStatus.INSTALLED.toString()));
+    Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+    update
+        .where(
+            QueryBuilder.eq(
+                Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID))
+        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace))
+        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, process_uuid))
+        .with(
+            QueryBuilder.set(
+                Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
+                ProccessStatus.INSTALLED.toString()));
 
-      session.execute(update);
-    }
+    session.execute(update);
   }
 
   /**

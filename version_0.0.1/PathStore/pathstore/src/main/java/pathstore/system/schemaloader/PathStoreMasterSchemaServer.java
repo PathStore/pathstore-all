@@ -35,8 +35,6 @@ public class PathStoreMasterSchemaServer extends Thread {
 
       Map<UUID, ProccessStatus> proccessStatusMap = new HashMap<>();
 
-      Map<UUID, String> keyspaceMap = new HashMap<>();
-
       Map<UUID, Set<ApplicationEntry>> processIdToApplicationSet = new HashMap<>();
 
       Select query_all_node_schema =
@@ -54,44 +52,27 @@ public class PathStoreMasterSchemaServer extends Thread {
 
         proccessStatusMap.computeIfAbsent(processUUID, k -> currentProcessStatus);
 
-        final String keyspace = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
-
-        keyspaceMap.computeIfAbsent(processUUID, k -> keyspace);
-
         processIdToApplicationSet.computeIfAbsent(processUUID, k -> new HashSet<>());
         processIdToApplicationSet
             .get(processUUID)
             .add(
                 new ApplicationEntry(
                     row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID),
-                    keyspace,
+                    row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
                     currentProcessStatus,
                     processUUID,
                     (List<Integer>) row.getObject(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
       }
 
-      System.out.println(proccessStatusMap);
-      System.out.println(keyspaceMap);
-
       for (UUID processUUID : processIdToApplicationSet.keySet()) {
 
         final Set<ApplicationEntry> applicationEntries = processIdToApplicationSet.get(processUUID);
-
-        final String keyspace = keyspaceMap.get(processUUID);
 
         switch (proccessStatusMap.get(processUUID)) {
           case WAITING_INSTALL:
           case INSTALLING:
           case INSTALLED:
-            System.out.println(
-                "Process UUID: "
-                    + processUUID
-                    + " is an installer with "
-                    + applicationEntries.size()
-                    + " entries");
             this.update(
-                processUUID,
-                keyspace,
                 ProccessStatus.INSTALLED,
                 ProccessStatus.INSTALLING,
                 ProccessStatus.WAITING_INSTALL,
@@ -100,15 +81,7 @@ public class PathStoreMasterSchemaServer extends Thread {
           case WAITING_REMOVE:
           case REMOVING:
           case REMOVED:
-            System.out.println(
-                "Process UUID: "
-                    + processUUID
-                    + " is a remover with "
-                    + applicationEntries.size()
-                    + " entries");
             this.update(
-                processUUID,
-                keyspace,
                 ProccessStatus.REMOVED,
                 ProccessStatus.REMOVING,
                 ProccessStatus.WAITING_REMOVE,
@@ -139,103 +112,26 @@ public class PathStoreMasterSchemaServer extends Thread {
    * @param entries list of all entries based on processUUID
    */
   private void update(
-      final UUID processingUUID,
-      final String keyspace,
       final ProccessStatus finished,
       final ProccessStatus processing,
       final ProccessStatus waiting,
       final Set<ApplicationEntry> entries) {
 
-    Set<Integer> finishedIds = new HashSet<>(), processingIds = new HashSet<>();
+    Set<Integer> finishedIds = new HashSet<>();
     Set<ApplicationEntry> waitingEntries = new HashSet<>();
 
     for (ApplicationEntry entry : entries) {
       ProccessStatus currentStatus = entry.proccess_status;
 
       if (currentStatus == finished) finishedIds.add(entry.node_id);
-      else if (currentStatus == processing) processingIds.add(entry.node_id);
       else if (currentStatus == waiting) waitingEntries.add(entry);
     }
-
-    this.handle_current_process_table(
-        finishedIds.size(), processingIds.size(), waitingEntries.size(), processingUUID, keyspace);
 
     for (ApplicationEntry entry : waitingEntries)
       if (finishedIds.containsAll(entry.waiting_for)
           || (entry.waiting_for.size() == 1 && entry.waiting_for.get(0) == -1))
         this.update_application_status(
             entry.node_id, entry.keyspace_name, processing, entry.process_uuid);
-  }
-
-  /**
-   * This function will add or remove an entry from the current_processes table under certain
-   * conditions.
-   *
-   * <p>there must be 0 rows currently be processed for either case to occur
-   *
-   * <p>if there are no finished entries then we know that the process has just been started. Thus
-   * we add to the table
-   *
-   * <p>if there are no waiting entires then we know that the process has finished. Thus we remove
-   * from the table
-   *
-   * @param numOfFinished # of finished entries
-   * @param numOfProcessing # of processing entries
-   * @param numOfWaiting # of waiting entries
-   * @param process_uuid process_uuid
-   * @param keyspace_name keyspace_name
-   */
-  private void handle_current_process_table(
-      final int numOfFinished,
-      final int numOfProcessing,
-      final int numOfWaiting,
-      final UUID process_uuid,
-      final String keyspace_name) {
-
-    if (numOfProcessing == 0) {
-      Session clientSession = PathStoreCluster.getInstance().connect();
-      if (numOfFinished == 0) {
-        Select select =
-            QueryBuilder.select()
-                .all()
-                .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
-        select.where(
-            QueryBuilder.eq(
-                Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString()));
-
-        if (clientSession.execute(select).one() == null) {
-          System.out.println("Inserting process: " + process_uuid);
-          Insert insert =
-              QueryBuilder.insertInto(
-                  Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
-          insert.value(Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString());
-          insert.value(Constants.CURRENT_PROCESSES_COLUMNS.KEYSPACE_NAME, keyspace_name);
-          clientSession.execute(insert);
-        }
-      } else if (numOfWaiting == 0) {
-        Select select =
-            QueryBuilder.select()
-                .all()
-                .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
-        select.where(
-            QueryBuilder.eq(
-                Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString()));
-
-        int numOfRows = 0;
-        for (Row ignored : clientSession.execute(select)) numOfRows += 1;
-
-        if (numOfRows == 1) {
-          System.out.println("Removing process: " + process_uuid);
-          Delete delete =
-              QueryBuilder.delete()
-                  .from(Constants.PATHSTORE_APPLICATIONS, Constants.CURRENT_PROCESSES);
-          delete.where(
-              QueryBuilder.eq(
-                  Constants.CURRENT_PROCESSES_COLUMNS.PROCESS_UUID, process_uuid.toString()));
-          clientSession.execute(delete);
-        }
-      }
-    }
   }
 
   /**
