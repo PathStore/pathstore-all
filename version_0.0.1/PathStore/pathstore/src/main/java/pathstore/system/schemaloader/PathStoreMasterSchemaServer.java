@@ -3,6 +3,7 @@ package pathstore.system.schemaloader;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.*;
+import jnr.ffi.annotations.In;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 
@@ -35,6 +36,8 @@ public class PathStoreMasterSchemaServer extends Thread {
 
       Map<UUID, ProccessStatus> proccessStatusMap = new HashMap<>();
 
+      Map<UUID, String> keyspaceMap = new HashMap<>();
+
       Map<UUID, Set<ApplicationEntry>> processIdToApplicationSet = new HashMap<>();
 
       Select query_all_node_schema =
@@ -52,19 +55,25 @@ public class PathStoreMasterSchemaServer extends Thread {
 
         proccessStatusMap.computeIfAbsent(processUUID, k -> currentProcessStatus);
 
+        final String keyspace = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
+
+        keyspaceMap.computeIfAbsent(processUUID, k -> keyspace);
+
         processIdToApplicationSet.computeIfAbsent(processUUID, k -> new HashSet<>());
         processIdToApplicationSet
             .get(processUUID)
             .add(
                 new ApplicationEntry(
                     row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID),
-                    row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
+                    keyspace,
                     currentProcessStatus,
                     processUUID,
                     (List<Integer>) row.getObject(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
       }
 
       for (UUID processUUID : processIdToApplicationSet.keySet()) {
+
+        final String keyspace = keyspaceMap.get(processUUID);
 
         final Set<ApplicationEntry> applicationEntries = processIdToApplicationSet.get(processUUID);
 
@@ -73,6 +82,7 @@ public class PathStoreMasterSchemaServer extends Thread {
           case INSTALLING:
           case INSTALLED:
             this.update(
+                keyspace,
                 ProccessStatus.INSTALLED,
                 ProccessStatus.INSTALLING,
                 ProccessStatus.WAITING_INSTALL,
@@ -82,6 +92,7 @@ public class PathStoreMasterSchemaServer extends Thread {
           case REMOVING:
           case REMOVED:
             this.update(
+                keyspace,
                 ProccessStatus.REMOVED,
                 ProccessStatus.REMOVING,
                 ProccessStatus.WAITING_REMOVE,
@@ -112,12 +123,13 @@ public class PathStoreMasterSchemaServer extends Thread {
    * @param entries list of all entries based on processUUID
    */
   private void update(
+      final String keyspace,
       final ProccessStatus finished,
       final ProccessStatus processing,
       final ProccessStatus waiting,
       final Set<ApplicationEntry> entries) {
 
-    Set<Integer> finishedIds = new HashSet<>();
+    Set<Integer> finishedIds = this.getPreviousState(keyspace, finished);
     Set<ApplicationEntry> waitingEntries = new HashSet<>();
 
     for (ApplicationEntry entry : entries) {
@@ -132,6 +144,35 @@ public class PathStoreMasterSchemaServer extends Thread {
           || (entry.waiting_for.size() == 1 && entry.waiting_for.get(0) == -1))
         this.update_application_status(
             entry.node_id, entry.keyspace_name, processing, entry.process_uuid);
+  }
+
+  /**
+   * Queries the previous state of the entire topology for the given keyspace. This is done to avoid
+   * duplicate records being produced. See readme for additional info.
+   *
+   * @return map of nodeid to application entire if app is keyspace
+   */
+  @SuppressWarnings("ALL")
+  public Set<Integer> getPreviousState(final String keyspace, final ProccessStatus finished) {
+
+    Session session = PathStoreCluster.getInstance().connect();
+
+    Set<Integer> previousState = new HashSet<>();
+
+    Select query_node_schema =
+        QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+
+    for (Row row : session.execute(query_node_schema)) {
+      final String rowKeyspace = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
+
+      final ProccessStatus proccessStatus =
+          ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
+
+      if (rowKeyspace.equals(keyspace) && proccessStatus == finished)
+        previousState.add(row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID));
+    }
+
+    return previousState;
   }
 
   /**
