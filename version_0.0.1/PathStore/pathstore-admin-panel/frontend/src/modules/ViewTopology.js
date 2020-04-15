@@ -1,6 +1,6 @@
 import React, {Component} from "react";
 import Tree from "react-tree-graph";
-import Info from "./Info";
+import NodeInfoModal from "./NodeInfoModal";
 
 /**
  * This class is used to display a visual of the network topology of the network using the Tree package.
@@ -77,7 +77,7 @@ export default class ViewTopology extends Component {
      */
     handleClick = (event, node) => {
         this.setState({
-            info: <Info node={node} refresh={!this.state.refreshInfo}/>,
+            info: <NodeInfoModal node={node} refresh={!this.state.refreshInfo}/>,
             refreshInfo: !this.state.refreshInfo
         })
     };
