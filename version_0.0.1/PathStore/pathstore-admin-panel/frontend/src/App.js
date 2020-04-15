@@ -6,10 +6,26 @@ import ApplicationCreation from "./modules/ApplicationCreation";
 import ApplicationInstallation from "./modules/ApplicationInstallation";
 
 /**
- * TODO: Query topology and available applications here
+ * TODO: Handle errors on submodules
+ *
+ * This class is used to display needed sub-modules for the website
+ *
+ *  - ViewTopology (Used to show a graphical visualization of the network diagram)
+ *  - ApplicationCreate (Used to allow a user to deploy a new application (DB Schema))
+ *  - ApplicationInstallation (Used to allow a user to deploy a created application on a subset of nodes)
+ *
+ *  For more information on application creation / application installation please see the readme for the pathstore
+ *  website API.
  */
-export default class Login extends Component {
+export default class App extends Component {
 
+    /**
+     * State:
+     *
+     * topology: array of parentid to childid objects used to denote the network structure
+     * applications: array of currently created applications from {@link ApplicationCreation}
+     * refresh: flip-flop. When changed the module is refreshed
+     */
     constructor(props) {
         super(props);
 
@@ -20,6 +36,9 @@ export default class Login extends Component {
         }
     }
 
+    /**
+     * Calls the topology end point and parses then data. Then calls the applications endpoint and parses that data.
+     */
     componentDidMount() {
         fetch('/api/v1/topology')
             .then(response => response.json())
@@ -38,7 +57,12 @@ export default class Login extends Component {
             })
     }
 
-    //Message is a json array
+    /**
+     * Parses topology json array into an array of readable objects
+     *
+     * @param message response from topology end point
+     * @returns array of readable data
+     */
     parse = (message) => {
         let array = [];
 
@@ -47,14 +71,27 @@ export default class Login extends Component {
         return array;
     };
 
+    /**
+     * Filters out un-needed data from api response
+     *
+     * @param object api response
+     * @returns {application: *}
+     */
     createApplicationObject = (object) => {
         return {
             application: object.keyspace_name
         }
     };
 
+    /**
+     * Swaps the refresh flip-flop and reloads the component
+     */
     forceRefresh = () => this.setState({refresh: !this.state.refresh}, () => this.componentDidMount());
 
+    /**
+     * Rends all needed components and spaced correctly
+     * @returns {*}
+     */
     render() {
         return (
             <div>
