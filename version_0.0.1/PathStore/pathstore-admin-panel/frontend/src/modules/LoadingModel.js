@@ -9,23 +9,6 @@ import Modal from "react-modal";
  * An example of this is when the user creates an application as the general time this takes is 9 secs.
  */
 export default class LoadingModel extends Component {
-
-    /**
-     * @param props contains show which denotes whether to show or note
-     */
-    constructor(props) {
-        super(props);
-    }
-
-    /**
-     * Update current props show with new show value if they're not equal
-     * @param props
-     * @param nextContext
-     */
-    componentWillReceiveProps(props, nextContext) {
-        if (this.props.show !== props.show) this.props.show = this.props.show;
-    }
-
     /**
      * Show a modal with a loading image TODO
      * @returns {*}

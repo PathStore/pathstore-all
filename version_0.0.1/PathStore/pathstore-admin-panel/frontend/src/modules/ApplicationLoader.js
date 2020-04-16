@@ -1,3 +1,4 @@
+import ReactDOM from 'react-dom'
 import React, {Component} from "react";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -9,6 +10,11 @@ import Button from "react-bootstrap/Button";
  * based on a file and a name the user has given
  */
 export default class ApplicationLoader extends Component {
+
+    /**
+     * Reference to form object so we can reset it on successful submit
+     */
+    messageForm = null;
 
     /**
      * State:
@@ -95,6 +101,7 @@ export default class ApplicationLoader extends Component {
             body: formData
         }).then(ignored => {
             this.props.forceRefresh();
+            ReactDOM.findDOMNode(this.messageForm).reset()
         });
     };
 
@@ -105,7 +112,7 @@ export default class ApplicationLoader extends Component {
      */
     render() {
         return (
-            <Form onSubmit={this.onFormSubmit}>
+            <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
                 <Form.Group controlId="application">
                     <Form.Label>Application Name</Form.Label>
                     <Form.Control type="text" placeholder="Enter application name here"/>

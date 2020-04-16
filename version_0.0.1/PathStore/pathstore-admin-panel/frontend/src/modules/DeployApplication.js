@@ -1,3 +1,4 @@
+import ReactDOM from 'react-dom'
 import React, {Component} from "react";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -11,6 +12,12 @@ import Button from "react-bootstrap/Button";
  * and we force the user to select only nodes that are part of the topology.
  */
 export default class DeployApplication extends Component {
+
+    /**
+     * Reference to form object so we can reset it on successful submit
+     */
+    messageForm = null;
+
     /**
      * State:
      *
@@ -123,7 +130,7 @@ export default class DeployApplication extends Component {
 
         fetch(url, {
             method: 'POST'
-        }).then();
+        }).then(ignored => ReactDOM.findDOMNode(this.messageForm).reset());
     };
 
     /**
@@ -154,7 +161,7 @@ export default class DeployApplication extends Component {
             );
 
         return (
-            <Form onSubmit={this.onFormSubmit}>
+            <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
                 <Form.Group controlId="exampleForm.ControlSelect2">
                     <Form.Label>Select Application</Form.Label>
                     <Form.Control as="select" single onChange={this.onApplicationChange} value={this.state.application}>

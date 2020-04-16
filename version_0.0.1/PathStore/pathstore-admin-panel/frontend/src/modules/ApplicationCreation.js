@@ -70,10 +70,10 @@ export default class ApplicationCreation extends Component {
         return (
             <div>
                 <h2>Application Creation</h2>
+                <LoadingModel show={this.state.loadingModel}/>
                 <DisplayAvailableApplication applications={this.state.applications} refresh={this.state.refresh}/>
                 <ApplicationLoader applications={this.state.applications} refresh={this.state.refresh}
                                    forceRefresh={this.refreshComponents} spawnLoadingModel={this.spawnLoadingModel}/>
-                <LoadingModel show={this.state.loadingModel}/>
             </div>
         )
     }
