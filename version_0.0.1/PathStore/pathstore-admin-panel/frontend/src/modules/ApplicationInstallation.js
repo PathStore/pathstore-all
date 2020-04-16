@@ -1,8 +1,22 @@
 import React, {Component} from "react";
 import DeployApplication from "./DeployApplication";
 
+/**
+ * Parent model to load a submodel
+ *
+ * @see DeployApplication
+ */
 export default class ApplicationInstallation extends Component {
 
+    /**
+     * State:
+     *
+     * topology: api topology data
+     * application: api application data
+     * childRefresh: on change the children will refresh
+     *
+     * @param props
+     */
     constructor(props) {
         super(props);
         this.state = {
@@ -12,6 +26,12 @@ export default class ApplicationInstallation extends Component {
         };
     }
 
+    /**
+     * On props change refresh all data in state and reload children
+     *
+     * @param props
+     * @param nextContext
+     */
     componentWillReceiveProps(props, nextContext) {
         if (this.props.refresh !== props.refresh)
             this.setState({
@@ -23,6 +43,11 @@ export default class ApplicationInstallation extends Component {
     }
 
 
+    /**
+     * Render header and submodels
+     *
+     * @returns {*}
+     */
     render() {
         return (
             <div>
