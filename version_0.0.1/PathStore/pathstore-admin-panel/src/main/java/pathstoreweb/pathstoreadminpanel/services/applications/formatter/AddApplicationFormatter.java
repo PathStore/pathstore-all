@@ -24,7 +24,7 @@ public class AddApplicationFormatter implements IFormatter {
   public String format() {
     JSONObject object = new JSONObject();
 
-    object.put("status", this.status);
+    object.put("keyspace_created", this.status);
 
     return object.toString();
   }

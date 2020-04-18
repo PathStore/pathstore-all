@@ -4,7 +4,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import org.springframework.web.multipart.MultipartFile;
 import pathstore.common.Constants;
 import pathstore.system.PathStorePriviledgedCluster;
 import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
@@ -72,9 +71,14 @@ public class AddApplication implements IService {
    */
   @Override
   public String response() {
-    this.loadSchemas(getMaxAppId(), this.getUserPassSchema());
+    try {
+      this.loadSchemas(getMaxAppId(), this.getUserPassSchema());
+    } catch (Exception e) {
+      // schema is invalid at some point
+      
+    }
 
-    return new AddApplicationFormatter("success").format();
+    return new AddApplicationFormatter(this.addApplicationPayload.applicationName).format();
   }
 
   /** @return map appid in current table */
@@ -98,10 +102,15 @@ public class AddApplication implements IService {
    * @param appIdStart app id to start. If command was init this is 0
    * @param schema schema read from multipart file
    */
-  private void loadSchemas(final int appIdStart, final String schema) {
+  private void loadSchemas(final int appIdStart, final String schema) throws Exception {
     int appId = appIdStart;
 
-    PathStoreSchemaLoaderUtils.parseSchema(schema).forEach(this.session::execute);
+    try {
+      PathStoreSchemaLoaderUtils.parseSchema(schema).forEach(this.session::execute);
+    } catch (RuntimeException ignored) { // error loading the schema
+      session.execute("drop keyspace if exists " + this.addApplicationPayload.applicationName);
+      throw new Exception();
+    }
 
     this.schemaInfo.reset();
     for (SchemaInfo.Table table :
