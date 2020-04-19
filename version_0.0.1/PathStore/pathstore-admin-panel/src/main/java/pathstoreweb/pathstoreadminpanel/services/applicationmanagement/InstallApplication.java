@@ -4,12 +4,11 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.schemaloader.ApplicationEntry;
 import pathstore.system.schemaloader.ProccessStatus;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.ConflictFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.InstallApplicationFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
@@ -20,10 +19,7 @@ import java.util.UUID;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.ApplicationManagementPayload;
 
 /**
- * <p>TODO: If installation is actually possible on that chain (check if a deletion is going on
- * currently)
- *
- * <p>This class is used for deploy an application from the root node to a set of nodes in {@link
+ * This class is used for deploy an application from the root node to a set of nodes in {@link
  * ApplicationManagementPayload#node} with application {@link
  * ApplicationManagementPayload#applicationName}
  *
@@ -38,6 +34,13 @@ public class InstallApplication implements IService {
 
   /** Session to {@link PathStoreCluster} */
   private final Session session;
+
+  /** Message that is sent when the call is essentially redundant */
+  private static final String noRecordsWrittenResponse =
+      "Your request cannot be processed as the set of nodes you passed already contains your specified application";
+
+  /** This is used to set an error message if a conflict has occurred */
+  private String conflictMessage = null;
 
   /** @param applicationManagementPayload {@link #applicationManagementPayload} */
   public InstallApplication(final ApplicationManagementPayload applicationManagementPayload) {
@@ -58,14 +61,13 @@ public class InstallApplication implements IService {
             ApplicationUtil.getPreviousState(
                 this.session, this.applicationManagementPayload.applicationName));
 
-    if (currentState != null) {
+    if (currentState != null && currentState.size() > 0) {
       int applicationInserted = ApplicationUtil.insertRequestToDb(this.session, currentState);
 
       return new InstallApplicationFormatter(applicationInserted).format();
-    } else {
-      // todo
-      return "Conflict";
-    }
+    } else if (currentState != null)
+      return new ConflictFormatter(noRecordsWrittenResponse).format();
+    else return new ConflictFormatter(this.conflictMessage).format();
   }
 
   /**
@@ -103,11 +105,16 @@ public class InstallApplication implements IService {
 
     UUID processUUID = UUID.randomUUID();
 
-    // todo: potentially make it so that you keep track of which jobs failed and return them. As
-    // maybe 1 out of x jobs passed and you still want to execute it
     for (int currentNode : this.applicationManagementPayload.node)
       if (this.currentStateHelper(
-          currentNode, processUUID, childToParent, previousState, currentState)) return null;
+          currentNode, processUUID, childToParent, previousState, currentState)) {
+
+        this.conflictMessage =
+            String.format(
+                "There is a conflicting process uninstalling with the Process UUID is %s and we detected this conflict on Node: %d",
+                processUUID, currentNode);
+        return null;
+      }
 
     return currentState;
   }

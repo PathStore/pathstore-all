@@ -8,6 +8,7 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.schemaloader.ApplicationEntry;
 import pathstore.system.schemaloader.ProccessStatus;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.ConflictFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.InstallApplicationFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
@@ -27,6 +28,13 @@ public class UnInstallApplication implements IService {
 
   /** Db connection session to pathstore network */
   private final Session session;
+
+  /** Response for redundant calls */
+  private static final String noRecordsWrittenError =
+      "Your request cannot be processed as the set of nodes you passed don't contain the application you wish to remove";
+
+  /** Error message to write to if a conflict occurs */
+  private String conflictMessage = null;
 
   /** @param applicationManagementPayload {@link #applicationManagementPayload} */
   public UnInstallApplication(final ApplicationManagementPayload applicationManagementPayload) {
@@ -50,14 +58,11 @@ public class UnInstallApplication implements IService {
             ApplicationUtil.getPreviousState(
                 this.session, this.applicationManagementPayload.applicationName));
 
-    if (currentState != null) {
+    if (currentState != null && currentState.size() > 0) {
       ApplicationUtil.insertRequestToDb(this.session, currentState);
-      // todo
       return new InstallApplicationFormatter(currentState.size()).format();
-    } else {
-      // todo
-      return "Conflict";
-    }
+    } else if (currentState != null) return new ConflictFormatter(noRecordsWrittenError).format();
+    else return new ConflictFormatter(this.conflictMessage).format();
   }
 
   /** @return map of network topology from parent to child */
@@ -95,7 +100,13 @@ public class UnInstallApplication implements IService {
 
     for (int currentNode : this.applicationManagementPayload.node)
       if (this.currentStateHelper(currentNode, processUUID, parentToChild, previousState, entryMap)
-          == HelperResponse.CONFLICT) return null;
+          == HelperResponse.CONFLICT) {
+        this.conflictMessage =
+            String.format(
+                "There is a conflicting process installing with the Process UUID is %s and we detected this conflict on Node: %d",
+                processUUID, currentNode);
+        return null;
+      }
 
     return entryMap;
   }
