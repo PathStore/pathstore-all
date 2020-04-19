@@ -8,8 +8,6 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.schemaloader.ApplicationEntry;
 import pathstore.system.schemaloader.ProccessStatus;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.ConflictFormatter;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.InstallApplicationFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.*;
@@ -58,11 +56,8 @@ public class UnInstallApplication implements IService {
             ApplicationUtil.getPreviousState(
                 this.session, this.applicationManagementPayload.applicationName));
 
-    if (currentState != null && currentState.size() > 0) {
-      ApplicationUtil.insertRequestToDb(this.session, currentState);
-      return new InstallApplicationFormatter(currentState.size()).format();
-    } else if (currentState != null) return new ConflictFormatter(noRecordsWrittenError).format();
-    else return new ConflictFormatter(this.conflictMessage).format();
+    return ApplicationUtil.handleResponse(
+        this.session, currentState, this.conflictMessage, noRecordsWrittenError);
   }
 
   /** @return map of network topology from parent to child */

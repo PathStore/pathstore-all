@@ -13,11 +13,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.ErrorFormatter;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.UpdatedApplicationFormatter;
 
 /**
- * Utility class of shared functions between {@link InstallApplication} and {@link UnInstallApplication}
+ * Utility class of shared functions between {@link InstallApplication} and {@link
+ * UnInstallApplication}
  */
-public class ApplicationUtil {
+class ApplicationUtil {
 
   /**
    * Queries the previous state of the entire topology for the given keyspace. This is done to avoid
@@ -59,10 +62,10 @@ public class ApplicationUtil {
    *
    * <p>This function inserts the current state records into the database.
    *
-   * @param currentState state gathered from {@link InstallApplication} or {@link UnInstallApplication}
-   * @return number of records written to the database
+   * @param currentState state gathered from {@link InstallApplication} or {@link
+   *     UnInstallApplication}
    */
-  public static int insertRequestToDb(
+  private static void insertRequestToDb(
       final Session session, final Map<Integer, ApplicationEntry> currentState) {
     for (Map.Entry<Integer, ApplicationEntry> current_entry : currentState.entrySet()) {
       ApplicationEntry applicationEntry = current_entry.getValue();
@@ -82,7 +85,28 @@ public class ApplicationUtil {
 
       session.execute(insert);
     }
+  }
 
-    return currentState.size();
+  /**
+   * This function handles the response for each class. If success it calls {@link
+   * UpdatedApplicationFormatter} otherwise it passes an error message to {@link ErrorFormatter}
+   *
+   * @param session db session to root cassandra
+   * @param currentState records generated to write to db
+   * @param conflictMessage null unless a conflict occurred
+   * @param noWrittenEntriesErrorMessage state message for redundant requests
+   * @return json formatted response
+   */
+  static String handleResponse(
+      final Session session,
+      final Map<Integer, ApplicationEntry> currentState,
+      final String conflictMessage,
+      final String noWrittenEntriesErrorMessage) {
+    if (currentState != null && currentState.size() > 0) {
+      insertRequestToDb(session, currentState);
+      return new UpdatedApplicationFormatter(currentState).format();
+    } else if (currentState != null)
+      return new ErrorFormatter(noWrittenEntriesErrorMessage).format();
+    else return new ErrorFormatter(conflictMessage).format();
   }
 }

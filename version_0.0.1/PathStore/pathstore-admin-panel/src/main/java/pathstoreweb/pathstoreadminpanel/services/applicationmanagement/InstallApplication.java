@@ -8,8 +8,7 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.schemaloader.ApplicationEntry;
 import pathstore.system.schemaloader.ProccessStatus;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.ConflictFormatter;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.InstallApplicationFormatter;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.UpdatedApplicationFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.Collections;
@@ -23,7 +22,7 @@ import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.A
  * ApplicationManagementPayload#node} with application {@link
  * ApplicationManagementPayload#applicationName}
  *
- * @see InstallApplicationFormatter
+ * @see UpdatedApplicationFormatter
  * @see Constants#NODE_SCHEMAS
  * @see Constants.NODE_SCHEMAS_COLUMNS
  */
@@ -50,7 +49,7 @@ public class InstallApplication implements IService {
 
   /**
    * @return json response
-   * @see InstallApplicationFormatter
+   * @see UpdatedApplicationFormatter
    */
   @Override
   public String response() {
@@ -61,13 +60,8 @@ public class InstallApplication implements IService {
             ApplicationUtil.getPreviousState(
                 this.session, this.applicationManagementPayload.applicationName));
 
-    if (currentState != null && currentState.size() > 0) {
-      int applicationInserted = ApplicationUtil.insertRequestToDb(this.session, currentState);
-
-      return new InstallApplicationFormatter(applicationInserted).format();
-    } else if (currentState != null)
-      return new ConflictFormatter(noRecordsWrittenResponse).format();
-    else return new ConflictFormatter(this.conflictMessage).format();
+    return ApplicationUtil.handleResponse(
+        this.session, currentState, this.conflictMessage, noRecordsWrittenResponse);
   }
 
   /**
