@@ -38,8 +38,6 @@ public class ApiV1 {
   }
 
   /**
-   * TODO: Handle conflict errors
-   *
    * @param applicationManagementPayload {@link ApplicationManagementPayload}
    * @param bindingResult result of validation
    * @return response
@@ -54,8 +52,6 @@ public class ApiV1 {
   }
 
   /**
-   * TODO: Handle conflict errors
-   *
    * @param applicationManagementPayload {@link ApplicationManagementPayload}
    * @param bindingResult result of validation
    * @return response
@@ -69,16 +65,15 @@ public class ApiV1 {
         : new UnInstallApplication(applicationManagementPayload).response();
   }
 
-  /** @return todo */
+  /** @return List of applications on the system */
   @GetMapping(Endpoints.APPLICATIONS)
   public String getApplications() {
     return new AvailableApplications().response();
   }
 
   /**
-   * TODO: Handle if schema is bad.
-   *
-   * <p>TODO: Handle if schema name is not the same as passed application name
+   * TODO: Build a schema builder. Properties: 1 keyspace. n tables, with some number of attributes
+   * each
    *
    * @param payload user passed payload
    * @param bindingResult results from validation
@@ -94,9 +89,7 @@ public class ApiV1 {
   }
 
   /**
-   * TODO: User input validation / error handling
-   *
-   * <p>TODO: call {@link UnInstallApplication} on root
+   * TODO: See above functio
    *
    * @return todo
    */
