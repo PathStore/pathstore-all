@@ -10,13 +10,13 @@ import pathstoreweb.pathstoreadminpanel.services.IFormatter;
  * @see pathstoreweb.pathstoreadminpanel.services.applicationmanagement.InstallApplication
  * @see pathstoreweb.pathstoreadminpanel.services.applicationmanagement.UnInstallApplication
  */
-public class ErrorFormatter implements IFormatter {
+public class ResponseErrorFormatter implements IFormatter {
 
   /** error message that was generated */
   private final String errorMessage;
 
   /** @param errorMessage {@link #errorMessage} */
-  public ErrorFormatter(final String errorMessage) {
+  public ResponseErrorFormatter(final String errorMessage) {
     this.errorMessage = errorMessage;
   }
 

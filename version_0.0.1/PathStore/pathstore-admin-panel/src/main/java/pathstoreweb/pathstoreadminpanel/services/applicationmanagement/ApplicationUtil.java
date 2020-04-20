@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.ErrorFormatter;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.ResponseErrorFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.UpdatedApplicationFormatter;
 
 /**
@@ -89,7 +89,7 @@ class ApplicationUtil {
 
   /**
    * This function handles the response for each class. If success it calls {@link
-   * UpdatedApplicationFormatter} otherwise it passes an error message to {@link ErrorFormatter}
+   * UpdatedApplicationFormatter} otherwise it passes an error message to {@link ResponseErrorFormatter}
    *
    * @param session db session to root cassandra
    * @param currentState records generated to write to db
@@ -106,7 +106,7 @@ class ApplicationUtil {
       insertRequestToDb(session, currentState);
       return new UpdatedApplicationFormatter(currentState).format();
     } else if (currentState != null)
-      return new ErrorFormatter(noWrittenEntriesErrorMessage).format();
-    else return new ErrorFormatter(conflictMessage).format();
+      return new ResponseErrorFormatter(noWrittenEntriesErrorMessage).format();
+    else return new ResponseErrorFormatter(conflictMessage).format();
   }
 }

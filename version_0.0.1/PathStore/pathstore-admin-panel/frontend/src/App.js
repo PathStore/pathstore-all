@@ -2,8 +2,9 @@ import React, {Component} from 'react';
 import './App.css';
 import 'react-tree-graph/dist/style.css'
 import ViewTopology from "./modules/ViewTopology";
-import ApplicationCreation from "./modules/ApplicationCreation";
-import ApplicationInstallation from "./modules/ApplicationInstallation";
+import ApplicationCreation from "./modules/installation/ApplicationCreation";
+import DisplayAvailableApplication from "./modules/installation/DisplayAvailableApplication";
+import DeployApplication from "./modules/deployment/DeployApplication";
 
 /**
  * TODO: Handle errors on submodules
@@ -98,11 +99,19 @@ export default class App extends Component {
                 <h1>PathStore Control Panel</h1>
                 <ViewTopology topology={this.state.topology} refresh={this.state.refresh}/>
                 <br/>
-                <ApplicationCreation applications={this.state.applications} refresh={this.state.refresh}
-                                     forceRefresh={this.forceRefresh}/>
+                <div>
+                    <h2>Application Creation</h2>
+                    <DisplayAvailableApplication applications={this.state.applications} refresh={this.state.refresh}/>
+                    <br/>
+                    <ApplicationCreation applications={this.state.applications} refresh={this.state.refresh}
+                                         forceRefresh={this.forceRefresh}/>
+                </div>
                 <br/>
-                <ApplicationInstallation topology={this.state.topology} applications={this.state.applications}
-                                         refresh={this.state.refresh}/>
+                <div>
+                    <h2>Application Deployment</h2>
+                    <DeployApplication topology={this.state.topology} applications={this.state.applications}
+                                       refresh={this.state.refresh}/>
+                </div>
             </div>
         );
     }

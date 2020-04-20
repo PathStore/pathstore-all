@@ -1,7 +1,7 @@
 import React, {Component} from "react";
 import Modal from "react-modal";
 import Tree from "react-tree-graph";
-import '../Circles.css';
+import '../../Circles.css';
 
 /**
  * This class is used to display the response of an installation request. It may be a success or error
@@ -12,7 +12,7 @@ import '../Circles.css';
  * data: response from api request
  * callback: to close the modal
  */
-export default class InstallationResponseModal extends Component {
+export default class DeployApplicationResponseModal extends Component {
 
     /**
      * Takes in the response from the api and calls either the success or error parser
@@ -102,7 +102,6 @@ export default class InstallationResponseModal extends Component {
      */
     createTreeObject = (name, array, updates) => {
         const contains = this.contains(updates, parseInt(name));
-        console.log(contains);
         return {
             name: name,
             textProps: {x: -20, y: 25},
@@ -123,7 +122,8 @@ export default class InstallationResponseModal extends Component {
 
         const tree = (data != null ?
             <div>
-                <p>Installing {parsedData.keyspace} with Job UUID: {parsedData.process_uuid}</p>
+                <p>Successfully requested installation of {parsedData.keyspace} with Job UUID: {parsedData.process_uuid}</p>
+                <p>The Path that will be installed is highlighted with green</p>
                 <Tree
                     data={data}
                     nodeRadius={15}
@@ -131,7 +131,8 @@ export default class InstallationResponseModal extends Component {
                     height={1000}
                     width={1080}
                     gProps={{className: 'node'}}/>
-            </div> : <p>{parsedData}</p>);
+            </div> :
+            <p>{parsedData}</p>);
 
         return (
             <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}}>

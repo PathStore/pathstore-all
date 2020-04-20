@@ -2,7 +2,7 @@ import ReactDOM from 'react-dom'
 import React, {Component} from "react";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import InstallationResponseModal from "./InstallationResponseModal";
+import DeployApplicationResponseModal from "./DeployApplicationResponseModal";
 
 /**
  * TODO: Handle errors
@@ -34,8 +34,8 @@ export default class DeployApplication extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            topology: [],
-            applications: [],
+            topology: this.parseTopology(props.topology),
+            applications: props.applications,
             application: '',
             nodes: [],
             responseModalData: null,
@@ -142,7 +142,7 @@ export default class DeployApplication extends Component {
     };
 
     /**
-     * Callback function for the InstallationResponseModal to reset the parent show attribute
+     * Callback function for the DeployApplicationResponseModal to reset the parent show attribute
      */
     closeModalCallback = () => this.setState({responseModalShow: false});
 
@@ -173,10 +173,10 @@ export default class DeployApplication extends Component {
                 <option key={i}>{this.state.topology[i]}</option>
             );
 
-        let modal = (this.state.responseModalShow ?
-            <InstallationResponseModal data={this.state.responseModalData} show={this.state.responseModalShow}
-                                       topology={this.props.topology}
-                                       callback={this.closeModalCallback}/> : null);
+        const modal = (this.state.responseModalShow ?
+            <DeployApplicationResponseModal data={this.state.responseModalData} show={this.state.responseModalShow}
+                                            topology={this.props.topology}
+                                            callback={this.closeModalCallback}/> : null);
 
         return (
             <div>
