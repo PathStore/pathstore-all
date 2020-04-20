@@ -1,7 +1,7 @@
 import React, {Component} from "react";
 import DisplayAvailableApplication from "./DisplayAvailableApplication";
 import ApplicationLoader from "./ApplicationLoader";
-import LoadingModel from "./LoadingModel";
+import LoadingModal from "./LoadingModal";
 
 /**
  * This model encapsulates multiple submodels and is used to allow the user to create applications
@@ -70,7 +70,7 @@ export default class ApplicationCreation extends Component {
         return (
             <div>
                 <h2>Application Creation</h2>
-                <LoadingModel show={this.state.loadingModel}/>
+                <LoadingModal show={this.state.loadingModel}/>
                 <DisplayAvailableApplication applications={this.state.applications} refresh={this.state.refresh}/>
                 <ApplicationLoader applications={this.state.applications} refresh={this.state.refresh}
                                    forceRefresh={this.refreshComponents} spawnLoadingModel={this.spawnLoadingModel}/>

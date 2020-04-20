@@ -134,7 +134,7 @@ export default class InstallationResponseModal extends Component {
             </div> : <p>{parsedData}</p>);
 
         return (
-            <Modal isOpen={this.props.show}>
+            <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}}>
                 {tree}
                 <button onClick={this.props.callback}>close</button>
             </Modal>

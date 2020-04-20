@@ -124,7 +124,7 @@ export default class NodeInfoModal extends Component {
 
     render() {
         return (
-            <Modal isOpen={this.state.isOpen}>
+            <Modal isOpen={this.state.isOpen} style={{overlay: {zIndex: 1}}}>
                 <Table>{this.state.message}</Table>
                 <button onClick={this.closeModal}>close</button>
             </Modal>

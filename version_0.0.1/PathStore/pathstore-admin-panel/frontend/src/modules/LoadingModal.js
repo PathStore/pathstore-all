@@ -8,14 +8,14 @@ import Modal from "react-modal";
  *
  * An example of this is when the user creates an application as the general time this takes is 9 secs.
  */
-export default class LoadingModel extends Component {
+export default class LoadingModal extends Component {
     /**
      * Show a modal with a loading image TODO
      * @returns {*}
      */
     render() {
         return (
-            <Modal isOpen={this.props.show}>
+            <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}}>
                 <p>Loading</p>
             </Modal>
         );
