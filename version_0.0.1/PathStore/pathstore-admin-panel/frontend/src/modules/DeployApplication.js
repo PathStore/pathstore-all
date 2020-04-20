@@ -2,6 +2,7 @@ import ReactDOM from 'react-dom'
 import React, {Component} from "react";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
+import InstallationResponseModal from "./InstallationResponseModal";
 
 /**
  * TODO: Handle errors
@@ -25,6 +26,8 @@ export default class DeployApplication extends Component {
      * applications: applications from api
      * application: currently selected application
      * nodes: currently select list of nodes
+     * responseModalData: data gathered from the installation end point call
+     * responseModalShow: whether to show the modal or not
      *
      * @param props
      */
@@ -34,7 +37,9 @@ export default class DeployApplication extends Component {
             topology: [],
             applications: [],
             application: '',
-            nodes: []
+            nodes: [],
+            responseModalData: null,
+            responseModalShow: false
         };
     }
 
@@ -107,7 +112,6 @@ export default class DeployApplication extends Component {
 
     /**
      * TODO: Maybe fix messy logic?
-     * TODO: Handle errors
      *
      * This function is called when the user submits a request to install the application
      * we build the url and make a request to the backend
@@ -130,8 +134,17 @@ export default class DeployApplication extends Component {
 
         fetch(url, {
             method: 'POST'
-        }).then(ignored => ReactDOM.findDOMNode(this.messageForm).reset());
+        }).then(response => response.json())
+            .then(response => {
+                ReactDOM.findDOMNode(this.messageForm).reset();
+                this.setState({responseModalData: response, responseModalShow: true});
+            });
     };
+
+    /**
+     * Callback function for the InstallationResponseModal to reset the parent show attribute
+     */
+    closeModalCallback = () => this.setState({responseModalShow: false});
 
     /**
      * We build select statements for both the application and nodes.
@@ -160,24 +173,33 @@ export default class DeployApplication extends Component {
                 <option key={i}>{this.state.topology[i]}</option>
             );
 
+        let modal = (this.state.responseModalShow ?
+            <InstallationResponseModal data={this.state.responseModalData} show={this.state.responseModalShow}
+                                       topology={this.props.topology}
+                                       callback={this.closeModalCallback}/> : null);
+
         return (
-            <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
-                <Form.Group controlId="exampleForm.ControlSelect2">
-                    <Form.Label>Select Application</Form.Label>
-                    <Form.Control as="select" single onChange={this.onApplicationChange} value={this.state.application}>
-                        {applications}
-                    </Form.Control>
-                </Form.Group>
-                <Form.Group controlId="exampleForm.ControlSelect2">
-                    <Form.Label>Select Nodes</Form.Label>
-                    <Form.Control as="select" multiple onChange={this.onNodeChange}>
-                        {nodes}
-                    </Form.Control>
-                </Form.Group>
-                <Button variant="primary" type="submit">
-                    Submit
-                </Button>
-            </Form>
+            <div>
+                {modal}
+                <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
+                    <Form.Group controlId="exampleForm.ControlSelect2">
+                        <Form.Label>Select Application</Form.Label>
+                        <Form.Control as="select" single onChange={this.onApplicationChange}
+                                      value={this.state.application}>
+                            {applications}
+                        </Form.Control>
+                    </Form.Group>
+                    <Form.Group controlId="exampleForm.ControlSelect2">
+                        <Form.Label>Select Nodes</Form.Label>
+                        <Form.Control as="select" multiple onChange={this.onNodeChange}>
+                            {nodes}
+                        </Form.Control>
+                    </Form.Group>
+                    <Button variant="primary" type="submit">
+                        Submit
+                    </Button>
+                </Form>
+            </div>
         );
     }
 }
