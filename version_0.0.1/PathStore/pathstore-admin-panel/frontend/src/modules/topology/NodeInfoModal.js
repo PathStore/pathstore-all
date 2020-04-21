@@ -32,11 +32,25 @@ export default class NodeInfoModal extends Component {
     }
 
     /**
-     * Query all applications and filter for this node
-     * Create readable objects for each row in the json array
-     * Then create the table for that readable list of applications
+     * Update components data every 1 sec
      */
     componentDidMount() {
+        this.loadData();
+
+        this.setState({timer: setInterval(this.loadData, 1000)});
+    }
+
+    /**
+     * Clear interval every second
+     */
+    componentWillUnmount() {
+        clearInterval(this.state.timer);
+    }
+
+    /**
+     * Query all applications and parse to only the nodeid that is currently selected
+     */
+    loadData = () => {
         fetch('/api/v1/application_management')
             .then(response => response.json())
             .then(message => {
@@ -50,7 +64,7 @@ export default class NodeInfoModal extends Component {
 
                 this.setState({message: this.formatClickEvent(messages), currentMessage: this.props.node});
             });
-    }
+    };
 
     /**
      * Create readable object for passed data

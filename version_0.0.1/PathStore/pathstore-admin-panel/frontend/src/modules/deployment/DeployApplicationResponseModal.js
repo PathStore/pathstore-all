@@ -17,13 +17,16 @@ export default class DeployApplicationResponseModal extends Component {
     /**
      * State:
      * previous: list of nodes previously installed with the corresponding keyspace
+     * responseType: based on what kind of response we get we given an integer value to represent it. 0 is normal response,
+     * 1 is user input error, 2 is an error that occurred while executed the request
      *
      * @param props
      */
     constructor(props) {
         super(props);
         this.state = {
-            previous: null
+            previous: null,
+            responseType: Array.isArray(this.props.data) ? (this.props.data[0].error === undefined ? 0 : 1) : 2
         };
     }
 
@@ -31,9 +34,10 @@ export default class DeployApplicationResponseModal extends Component {
      * Queries the previously installed nodes and stores the array in the previous element in the state
      */
     componentDidMount() {
-        fetch('/api/v1/application_management')
-            .then(response => response.json())
-            .then(response => this.setState({previous: response.filter(i => i.keyspace_name === this.props.data[0].keyspace_name).map(i => i.nodeid)}));
+        if (this.state.responseType === 0)
+            fetch('/api/v1/application_management')
+                .then(response => response.json())
+                .then(response => this.setState({previous: response.filter(i => i.keyspace_name === this.props.data[0].keyspace_name).map(i => i.nodeid)}));
     }
 
     /**
@@ -42,7 +46,16 @@ export default class DeployApplicationResponseModal extends Component {
      * @returns {*}
      */
     parseData = (data) => {
-        return Array.isArray(data) ? (data[0].error === undefined ? this.parseSuccess(data) : this.parseArrayError(data)) : this.parseError(data);
+        switch (this.state.responseType) {
+            case 0:
+                return this.parseSuccess(data);
+            case 1:
+                return this.parseArrayError(data);
+            case 2:
+                return this.parseError(data);
+            default:
+                return null;
+        }
     };
 
     /**
@@ -177,27 +190,56 @@ export default class DeployApplicationResponseModal extends Component {
 
         const parsedData = this.parseData(this.props.data);
 
-        const data = Array.isArray(parsedData) ?
-            this.formatArrayErrors(parsedData) :
-            (typeof parsedData === 'object' ?
-                this.createTree(this.props.topology, -1, parsedData.data, this.state.previous) : null);
+        let data = null;
 
-        const tree = (typeof data === 'object' ?
-            <div>
-                <p>Successfully requested installation of {parsedData.keyspace} with Job
-                    UUID: {parsedData.process_uuid}</p>
-                <p>Nodes already requested are in blue</p>
-                <p>Nodes that you requested are in green</p>
-                <p>Nodes that haven't been requested are in red</p>
-                <Tree
-                    data={data}
-                    nodeRadius={15}
-                    margins={{top: 20, bottom: 10, left: 20, right: 200}}
-                    height={1000}
-                    width={1080}
-                    gProps={{className: 'node'}}/>
-            </div> :
-            <p>{data != null ? data : parsedData}</p>);
+        if (parsedData !== null) {
+            switch (this.state.responseType) {
+                case 0:
+                    data = this.createTree(this.props.topology, -1, parsedData.data, this.state.previous);
+                    break;
+                case 1:
+                    data = this.formatArrayErrors(parsedData);
+                    break;
+                case 2:
+                    data = undefined;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        let tree = null;
+
+        if (data !== null) {
+            switch (this.state.responseType) {
+                case 0:
+                    tree =
+                        <div>
+                            <p>Successfully requested installation of {parsedData.keyspace} with Job
+                                UUID: {parsedData.process_uuid}</p>
+                            <p>Nodes already requested are in blue</p>
+                            <p>Nodes that you requested are in green</p>
+                            <p>Nodes that haven't been requested are in red</p>
+                            <Tree
+                                data={data}
+                                nodeRadius={15}
+                                margins={{top: 20, bottom: 10, left: 20, right: 200}}
+                                height={1000}
+                                width={1080}
+                                gProps={{className: 'node'}}/>
+                        </div>;
+                    break;
+                case 1:
+                    tree = <p>{data}</p>;
+                    break;
+                case 2:
+                    tree = <p>{parsedData}</p>;
+                    break;
+                default:
+                    break;
+
+            }
+        }
 
         return (
             <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}}>

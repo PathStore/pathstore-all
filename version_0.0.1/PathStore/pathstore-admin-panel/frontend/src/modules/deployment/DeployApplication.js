@@ -108,8 +108,6 @@ export default class DeployApplication extends Component {
     };
 
     /**
-     * TODO: Maybe fix messy logic?
-     *
      * This function is called when the user submits a request to install the application
      * we build the url and make a request to the backend
      *
@@ -134,6 +132,7 @@ export default class DeployApplication extends Component {
         }).then(response => response.json())
             .then(response => {
                 ReactDOM.findDOMNode(this.messageForm).reset();
+                console.log(response);
                 this.setState({responseModalData: response, responseModalShow: true});
             });
     };
