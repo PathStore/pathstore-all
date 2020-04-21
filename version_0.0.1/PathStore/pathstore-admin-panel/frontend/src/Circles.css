@@ -51,3 +51,19 @@ span {
     stroke: black;
     stroke-width: 1.5px;
 }
+
+.not_set_node {
+    fill: black;
+}
+
+.waiting_node {
+    fill: orange;
+}
+
+.installing_node {
+    fill: blue;
+}
+
+.installed_node {
+    fill: green;
+}

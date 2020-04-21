@@ -1,14 +1,13 @@
 import React, {Component} from 'react';
 import './App.css';
 import 'react-tree-graph/dist/style.css'
-import ViewTopology from "./modules/ViewTopology";
+import ViewTopology from "./modules/topology/ViewTopology";
 import ApplicationCreation from "./modules/installation/ApplicationCreation";
 import DisplayAvailableApplication from "./modules/installation/DisplayAvailableApplication";
 import DeployApplication from "./modules/deployment/DeployApplication";
+import LiveTransitionVisual from "./modules/topology/LiveTransitionVisual";
 
 /**
- * TODO: Handle errors on submodules
- *
  * This class is used to display needed sub-modules for the website
  *
  *  - ViewTopology (Used to show a graphical visualization of the network diagram)
@@ -97,7 +96,13 @@ export default class App extends Component {
         return (
             <div>
                 <h1>PathStore Control Panel</h1>
-                <ViewTopology topology={this.state.topology} refresh={this.state.refresh}/>
+                <div>
+                    <h2>Network Topology</h2>
+                    <ViewTopology topology={this.state.topology} refresh={this.state.refresh}/>
+                    <h2>Live Installation Viewer</h2>
+                    <LiveTransitionVisual applications={this.state.applications} topology={this.state.topology}
+                                          refresh={this.state.refresh}/>
+                </div>
                 <br/>
                 <div>
                     <h2>Application Creation</h2>
