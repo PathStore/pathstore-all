@@ -32,7 +32,6 @@ export default class DeployApplication extends Component {
         super(props);
         this.state = {
             topology: this.parseTopology(props.topology),
-            applications: props.applications,
             application: '',
             nodes: [],
             responseModalData: null,
@@ -45,8 +44,8 @@ export default class DeployApplication extends Component {
      * for a select block that only has one element.
      */
     componentDidMount() {
-        if (this.state.applications.length === 1)
-            this.setState({application: this.state.applications[0].application});
+        if (this.props.applications !== undefined && this.props.applications[0] !== undefined)
+            this.setState({application: this.props.applications[0].application});
     }
 
     /**
@@ -59,7 +58,6 @@ export default class DeployApplication extends Component {
         if (this.props.refresh !== props.refresh)
             this.setState({
                 topology: this.parseTopology(props.topology),
-                applications: props.applications
             }, () => this.componentDidMount());
     }
 
@@ -156,9 +154,9 @@ export default class DeployApplication extends Component {
 
         const applications = [];
 
-        for (let i = 0; i < this.state.applications.length; i++)
+        for (let i = 0; i < this.props.applications.length; i++)
             applications.push(
-                <option key={i}>{this.state.applications[i].application}</option>
+                <option key={i}>{this.props.applications[i].application}</option>
             );
 
 
@@ -174,27 +172,34 @@ export default class DeployApplication extends Component {
                                             topology={this.props.topology}
                                             callback={this.closeModalCallback}/> : null);
 
+        let form;
+
+        if (this.props.applications.length > 0)
+            form = <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
+                <Form.Group controlId="exampleForm.ControlSelect2">
+                    <Form.Label>Select Application</Form.Label>
+                    <Form.Control as="select" single onChange={this.onApplicationChange}
+                                  value={this.state.application}>
+                        {applications}
+                    </Form.Control>
+                </Form.Group>
+                <Form.Group controlId="exampleForm.ControlSelect2">
+                    <Form.Label>Select Nodes</Form.Label>
+                    <Form.Control as="select" multiple onChange={this.onNodeChange}>
+                        {nodes}
+                    </Form.Control>
+                </Form.Group>
+                <Button variant="primary" type="submit">
+                    Submit
+                </Button>
+            </Form>;
+        else
+            form = <p>There are no applications installed on the network</p>;
+
         return (
             <div>
                 {modal}
-                <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
-                    <Form.Group controlId="exampleForm.ControlSelect2">
-                        <Form.Label>Select Application</Form.Label>
-                        <Form.Control as="select" single onChange={this.onApplicationChange}
-                                      value={this.state.application}>
-                            {applications}
-                        </Form.Control>
-                    </Form.Group>
-                    <Form.Group controlId="exampleForm.ControlSelect2">
-                        <Form.Label>Select Nodes</Form.Label>
-                        <Form.Control as="select" multiple onChange={this.onNodeChange}>
-                            {nodes}
-                        </Form.Control>
-                    </Form.Group>
-                    <Button variant="primary" type="submit">
-                        Submit
-                    </Button>
-                </Form>
+                {form}
             </div>
         );
     }

@@ -28,9 +28,8 @@ export default class ViewTopology extends Component {
      * Called when parent props change. If refresh has changed from the local copy then re-create the tree
      */
     componentWillReceiveProps(props, nextContext) {
-        if (this.props.refresh !== props.refresh) {
-            this.setState({topology: this.createTree(props.topology, -1)})
-        }
+        if (this.props.refresh !== props.refresh)
+            this.setState({topology: this.createTree(props.topology, -1)});
     }
 
     /**

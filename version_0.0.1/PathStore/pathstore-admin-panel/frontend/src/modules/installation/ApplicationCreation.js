@@ -19,7 +19,6 @@ export default class ApplicationCreation extends Component {
     /**
      * State:
      *
-     * applications: available applications from api
      * file: file that is uploaded
      *
      * @param props
@@ -28,23 +27,10 @@ export default class ApplicationCreation extends Component {
         super(props);
         this.state = {
             file: null,
-            applications: props.applications,
             loadingModalShow: false,
             responseModalShow: false,
             responseModalData: null
         };
-    }
-
-    /**
-     * Updates applications if a refresh occurs (state changing operation in another model occured)
-     *
-     * @param props
-     * @param nextContext
-     */
-    componentWillReceiveProps(props, nextContext) {
-        if (this.props.refresh !== props.refresh)
-            this.setState({applications: props.applications});
-
     }
 
     /**

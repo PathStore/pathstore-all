@@ -108,7 +108,7 @@ export default class App extends Component {
                     <h2>Application Creation</h2>
                     <DisplayAvailableApplication applications={this.state.applications} refresh={this.state.refresh}/>
                     <br/>
-                    <ApplicationCreation applications={this.state.applications} refresh={this.state.refresh}
+                    <ApplicationCreation refresh={this.state.refresh}
                                          forceRefresh={this.forceRefresh}/>
                 </div>
                 <br/>
