@@ -29,7 +29,7 @@ public class ErrorFormatter implements IFormatter {
     for (ObjectError error : this.objectErrorList) {
       JSONObject object = new JSONObject();
 
-      object.put("error_status", error.getDefaultMessage());
+      object.put("error", error.getDefaultMessage());
 
       array.put(object);
     }

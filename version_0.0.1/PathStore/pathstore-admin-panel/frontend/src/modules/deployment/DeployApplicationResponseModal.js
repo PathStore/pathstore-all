@@ -15,12 +15,34 @@ import '../../Circles.css';
 export default class DeployApplicationResponseModal extends Component {
 
     /**
+     * State:
+     * previous: list of nodes previously installed with the corresponding keyspace
+     *
+     * @param props
+     */
+    constructor(props) {
+        super(props);
+        this.state = {
+            previous: null
+        };
+    }
+
+    /**
+     * Queries the previously installed nodes and stores the array in the previous element in the state
+     */
+    componentDidMount() {
+        fetch('/api/v1/application_management')
+            .then(response => response.json())
+            .then(response => this.setState({previous: response.filter(i => i.keyspace_name === this.props.data[0].keyspace_name).map(i => i.nodeid)}));
+    }
+
+    /**
      * Takes in the response from the api and calls either the success or error parser
      * @param data response from api
      * @returns {*}
      */
     parseData = (data) => {
-        return Array.isArray(data) ? this.parseSuccess(data) : this.parseError(data);
+        return Array.isArray(data) ? (data[0].error === undefined ? this.parseSuccess(data) : this.parseArrayError(data)) : this.parseError(data);
     };
 
     /**
@@ -48,6 +70,22 @@ export default class DeployApplicationResponseModal extends Component {
     };
 
     /**
+     * Handle user parameter errors
+     *
+     * @param errors
+     * @returns {[]}
+     */
+    parseArrayError = (errors) => {
+
+        const data = [];
+
+        for (let i = 0; i < errors.length; i++)
+            data.push(errors[i].error);
+
+        return data;
+    };
+
+    /**
      * Returns the error attribute of the json object.
      * @param error
      * @returns {*}
@@ -64,6 +102,9 @@ export default class DeployApplicationResponseModal extends Component {
      * @returns {boolean}
      */
     contains = (array, value) => {
+
+        if (array == null) return false;
+
         for (let i = 0; i < array.length; i++)
             if (array[i] === value) return true;
         return false;
@@ -76,16 +117,17 @@ export default class DeployApplicationResponseModal extends Component {
      * @param array from parent
      * @param parentId -1 for initial call to look for the root node and work way down
      * @param updates used to determine css class
+     * @param previous list of nodes that already have that keyspace installed
      * @returns {{textProps: {x: number, y: number}, children: [], name: *}|[]}
      */
-    createTree = (array, parentId, updates) => {
+    createTree = (array, parentId, updates, previous) => {
         let children = [];
 
         for (let i = 0; i < array.length; i++)
             if (parentId === -1) {
-                if (array[i].parentid === parentId) return this.createTreeObject(array[i].id, array, updates);
+                if (array[i].parentid === parentId) return this.createTreeObject(array[i].id, array, updates, previous);
             } else {
-                if (array[i].parentid === parentId) children.push(this.createTreeObject(array[i].id, array, updates));
+                if (array[i].parentid === parentId) children.push(this.createTreeObject(array[i].id, array, updates, previous));
             }
 
 
@@ -98,17 +140,34 @@ export default class DeployApplicationResponseModal extends Component {
      * @param name current node
      * @param array topology array
      * @param updates if the name is in updates then the css class is installation else its the regular class
+     * @param previous list of nodes that already have that keyspace installed
      * @returns {{textProps: {x: number, y: number}, children: ({textProps: {x: number, y: number}, children: *[], name: *}|*[]), name: *}}
      */
-    createTreeObject = (name, array, updates) => {
-        const contains = this.contains(updates, parseInt(name));
+    createTreeObject = (name, array, updates, previous) => {
+        const update = this.contains(updates, parseInt(name));
+        const previousInstall = this.contains(previous, parseInt(name));
         return {
             name: name,
             textProps: {x: -20, y: 25},
-            pathProps: {className: (contains ? 'installation_path' : 'regular_path')},
-            gProps: {className: (contains ? 'installation_node' : 'node')},
-            children: this.createTree(array, name, updates)
+            pathProps: {className: 'installation_path'},
+            gProps: {className: (update ? 'installation_node' : previousInstall ? 'previous_node' : 'uninstalled_node')},
+            children: this.createTree(array, name, updates, previous)
         }
+    };
+
+    /**
+     * Formats array of errors
+     *
+     * @param errors
+     * @returns {string}
+     */
+    formatArrayErrors = (errors) => {
+        let message = "Could not request installation for the following reasons: ";
+
+        for (let i = 0; i < errors.length; i++)
+            message += " " + (i + 1) + ". " + errors[i];
+
+        return message;
     };
 
     /**
@@ -118,12 +177,18 @@ export default class DeployApplicationResponseModal extends Component {
 
         const parsedData = this.parseData(this.props.data);
 
-        const data = typeof parsedData === 'object' ? this.createTree(this.props.topology, -1, parsedData.data) : null;
+        const data = Array.isArray(parsedData) ?
+            this.formatArrayErrors(parsedData) :
+            (typeof parsedData === 'object' ?
+                this.createTree(this.props.topology, -1, parsedData.data, this.state.previous) : null);
 
-        const tree = (data != null ?
+        const tree = (typeof data === 'object' ?
             <div>
-                <p>Successfully requested installation of {parsedData.keyspace} with Job UUID: {parsedData.process_uuid}</p>
-                <p>The Path that will be installed is highlighted with green</p>
+                <p>Successfully requested installation of {parsedData.keyspace} with Job
+                    UUID: {parsedData.process_uuid}</p>
+                <p>Nodes already requested are in blue</p>
+                <p>Nodes that you requested are in green</p>
+                <p>Nodes that haven't been requested are in red</p>
                 <Tree
                     data={data}
                     nodeRadius={15}
@@ -132,7 +197,7 @@ export default class DeployApplicationResponseModal extends Component {
                     width={1080}
                     gProps={{className: 'node'}}/>
             </div> :
-            <p>{parsedData}</p>);
+            <p>{data != null ? data : parsedData}</p>);
 
         return (
             <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}}>

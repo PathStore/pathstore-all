@@ -6,8 +6,6 @@ import ApplicationCreationResponseModal from "./ApplicationCreationResponseModal
 import LoadingModal from "../LoadingModal";
 
 /**
- * TODO: Handle errors
- *
  * This model is used to load an application into the pathstore system
  * based on a file and a name the user has given
  */
@@ -59,8 +57,6 @@ export default class ApplicationCreation extends Component {
     };
 
     /**
-     * TODO: Handle backend errors
-     *
      * Form submission function, this is used to check user input and to execute their request
      *
      * @param event
@@ -70,34 +66,12 @@ export default class ApplicationCreation extends Component {
 
         const applicationName = event.target.elements.application.value.trim();
 
-        if (applicationName === "") {
-            alert("You must specify an application name");
-            return;
-        }
-
-        if (!applicationName.startsWith("pathstore_")) {
-            event.target.elements.application.value = null;
-            alert("Your application name must start with \"pathstore_\"");
-            return;
-        }
-
-        for (let i = 0; i < this.state.applications.length; i++) {
-            if (this.state.applications[i].application === applicationName) {
-                event.target.elements.application.value = null;
-                alert("The application name you specified has already been created");
-                return;
-            }
-        }
-
-        if (this.state.file == null) {
-            alert("You must specify a file");
-            return;
-        }
-
         const formData = new FormData();
 
         formData.append("applicationName", applicationName);
-        formData.append("applicationSchema", this.state.file);
+
+        if (this.state.file != null)
+            formData.append("applicationSchema", this.state.file);
 
         this.setState({loadingModalShow: true}, () => {
                 fetch("/api/v1/applications", {

@@ -32,19 +32,22 @@ span {
     float: right;
 }
 
-.regular_path {
-    fill: none;
-    stroke: #2593B8;
-    stroke-width: 1.5px;
+
+.uninstalled_node {
+    fill: red;
 }
 
-.installation_path {
-    fill: none;
-    stroke: green;
-    stroke-width: 1.5px;
+.previous_node {
+    fill: blue;
 }
+
 
 .installation_node {
     fill: green;
 }
 
+.installation_path {
+    fill: none;
+    stroke: black;
+    stroke-width: 1.5px;
+}

@@ -5,9 +5,6 @@ import Button from "react-bootstrap/Button";
 import DeployApplicationResponseModal from "./DeployApplicationResponseModal";
 
 /**
- * TODO: Handle errors
- * TODO: clearly previously select elements
- *
  * This model is used to deploy an application on a set of nodes.
  * This model does not allow for impossible entices. I.e. we force the user to only select applications that are available
  * and we force the user to select only nodes that are part of the topology.

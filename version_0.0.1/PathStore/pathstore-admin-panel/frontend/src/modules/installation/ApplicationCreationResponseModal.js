@@ -19,7 +19,16 @@ export default class ApplicationCreationResponseModal extends Component {
      * @returns {string}
      */
     parseMessage = (response) => {
-        return response.keyspace_created !== undefined ?
+
+        if (Array.isArray(response)) {
+            let message = "Could not create application for the following reasons:";
+
+            for (let i = 0; i < response.length; i++)
+                message += " " + (i + 1) + ". " + response[i].error;
+
+            return message;
+
+        } else return response.keyspace_created !== undefined ?
             "Successfully create application named: " + response.keyspace_created
             : "Could not create application for reason: " + response.error;
     };
