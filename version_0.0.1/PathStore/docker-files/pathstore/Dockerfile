@@ -4,6 +4,7 @@ MAINTAINER Myles Thiessen<myles.thiessen@mail.utoronto.ca>
 
 # Define build-args
 ARG key
+ARG branch
 
 # Set workdir
 WORKDIR /
@@ -25,7 +26,7 @@ RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
 RUN git clone git@github.com:delara/cloudpath.git 
 
 #temp switch branch (Switch to master in offical build)
-RUN cd cloudpath && git checkout pathstore_init_script
+RUN cd cloudpath && git checkout $branch 
 
 # remove deploy key
 RUN rm -rf /root/.ssh
@@ -51,4 +52,3 @@ RUN apt-get install -y maven
 RUN mvn package
 
 CMD ["java", "-jar", "target/pathstore-0.1.0-jar-with-dependencies.jar"]
-
