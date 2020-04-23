@@ -1,6 +1,7 @@
 package pathstoreweb.pathstoreadminpanel.startup.commands;
 
 import com.jcraft.jsch.JSchException;
+import pathstoreweb.pathstoreadminpanel.startup.Pair;
 import pathstoreweb.pathstoreadminpanel.startup.SSHUtil;
 import pathstoreweb.pathstoreadminpanel.startup.commands.errors.ExecutionException;
 import pathstoreweb.pathstoreadminpanel.startup.commands.errors.InternalException;
@@ -18,6 +19,9 @@ public class Exec implements ICommand {
 
   /** Exit code you want */
   public final int wantedResponse;
+
+  /** Assigned once request has been made */
+  public Pair<String, Integer> response;
 
   /**
    * @param command {@link #command}
@@ -38,9 +42,9 @@ public class Exec implements ICommand {
   @Override
   public void execute(final SSHUtil sshUtil) throws ExecutionException, InternalException {
     try {
-      int response = sshUtil.execCommand(this.command).t2;
+      this.response = sshUtil.execCommand(this.command);
 
-      if (this.wantedResponse != -1 && this.wantedResponse != response)
+      if (this.wantedResponse != -1 && this.wantedResponse != this.response.t2)
         throw new ExecutionException();
 
     } catch (JSchException | IOException ignored) {

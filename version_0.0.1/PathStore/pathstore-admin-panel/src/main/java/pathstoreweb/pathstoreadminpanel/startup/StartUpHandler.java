@@ -141,7 +141,13 @@ public class StartUpHandler {
           System.out.println(command);
           command.execute(sshUtil);
         } catch (ExecutionException e) {
-          System.out.println("There was an error executing: " + ((Exec) command).command);
+          Exec exec = (Exec) command;
+          System.out.println(
+              "There was an error executing: "
+                  + exec.command
+                  + " with the following output: "
+                  + exec.response.t1);
+          System.exit(1);
         } catch (FileTransferException e) {
           FileTransfer fileTransfer = (FileTransfer) command;
           System.out.println(
@@ -149,6 +155,7 @@ public class StartUpHandler {
                   + fileTransfer.relativeLocalPath
                   + " to "
                   + fileTransfer.relativeRemotePath);
+          System.exit(1);
         } catch (InternalException e) {
           System.out.println("There was an internal error. The stack trace is below");
           e.printStackTrace();

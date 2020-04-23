@@ -73,7 +73,9 @@ public class SSHUtil {
       } catch (Exception ignored) {
       }
     }
+
     channel.disconnect();
+
     return new Pair<>(builder.toString(), channel.getExitStatus());
   }
 
