@@ -15,7 +15,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 
-/** TODO: Wait for pathstore to come online */
+/**
+ * TODO: Wait for pathstore to come online
+ *
+ * <p>TODO: One time use passwords
+ */
 public class StartUpHandler {
 
   /** List of commands to execute inorder to install pathstore and its associated pre-requisites */
@@ -93,7 +97,7 @@ public class StartUpHandler {
     System.out.println(
         "\n=========================================== [DISCLAIMER] ===========================================\n"
             + "1) All servers that you want to add to the network must have a linux distribution installed\n"
-            + "2) Your linux machine must be publicly accessible (You can ssh into the machine remotely)\n"
+            + "2) Your linux machine must be publicly accessible (You can ssh into the machine remotely on port 22)\n"
             + "3) You must have port 9052 and 1099 open as-well for pathstore communication\n"
             + "4) The user account given should be a separate user account from any other on the system (not root)\n"
             + "5) You must have docker installed and the docker daemon running\n"
@@ -173,7 +177,8 @@ public class StartUpHandler {
    * @param cassandraPort port of root node cassandra instance
    * @param RMIPort port of root node RMI connection
    */
-  private void generatePathStorePropertiesFile(final String ip, final int cassandraPort, final int RMIPort) {
+  private void generatePathStorePropertiesFile(
+      final String ip, final int cassandraPort, final int RMIPort) {
     Properties properties = new Properties();
     properties.setProperty("NodeId", String.valueOf(1));
     properties.setProperty("Role", "ROOTSERVER");
