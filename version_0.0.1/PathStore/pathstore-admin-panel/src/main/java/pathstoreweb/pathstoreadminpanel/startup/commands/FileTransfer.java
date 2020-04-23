@@ -18,7 +18,7 @@ public class FileTransfer implements ICommand {
   public final String relativeLocalPath;
 
   /** Relative remote path with respect to the logged in user's home directory */
-  private final String relativeRemotePath;
+  public final String relativeRemotePath;
 
   /**
    * @param relativeLocalPath {@link #relativeLocalPath}
