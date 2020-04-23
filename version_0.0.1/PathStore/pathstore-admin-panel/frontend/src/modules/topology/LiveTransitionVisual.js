@@ -143,7 +143,6 @@ class LiveTransitionVisualModal extends Component {
      * @returns {boolean}
      */
     contains = (array, value) => {
-
         if (array == null) return false;
 
         for (let i = 0; i < array.length; i++)
@@ -167,7 +166,6 @@ class LiveTransitionVisualModal extends Component {
             } else {
                 if (array[i].parentid === parentId) children.push(this.createTreeObject(array[i].id, array));
             }
-
 
         return children;
     };
@@ -204,7 +202,6 @@ class LiveTransitionVisualModal extends Component {
     };
 
     render() {
-
         return (
             <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}}>
                 <div>
