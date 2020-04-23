@@ -1,6 +1,7 @@
 package pathstoreweb.pathstoreadminpanel.startup;
 
 import com.jcraft.jsch.JSchException;
+import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.startup.commands.Exec;
 import pathstoreweb.pathstoreadminpanel.startup.commands.FileTransfer;
 import pathstoreweb.pathstoreadminpanel.startup.commands.ICommand;
@@ -9,13 +10,12 @@ import pathstoreweb.pathstoreadminpanel.startup.commands.errors.ExecutionExcepti
 import pathstoreweb.pathstoreadminpanel.startup.commands.errors.FileTransferException;
 import pathstoreweb.pathstoreadminpanel.startup.commands.errors.InternalException;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
 
-/**
- * TODO Generate website pathstore properties if creating a new network
- *
- * <p>TODO: Wait for pathstore to come online
- */
+/** TODO: Wait for pathstore to come online */
 public class StartUpHandler {
 
   /** List of commands to execute inorder to install pathstore and its associated pre-requisites */
@@ -152,10 +152,51 @@ public class StartUpHandler {
         }
       }
 
+      this.generatePathStorePropertiesFile(ip, 9052, 1099);
+
       sshUtil.disconnect();
     } catch (JSchException e) {
       System.out.println("\nYour connection information seems to be incorrect");
       this.createNewNetwork();
+    }
+  }
+
+  /**
+   * This function is used to write the pathstore.properties file for the webserver based on the new
+   * root node that was created.
+   *
+   * <p>Note: Unless the user who is running this application has manually created the
+   * /etc/pathstore directory and re-assigned the ownership of the directory to them they will have
+   * to manually copy and paste the generated properties file to the correct location
+   *
+   * @param ip ip of root node
+   * @param cassandraPort port of root node cassandra instance
+   * @param RMIPort port of root node RMI connection
+   */
+  private void generatePathStorePropertiesFile(final String ip, final int cassandraPort, final int RMIPort) {
+    Properties properties = new Properties();
+    properties.setProperty("NodeId", String.valueOf(1));
+    properties.setProperty("Role", "ROOTSERVER");
+    properties.setProperty("CassandraIP", ip);
+    properties.setProperty("CassandraPort", String.valueOf(cassandraPort));
+    properties.setProperty("RMIRegistry", ip);
+    properties.setProperty("RMIRegistryPort", String.valueOf(RMIPort));
+
+    StringBuilder response = new StringBuilder();
+    properties.forEach((k, v) -> response.append(k).append(": ").append(v).append("\n"));
+
+    try {
+      OutputStream outputStream = new FileOutputStream(Constants.PROPERTIESFILE);
+      properties.store(outputStream, null);
+    } catch (IOException e) {
+      System.out.println(
+          "Could not write to "
+              + Constants.PROPERTIESFILE
+              + " you need to manually add the following data");
+      System.out.println(response.toString());
+
+      this.askQuestionWithSpecificResponses(
+          "Have you added the data manually?: ", new String[] {"y", "yes"});
     }
   }
 
