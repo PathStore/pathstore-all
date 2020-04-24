@@ -8,7 +8,7 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.schemaloader.ApplicationEntry;
 import pathstore.system.schemaloader.ProccessStatus;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.ApplicationStateFormatter;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.GetApplicationStateFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.LinkedList;
@@ -26,14 +26,14 @@ import java.util.UUID;
  * @see Constants#NODE_SCHEMAS
  * @see Constants.NODE_SCHEMAS_COLUMNS
  */
-public class ApplicationState implements IService {
+public class GetApplicationState implements IService {
   /**
    * @return json response of data queried
-   * @see ApplicationStateFormatter
+   * @see GetApplicationStateFormatter
    */
   @Override
   public String response() {
-    return new ApplicationStateFormatter(this.getApplicationStates()).format();
+    return new GetApplicationStateFormatter(this.getApplicationStates()).format();
   }
 
   /**

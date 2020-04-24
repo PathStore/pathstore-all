@@ -8,7 +8,7 @@ import pathstore.common.Constants;
 import pathstore.system.PathStorePriviledgedCluster;
 import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
 import pathstore.util.SchemaInfo;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.ResponseErrorFormatter;
+import pathstoreweb.pathstoreadminpanel.services.RuntimeErrorFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applications.formatter.AddApplicationFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
@@ -75,7 +75,7 @@ public class AddApplication implements IService {
     try {
       this.loadSchemas(getMaxAppId(), this.getUserPassSchema());
     } catch (Exception e) {
-      return new ResponseErrorFormatter("Schema that was passed is invalid").format();
+      return new RuntimeErrorFormatter("Schema that was passed is invalid").format();
     }
 
     return new AddApplicationFormatter(this.addApplicationPayload.applicationName).format();

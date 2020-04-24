@@ -4,18 +4,18 @@ import javax.validation.Valid;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import pathstoreweb.pathstoreadminpanel.Endpoints;
-import pathstoreweb.pathstoreadminpanel.services.ErrorFormatter;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.ApplicationState;
+import pathstoreweb.pathstoreadminpanel.services.ValidityErrorFormatter;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.GetApplicationState;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.InstallApplication;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.UnInstallApplication;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.ApplicationManagementPayload;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.UpdateApplicationStatePayload;
 import pathstoreweb.pathstoreadminpanel.services.applications.AddApplication;
-import pathstoreweb.pathstoreadminpanel.services.applications.AvailableApplications;
+import pathstoreweb.pathstoreadminpanel.services.applications.GetApplications;
 import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
 import pathstoreweb.pathstoreadminpanel.services.servers.AddServer;
 import pathstoreweb.pathstoreadminpanel.services.servers.GetServers;
 import pathstoreweb.pathstoreadminpanel.services.servers.payload.AddServerPayload;
-import pathstoreweb.pathstoreadminpanel.services.topology.NetworkTopology;
+import pathstoreweb.pathstoreadminpanel.services.topology.GetNetworkTopology;
 
 /** Main controller for api. TODO: split up to sub functions */
 @RestController
@@ -24,54 +24,54 @@ public class ApiV1 {
 
   /**
    * @return json array, of topology diagram
-   * @see NetworkTopology
+   * @see GetNetworkTopology
    */
   @GetMapping(Endpoints.TOPOLOGY)
   public String topology() {
-    return new NetworkTopology().response();
+    return new GetNetworkTopology().response();
   }
 
   /**
    * @return json array, of current states on each node.
-   * @see ApplicationState
+   * @see GetApplicationState
    */
   @GetMapping(Endpoints.APPLICATION_MANAGEMENT)
   public String getApplicationState() {
-    return new ApplicationState().response();
+    return new GetApplicationState().response();
   }
 
   /**
-   * @param applicationManagementPayload {@link ApplicationManagementPayload}
+   * @param updateApplicationStatePayload {@link UpdateApplicationStatePayload}
    * @param bindingResult result of validation
    * @return response
    */
   @PostMapping(Endpoints.APPLICATION_MANAGEMENT)
   public String applicationManagementInstall(
-      @Valid final ApplicationManagementPayload applicationManagementPayload,
+      @Valid final UpdateApplicationStatePayload updateApplicationStatePayload,
       final BindingResult bindingResult) {
     return bindingResult.hasErrors()
-        ? new ErrorFormatter(bindingResult.getAllErrors()).format()
-        : new InstallApplication(applicationManagementPayload).response();
+        ? new ValidityErrorFormatter(bindingResult.getAllErrors()).format()
+        : new InstallApplication(updateApplicationStatePayload).response();
   }
 
   /**
-   * @param applicationManagementPayload {@link ApplicationManagementPayload}
+   * @param updateApplicationStatePayload {@link UpdateApplicationStatePayload}
    * @param bindingResult result of validation
    * @return response
    */
   @DeleteMapping(Endpoints.APPLICATION_MANAGEMENT)
   public String applicationManagementRemove(
-      @Valid final ApplicationManagementPayload applicationManagementPayload,
+      @Valid final UpdateApplicationStatePayload updateApplicationStatePayload,
       final BindingResult bindingResult) {
     return bindingResult.hasErrors()
-        ? new ErrorFormatter(bindingResult.getAllErrors()).format()
-        : new UnInstallApplication(applicationManagementPayload).response();
+        ? new ValidityErrorFormatter(bindingResult.getAllErrors()).format()
+        : new UnInstallApplication(updateApplicationStatePayload).response();
   }
 
   /** @return List of applications on the system */
   @GetMapping(Endpoints.APPLICATIONS)
   public String getApplications() {
-    return new AvailableApplications().response();
+    return new GetApplications().response();
   }
 
   /**
@@ -87,7 +87,7 @@ public class ApiV1 {
       @Valid final AddApplicationPayload payload, final BindingResult bindingResult) {
 
     return bindingResult.hasErrors()
-        ? new ErrorFormatter(bindingResult.getAllErrors()).format()
+        ? new ValidityErrorFormatter(bindingResult.getAllErrors()).format()
         : new AddApplication(payload).response();
   }
 
@@ -104,9 +104,9 @@ public class ApiV1 {
   }
 
   @PostMapping(Endpoints.SERVERS)
-  public String addServer(final AddServerPayload payload, final BindingResult bindingResult) {
+  public String addServer(@Valid final AddServerPayload payload, final BindingResult bindingResult) {
     return bindingResult.hasErrors()
-        ? new ErrorFormatter(bindingResult.getAllErrors()).format()
+        ? new ValidityErrorFormatter(bindingResult.getAllErrors()).format()
         : new AddServer(payload).response();
   }
 }

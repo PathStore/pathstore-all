@@ -1,4 +1,4 @@
-package pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter;
+package pathstoreweb.pathstoreadminpanel.services;
 
 import org.json.JSONObject;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
@@ -10,13 +10,13 @@ import pathstoreweb.pathstoreadminpanel.services.IFormatter;
  * @see pathstoreweb.pathstoreadminpanel.services.applicationmanagement.InstallApplication
  * @see pathstoreweb.pathstoreadminpanel.services.applicationmanagement.UnInstallApplication
  */
-public class ResponseErrorFormatter implements IFormatter {
+public class RuntimeErrorFormatter implements IFormatter {
 
   /** error message that was generated */
   private final String errorMessage;
 
   /** @param errorMessage {@link #errorMessage} */
-  public ResponseErrorFormatter(final String errorMessage) {
+  public RuntimeErrorFormatter(final String errorMessage) {
     this.errorMessage = errorMessage;
   }
 

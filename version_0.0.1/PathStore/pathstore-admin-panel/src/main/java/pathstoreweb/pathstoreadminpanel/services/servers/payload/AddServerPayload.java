@@ -6,18 +6,29 @@ import pathstoreweb.pathstoreadminpanel.services.servers.validator.ServerUnique;
 
 import java.util.UUID;
 
+/**
+ * This payload is used when a user makes a request to add a server to the {@link
+ * pathstore.common.Constants#SERVERS} table
+ */
 public final class AddServerPayload {
 
+  /** Ip is stored separably to check to see if that ip already exists in the table */
   @ServerUnique(message = "Server with that ip already exists")
   public final String ip;
 
-  // TODO: check if server has docker
+  /**
+   * TODO: Check if docker is installed and accessible with the credentials given
+   *
+   * <p>Store an instance of the server class, check to see if the information allows you to connect
+   * to a server
+   */
   @ServerConnectionTest(
       message =
           "Could not connect to server, make sure that you have properly inputted the connection information")
   public final Server server;
 
   public AddServerPayload(final String ip, final String username, final String password) {
+    System.out.println(ip + " " + username + " " + password);
     this.ip = ip;
     this.server = new Server(UUID.randomUUID(), ip, username, password);
   }

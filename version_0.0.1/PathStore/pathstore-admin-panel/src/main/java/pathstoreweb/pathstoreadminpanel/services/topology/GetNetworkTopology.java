@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstoreweb.pathstoreadminpanel.services.topology.formatter.NetworkTopologyFormatter;
+import pathstoreweb.pathstoreadminpanel.services.topology.formatter.GetNetworkTopologyFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.LinkedList;
@@ -15,18 +15,18 @@ import java.util.List;
 /**
  * This service queries all topology records in the topology table
  *
- * @see NetworkTopologyFormatter
+ * @see GetNetworkTopologyFormatter
  * @see Constants#TOPOLOGY
  * @see Constants.TOPOLOGY_COLUMNS
  */
-public class NetworkTopology implements IService {
+public class GetNetworkTopology implements IService {
   /**
    * @return json response
-   * @see NetworkTopologyFormatter
+   * @see GetNetworkTopologyFormatter
    */
   @Override
   public String response() {
-    return new NetworkTopologyFormatter(this.getTopologyEntries()).format();
+    return new GetNetworkTopologyFormatter(this.getTopologyEntries()).format();
   }
 
   /**

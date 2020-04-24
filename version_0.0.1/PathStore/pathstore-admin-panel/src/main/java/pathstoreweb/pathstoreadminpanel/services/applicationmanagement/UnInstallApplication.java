@@ -11,7 +11,7 @@ import pathstore.system.schemaloader.ProccessStatus;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.*;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.ApplicationManagementPayload;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.UpdateApplicationStatePayload;
 
 /**
  * This class is called when you want to remove an application from the network.
@@ -21,8 +21,8 @@ import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.A
  */
 public class UnInstallApplication implements IService {
 
-  /** @see ApplicationManagementPayload */
-  private final ApplicationManagementPayload applicationManagementPayload;
+  /** @see UpdateApplicationStatePayload */
+  private final UpdateApplicationStatePayload updateApplicationStatePayload;
 
   /** Db connection session to pathstore network */
   private final Session session;
@@ -34,9 +34,9 @@ public class UnInstallApplication implements IService {
   /** Error message to write to if a conflict occurs */
   private String conflictMessage = null;
 
-  /** @param applicationManagementPayload {@link #applicationManagementPayload} */
-  public UnInstallApplication(final ApplicationManagementPayload applicationManagementPayload) {
-    this.applicationManagementPayload = applicationManagementPayload;
+  /** @param updateApplicationStatePayload {@link #updateApplicationStatePayload} */
+  public UnInstallApplication(final UpdateApplicationStatePayload updateApplicationStatePayload) {
+    this.updateApplicationStatePayload = updateApplicationStatePayload;
     this.session = PathStoreCluster.getInstance().connect();
   }
 
@@ -54,7 +54,7 @@ public class UnInstallApplication implements IService {
         this.getCurrentState(
             this.getParentToChildMap(),
             ApplicationUtil.getPreviousState(
-                this.session, this.applicationManagementPayload.applicationName));
+                this.session, this.updateApplicationStatePayload.applicationName));
 
     return ApplicationUtil.handleResponse(
         this.session, currentState, this.conflictMessage, noRecordsWrittenError);
@@ -78,7 +78,7 @@ public class UnInstallApplication implements IService {
   }
 
   /**
-   * Loops through all nodes in {@link ApplicationManagementPayload#node} if any fails return null
+   * Loops through all nodes in {@link UpdateApplicationStatePayload#node} if any fails return null
    * else return the entry map created
    *
    * @param parentToChild {@link #getParentToChildMap()}
@@ -93,7 +93,7 @@ public class UnInstallApplication implements IService {
 
     UUID processUUID = UUID.randomUUID();
 
-    for (int currentNode : this.applicationManagementPayload.node)
+    for (int currentNode : this.updateApplicationStatePayload.node)
       if (this.currentStateHelper(currentNode, processUUID, parentToChild, previousState, entryMap)
           == HelperResponse.CONFLICT) {
         this.conflictMessage =
@@ -180,7 +180,7 @@ public class UnInstallApplication implements IService {
       newEntry =
           new ApplicationEntry(
               currentNode,
-              this.applicationManagementPayload.applicationName,
+              this.updateApplicationStatePayload.applicationName,
               ProccessStatus.WAITING_REMOVE,
               processUUID,
               children.size() > 0 ? new LinkedList<>(children) : Collections.singletonList(-1));
@@ -188,7 +188,7 @@ public class UnInstallApplication implements IService {
       newEntry =
           new ApplicationEntry(
               currentNode,
-              this.applicationManagementPayload.applicationName,
+              this.updateApplicationStatePayload.applicationName,
               ProccessStatus.WAITING_REMOVE,
               processUUID,
               Collections.singletonList(-1));

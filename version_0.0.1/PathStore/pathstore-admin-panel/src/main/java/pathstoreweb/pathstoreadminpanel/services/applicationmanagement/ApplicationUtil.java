@@ -13,8 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.ResponseErrorFormatter;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.UpdatedApplicationFormatter;
+import pathstoreweb.pathstoreadminpanel.services.RuntimeErrorFormatter;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.UpdateApplicationStateFormatter;
 
 /**
  * Utility class of shared functions between {@link InstallApplication} and {@link
@@ -89,7 +89,7 @@ class ApplicationUtil {
 
   /**
    * This function handles the response for each class. If success it calls {@link
-   * UpdatedApplicationFormatter} otherwise it passes an error message to {@link ResponseErrorFormatter}
+   * UpdateApplicationStateFormatter} otherwise it passes an error message to {@link RuntimeErrorFormatter}
    *
    * @param session db session to root cassandra
    * @param currentState records generated to write to db
@@ -104,9 +104,9 @@ class ApplicationUtil {
       final String noWrittenEntriesErrorMessage) {
     if (currentState != null && currentState.size() > 0) {
       insertRequestToDb(session, currentState);
-      return new UpdatedApplicationFormatter(currentState).format();
+      return new UpdateApplicationStateFormatter(currentState).format();
     } else if (currentState != null)
-      return new ResponseErrorFormatter(noWrittenEntriesErrorMessage).format();
-    else return new ResponseErrorFormatter(conflictMessage).format();
+      return new RuntimeErrorFormatter(noWrittenEntriesErrorMessage).format();
+    else return new RuntimeErrorFormatter(conflictMessage).format();
   }
 }

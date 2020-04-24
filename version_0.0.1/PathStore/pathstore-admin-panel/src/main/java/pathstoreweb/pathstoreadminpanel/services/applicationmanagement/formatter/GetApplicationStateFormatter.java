@@ -5,22 +5,22 @@ import org.json.JSONObject;
 import pathstore.common.Constants;
 import pathstore.system.schemaloader.ApplicationEntry;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.ApplicationState;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.GetApplicationState;
 
 import java.util.List;
 
 /**
  * Formatter for Application State.
  *
- * @see pathstoreweb.pathstoreadminpanel.services.applicationmanagement.ApplicationState
+ * @see GetApplicationState
  */
-public class ApplicationStateFormatter implements IFormatter {
+public class GetApplicationStateFormatter implements IFormatter {
 
   /** List of Application Entries */
   private final List<ApplicationEntry> entryList;
 
-  /** @param entryList generated from {@link ApplicationState} */
-  public ApplicationStateFormatter(final List<ApplicationEntry> entryList) {
+  /** @param entryList generated from {@link GetApplicationState} */
+  public GetApplicationStateFormatter(final List<ApplicationEntry> entryList) {
     this.entryList = entryList;
   }
 

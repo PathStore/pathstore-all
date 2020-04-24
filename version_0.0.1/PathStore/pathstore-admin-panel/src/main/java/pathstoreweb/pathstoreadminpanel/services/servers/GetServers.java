@@ -12,12 +12,20 @@ import pathstoreweb.pathstoreadminpanel.services.servers.formatter.GetServersFor
 import java.util.LinkedList;
 import java.util.List;
 
+/** Getter service to query all servers stored in the database */
 public class GetServers implements IService {
+
+  /** @return {@link GetServersFormatter#format()} */
   @Override
   public String response() {
     return new GetServersFormatter(this.getServers()).format();
   }
 
+  /**
+   * Select all servers from table and parse them into a list of {@link Server} object
+   *
+   * @return list of servers
+   */
   private List<Server> getServers() {
 
     LinkedList<Server> listOfServers = new LinkedList<>();

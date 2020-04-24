@@ -13,13 +13,13 @@ import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.InstallAp
  * This formatter is used to take a list of node_schema records that where written to the db and
  * format the records written into a json array to be returned to the user.
  */
-public class UpdatedApplicationFormatter implements IFormatter {
+public class UpdateApplicationStateFormatter implements IFormatter {
 
   /** Records written will always be non-empty */
   private final Map<Integer, ApplicationEntry> entriesWritten;
 
   /** @param entriesWritten {@link #entriesWritten} */
-  public UpdatedApplicationFormatter(final Map<Integer, ApplicationEntry> entriesWritten) {
+  public UpdateApplicationStateFormatter(final Map<Integer, ApplicationEntry> entriesWritten) {
     this.entriesWritten = entriesWritten;
   }
 

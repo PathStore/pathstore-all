@@ -4,6 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
+import pathstoreweb.pathstoreadminpanel.services.topology.GetNetworkTopology;
 import pathstoreweb.pathstoreadminpanel.services.topology.TopologyEntry;
 
 import java.util.List;
@@ -11,15 +12,15 @@ import java.util.List;
 /**
  * Network Topology Formatter
  *
- * @see pathstoreweb.pathstoreadminpanel.services.topology.NetworkTopology
+ * @see GetNetworkTopology
  */
-public class NetworkTopologyFormatter implements IFormatter {
+public class GetNetworkTopologyFormatter implements IFormatter {
 
   /** List of topology entries */
   private final List<TopologyEntry> entryList;
 
   /** @param entryList {@link #entryList} */
-  public NetworkTopologyFormatter(final List<TopologyEntry> entryList) {
+  public GetNetworkTopologyFormatter(final List<TopologyEntry> entryList) {
     this.entryList = entryList;
   }
 

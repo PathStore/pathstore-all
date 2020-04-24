@@ -17,6 +17,9 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.servers.validator.ServerUnique.Validator;
 
+/**
+ * This validator is used to check to see if the ip of the server they've passed is unique or not
+ */
 @Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = Validator.class)

@@ -11,13 +11,13 @@ import org.springframework.validation.ObjectError;
  *
  * @see BindingResult#getAllErrors()
  */
-public class ErrorFormatter implements IFormatter {
+public class ValidityErrorFormatter implements IFormatter {
 
   /** List of errors from {@link BindingResult#getAllErrors()} */
   private final List<ObjectError> objectErrorList;
 
   /** @param objectErrorList {@link #objectErrorList} */
-  public ErrorFormatter(final List<ObjectError> objectErrorList) {
+  public ValidityErrorFormatter(final List<ObjectError> objectErrorList) {
     this.objectErrorList = objectErrorList;
   }
 

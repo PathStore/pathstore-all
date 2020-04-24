@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applications.Application;
+import pathstoreweb.pathstoreadminpanel.services.applications.GetApplications;
 
 import java.util.List;
 
@@ -13,15 +14,15 @@ import java.util.List;
  *
  * <p>Used by the frontend to limit what the user can query on application installation
  *
- * @see pathstoreweb.pathstoreadminpanel.services.applications.AvailableApplications
+ * @see GetApplications
  */
-public class AvailableApplicationsFormatter implements IFormatter {
+public class GetApplicationsFormatter implements IFormatter {
 
   /** List of available applications */
   private final List<Application> applications;
 
   /** @param applications {@link #applications} */
-  public AvailableApplicationsFormatter(final List<Application> applications) {
+  public GetApplicationsFormatter(final List<Application> applications) {
     this.applications = applications;
   }
 

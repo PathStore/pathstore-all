@@ -3,7 +3,7 @@ package pathstoreweb.pathstoreadminpanel.services.topology;
 /**
  * Simple topology entry with node id and parent node id
  *
- * @see NetworkTopology
+ * @see GetNetworkTopology
  */
 public class TopologyEntry {
   /** Node id and parent node id */

@@ -4,18 +4,23 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
+import pathstoreweb.pathstoreadminpanel.services.servers.GetServers;
 import pathstoreweb.pathstoreadminpanel.services.servers.Server;
 
 import java.util.List;
 
+/** This formatter is used to format the response of querying all available servers */
 public class GetServersFormatter implements IFormatter {
 
+  /** List of servers stored in {@link Constants#SERVERS} and gathered from {@link GetServers} */
   private final List<Server> listOfServers;
 
+  /** @param listOfServers {@link #listOfServers} */
   public GetServersFormatter(final List<Server> listOfServers) {
     this.listOfServers = listOfServers;
   }
 
+  /** @return list of all servers queried in json format */
   @Override
   public String format() {
 
