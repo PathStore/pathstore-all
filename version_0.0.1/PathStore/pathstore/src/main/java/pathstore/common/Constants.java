@@ -41,11 +41,13 @@ public class Constants {
     public static String PROCESS_UUID = "process_uuid";
   }
 
-  public static String CURRENT_PROCESSES = "current_processes";
+  public static String SERVERS = "servers";
 
-  public static class CURRENT_PROCESSES_COLUMNS {
-    public static String PROCESS_UUID = "process_uuid";
-    public static String KEYSPACE_NAME = "keyspace_name";
+  public static class SERVERS_COLUMNS {
+    public static String SERVER_UUID = "server_uuid";
+    public static String IP = "ip";
+    public static String USERNAME = "username";
+    public static String PASSWORD = "password";
   }
 
   public static String APPS = "apps";
