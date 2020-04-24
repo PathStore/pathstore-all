@@ -18,43 +18,43 @@
 package pathstore.common;
 
 /** TODO: Convert all literals to this class */
-public class Constants {
+public final class Constants {
 
-  public static String PROPERTIESFILE = "/etc/pathstore/pathstore.properties";
+  public static final String PROPERTIESFILE = "/etc/pathstore/pathstore.properties";
 
-  public static String PATHSTORE_APPLICATIONS = "pathstore_applications";
+  public static final String PATHSTORE_APPLICATIONS = "pathstore_applications";
 
-  public static String TOPOLOGY = "topology";
+  public static final String TOPOLOGY = "topology";
 
-  public static class TOPOLOGY_COLUMNS {
-    public static String NODE_ID = "nodeid";
-    public static String PARENT_NODE_ID = "parent_nodeid";
+  public static final class TOPOLOGY_COLUMNS {
+    public static final String NODE_ID = "nodeid";
+    public static final String PARENT_NODE_ID = "parent_nodeid";
   }
 
-  public static String NODE_SCHEMAS = "node_schemas";
+  public static final String NODE_SCHEMAS = "node_schemas";
 
-  public static class NODE_SCHEMAS_COLUMNS {
-    public static String NODE_ID = "nodeid";
-    public static String KEYSPACE_NAME = "keyspace_name";
-    public static String PROCESS_STATUS = "process_status";
-    public static String WAIT_FOR = "wait_for";
-    public static String PROCESS_UUID = "process_uuid";
+  public static final class NODE_SCHEMAS_COLUMNS {
+    public static final String NODE_ID = "nodeid";
+    public static final String KEYSPACE_NAME = "keyspace_name";
+    public static final String PROCESS_STATUS = "process_status";
+    public static final String WAIT_FOR = "wait_for";
+    public static final String PROCESS_UUID = "process_uuid";
   }
 
-  public static String SERVERS = "servers";
+  public static final String SERVERS = "servers";
 
-  public static class SERVERS_COLUMNS {
-    public static String SERVER_UUID = "server_uuid";
-    public static String IP = "ip";
-    public static String USERNAME = "username";
-    public static String PASSWORD = "password";
+  public static final class SERVERS_COLUMNS {
+    public static final String SERVER_UUID = "server_uuid";
+    public static final String IP = "ip";
+    public static final String USERNAME = "username";
+    public static final String PASSWORD = "password";
   }
 
-  public static String APPS = "apps";
+  public static final String APPS = "apps";
 
-  public static class APPS_COLUMNS {
-    public static String APP_ID = "app_id";
-    public static String AUGMENTED_SCHEMA = "augmented_schema";
-    public static String KEYSPACE_NAME = "keyspace_name";
+  public static final class APPS_COLUMNS {
+    public static final String APP_ID = "app_id";
+    public static final String AUGMENTED_SCHEMA = "augmented_schema";
+    public static final String KEYSPACE_NAME = "keyspace_name";
   }
 }
