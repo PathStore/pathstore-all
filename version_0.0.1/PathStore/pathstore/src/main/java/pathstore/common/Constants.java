@@ -48,6 +48,7 @@ public final class Constants {
     public static final String IP = "ip";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
+    public static final String NAME = "name";
   }
 
   public static final String APPS = "apps";
