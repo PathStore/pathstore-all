@@ -191,7 +191,7 @@ public class StartUpHandler {
     properties.setProperty("Role", "ROOTSERVER");
     properties.setProperty("CassandraIP", ip);
     properties.setProperty("CassandraPort", String.valueOf(cassandraPort));
-    properties.setProperty("RMIRegistry", ip);
+    properties.setProperty("RMIRegistryIP", ip);
     properties.setProperty("RMIRegistryPort", String.valueOf(RMIPort));
 
     StringBuilder response = new StringBuilder();

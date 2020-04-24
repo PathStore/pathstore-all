@@ -4,8 +4,9 @@ import 'react-tree-graph/dist/style.css'
 import ViewTopology from "./modules/topology/ViewTopology";
 import ApplicationCreation from "./modules/installation/ApplicationCreation";
 import DisplayAvailableApplication from "./modules/installation/DisplayAvailableApplication";
-import DeployApplication from "./modules/deployment/DeployApplication";
+import DeployApplication from "./modules/applicationDeployment/DeployApplication";
 import LiveTransitionVisual from "./modules/topology/LiveTransitionVisual";
+import NodeDeployment from "./modules/nodeDeployment/NodeDeployment";
 
 /**
  * This class is used to display needed sub-modules for the website
@@ -99,6 +100,8 @@ export default class App extends Component {
                 <div>
                     <h2>Network Topology</h2>
                     <ViewTopology topology={this.state.topology} refresh={this.state.refresh}/>
+                    <h2>Network Expansion</h2>
+                    <NodeDeployment topology={this.state.topology} refresh={this.state.refresh}/>
                     <h2>Live Installation Viewer</h2>
                     <LiveTransitionVisual applications={this.state.applications} topology={this.state.topology}
                                           refresh={this.state.refresh}/>

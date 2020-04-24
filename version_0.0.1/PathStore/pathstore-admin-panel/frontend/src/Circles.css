@@ -67,3 +67,7 @@ span {
 .installed_node {
     fill: green;
 }
+
+.hypothetical {
+    fill: blue;
+}
