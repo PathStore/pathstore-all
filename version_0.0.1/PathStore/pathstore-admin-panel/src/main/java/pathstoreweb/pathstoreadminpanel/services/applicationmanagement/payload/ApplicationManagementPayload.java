@@ -8,7 +8,7 @@ import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.validator
  * Payload for when a user wants to remove an application or install an application on a list of
  * nodes
  */
-public class ApplicationManagementPayload {
+public final class ApplicationManagementPayload {
 
   /**
    * Name of application to perform operation on.

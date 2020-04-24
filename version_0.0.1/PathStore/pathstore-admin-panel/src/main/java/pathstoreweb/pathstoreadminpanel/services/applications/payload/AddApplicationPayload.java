@@ -15,7 +15,7 @@ import pathstoreweb.pathstoreadminpanel.services.applications.validator.Applicat
  *
  * @see pathstoreweb.pathstoreadminpanel.services.applications.AddApplication
  */
-public class AddApplicationPayload {
+public final class AddApplicationPayload {
 
   /** name of application to add */
   @ApplicationNamePathStore(message = "Application name must start with pathstore_")

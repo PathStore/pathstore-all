@@ -37,7 +37,7 @@ public class AvailableApplications implements IService {
 
     LinkedList<Application> applications = new LinkedList<>();
 
-    // TODO: Figure out if this calls pathstoreiterator or not. If not use an actual for each loop
+    // TODO: Extract to util class
     session
         .execute(queryApplications)
         .forEach(

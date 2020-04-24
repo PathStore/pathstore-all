@@ -12,6 +12,9 @@ import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.A
 import pathstoreweb.pathstoreadminpanel.services.applications.AddApplication;
 import pathstoreweb.pathstoreadminpanel.services.applications.AvailableApplications;
 import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
+import pathstoreweb.pathstoreadminpanel.services.servers.AddServer;
+import pathstoreweb.pathstoreadminpanel.services.servers.GetServers;
+import pathstoreweb.pathstoreadminpanel.services.servers.payload.AddServerPayload;
 import pathstoreweb.pathstoreadminpanel.services.topology.NetworkTopology;
 
 /** Main controller for api. TODO: split up to sub functions */
@@ -88,13 +91,22 @@ public class ApiV1 {
         : new AddApplication(payload).response();
   }
 
-  /**
-   * TODO: See above functio
-   *
-   * @return todo
-   */
+  /** @return todo */
   @DeleteMapping(Endpoints.APPLICATIONS)
   public String removeApplication() {
     return "Not Supported";
+  }
+
+  /** @return JSON Array of all servers created */
+  @GetMapping(Endpoints.SERVERS)
+  public String getServers() {
+    return new GetServers().response();
+  }
+
+  @PostMapping(Endpoints.SERVERS)
+  public String addServer(final AddServerPayload payload, final BindingResult bindingResult) {
+    return bindingResult.hasErrors()
+        ? new ErrorFormatter(bindingResult.getAllErrors()).format()
+        : new AddServer(payload).response();
   }
 }

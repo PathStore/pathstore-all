@@ -7,6 +7,7 @@ import DisplayAvailableApplication from "./modules/installation/DisplayAvailable
 import DeployApplication from "./modules/applicationDeployment/DeployApplication";
 import LiveTransitionVisual from "./modules/topology/LiveTransitionVisual";
 import NodeDeployment from "./modules/nodeDeployment/NodeDeployment";
+import DisplayServers from "./modules/servers/DisplayServers";
 
 /**
  * This class is used to display needed sub-modules for the website
@@ -98,27 +99,41 @@ export default class App extends Component {
             <div>
                 <h1>PathStore Control Panel</h1>
                 <div>
-                    <h2>Network Topology</h2>
-                    <ViewTopology topology={this.state.topology} refresh={this.state.refresh}/>
-                    <h2>Network Expansion</h2>
-                    <NodeDeployment topology={this.state.topology} refresh={this.state.refresh}/>
-                    <h2>Live Installation Viewer</h2>
-                    <LiveTransitionVisual applications={this.state.applications} topology={this.state.topology}
-                                          refresh={this.state.refresh}/>
+                    <div>
+                        <h2>Network Topology</h2>
+                        <ViewTopology topology={this.state.topology} refresh={this.state.refresh}/>
+                    </div>
+                    <div>
+                        <h2>Network Expansion</h2>
+                        <NodeDeployment topology={this.state.topology} refresh={this.state.refresh}/>
+                    </div>
+                    <div>
+                        <h2>Servers</h2>
+                        <DisplayServers/>
+                    </div>
                 </div>
                 <br/>
                 <div>
-                    <h2>Application Creation</h2>
-                    <DisplayAvailableApplication applications={this.state.applications} refresh={this.state.refresh}/>
+                    <div>
+                        <h2>Live Installation Viewer</h2>
+                        <LiveTransitionVisual applications={this.state.applications} topology={this.state.topology}
+                                              refresh={this.state.refresh}/>
+                    </div>
                     <br/>
-                    <ApplicationCreation refresh={this.state.refresh}
-                                         forceRefresh={this.forceRefresh}/>
-                </div>
-                <br/>
-                <div>
-                    <h2>Application Deployment</h2>
-                    <DeployApplication topology={this.state.topology} applications={this.state.applications}
-                                       refresh={this.state.refresh}/>
+                    <div>
+                        <h2>Application Creation</h2>
+                        <DisplayAvailableApplication applications={this.state.applications}
+                                                     refresh={this.state.refresh}/>
+                        <br/>
+                        <ApplicationCreation refresh={this.state.refresh}
+                                             forceRefresh={this.forceRefresh}/>
+                    </div>
+                    <br/>
+                    <div>
+                        <h2>Application Deployment</h2>
+                        <DeployApplication topology={this.state.topology} applications={this.state.applications}
+                                           refresh={this.state.refresh}/>
+                    </div>
                 </div>
             </div>
         );
