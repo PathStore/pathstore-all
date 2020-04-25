@@ -1,6 +1,9 @@
 package pathstore.system.schemaloader;
 
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.Insert;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import pathstore.common.Constants;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -244,6 +247,48 @@ public class PathStoreSchemaLoaderUtils {
             + "CREATE INDEX apps_pathstore_insert_sid_idx ON pathstore_applications.apps (pathstore_insert_sid);";
 
     parseSchema(schema).forEach(session::execute);
+  }
+
+  /**
+   * This will be called from a parent node onto a child node in order to have the table ready
+   * before anything occurs
+   *
+   * @param session session of child
+   */
+  public static void loadLocalKeyspace(final Session session) {
+    String localKeyspace =
+        "CREATE KEYSPACE local_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = false;\n"
+            + "\n"
+            + "CREATE TABLE local_keyspace.startup (\n"
+            + "    task_done int,\n"
+            + "    PRIMARY KEY (task_done)\n"
+            + ") WITH read_repair_chance = 0.0\n"
+            + "   AND dclocal_read_repair_chance = 0.1\n"
+            + "   AND gc_grace_seconds = 864000\n"
+            + "   AND bloom_filter_fp_chance = 0.01\n"
+            + "   AND caching = { 'keys' : 'ALL', 'rows_per_partition' : 'NONE' }\n"
+            + "   AND comment = ''\n"
+            + "   AND compaction = { 'class' : 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold' : 32, 'min_threshold' : 4 }\n"
+            + "   AND compression = { 'chunk_length_in_kb' : 64, 'class' : 'org.apache.cassandra.io.compress.LZ4Compressor' }\n"
+            + "   AND default_time_to_live = 0\n"
+            + "   AND speculative_retry = '99PERCENTILE'\n"
+            + "   AND min_index_interval = 128\n"
+            + "   AND max_index_interval = 2048\n"
+            + "   AND crc_check_chance = 1.0;";
+
+    parseSchema(localKeyspace).forEach(session::execute);
+  }
+
+  /**
+   * Write that a task has been completed in the startup sequence
+   *
+   * @param session session of local db
+   * @param task task to write to
+   */
+  public static void writeTaskDone(final Session session, final int task) {
+    session.execute(
+        QueryBuilder.insertInto(Constants.LOCAL_KEYSPACE, Constants.STARTUP)
+            .value(Constants.STARTUP_COLUMNS.TASK_DONE, task));
   }
 
   /**

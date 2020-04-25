@@ -58,4 +58,12 @@ public final class Constants {
     public static final String AUGMENTED_SCHEMA = "augmented_schema";
     public static final String KEYSPACE_NAME = "keyspace_name";
   }
+
+  public static final String LOCAL_KEYSPACE = "local_keyspace";
+
+  public static final String STARTUP = "startup";
+
+  public static final class STARTUP_COLUMNS {
+    public static final String TASK_DONE = "task_done";
+  }
 }

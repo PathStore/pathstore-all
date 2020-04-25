@@ -112,10 +112,20 @@ public class PathStoreServerImpl {
       PathStoreProperties.getInstance().NodeID = Integer.parseInt(cmd.getOptionValue("nodeid"));
   }
 
+  /**
+   * Startup tasks:
+   *
+   * <p>0: setup rmi server 1: load applications keyspace 2: write to topology table 3: start
+   * daemons
+   *
+   * @param args
+   */
   public static void main(final String args[]) {
     try {
 
       parseCommandLineArguments(args);
+
+      Session local = PathStorePriviledgedCluster.getInstance().connect();
 
       PathStoreServerImplRMI obj = new PathStoreServerImplRMI();
       PathStoreServer stub = (PathStoreServer) UnicastRemoteObject.exportObject(obj, 0);
@@ -128,22 +138,25 @@ public class PathStoreServerImpl {
 
       try {
         registry.bind("PathStoreServer", stub);
+        PathStoreSchemaLoaderUtils.writeTaskDone(local, 0);
       } catch (Exception ex) {
         registry.rebind("PathStoreServer", stub);
       }
 
-      Session local = PathStorePriviledgedCluster.getInstance().connect();
-
-      if (!SchemaInfo.getInstance().getSchemaInfo().containsKey("pathstore_applications"))
+      if (!SchemaInfo.getInstance().getSchemaInfo().containsKey("pathstore_applications")) {
         PathStoreSchemaLoaderUtils.loadApplicationSchema(local);
+        PathStoreSchemaLoaderUtils.writeTaskDone(local, 1);
+      }
 
       SchemaInfo.getInstance().reset();
 
-      new TopologyUpdater();
+      new TopologyUpdater().updateTable();
+      PathStoreSchemaLoaderUtils.writeTaskDone(local, 2);
 
       System.err.println("PathStoreServer ready");
 
       obj.startDaemons();
+      PathStoreSchemaLoaderUtils.writeTaskDone(local, 3);
 
     } catch (Exception e) {
       System.err.println("PathStoreServer exception: " + e.toString());

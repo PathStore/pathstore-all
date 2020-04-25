@@ -16,22 +16,13 @@ import pathstore.common.PathStoreProperties;
 public class TopologyUpdater {
 
   /**
-   * Calls {@link #update_table()}
-   *
-   * <p>This class will have more uses once network reconfiguration is possible
-   */
-  TopologyUpdater() {
-    this.update_table();
-  }
-
-  /**
    * This function checks to see if there is already a network definition for the defined nodeid. If
    * there is it checks to see if the parent node is the same. If it is then nothing happens. If
    * there is a difference then we exit the program with an error message.
    *
    * <p>If there is no definition for this nodeid we create it
    */
-  private void update_table() {
+  public void updateTable() {
     PathStoreProperties properties = PathStoreProperties.getInstance();
     int nodeid = properties.NodeID;
     int parent_nodeid = properties.ParentID;
