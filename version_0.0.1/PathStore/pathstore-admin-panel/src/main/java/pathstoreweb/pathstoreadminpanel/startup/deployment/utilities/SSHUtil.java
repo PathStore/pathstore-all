@@ -1,4 +1,4 @@
-package pathstoreweb.pathstoreadminpanel.startup;
+package pathstoreweb.pathstoreadminpanel.startup.deployment.utilities;
 
 import com.jcraft.jsch.*;
 

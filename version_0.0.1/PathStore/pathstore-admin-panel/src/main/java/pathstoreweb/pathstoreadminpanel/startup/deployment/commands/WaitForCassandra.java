@@ -1,12 +1,10 @@
-package pathstoreweb.pathstoreadminpanel.startup.commands;
+package pathstoreweb.pathstoreadminpanel.startup.deployment.commands;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
-import pathstoreweb.pathstoreadminpanel.startup.CassandraStartupUTIL;
-import pathstoreweb.pathstoreadminpanel.startup.SSHUtil;
-import pathstoreweb.pathstoreadminpanel.startup.commands.errors.InternalException;
+import pathstoreweb.pathstoreadminpanel.startup.deployment.utilities.StartupUTIL;
 
 /**
  * This class is used to denote a single step where after launching cassandra we wait for a
@@ -34,13 +32,12 @@ public class WaitForCassandra implements ICommand {
    * Continue to try and make a connection, if an exception is thrown wait 1 second and try again
    * until a successful connection is made, then close connection
    *
-   * @param sshUtil ssh utility to access the remote host
-   * @throws InternalException if there is an interrupted exception thrown during sleep[
+   * @throws CommandError contains a message to denote what went wrong
    */
   @Override
-  public void execute(final SSHUtil sshUtil) throws InternalException {
+  public void execute() throws CommandError {
     try {
-      Cluster cluster = CassandraStartupUTIL.createCluster(this.ip, this.port);
+      Cluster cluster = StartupUTIL.createCluster(this.ip, this.port);
       Session session = cluster.connect();
 
       PathStoreSchemaLoaderUtils.loadLocalKeyspace(session);
@@ -51,9 +48,10 @@ public class WaitForCassandra implements ICommand {
       try {
         Thread.sleep(1000);
       } catch (InterruptedException ex) {
-        throw new InternalException();
+        throw new CommandError(
+            "Sleep was interrupted while waiting for cassandra to come online");
       }
-      this.execute(sshUtil);
+      this.execute();
     }
   }
 

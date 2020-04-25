@@ -1,12 +1,10 @@
-package pathstoreweb.pathstoreadminpanel.startup.commands;
+package pathstoreweb.pathstoreadminpanel.startup.deployment.commands;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.common.Constants;
-import pathstoreweb.pathstoreadminpanel.startup.CassandraStartupUTIL;
-import pathstoreweb.pathstoreadminpanel.startup.SSHUtil;
-import pathstoreweb.pathstoreadminpanel.startup.commands.errors.InternalException;
+import pathstoreweb.pathstoreadminpanel.startup.deployment.utilities.StartupUTIL;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,17 +35,17 @@ public class WaitForPathStore implements ICommand {
    * @param port cassandra port
    */
   public WaitForPathStore(final String ip, final int port) {
-    this.cluster = CassandraStartupUTIL.createCluster(ip, port);
+    this.cluster = StartupUTIL.createCluster(ip, port);
   }
 
   /**
    * Every second check to see if rows have been added and remove them from neededRecords if not
    * already done so and print out what their task was to stdout so user knows whats happening
    *
-   * @param sshUtil ssh utility to access the remote host
+   * @throws CommandError contains a message to denote what went wrong
    */
   @Override
-  public void execute(final SSHUtil sshUtil) throws InternalException {
+  public void execute() throws CommandError {
 
     if (this.session == null) this.session = this.cluster.connect();
 
@@ -65,9 +63,9 @@ public class WaitForPathStore implements ICommand {
     if (neededRecords.size() > 0) {
       try {
         Thread.sleep(1000);
-        this.execute(sshUtil);
+        this.execute();
       } catch (InterruptedException e) {
-        throw new InternalException();
+        throw new CommandError("Sleep was interrupted while waiting for pathstore to come online");
       }
     } else {
       this.session.close();

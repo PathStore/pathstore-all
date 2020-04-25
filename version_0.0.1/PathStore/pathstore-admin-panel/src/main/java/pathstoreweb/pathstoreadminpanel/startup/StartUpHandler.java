@@ -2,10 +2,11 @@ package pathstoreweb.pathstoreadminpanel.startup;
 
 import com.jcraft.jsch.JSchException;
 import pathstore.common.Constants;
-import pathstoreweb.pathstoreadminpanel.startup.commands.*;
-import pathstoreweb.pathstoreadminpanel.startup.commands.errors.ExecutionException;
-import pathstoreweb.pathstoreadminpanel.startup.commands.errors.FileTransferException;
-import pathstoreweb.pathstoreadminpanel.startup.commands.errors.InternalException;
+import pathstore.common.Role;
+import pathstoreweb.pathstoreadminpanel.startup.deployment.commands.CommandError;
+import pathstoreweb.pathstoreadminpanel.startup.deployment.commands.ICommand;
+import pathstoreweb.pathstoreadminpanel.startup.deployment.utilities.SSHUtil;
+import pathstoreweb.pathstoreadminpanel.startup.deployment.utilities.StartupUTIL;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -84,7 +85,8 @@ public class StartUpHandler {
 
   /**
    * First get information about the network and then connect to the server. Then run through the
-   * list of commands {@link #initList(String, int, String)}
+   * list of commands {@link StartupUTIL#initList(SSHUtil, String, String, int, int, Role, String,
+   * int, String, int, String, int, String, int, String)}
    */
   public void createNewNetwork() {
 
@@ -99,34 +101,33 @@ public class StartUpHandler {
       SSHUtil sshUtil = new SSHUtil(ip, username, password, sshPort);
       System.out.println("Connected");
 
-      for (ICommand command : this.initList(ip, cassandraPort, branch)) {
+      for (ICommand command :
+          StartupUTIL.initList(
+              sshUtil,
+              ip,
+              branch,
+              1,
+              -1,
+              Role.ROOTSERVER,
+              "localhost",
+              rmiPort,
+              "",
+              rmiPort,
+              "localhost",
+              cassandraPort,
+              "",
+              cassandraPort,
+              "../docker-files/pathstore/pathstore.properties")) {
         try {
           System.out.println(command);
-          command.execute(sshUtil);
-        } catch (ExecutionException e) {
-          Exec exec = (Exec) command;
-          System.out.println(
-              "There was an error executing: "
-                  + exec.command
-                  + " with the following output: "
-                  + exec.response.t1);
-          System.exit(1);
-        } catch (FileTransferException e) {
-          FileTransfer fileTransfer = (FileTransfer) command;
-          System.out.println(
-              "There was an error transferring "
-                  + fileTransfer.relativeLocalPath
-                  + " to "
-                  + fileTransfer.relativeRemotePath);
-          System.exit(1);
-        } catch (InternalException e) {
-          System.out.println("There was an internal error. The stack trace is below");
-          e.printStackTrace();
-          System.exit(1);
+          command.execute();
+        } catch (CommandError error) {
+          System.err.println(String.format("[ERROR] %s", error.errorMessage));
+          System.exit(-1);
         }
       }
 
-      CassandraStartupUTIL.writeServerRecordAndDropKeyspace(ip, cassandraPort, username, password);
+      StartupUTIL.writeServerRecordAndDropKeyspace(ip, cassandraPort, username, password);
 
       this.generatePathStorePropertiesFile(ip, cassandraPort, rmiPort);
 
@@ -135,56 +136,6 @@ public class StartUpHandler {
       System.out.println("\nYour connection information seems to be incorrect");
       this.createNewNetwork();
     }
-  }
-
-  /**
-   * Initializes the list of commands based on the options given by the user
-   *
-   * @param ip ip of new root node
-   * @param cassandraPort cassandra port
-   * @param branch branch to load in
-   * @return list of commands
-   */
-  private List<ICommand> initList(final String ip, final int cassandraPort, final String branch) {
-
-    List<ICommand> commands = new ArrayList<>();
-
-    commands.add(new Exec("docker ps", 0));
-    commands.add(new Exec("docker kill cassandra", -1));
-    commands.add(new Exec("docker kill pathstore", -1));
-    commands.add(new Exec("rm -rf pathstore-install", -1));
-    commands.add(new Exec("mkdir -p pathstore-install", 0));
-    commands.add(new Exec("mkdir -p pathstore-install/cassandra", 0));
-    commands.add(new Exec("mkdir -p pathstore-install/pathstore", 0));
-    commands.add(
-        new FileTransfer(
-            "../docker-files/pathstore/pathstore.properties",
-            "pathstore-install/pathstore/pathstore.properties"));
-    commands.add(new FileTransfer("../docker-files/deploy_key", "pathstore-install/deploy_key"));
-    commands.add(
-        new FileTransfer(
-            "../docker-files/cassandra/Dockerfile", "pathstore-install/cassandra/Dockerfile"));
-    commands.add(
-        new FileTransfer(
-            "../docker-files/pathstore/Dockerfile", "pathstore-install/pathstore/Dockerfile"));
-    commands.add(
-        new Exec(
-            "docker build -t cassandra --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\""
-                + branch
-                + "\" pathstore-install/cassandra",
-            0));
-    commands.add(new Exec("docker run --network=host -dit --rm --name cassandra cassandra", 0));
-    commands.add(new WaitForCassandra(ip, cassandraPort));
-    commands.add(
-        new Exec(
-            "docker build -t pathstore --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\""
-                + branch
-                + "\" pathstore-install/pathstore",
-            0));
-    commands.add(new Exec("docker run --network=host -dit --rm --name pathstore pathstore", 0));
-    commands.add(new WaitForPathStore(ip, cassandraPort));
-
-    return commands;
   }
 
   /**
@@ -203,7 +154,7 @@ public class StartUpHandler {
       final String ip, final int cassandraPort, final int RMIPort) {
     Properties properties = new Properties();
     properties.setProperty("NodeId", String.valueOf(1));
-    properties.setProperty("Role", "ROOTSERVER");
+    properties.setProperty("Role", Role.ROOTSERVER.toString());
     properties.setProperty("CassandraIP", ip);
     properties.setProperty("CassandraPort", String.valueOf(cassandraPort));
     properties.setProperty("RMIRegistryIP", ip);

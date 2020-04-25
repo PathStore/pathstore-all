@@ -3,7 +3,7 @@ package pathstoreweb.pathstoreadminpanel.services.servers.validator;
 import com.jcraft.jsch.JSchException;
 import pathstoreweb.pathstoreadminpanel.services.servers.Server;
 import pathstoreweb.pathstoreadminpanel.services.servers.validator.ServerConnectionTest.Validator;
-import pathstoreweb.pathstoreadminpanel.startup.SSHUtil;
+import pathstoreweb.pathstoreadminpanel.startup.deployment.utilities.SSHUtil;
 
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;

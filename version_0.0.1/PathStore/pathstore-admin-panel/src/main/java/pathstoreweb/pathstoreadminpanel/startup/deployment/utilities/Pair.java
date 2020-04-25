@@ -1,4 +1,4 @@
-package pathstoreweb.pathstoreadminpanel.startup;
+package pathstoreweb.pathstoreadminpanel.startup.deployment.utilities;
 
 /**
  * Simple pair class used for the response of {@link SSHUtil#execCommand(String)}
