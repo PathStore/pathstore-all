@@ -2,7 +2,6 @@ package pathstoreweb.pathstoreadminpanel;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import pathstoreweb.pathstoreadminpanel.startup.StartUpHandler;
 
 @SpringBootApplication
 public class PathstoreAdminPanelApplication {
