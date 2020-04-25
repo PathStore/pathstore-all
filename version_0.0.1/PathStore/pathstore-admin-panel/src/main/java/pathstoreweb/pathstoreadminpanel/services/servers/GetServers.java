@@ -40,7 +40,8 @@ public class GetServers implements IService {
               row.getString(Constants.SERVERS_COLUMNS.SERVER_UUID),
               row.getString(Constants.SERVERS_COLUMNS.IP),
               row.getString(Constants.SERVERS_COLUMNS.USERNAME),
-              row.getString(Constants.SERVERS_COLUMNS.PASSWORD)));
+              row.getString(Constants.SERVERS_COLUMNS.PASSWORD),
+              row.getString(Constants.SERVERS_COLUMNS.NAME)));
 
     return listOfServers;
   }

@@ -17,18 +17,27 @@ public class Server {
   /** TODO: Maybe don't query? */
   public final String password;
 
+  /** Human readable name for this server */
+  public final String name;
+
   /**
    * @param serverUUID {@link #serverUUID}
    * @param ip {@link #ip}
    * @param username {@link #username}
    * @param password {@link #password}
+   * @param name {@link #name}
    */
   public Server(
-      final String serverUUID, final String ip, final String username, final String password) {
+      final String serverUUID,
+      final String ip,
+      final String username,
+      final String password,
+      final String name) {
     this.serverUUID = UUID.fromString(serverUUID);
     this.ip = ip;
     this.username = username;
     this.password = password;
+    this.name = name;
   }
 
   /**
@@ -36,12 +45,18 @@ public class Server {
    * @param ip {@link #ip}
    * @param username {@link #username}
    * @param password {@link #password}
+   * @param name {@link #name}
    */
   public Server(
-      final UUID serverUUID, final String ip, final String username, final String password) {
+      final UUID serverUUID,
+      final String ip,
+      final String username,
+      final String password,
+      final String name) {
     this.serverUUID = serverUUID;
     this.ip = ip;
     this.username = username;
     this.password = password;
+    this.name = name;
   }
 }

@@ -23,6 +23,8 @@ export default class Servers extends Component {
      * servers: list of servers that are parsed into an object array
      * ip: denotes currently inputted IP address
      * username: denotes currently inputted IP address
+     * password: denotes currently inputted password
+     * name: human readable
      * loadingModalShow: whether to show loading modal
      * responseModalShow: whe
      *
@@ -36,6 +38,7 @@ export default class Servers extends Component {
             ip: "",
             username: "",
             password: "",
+            name: "",
             loadingModalShow: false,
             responseModalShow: false,
             responseModalData: null
@@ -75,6 +78,13 @@ export default class Servers extends Component {
     onPasswordChange = (event) => this.setState({password: event.target.value});
 
     /**
+     * Update state on change of name form value
+     *
+     * @param event
+     */
+    onNameChange = (event) => this.setState({name: event.target.value});
+
+    /**
      * Create url for form submission, show loading modal and then render response modal on completion of request
      *
      * @param event
@@ -85,7 +95,8 @@ export default class Servers extends Component {
         let url = "/api/v1/servers"
             + "?ip=" + this.state.ip
             + "&username=" + this.state.username
-            + "&password=" + this.state.password;
+            + "&password=" + this.state.password
+            + "&name=" + this.state.name;
 
         this.setState({loadingModalShow: true}, () => {
             fetch(url, {
@@ -129,6 +140,7 @@ export default class Servers extends Component {
                 <tr key={i}>
                     <td>{this.state.servers[i].server_uuid}</td>
                     <td>{this.state.servers[i].ip}</td>
+                    <td>{this.state.servers[i].name}</td>
                 </tr>
             );
 
@@ -141,6 +153,7 @@ export default class Servers extends Component {
                     <tr>
                         <th>Server UUID</th>
                         <th>IP</th>
+                        <th>Server Name</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -161,6 +174,11 @@ export default class Servers extends Component {
                         <Form.Label>Password</Form.Label>
                         <Form.Control type="password" placeholder="password for login"
                                       onChange={this.onPasswordChange}/>
+                    </Form.Group>
+                    <Form.Group controlId="name">
+                        <Form.Label>Server Name</Form.Label>
+                        <Form.Control type="text" placeholder="Name to identify server (This is only to aid you)"
+                                      onChange={this.onNameChange}/>
                     </Form.Group>
                     <Button variant="primary" type="submit">
                         Submit

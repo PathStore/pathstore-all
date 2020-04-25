@@ -32,6 +32,7 @@ public class GetServersFormatter implements IFormatter {
       object.put(Constants.SERVERS_COLUMNS.IP, server.ip);
       object.put(Constants.SERVERS_COLUMNS.USERNAME, server.username);
       object.put(Constants.SERVERS_COLUMNS.PASSWORD, server.password);
+      object.put(Constants.SERVERS_COLUMNS.NAME, server.name);
 
       jsonArray.put(object);
     }

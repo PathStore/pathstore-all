@@ -1,6 +1,10 @@
 package pathstoreweb.pathstoreadminpanel.startup;
 
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.Insert;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.jcraft.jsch.JSchException;
+import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.startup.commands.Exec;
 import pathstoreweb.pathstoreadminpanel.startup.commands.FileTransfer;
@@ -165,6 +169,8 @@ public class StartUpHandler {
 
       this.generatePathStorePropertiesFile(ip, 9052, 1099);
 
+      //this.writeServerRecord(ip, username, password);
+
       sshUtil.disconnect();
     } catch (JSchException e) {
       System.out.println("\nYour connection information seems to be incorrect");
@@ -210,6 +216,31 @@ public class StartUpHandler {
       this.askQuestionWithSpecificResponses(
           "Have you added the data manually?: ", new String[] {"y", "yes"});
     }
+  }
+
+  /**
+   * This function rights the recorded to the server table to disallow multiple deployments to the
+   * same node
+   *
+   * @param ip ip address of root node
+   * @param username username to connect to root node
+   * @param password password for root node
+   */
+  private void writeServerRecord(final String ip, final String username, final String password) {
+
+    System.out.println("Writing server record to root's table");
+
+    Session session = PathStoreCluster.getInstance().connect();
+
+    Insert insert =
+        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS)
+            .value(Constants.SERVERS_COLUMNS.SERVER_UUID, UUID.randomUUID())
+            .value(Constants.SERVERS_COLUMNS.IP, ip)
+            .value(Constants.SERVERS_COLUMNS.USERNAME, username)
+            .value(Constants.SERVERS_COLUMNS.PASSWORD, password)
+            .value(Constants.SERVERS_COLUMNS.NAME, "Root Node");
+
+    session.execute(insert);
   }
 
   /**

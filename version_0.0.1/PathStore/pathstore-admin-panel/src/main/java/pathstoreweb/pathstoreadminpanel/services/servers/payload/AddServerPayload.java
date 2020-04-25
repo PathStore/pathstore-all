@@ -27,9 +27,9 @@ public final class AddServerPayload {
           "Could not connect to server, make sure that you have properly inputted the connection information")
   public final Server server;
 
-  public AddServerPayload(final String ip, final String username, final String password) {
-    System.out.println(ip + " " + username + " " + password);
+  public AddServerPayload(
+      final String ip, final String username, final String password, final String name) {
     this.ip = ip;
-    this.server = new Server(UUID.randomUUID(), ip, username, password);
+    this.server = new Server(UUID.randomUUID(), ip, username, password, name);
   }
 }
