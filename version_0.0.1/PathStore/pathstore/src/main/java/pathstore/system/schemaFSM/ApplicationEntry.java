@@ -1,4 +1,4 @@
-package pathstore.system.schemaloader;
+package pathstore.system.schemaFSM;
 
 import java.util.List;
 import java.util.UUID;

@@ -26,7 +26,8 @@ import pathstore.common.PathStoreServer;
 import pathstore.common.Role;
 
 import org.apache.commons.cli.*;
-import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
+import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
+import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstore.util.SchemaInfo;
 
 public class PathStoreServerImpl {
@@ -138,24 +139,24 @@ public class PathStoreServerImpl {
 
       try {
         registry.bind("PathStoreServer", stub);
-        PathStoreSchemaLoaderUtils.writeTaskDone(local, 0);
+        PathStoreDeploymentUtils.writeTaskDone(local, 0);
       } catch (Exception ex) {
         registry.rebind("PathStoreServer", stub);
       }
 
       if (!SchemaInfo.getInstance().getSchemaInfo().containsKey("pathstore_applications")) {
         PathStoreSchemaLoaderUtils.loadApplicationSchema(local);
-        PathStoreSchemaLoaderUtils.writeTaskDone(local, 1);
+        PathStoreDeploymentUtils.writeTaskDone(local, 1);
       }
 
       SchemaInfo.getInstance().reset();
 
       new TopologyUpdater().updateTable();
-      PathStoreSchemaLoaderUtils.writeTaskDone(local, 2);
+      PathStoreDeploymentUtils.writeTaskDone(local, 2);
 
       System.err.println("PathStoreServer ready");
 
-      PathStoreSchemaLoaderUtils.writeTaskDone(local, 3);
+      PathStoreDeploymentUtils.writeTaskDone(local, 3);
       obj.startDaemons();
 
     } catch (Exception e) {

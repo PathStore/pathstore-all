@@ -1,4 +1,4 @@
-package pathstore.system.schemaloader;
+package pathstore.system.schemaFSM;
 
 /**
  * These are the statuses that the pathstore_applications.node_schemas table uses. The cycle for

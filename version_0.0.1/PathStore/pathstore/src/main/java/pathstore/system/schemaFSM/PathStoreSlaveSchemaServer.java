@@ -1,4 +1,4 @@
-package pathstore.system.schemaloader;
+package pathstore.system.schemaFSM;
 
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;

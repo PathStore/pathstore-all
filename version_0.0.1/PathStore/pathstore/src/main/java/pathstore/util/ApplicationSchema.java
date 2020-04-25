@@ -4,7 +4,7 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.system.PathStorePriviledgedCluster;
-import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
+import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 
 import java.io.File;
 import java.io.IOException;

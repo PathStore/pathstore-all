@@ -4,7 +4,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import pathstore.system.deployment.utilities.StartupUTIL;
-import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
+import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 
 /**
  * This class is used to denote a single step where after launching cassandra we wait for a

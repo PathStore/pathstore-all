@@ -1,7 +1,6 @@
-package pathstore.system.schemaloader;
+package pathstore.system.schemaFSM;
 
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.common.Constants;
 
@@ -277,18 +276,6 @@ public class PathStoreSchemaLoaderUtils {
             + "   AND crc_check_chance = 1.0;";
 
     parseSchema(localKeyspace).forEach(session::execute);
-  }
-
-  /**
-   * Write that a task has been completed in the startup sequence
-   *
-   * @param session session of local db
-   * @param task task to write to
-   */
-  public static void writeTaskDone(final Session session, final int task) {
-    session.execute(
-        QueryBuilder.insertInto(Constants.LOCAL_KEYSPACE, Constants.STARTUP)
-            .value(Constants.STARTUP_COLUMNS.TASK_DONE, task));
   }
 
   /**
