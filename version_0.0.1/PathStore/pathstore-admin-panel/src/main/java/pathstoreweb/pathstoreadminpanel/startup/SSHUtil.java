@@ -15,11 +15,6 @@ import java.io.InputStream;
  */
 public class SSHUtil {
 
-  /**
-   * Host connected to
-   */
-  public final String host;
-
   /** Session object used to denote our connection */
   private final Session session;
 
@@ -34,7 +29,6 @@ public class SSHUtil {
    */
   public SSHUtil(final String host, final String username, final String password, final int port)
       throws JSchException {
-    this.host = host;
     this.session = new JSch().getSession(username, host, port);
     this.session.setPassword(password);
     this.session.setConfig("StrictHostKeyChecking", "no");

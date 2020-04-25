@@ -1,15 +1,8 @@
 package pathstoreweb.pathstoreadminpanel.startup;
 
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.Insert;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.jcraft.jsch.JSchException;
-import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstoreweb.pathstoreadminpanel.startup.commands.Exec;
-import pathstoreweb.pathstoreadminpanel.startup.commands.FileTransfer;
-import pathstoreweb.pathstoreadminpanel.startup.commands.ICommand;
-import pathstoreweb.pathstoreadminpanel.startup.commands.WaitForCassandra;
+import pathstoreweb.pathstoreadminpanel.startup.commands.*;
 import pathstoreweb.pathstoreadminpanel.startup.commands.errors.ExecutionException;
 import pathstoreweb.pathstoreadminpanel.startup.commands.errors.FileTransferException;
 import pathstoreweb.pathstoreadminpanel.startup.commands.errors.InternalException;
@@ -19,48 +12,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 
-/**
- * TODO: Wait for pathstore to come online
- *
- * <p>TODO: One time use passwords
- */
+/** TODO: Properties file generation */
 public class StartUpHandler {
 
-  /** List of commands to execute inorder to install pathstore and its associated pre-requisites */
-  private static final List<ICommand> commands = new ArrayList<>();
-
-  /** Initialize the list */
-  static {
-    commands.add(new Exec("docker ps", 0));
-    commands.add(new Exec("docker kill cassandra", -1));
-    commands.add(new Exec("docker kill pathstore", -1));
-    commands.add(new Exec("rm -rf pathstore-install", -1));
-    commands.add(new Exec("mkdir -p pathstore-install", 0));
-    commands.add(new Exec("mkdir -p pathstore-install/cassandra", 0));
-    commands.add(new Exec("mkdir -p pathstore-install/pathstore", 0));
-    commands.add(
-        new FileTransfer(
-            "../docker-files/pathstore/pathstore.properties",
-            "pathstore-install/pathstore/pathstore.properties"));
-    commands.add(new FileTransfer("../docker-files/deploy_key", "pathstore-install/deploy_key"));
-    commands.add(
-        new FileTransfer(
-            "../docker-files/cassandra/Dockerfile", "pathstore-install/cassandra/Dockerfile"));
-    commands.add(
-        new FileTransfer(
-            "../docker-files/pathstore/Dockerfile", "pathstore-install/pathstore/Dockerfile"));
-    commands.add(
-        new Exec(
-            "docker build -t cassandra --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\"pathstore_init_script\" pathstore-install/cassandra",
-            0));
-    commands.add(new Exec("docker run --network=host -dit --rm --name cassandra cassandra", 0));
-    commands.add(new WaitForCassandra());
-    commands.add(
-        new Exec(
-            "docker build -t pathstore --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\"pathstore_init_script\" pathstore-install/pathstore",
-            0));
-    commands.add(new Exec("docker run --network=host -dit --rm --name pathstore pathstore", 0));
-  }
+  // TODO: Make these user definable
+  private static final String branch = "pathstore_init_script";
+  private static final int sshPort = 22;
+  private static final int cassandraPort = 9052;
+  private static final int rmiPort = 1099;
 
   /** Scanner to get user input */
   private final Scanner scanner;
@@ -125,7 +84,7 @@ public class StartUpHandler {
 
   /**
    * First get information about the network and then connect to the server. Then run through the
-   * list of commands {@link #commands}
+   * list of commands {@link #initList(String, int, String)}
    */
   public void createNewNetwork() {
 
@@ -137,10 +96,10 @@ public class StartUpHandler {
     String password = this.askQuestionWithInvalidResponse("Password: ", null);
 
     try {
-      SSHUtil sshUtil = new SSHUtil(ip, username, password, 22);
+      SSHUtil sshUtil = new SSHUtil(ip, username, password, sshPort);
       System.out.println("Connected");
 
-      for (ICommand command : commands) {
+      for (ICommand command : this.initList(ip, cassandraPort, branch)) {
         try {
           System.out.println(command);
           command.execute(sshUtil);
@@ -167,15 +126,65 @@ public class StartUpHandler {
         }
       }
 
-      this.generatePathStorePropertiesFile(ip, 9052, 1099);
+      CassandraStartupUTIL.writeServerRecordAndDropKeyspace(ip, cassandraPort, username, password);
 
-      //this.writeServerRecord(ip, username, password);
+      this.generatePathStorePropertiesFile(ip, cassandraPort, rmiPort);
 
       sshUtil.disconnect();
     } catch (JSchException e) {
       System.out.println("\nYour connection information seems to be incorrect");
       this.createNewNetwork();
     }
+  }
+
+  /**
+   * Initializes the list of commands based on the options given by the user
+   *
+   * @param ip ip of new root node
+   * @param cassandraPort cassandra port
+   * @param branch branch to load in
+   * @return list of commands
+   */
+  private List<ICommand> initList(final String ip, final int cassandraPort, final String branch) {
+
+    List<ICommand> commands = new ArrayList<>();
+
+    commands.add(new Exec("docker ps", 0));
+    commands.add(new Exec("docker kill cassandra", -1));
+    commands.add(new Exec("docker kill pathstore", -1));
+    commands.add(new Exec("rm -rf pathstore-install", -1));
+    commands.add(new Exec("mkdir -p pathstore-install", 0));
+    commands.add(new Exec("mkdir -p pathstore-install/cassandra", 0));
+    commands.add(new Exec("mkdir -p pathstore-install/pathstore", 0));
+    commands.add(
+        new FileTransfer(
+            "../docker-files/pathstore/pathstore.properties",
+            "pathstore-install/pathstore/pathstore.properties"));
+    commands.add(new FileTransfer("../docker-files/deploy_key", "pathstore-install/deploy_key"));
+    commands.add(
+        new FileTransfer(
+            "../docker-files/cassandra/Dockerfile", "pathstore-install/cassandra/Dockerfile"));
+    commands.add(
+        new FileTransfer(
+            "../docker-files/pathstore/Dockerfile", "pathstore-install/pathstore/Dockerfile"));
+    commands.add(
+        new Exec(
+            "docker build -t cassandra --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\""
+                + branch
+                + "\" pathstore-install/cassandra",
+            0));
+    commands.add(new Exec("docker run --network=host -dit --rm --name cassandra cassandra", 0));
+    commands.add(new WaitForCassandra(ip, cassandraPort));
+    commands.add(
+        new Exec(
+            "docker build -t pathstore --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\""
+                + branch
+                + "\" pathstore-install/pathstore",
+            0));
+    commands.add(new Exec("docker run --network=host -dit --rm --name pathstore pathstore", 0));
+    commands.add(new WaitForPathStore(ip, cassandraPort));
+
+    return commands;
   }
 
   /**
@@ -216,31 +225,6 @@ public class StartUpHandler {
       this.askQuestionWithSpecificResponses(
           "Have you added the data manually?: ", new String[] {"y", "yes"});
     }
-  }
-
-  /**
-   * This function rights the recorded to the server table to disallow multiple deployments to the
-   * same node
-   *
-   * @param ip ip address of root node
-   * @param username username to connect to root node
-   * @param password password for root node
-   */
-  private void writeServerRecord(final String ip, final String username, final String password) {
-
-    System.out.println("Writing server record to root's table");
-
-    Session session = PathStoreCluster.getInstance().connect();
-
-    Insert insert =
-        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS)
-            .value(Constants.SERVERS_COLUMNS.SERVER_UUID, UUID.randomUUID())
-            .value(Constants.SERVERS_COLUMNS.IP, ip)
-            .value(Constants.SERVERS_COLUMNS.USERNAME, username)
-            .value(Constants.SERVERS_COLUMNS.PASSWORD, password)
-            .value(Constants.SERVERS_COLUMNS.NAME, "Root Node");
-
-    session.execute(insert);
   }
 
   /**

@@ -1,9 +1,10 @@
 package pathstoreweb.pathstoreadminpanel.startup.commands;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.QueryOptions;
-import com.datastax.driver.core.SocketOptions;
+import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
+import pathstoreweb.pathstoreadminpanel.startup.CassandraStartupUTIL;
 import pathstoreweb.pathstoreadminpanel.startup.SSHUtil;
 import pathstoreweb.pathstoreadminpanel.startup.commands.errors.InternalException;
 
@@ -14,6 +15,21 @@ import pathstoreweb.pathstoreadminpanel.startup.commands.errors.InternalExceptio
  */
 public class WaitForCassandra implements ICommand {
 
+  /** Ip of new root node */
+  private final String ip;
+
+  /** Cassandra port */
+  private final int port;
+
+  /**
+   * @param ip {@link #ip}
+   * @param port {@link #port}
+   */
+  public WaitForCassandra(final String ip, final int port) {
+    this.ip = ip;
+    this.port = port;
+  }
+
   /**
    * Continue to try and make a connection, if an exception is thrown wait 1 second and try again
    * until a successful connection is made, then close connection
@@ -22,21 +38,14 @@ public class WaitForCassandra implements ICommand {
    * @throws InternalException if there is an interrupted exception thrown during sleep[
    */
   @Override
-  public void execute(SSHUtil sshUtil) throws InternalException {
+  public void execute(final SSHUtil sshUtil) throws InternalException {
     try {
-      Cluster cluster =
-          new Cluster.Builder()
-              .addContactPoints(sshUtil.host)
-              .withPort(9052)
-              .withSocketOptions(
-                  (new SocketOptions()).setTcpNoDelay(true).setReadTimeoutMillis(15000000))
-              .withQueryOptions(
-                  (new QueryOptions())
-                      .setRefreshNodeIntervalMillis(0)
-                      .setRefreshNodeListIntervalMillis(0)
-                      .setRefreshSchemaIntervalMillis(0))
-              .build();
-      cluster.connect().close();
+      Cluster cluster = CassandraStartupUTIL.createCluster(this.ip, this.port);
+      Session session = cluster.connect();
+
+      PathStoreSchemaLoaderUtils.loadLocalKeyspace(session);
+
+      session.close();
       cluster.close();
     } catch (NoHostAvailableException e) {
       try {
