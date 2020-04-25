@@ -155,8 +155,8 @@ public class PathStoreServerImpl {
 
       System.err.println("PathStoreServer ready");
 
-      obj.startDaemons();
       PathStoreSchemaLoaderUtils.writeTaskDone(local, 3);
+      obj.startDaemons();
 
     } catch (Exception e) {
       System.err.println("PathStoreServer exception: " + e.toString());
