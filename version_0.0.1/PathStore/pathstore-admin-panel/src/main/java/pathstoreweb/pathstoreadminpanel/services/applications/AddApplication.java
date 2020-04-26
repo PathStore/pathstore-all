@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.common.Constants;
 import pathstore.system.PathStorePriviledgedCluster;
-import pathstore.system.schemaloader.PathStoreSchemaLoaderUtils;
+import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstore.util.SchemaInfo;
 import pathstoreweb.pathstoreadminpanel.services.RuntimeErrorFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applications.formatter.AddApplicationFormatter;

@@ -3,11 +3,9 @@ package pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatte
 import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import pathstore.common.Constants;
 import pathstore.common.Constants.NODE_SCHEMAS_COLUMNS;
-import pathstore.system.schemaloader.ApplicationEntry;
+import pathstore.system.schemaFSM.ApplicationEntry;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.InstallApplication;
 
 /**
  * This formatter is used to take a list of node_schema records that where written to the db and

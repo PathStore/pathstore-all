@@ -3,7 +3,7 @@ package pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatte
 import org.json.JSONArray;
 import org.json.JSONObject;
 import pathstore.common.Constants;
-import pathstore.system.schemaloader.ApplicationEntry;
+import pathstore.system.schemaFSM.ApplicationEntry;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.GetApplicationState;
 

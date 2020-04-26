@@ -6,8 +6,8 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.system.schemaloader.ApplicationEntry;
-import pathstore.system.schemaloader.ProccessStatus;
+import pathstore.system.schemaFSM.ApplicationEntry;
+import pathstore.system.schemaFSM.ProccessStatus;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.GetApplicationStateFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 

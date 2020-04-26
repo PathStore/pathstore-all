@@ -6,13 +6,14 @@ import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.common.Constants;
-import pathstore.system.schemaloader.ApplicationEntry;
-import pathstore.system.schemaloader.ProccessStatus;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import pathstore.system.schemaFSM.ApplicationEntry;
+import pathstore.system.schemaFSM.ProccessStatus;
 import pathstoreweb.pathstoreadminpanel.services.RuntimeErrorFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.UpdateApplicationStateFormatter;
 
