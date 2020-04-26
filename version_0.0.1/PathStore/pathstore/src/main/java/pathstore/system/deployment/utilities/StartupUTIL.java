@@ -182,7 +182,6 @@ public class StartupUTIL {
     commands.add(new Exec(sshUtil, "docker image rm cassandra", -1));
     commands.add(new Exec(sshUtil, "docker kill pathstore", -1));
     commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
-    commands.add(new Exec(sshUtil, "docker image rm $(docker image ls -aq)", -1));
     commands.add(new Exec(sshUtil, "rm -rf pathstore-install", -1));
     commands.add(new Exec(sshUtil, "mkdir -p pathstore-install", 0));
     commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/cassandra", 0));
