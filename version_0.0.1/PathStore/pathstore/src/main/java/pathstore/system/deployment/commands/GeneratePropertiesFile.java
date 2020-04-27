@@ -17,6 +17,9 @@ public class GeneratePropertiesFile implements ICommand {
   /** Node id of new node */
   private final int nodeID;
 
+  /** Public ip of server */
+  private final String ip;
+
   /** New nodes parent id */
   private final int parentNodeId;
 
@@ -52,6 +55,7 @@ public class GeneratePropertiesFile implements ICommand {
 
   /**
    * @param nodeID {@link #nodeID}
+   * @param ip {@link #ip}
    * @param parentNodeId {@link #parentNodeId}
    * @param role {@link #role}
    * @param rmiRegistryIP {@link #rmiRegistryIP}
@@ -66,6 +70,7 @@ public class GeneratePropertiesFile implements ICommand {
    */
   public GeneratePropertiesFile(
       final int nodeID,
+      final String ip,
       final int parentNodeId,
       final Role role,
       final String rmiRegistryIP,
@@ -78,6 +83,7 @@ public class GeneratePropertiesFile implements ICommand {
       final int cassandraParentPort,
       final String destinationToStore) {
     this.nodeID = nodeID;
+    this.ip = ip;
     this.parentNodeId = parentNodeId;
     this.role = role;
     this.rmiRegistryIP = rmiRegistryIP;
@@ -102,6 +108,7 @@ public class GeneratePropertiesFile implements ICommand {
     Properties properties =
         StartupUTIL.generatePropertiesFile(
             this.nodeID,
+            this.ip,
             this.parentNodeId,
             this.role,
             this.rmiRegistryIP,
@@ -128,8 +135,9 @@ public class GeneratePropertiesFile implements ICommand {
   @Override
   public String toString() {
     return String.format(
-        "Generating properties file with the following parameters: NodeID: %d, ParentNodeId: %d, Role: %s, RMIRegistryIP: %s, RMIRegistryPort: %d, RMIRegistryParentIP: %s, RMIRegistryParentPort: %d, CassandraIP: %s, CassandraPort: %d, CassandraParentIP: %s, CassandraParentPort: %d, Destination: %s",
+        "Generating properties file with the following parameters: NodeID: %d, IP: %s, ParentNodeId: %d, Role: %s, RMIRegistryIP: %s, RMIRegistryPort: %d, RMIRegistryParentIP: %s, RMIRegistryParentPort: %d, CassandraIP: %s, CassandraPort: %d, CassandraParentIP: %s, CassandraParentPort: %d, Destination: %s",
         this.nodeID,
+        this.ip,
         this.parentNodeId,
         this.role.toString(),
         this.rmiRegistryIP,

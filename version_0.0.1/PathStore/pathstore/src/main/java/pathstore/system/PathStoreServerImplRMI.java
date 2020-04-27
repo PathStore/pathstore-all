@@ -7,6 +7,8 @@ import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCache;
 import pathstore.common.Role;
 import pathstore.exception.PathMigrateAlreadyGoneException;
+import pathstore.system.deployment.deploymentFSM.PathStoreMasterDeploymentServer;
+import pathstore.system.deployment.deploymentFSM.PathStoreSlaveDeploymentServer;
 import pathstore.system.schemaFSM.PathStoreMasterSchemaServer;
 import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
 
@@ -20,16 +22,20 @@ public class PathStoreServerImplRMI implements PathStoreServer {
 
   private PathStoreMasterSchemaServer masterSchemaServer = null;
   private PathStoreSlaveSchemaServer slaveSchemaServer;
+  private PathStoreMasterDeploymentServer masterDeploymentServer = null;
+  private PathStoreSlaveDeploymentServer slaveDeploymentServer;
   private PathStorePullServer pullServer = null;
   private PathStorePushServer pushServer = null;
 
   public PathStoreServerImplRMI() {
     this.slaveSchemaServer = new PathStoreSlaveSchemaServer();
+    this.slaveDeploymentServer = new PathStoreSlaveDeploymentServer();
     if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
       this.pullServer = new PathStorePullServer();
       this.pushServer = new PathStorePushServer();
     } else {
       this.masterSchemaServer = new PathStoreMasterSchemaServer();
+      this.masterDeploymentServer = new PathStoreMasterDeploymentServer();
     }
   }
 
@@ -40,9 +46,11 @@ public class PathStoreServerImplRMI implements PathStoreServer {
   void startDaemons() {
     try {
       this.slaveSchemaServer.start();
+      this.slaveDeploymentServer.start();
       if (PathStoreProperties.getInstance().role == Role.ROOTSERVER) {
         this.masterSchemaServer.start();
-        this.masterSchemaServer.join();
+        this.masterDeploymentServer.start();
+        this.masterDeploymentServer.join();
       } else {
         this.pushServer.start();
         this.pullServer.start();

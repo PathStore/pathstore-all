@@ -56,7 +56,9 @@ public class SSHUtil {
       while (in.available() > 0) {
         int i = in.read(tmp, 0, 1024);
         if (i < 0) break;
-        builder.append(new String(tmp, 0, i));
+        String s = new String(tmp, 0, i);
+        builder.append(s);
+        System.out.print(s);
       }
       if (channel.isClosed()) {
         if (in.available() > 0) continue;

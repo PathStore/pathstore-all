@@ -124,26 +124,6 @@ public class PathStoreServerImpl {
   public static void main(final String args[]) {
     try {
 
-      System.out.println(
-          "CREATE KEYSPACE local_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = false;\n"
-              + "\n"
-              + "CREATE TABLE local_keyspace.startup (\n"
-              + "    task_done int,\n"
-              + "    PRIMARY KEY (task_done)\n"
-              + ") WITH read_repair_chance = 0.0\n"
-              + "   AND dclocal_read_repair_chance = 0.1\n"
-              + "   AND gc_grace_seconds = 864000\n"
-              + "   AND bloom_filter_fp_chance = 0.01\n"
-              + "   AND caching = { 'keys' : 'ALL', 'rows_per_partition' : 'NONE' }\n"
-              + "   AND comment = ''\n"
-              + "   AND compaction = { 'class' : 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold' : 32, 'min_threshold' : 4 }\n"
-              + "   AND compression = { 'chunk_length_in_kb' : 64, 'class' : 'org.apache.cassandra.io.compress.LZ4Compressor' }\n"
-              + "   AND default_time_to_live = 0\n"
-              + "   AND speculative_retry = '99PERCENTILE'\n"
-              + "   AND min_index_interval = 128\n"
-              + "   AND max_index_interval = 2048\n"
-              + "   AND crc_check_chance = 1.0;");
-
       parseCommandLineArguments(args);
 
       Session local = PathStorePriviledgedCluster.getInstance().connect();
@@ -158,27 +138,29 @@ public class PathStoreServerImpl {
           LocateRegistry.createRegistry(PathStoreProperties.getInstance().RMIRegistryPort);
 
       try {
+        System.out.println("Binding rmi connection");
         registry.bind("PathStoreServer", stub);
-        //PathStoreDeploymentUtils.writeTaskDone(local, 0);
+        PathStoreDeploymentUtils.writeTaskDone(local, 0);
       } catch (Exception ex) {
         System.out.println("Could not bind, trying again");
         registry.rebind("PathStoreServer", stub);
+        PathStoreDeploymentUtils.writeTaskDone(local, 0);
       }
 
       if (!SchemaInfo.getInstance().getSchemaInfo().containsKey("pathstore_applications")) {
         PathStoreSchemaLoaderUtils.loadApplicationSchema(local);
-        //PathStoreDeploymentUtils.writeTaskDone(local, 1);
+        PathStoreDeploymentUtils.writeTaskDone(local, 1);
       }
 
       SchemaInfo.getInstance().reset();
 
       new TopologyUpdater().updateTable();
-     // PathStoreDeploymentUtils.writeTaskDone(local, 2);
+      PathStoreDeploymentUtils.writeTaskDone(local, 2);
 
       System.err.println("PathStoreServer ready");
       System.out.println(PathStoreProperties.getInstance());
 
-      //PathStoreDeploymentUtils.writeTaskDone(local, 3);
+      PathStoreDeploymentUtils.writeTaskDone(local, 3);
       obj.startDaemons();
 
     } catch (Exception e) {

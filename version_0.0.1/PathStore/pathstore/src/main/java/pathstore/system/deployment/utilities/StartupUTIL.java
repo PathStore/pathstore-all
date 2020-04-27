@@ -81,6 +81,7 @@ public class StartupUTIL {
    * TODO: Add Constant values to {@link Constants}
    *
    * @param nodeID node id of node
+   * @param ip public ip of node
    * @param parentNodeId parent node id of node (-1 if root)
    * @param role role of server (ROOTSERVER, SERVER)
    * @param rmiRegistryIP rmi ip of local node (should be localhost)
@@ -95,6 +96,7 @@ public class StartupUTIL {
    */
   public static Properties generatePropertiesFile(
       final int nodeID,
+      final String ip,
       final int parentNodeId,
       final Role role,
       final String rmiRegistryIP,
@@ -109,6 +111,7 @@ public class StartupUTIL {
     Properties properties = new Properties();
 
     properties.put("NodeID", String.valueOf(nodeID));
+    properties.put("IP", ip);
     properties.put("ParentID", String.valueOf(parentNodeId));
     properties.put("Role", role.toString());
     properties.put("RMIRegistryIP", rmiRegistryIP);
@@ -189,6 +192,7 @@ public class StartupUTIL {
     commands.add(
         new GeneratePropertiesFile(
             nodeID,
+            ip,
             parentNodeId,
             role,
             rmiRegistryIP,

@@ -23,9 +23,10 @@ import java.util.Properties;
 /**
  * TODO: Figure out specific fields needed for each role (server, rootserver, client)
  *
- * TODO: Migrate public variable to either private variables or to public final variables to allow
- * for consistent data. TODO: Instead of a constant class that points to where the file is suppose
- * to be located allow for the user to define their properties file location via cmd line arguments
+ * <p>TODO: Migrate public variable to either private variables or to public final variables to
+ * allow for consistent data. TODO: Instead of a constant class that points to where the file is
+ * suppose to be located allow for the user to define their properties file location via cmd line
+ * arguments
  *
  * <p>This class loads in data from the properties file and writes it to their respective fields.
  */
@@ -53,6 +54,9 @@ public class PathStoreProperties {
    * number
    */
   public int NodeID = 1;
+
+  /** Public IP of current node, used for deployment */
+  public String IP = "";
 
   /**
    * TODO: Make this non-user definable. To eliminate duplicates Parent Node's Identification number
@@ -124,6 +128,8 @@ public class PathStoreProperties {
       String tmpp = props.getProperty("ParentID");
       if (tmpp != null) this.ParentID = Integer.parseInt(tmpp);
 
+      this.IP = props.getProperty("IP");
+
       if (this.RMIRegistryParentIP != null)
         this.RMIRegistryParentPort = Integer.parseInt(props.getProperty("RMIRegistryParentPort"));
 
@@ -170,24 +176,44 @@ public class PathStoreProperties {
     }
   }
 
-    @Override
-    public String toString() {
-        return "PathStoreProperties{" +
-                "NodeID=" + NodeID +
-                ", ParentID=" + ParentID +
-                ", RMIRegistryIP='" + RMIRegistryIP + '\'' +
-                ", RMIRegistryPort=" + RMIRegistryPort +
-                ", RMIRegistryParentIP='" + RMIRegistryParentIP + '\'' +
-                ", RMIRegistryParentPort=" + RMIRegistryParentPort +
-                ", role=" + role +
-                ", CassandraPath='" + CassandraPath + '\'' +
-                ", CassandraIP='" + CassandraIP + '\'' +
-                ", CassandraPort=" + CassandraPort +
-                ", CassandraParentIP='" + CassandraParentIP + '\'' +
-                ", CassandraParentPort=" + CassandraParentPort +
-                ", MaxBatchSize=" + MaxBatchSize +
-                ", PullSleep=" + PullSleep +
-                ", PushSleep=" + PushSleep +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return "PathStoreProperties{"
+        + "NodeID="
+        + NodeID
+        + ", ParentID="
+        + ParentID
+        + ", RMIRegistryIP='"
+        + RMIRegistryIP
+        + '\''
+        + ", RMIRegistryPort="
+        + RMIRegistryPort
+        + ", RMIRegistryParentIP='"
+        + RMIRegistryParentIP
+        + '\''
+        + ", RMIRegistryParentPort="
+        + RMIRegistryParentPort
+        + ", role="
+        + role
+        + ", CassandraPath='"
+        + CassandraPath
+        + '\''
+        + ", CassandraIP='"
+        + CassandraIP
+        + '\''
+        + ", CassandraPort="
+        + CassandraPort
+        + ", CassandraParentIP='"
+        + CassandraParentIP
+        + '\''
+        + ", CassandraParentPort="
+        + CassandraParentPort
+        + ", MaxBatchSize="
+        + MaxBatchSize
+        + ", PullSleep="
+        + PullSleep
+        + ", PushSleep="
+        + PushSleep
+        + '}';
+  }
 }

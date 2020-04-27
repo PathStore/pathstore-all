@@ -51,6 +51,16 @@ public final class Constants {
     public static final String NAME = "name";
   }
 
+  public static final String DEPLOYMENT = "deployment";
+
+  public static final class DEPLOYMENT_COLUMNS {
+    public static final String NEW_NODE_ID = "new_node_id";
+    public static final String PARENT_NODE_ID = "parent_node_id";
+    public static final String PROCESS_STATUS = "process_status";
+    public static final String WAIT_FOR = "wait_for";
+    public static final String SERVER_UUID = "server_uuid";
+  }
+
   public static final String APPS = "apps";
 
   public static final class APPS_COLUMNS {
