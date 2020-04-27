@@ -1,4 +1,4 @@
-FROM openjdk:11
+FROM ubuntu 
 
 # Define build-args
 ARG key
