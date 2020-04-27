@@ -169,4 +169,25 @@ public class PathStoreProperties {
       ex.printStackTrace();
     }
   }
+
+    @Override
+    public String toString() {
+        return "PathStoreProperties{" +
+                "NodeID=" + NodeID +
+                ", ParentID=" + ParentID +
+                ", RMIRegistryIP='" + RMIRegistryIP + '\'' +
+                ", RMIRegistryPort=" + RMIRegistryPort +
+                ", RMIRegistryParentIP='" + RMIRegistryParentIP + '\'' +
+                ", RMIRegistryParentPort=" + RMIRegistryParentPort +
+                ", role=" + role +
+                ", CassandraPath='" + CassandraPath + '\'' +
+                ", CassandraIP='" + CassandraIP + '\'' +
+                ", CassandraPort=" + CassandraPort +
+                ", CassandraParentIP='" + CassandraParentIP + '\'' +
+                ", CassandraParentPort=" + CassandraParentPort +
+                ", MaxBatchSize=" + MaxBatchSize +
+                ", PullSleep=" + PullSleep +
+                ", PushSleep=" + PushSleep +
+                '}';
+    }
 }

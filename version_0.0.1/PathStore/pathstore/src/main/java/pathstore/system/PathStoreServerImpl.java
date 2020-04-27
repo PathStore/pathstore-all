@@ -155,6 +155,7 @@ public class PathStoreServerImpl {
       PathStoreDeploymentUtils.writeTaskDone(local, 2);
 
       System.err.println("PathStoreServer ready");
+      System.out.println(PathStoreProperties.getInstance());
 
       PathStoreDeploymentUtils.writeTaskDone(local, 3);
       obj.startDaemons();
