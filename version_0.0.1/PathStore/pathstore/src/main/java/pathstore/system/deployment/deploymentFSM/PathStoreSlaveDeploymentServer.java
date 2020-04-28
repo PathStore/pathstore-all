@@ -122,11 +122,6 @@ public class PathStoreSlaveDeploymentServer extends Thread {
         }
       }
 
-      Cluster cluster = StartupUTIL.createCluster(ip, cassandraPort);
-      Session session = cluster.connect();
-      session.execute("drop keyspace if exist local_keyspace");
-      session.close();
-      cluster.close();
       sshUtil.disconnect();
 
       System.out.println("Successfully deployed");

@@ -49,7 +49,7 @@ public class StartupUTIL {
    * @param username username to connect to root node
    * @param password password for root node
    */
-  public static void writeServerRecordAndDropKeyspace(
+  public static void writeServerRecordForRoot(
       final String ip, final int cassandraPort, final String username, final String password) {
 
     System.out.println("Writing server record to root's table");
@@ -69,9 +69,6 @@ public class StartupUTIL {
             .value(Constants.SERVERS_COLUMNS.NAME, "Root Node");
 
     session.execute(insert);
-
-    // TODO: This may not be needed if the local keyspace is used more
-    session.execute("drop keyspace if exists " + Constants.LOCAL_KEYSPACE);
 
     session.close();
     cluster.close();
