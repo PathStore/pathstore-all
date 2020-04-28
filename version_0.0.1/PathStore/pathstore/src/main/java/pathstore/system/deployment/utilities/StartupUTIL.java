@@ -123,6 +123,8 @@ public class StartupUTIL {
     properties.put(CASSANDRA_PORT, String.valueOf(cassandraPort));
     properties.put(CASSANDRA_PARENT_IP, cassandraParentIP);
     properties.put(CASSANDRA_PARENT_PORT, String.valueOf(cassandraParentPort));
+    properties.put(PUSH_SLEEP, 1000);
+    properties.put(PULL_SLEEP, 1000);
 
     return properties;
   }
