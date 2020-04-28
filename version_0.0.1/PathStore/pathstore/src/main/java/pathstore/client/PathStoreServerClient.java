@@ -74,6 +74,9 @@ public class PathStoreServerClient {
   public void addQueryEntry(QueryCacheEntry entry) {
     try {
       long t = System.nanoTime();
+
+      System.out.println(entry.getKeyspace() + " " + entry.getTable());
+
       String result =
           stub.addQueryEntry(
               entry.getKeyspace(), entry.getTable(), entry.getClausesSerialized(), entry.limit);
