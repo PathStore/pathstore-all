@@ -133,7 +133,7 @@ public class PathStoreServerImpl {
 
       System.out.println(PathStoreProperties.getInstance().RMIRegistryIP);
 
-      System.setProperty("java.rmi.server.hostname", "127.0.0.1");
+      System.setProperty("java.rmi.server.hostname", PathStoreProperties.getInstance().IP);
       Registry registry =
           LocateRegistry.createRegistry(PathStoreProperties.getInstance().RMIRegistryPort);
 

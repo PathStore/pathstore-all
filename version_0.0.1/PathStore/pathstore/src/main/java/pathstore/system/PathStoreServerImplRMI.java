@@ -39,9 +39,7 @@ public class PathStoreServerImplRMI implements PathStoreServer {
     }
   }
 
-  void recover() {
-    // TODO: Implement any recovery needed for any other sub-system
-  }
+
 
   void startDaemons() {
     try {
