@@ -18,6 +18,10 @@ import pathstore.system.deployment.utilities.StartupUTIL;
 
 import java.util.UUID;
 
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.SERVER_UUID;
+import static pathstore.common.Constants.SERVERS_COLUMNS.*;
+
 /**
  * This slave deployment server will listen for a deploying state record in the deployment table
  * with their specified node id. Once they find such a record they will attempt to deploy a new
@@ -44,35 +48,32 @@ public class PathStoreSlaveDeploymentServer extends Thread {
           QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
 
       for (Row row : session.execute(selectAllDeployment)) {
-        int parentNodeId = row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID);
+        int parentNodeId = row.getInt(PARENT_NODE_ID);
 
         DeploymentProcessStatus status =
-            DeploymentProcessStatus.valueOf(
-                row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS));
+            DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS));
 
         if (parentNodeId == PathStoreProperties.getInstance().NodeID
             && status == DeploymentProcessStatus.DEPLOYING) {
 
           DeploymentEntry entry =
               new DeploymentEntry(
-                  row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID),
+                  row.getInt(NEW_NODE_ID),
                   parentNodeId,
-                  DeploymentProcessStatus.valueOf(
-                      row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS)),
-                  row.getInt(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR),
-                  UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID)));
+                  DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS)),
+                  row.getInt(WAIT_FOR),
+                  UUID.fromString(row.getString(SERVER_UUID)));
 
           Select getServer =
               QueryBuilder.select().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
-          getServer.where(
-              QueryBuilder.eq(Constants.SERVERS_COLUMNS.SERVER_UUID, entry.serverUUID.toString()));
+          getServer.where(QueryBuilder.eq(SERVER_UUID, entry.serverUUID.toString()));
 
           for (Row serverRow : session.execute(getServer)) {
             this.deploy(
                 entry,
-                serverRow.getString(Constants.SERVERS_COLUMNS.IP),
-                serverRow.getString(Constants.SERVERS_COLUMNS.USERNAME),
-                serverRow.getString(Constants.SERVERS_COLUMNS.PASSWORD));
+                serverRow.getString(IP),
+                serverRow.getString(USERNAME),
+                serverRow.getString(PASSWORD));
           }
         }
       }
@@ -105,11 +106,11 @@ public class PathStoreSlaveDeploymentServer extends Thread {
               Role.SERVER,
               "127.0.0.1",
               rmiPort,
-              PathStoreProperties.getInstance().IP,
+              PathStoreProperties.getInstance().ExternalAddress,
               rmiPort,
               "127.0.0.1",
               cassandraPort,
-              PathStoreProperties.getInstance().IP,
+              PathStoreProperties.getInstance().ExternalAddress,
               cassandraPort,
               "../docker-files/pathstore/pathstore.properties")) {
         System.out.println(command);
@@ -138,10 +139,10 @@ public class PathStoreSlaveDeploymentServer extends Thread {
 
     Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
     update
-        .where(QueryBuilder.eq(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID, entry.newNodeId))
-        .and(QueryBuilder.eq(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID, entry.parentNodeId))
-        .and(QueryBuilder.eq(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID, entry.serverUUID.toString()))
-        .with(QueryBuilder.set(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS, status.toString()));
+        .where(QueryBuilder.eq(NEW_NODE_ID, entry.newNodeId))
+        .and(QueryBuilder.eq(PARENT_NODE_ID, entry.parentNodeId))
+        .and(QueryBuilder.eq(SERVER_UUID, entry.serverUUID.toString()))
+        .with(QueryBuilder.set(PROCESS_STATUS, status.toString()));
 
     clientSession.execute(update);
   }

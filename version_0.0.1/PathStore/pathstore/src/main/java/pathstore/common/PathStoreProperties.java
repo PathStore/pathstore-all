@@ -20,166 +20,182 @@ package pathstore.common;
 import java.io.FileInputStream;
 import java.util.Properties;
 
+import static pathstore.common.Constants.PROPERTIESFILE;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
+
 /**
- * TODO: Figure out specific fields needed for each role (server, rootserver, client)
+ * This class is used to load runtime properties from a properties file located in {@link
+ * Constants#PROPERTIESFILE}. This is used instead of run-time arguments to simplify the reading and
+ * updating of the data. Also even though there are lots of options only certain options will get
+ * loaded in based on what ROLE you have set. Thus the ROLE must be set in order to determine which
+ * pieces of data get loaded in. The data that gets loading in is as follows:
  *
- * <p>TODO: Migrate public variable to either private variables or to public final variables to
- * allow for consistent data. TODO: Instead of a constant class that points to where the file is
- * suppose to be located allow for the user to define their properties file location via cmd line
- * arguments
+ * <p>SERVER {@link Role#SERVER}:
  *
- * <p>This class loads in data from the properties file and writes it to their respective fields.
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#RMI_REGISTRY_PARENT_IP}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#RMI_REGISTRY_PARENT_PORT}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#CASSANDRA_PARENT_IP}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#CASSANDRA_PARENT_PORT}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#PULL_SLEEP}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#PUSH_SLEEP}
+ *
+ * <p>Plus all the values from {@link Role#ROOTSERVER} and {@link Role#CLIENT}
+ *
+ * <p>ROOTSERVER {@link Role#ROOTSERVER}:
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#EXTERNAL_ADDRESS}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#NODE_ID}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#PARENT_ID}
+ *
+ * <p>Plus all the values from {@link Role#CLIENT}
+ *
+ * <p>CLIENT {@link Role#CLIENT}:
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#RMI_REGISTRY_IP}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#RMI_REGISTRY_PORT}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#CASSANDRA_IP}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#CASSANDRA_PORT}
  */
 public class PathStoreProperties {
+
   /**
-   * Represents an instance of the properties file. This will only every be initialized once.
-   *
-   * @see #getInstance()
+   * represents the instance of this class to be used more then once across the library without
+   * passing the instance around
    */
   private static PathStoreProperties instance = null;
 
-  /**
-   * Initializes the path store properties instance variable
-   *
-   * @return either a new copy or the currently initialized instance
-   */
+  /** @return either create new instance and return it or return existing instance */
   public static PathStoreProperties getInstance() {
     if (PathStoreProperties.instance == null)
       PathStoreProperties.instance = new PathStoreProperties();
     return PathStoreProperties.instance;
   }
 
+  /** Denotes the role of the server */
+  public Role role;
+
+  /** Denotes the publicly accessible ip of the server */
+  public String ExternalAddress;
+
+  /** Denotes the current node's id */
+  public int NodeID;
+
+  /** Denotes the current node's parent id (-1 if root) */
+  public int ParentID;
+
+  /** Denotes the current node's local rmi server normally 127.0.0.1 */
+  public String RMIRegistryIP;
+
+  /** Denotes the current node's local rmi server's port normall 1099 */
+  public int RMIRegistryPort;
+
+  /** Denotes the current node's parent rmi server's address */
+  public String RMIRegistryParentIP;
+
+  /** Denotes the current node's parent rmi server's port */
+  public int RMIRegistryParentPort;
+
+  /** Denote the node's local cassandra instance address */
+  public String CassandraIP;
+
+  /** Denotes the node's local cassandra instance port */
+  public int CassandraPort;
+
+  /** Denotes the node's parent cassandra instance address */
+  public String CassandraParentIP;
+
+  /** Denotes the node's parent cassandra instance port */
+  public int CassandraParentPort;
+
   /**
-   * TODO: Make this non-user definable. To eliminate duplicates Current Node's Identification
-   * number
+   * Denotes batch size
+   *
+   * @see QueryCache
    */
-  public int NodeID = 1;
+  public int MaxBatchSize = 4096 * 10;
 
-  /** Public IP of current node, used for deployment */
-  public String IP = "";
+  /** Denotes how often the pull server pull's data */
+  public int PullSleep = 1000;
 
-  /**
-   * TODO: Make this non-user definable. To eliminate duplicates Parent Node's Identification number
-   */
-  public int ParentID = -1;
-
-  /** TODO: Read up on the way RMI is being used and document the following variables */
-  public String RMIRegistryIP = null;
-
-  public int RMIRegistryPort = 1099;
-  public String RMIRegistryParentIP = null;
-  public int RMIRegistryParentPort = 1100;
+  /** Denotes how often the push server pull's data */
+  public int PushSleep = 1000;
 
   /**
-   * Role of the user interacting with the network There are:
-   *
-   * <p>CLIENT: When the client uses this library to interact with the network SERVER: Some server
-   * in the network that is not the root node ROOTSERVER: The root server.
-   *
-   * <p>The bottom two are relevant for where to store data as SERVER will have garbage collection
-   * and ROOTSERVER will not have any garbage collection as the master copy of the data stays there
-   */
-  public Role role = null;
-
-  /** TODO: Find meaning for this */
-  public String CassandraPath = null;
-
-  /** Points to the ip address of the cassandra instance attached to this node */
-  public String CassandraIP = null;
-
-  /** Points to the port number of the local cassandra instance */
-  public int CassandraPort = 0;
-
-  /** Points to the ip address of the parent node's local cassandra instance */
-  public String CassandraParentIP = null;
-
-  /** Points to the port number of the parent node's local cassandra instance */
-  public int CassandraParentPort = 0;
-
-  /** TODO: Find meaning for this */
-  public int MaxBatchSize = 4096 * 10; //
-
-  /** TODO: Find meaning for these */
-  public int PullSleep = 1000; // sleep period in milliseconds
-
-  public int PushSleep = 1000; // sleep period in milliseconds
-
-  /**
-   * TODO: Fix constant strings, either move them to a constant file or write a dynamic attribute
-   * loaded TODO: Fix potential non-existent critical attributes i.e local cassandra instance ip and
-   * port
-   *
-   * <p>Reads properties file and sets all the fields of the class according to the data loaded in
-   * from the file
-   *
-   * @see Constants#PROPERTIESFILE
+   * Parses the data in accordance to what is needed per role. See class Java doc for description on
+   * what is parsed
    */
   public PathStoreProperties() {
     try {
       Properties props = new Properties();
-      FileInputStream in = new FileInputStream(Constants.PROPERTIESFILE);
+      FileInputStream in = new FileInputStream(PROPERTIESFILE);
       props.load(in);
 
-      this.RMIRegistryIP = props.getProperty("RMIRegistryIP");
-      this.RMIRegistryPort = Integer.parseInt(props.getProperty("RMIRegistryPort"));
+      this.role = Role.valueOf(this.getProperty(props, ROLE));
 
-      this.RMIRegistryParentIP = props.getProperty("RMIRegistryParentIP");
-
-      String tmpp = props.getProperty("ParentID");
-      if (tmpp != null) this.ParentID = Integer.parseInt(tmpp);
-
-      this.IP = props.getProperty("IP");
-
-      if (this.RMIRegistryParentIP != null)
-        this.RMIRegistryParentPort = Integer.parseInt(props.getProperty("RMIRegistryParentPort"));
-
-      switch (props.getProperty("Role")) {
-        case "ROOTSERVER":
-          this.role = Role.ROOTSERVER;
-          break;
-        case "SERVER":
-          this.role = Role.SERVER;
+      switch (this.role) {
+        case SERVER:
+          this.RMIRegistryParentIP = this.getProperty(props, RMI_REGISTRY_PARENT_IP);
+          this.RMIRegistryParentPort =
+              Integer.parseInt(this.getProperty(props, RMI_REGISTRY_PARENT_PORT));
+          this.CassandraParentIP = this.getProperty(props, CASSANDRA_PARENT_IP);
+          this.CassandraParentPort =
+              Integer.parseInt(this.getProperty(props, CASSANDRA_PARENT_PORT));
+          this.PullSleep = Integer.parseInt(this.getProperty(props, PULL_SLEEP));
+          this.PushSleep = Integer.parseInt(this.getProperty(props, PUSH_SLEEP));
+        case ROOTSERVER:
+          this.ExternalAddress = this.getProperty(props, EXTERNAL_ADDRESS);
+          this.NodeID = Integer.parseInt(this.getProperty(props, NODE_ID));
+          this.ParentID = Integer.parseInt(this.getProperty(props, PARENT_ID));
+        case CLIENT:
+          this.RMIRegistryIP = this.getProperty(props, RMI_REGISTRY_IP);
+          this.RMIRegistryPort = Integer.parseInt(this.getProperty(props, RMI_REGISTRY_PORT));
+          this.CassandraIP = this.getProperty(props, CASSANDRA_IP);
+          this.CassandraPort = Integer.parseInt(this.getProperty(props, CASSANDRA_PORT));
           break;
         default:
-          this.role = Role.CLIENT;
+          throw new Exception();
       }
-
-      this.CassandraPath = props.getProperty("CassandraPath");
-
-      this.CassandraIP = props.getProperty("CassandraIP");
-
-      String temp = props.getProperty("CassandraPort");
-      this.CassandraPort = temp != null ? Integer.parseInt(temp) : 9042;
-
-      temp = props.getProperty("CassandraParentIP");
-      this.CassandraParentIP = temp != null ? props.getProperty("CassandraParentIP") : "127.0.0.1";
-
-      temp = props.getProperty("CassandraParentPort");
-      this.CassandraParentPort = temp != null ? Integer.parseInt(temp) : 9062;
-
-      temp = props.getProperty("MaxBatchSize");
-      this.MaxBatchSize = temp != null ? Integer.parseInt(temp) : MaxBatchSize;
-
-      temp = props.getProperty("PullSleep");
-      this.PullSleep = temp != null ? Integer.parseInt(temp) : 1000;
-
-      temp = props.getProperty("PushSleep");
-      this.PushSleep = temp != null ? Integer.parseInt(temp) : 1000;
-
-      temp = props.getProperty("NodeID");
-      this.NodeID = temp != null ? Integer.parseInt(temp) : 1;
 
       in.close();
     } catch (Exception ex) {
-      // TODO log exception
+      System.err.println("Error parsing properties file with the stack trace:");
       ex.printStackTrace();
+      System.exit(1);
     }
   }
 
+  /**
+   * Gets property from props file and trims the result
+   *
+   * @param properties {@link Constants#PROPERTIESFILE}
+   * @param key key to get
+   * @return trimmed response
+   */
+  private String getProperty(final Properties properties, final String key) {
+    String response = properties.getProperty(key);
+    return response != null ? response.trim() : null;
+  }
+
+  /** @return all values loaded in from properties file */
   @Override
   public String toString() {
     return "PathStoreProperties{"
-        + "NodeID="
+        + "role="
+        + role
+        + ", ExternalAddress='"
+        + ExternalAddress
+        + '\''
+        + ", NodeID="
         + NodeID
         + ", ParentID="
         + ParentID
@@ -193,11 +209,6 @@ public class PathStoreProperties {
         + '\''
         + ", RMIRegistryParentPort="
         + RMIRegistryParentPort
-        + ", role="
-        + role
-        + ", CassandraPath='"
-        + CassandraPath
-        + '\''
         + ", CassandraIP='"
         + CassandraIP
         + '\''

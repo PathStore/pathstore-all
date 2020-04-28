@@ -17,6 +17,10 @@ import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
+import static pathstore.common.Constants.SERVERS_COLUMNS.*;
+import static pathstore.common.Constants.PATHSTORE_COLUMNS.*;
+
 /** Things related to cassandra for startup that can't rely on pathstore properties file */
 public class StartupUTIL {
 
@@ -59,14 +63,14 @@ public class StartupUTIL {
 
     Insert insert =
         QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS)
-            .value("pathstore_version", QueryBuilder.now())
-            .value("pathstore_parent_timestamp", QueryBuilder.now())
-            .value("pathstore_dirty", true)
-            .value(Constants.SERVERS_COLUMNS.SERVER_UUID, UUID.randomUUID().toString())
-            .value(Constants.SERVERS_COLUMNS.IP, ip)
-            .value(Constants.SERVERS_COLUMNS.USERNAME, username)
-            .value(Constants.SERVERS_COLUMNS.PASSWORD, password)
-            .value(Constants.SERVERS_COLUMNS.NAME, "Root Node");
+            .value(PATHSTORE_VERSION, QueryBuilder.now())
+            .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
+            .value(PATHSTORE_DIRTY, true)
+            .value(SERVER_UUID, UUID.randomUUID().toString())
+            .value(IP, ip)
+            .value(USERNAME, username)
+            .value(PASSWORD, password)
+            .value(NAME, "Root Node");
 
     session.execute(insert);
 
@@ -107,18 +111,18 @@ public class StartupUTIL {
 
     Properties properties = new Properties();
 
-    properties.put("NodeID", String.valueOf(nodeID));
-    properties.put("IP", ip);
-    properties.put("ParentID", String.valueOf(parentNodeId));
-    properties.put("Role", role.toString());
-    properties.put("RMIRegistryIP", rmiRegistryIP);
-    properties.put("RMIRegistryPort", String.valueOf(rmiRegistryPort));
-    properties.put("RMIRegistryParentIP", rmiRegistryParentIP);
-    properties.put("RMIRegistryParentPort", String.valueOf(rmiRegistryParentPort));
-    properties.put("CassandraIP", cassandraIP);
-    properties.put("CassandraPort", String.valueOf(cassandraPort));
-    properties.put("CassandraParentIP", cassandraParentIP);
-    properties.put("CassandraParentPort", String.valueOf(cassandraParentPort));
+    properties.put(NODE_ID, String.valueOf(nodeID));
+    properties.put(EXTERNAL_ADDRESS, ip);
+    properties.put(PARENT_ID, String.valueOf(parentNodeId));
+    properties.put(ROLE, role.toString());
+    properties.put(RMI_REGISTRY_IP, rmiRegistryIP);
+    properties.put(RMI_REGISTRY_PORT, String.valueOf(rmiRegistryPort));
+    properties.put(RMI_REGISTRY_PARENT_IP, rmiRegistryParentIP);
+    properties.put(RMI_REGISTRY_PARENT_PORT, String.valueOf(rmiRegistryParentPort));
+    properties.put(CASSANDRA_IP, cassandraIP);
+    properties.put(CASSANDRA_PORT, String.valueOf(cassandraPort));
+    properties.put(CASSANDRA_PARENT_IP, cassandraParentIP);
+    properties.put(CASSANDRA_PARENT_PORT, String.valueOf(cassandraParentPort));
 
     return properties;
   }

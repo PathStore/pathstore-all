@@ -21,6 +21,7 @@ import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import com.datastax.driver.core.Session;
+import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreServer;
 import pathstore.common.Role;
@@ -31,87 +32,6 @@ import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstore.util.SchemaInfo;
 
 public class PathStoreServerImpl {
-
-  private static void parseCommandLineArguments(final String args[]) {
-    Options options = new Options();
-
-    // options.addOption( "a", "all", false, "do not hide entries starting with ." );
-
-    options.addOption(
-        Option.builder("r")
-            .longOpt("role")
-            .desc("[CLIENT|SERVER|ROOTSERVER]")
-            .hasArg()
-            .argName("ROLE")
-            .build());
-
-    options.addOption(
-        Option.builder().longOpt("rmiport").desc("NUMBER").hasArg().argName("PORT").build());
-
-    options.addOption(
-        Option.builder().longOpt("rmiportparent").desc("NUMBER").hasArg().argName("PORT").build());
-
-    options.addOption(
-        Option.builder().longOpt("cassandraport").desc("NUMBER").hasArg().argName("PORT").build());
-
-    options.addOption(
-        Option.builder()
-            .longOpt("cassandraportparent")
-            .desc("NUMBER")
-            .hasArg()
-            .argName("PORT")
-            .build());
-
-    options.addOption(
-        Option.builder("n").longOpt("nodeid").desc("Number").hasArg().argName("nodeid").build());
-
-    CommandLineParser parser = new DefaultParser();
-    HelpFormatter formatter = new HelpFormatter();
-    CommandLine cmd;
-
-    try {
-      cmd = parser.parse(options, args);
-    } catch (ParseException e) {
-      System.out.println(e.getMessage());
-      formatter.printHelp("utility-name", options);
-
-      System.exit(1);
-      return;
-    }
-
-    if (cmd.hasOption("role")) {
-      switch (cmd.getOptionValue("role")) {
-        case "SERVER":
-          PathStoreProperties.getInstance().role = Role.SERVER;
-          break;
-        case "ROOTSERVER":
-          PathStoreProperties.getInstance().role = Role.ROOTSERVER;
-          break;
-        case "CLIENT":
-          PathStoreProperties.getInstance().role = Role.CLIENT;
-          break;
-      }
-    }
-
-    if (cmd.hasOption("rmiport"))
-      PathStoreProperties.getInstance().RMIRegistryPort =
-          Integer.parseInt(cmd.getOptionValue("rmiport"));
-
-    if (cmd.hasOption("rmiportparent"))
-      PathStoreProperties.getInstance().RMIRegistryParentPort =
-          Integer.parseInt(cmd.getOptionValue("rmiportparent"));
-
-    if (cmd.hasOption("cassandraport"))
-      PathStoreProperties.getInstance().CassandraPort =
-          Integer.parseInt(cmd.getOptionValue("cassandraport"));
-
-    if (cmd.hasOption("cassandraportparent"))
-      PathStoreProperties.getInstance().CassandraParentPort =
-          Integer.parseInt(cmd.getOptionValue("cassandraportparent"));
-
-    if (cmd.hasOption("nodeid"))
-      PathStoreProperties.getInstance().NodeID = Integer.parseInt(cmd.getOptionValue("nodeid"));
-  }
 
   /**
    * Startup tasks:
@@ -124,8 +44,6 @@ public class PathStoreServerImpl {
   public static void main(final String args[]) {
     try {
 
-      parseCommandLineArguments(args);
-
       Session local = PathStorePriviledgedCluster.getInstance().connect();
 
       PathStoreServerImplRMI obj = new PathStoreServerImplRMI();
@@ -133,7 +51,8 @@ public class PathStoreServerImpl {
 
       System.out.println(PathStoreProperties.getInstance().RMIRegistryIP);
 
-      System.setProperty("java.rmi.server.hostname", PathStoreProperties.getInstance().IP);
+      System.setProperty(
+          "java.rmi.server.hostname", PathStoreProperties.getInstance().ExternalAddress);
       Registry registry =
           LocateRegistry.createRegistry(PathStoreProperties.getInstance().RMIRegistryPort);
 
@@ -147,7 +66,7 @@ public class PathStoreServerImpl {
         PathStoreDeploymentUtils.writeTaskDone(local, 0);
       }
 
-      if (!SchemaInfo.getInstance().getSchemaInfo().containsKey("pathstore_applications")) {
+      if (!SchemaInfo.getInstance().getSchemaInfo().containsKey(Constants.PATHSTORE_APPLICATIONS)) {
         PathStoreSchemaLoaderUtils.loadApplicationSchema(local);
         PathStoreDeploymentUtils.writeTaskDone(local, 1);
       }

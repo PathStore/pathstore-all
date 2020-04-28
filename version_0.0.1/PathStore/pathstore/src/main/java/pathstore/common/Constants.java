@@ -22,6 +22,34 @@ public final class Constants {
 
   public static final String PROPERTIESFILE = "/etc/pathstore/pathstore.properties";
 
+  public static final class PROPERTIES_CONSTANTS {
+    public static final String ROLE = "Role";
+    public static final String EXTERNAL_ADDRESS = "ExternalAddress";
+    public static final String NODE_ID = "NodeID";
+    public static final String PARENT_ID = "ParentID";
+    public static final String RMI_REGISTRY_IP = "RMIRegistryIP";
+    public static final String RMI_REGISTRY_PORT = "RMIRegistryPort";
+    public static final String RMI_REGISTRY_PARENT_IP = "RMIRegistryParentIP";
+    public static final String RMI_REGISTRY_PARENT_PORT = "RMIRegistryParentPort";
+    public static final String CASSANDRA_IP = "CassandraIP";
+    public static final String CASSANDRA_PORT = "CassandraPort";
+    public static final String CASSANDRA_PARENT_IP = "CassandraParentIP";
+    public static final String CASSANDRA_PARENT_PORT = "CassandraParentPort";
+    public static final String MAX_BATCH_SIZE = "MaxBatchSize";
+    public static final String PULL_SLEEP = "PullSleep";
+    public static final String PUSH_SLEEP = "PushSleep";
+  }
+
+  /** TODO: Change all references to this class */
+  public static final class PATHSTORE_COLUMNS {
+    public static final String PATHSTORE_VERSION = "pathstore_version";
+    public static final String PATHSTORE_PARENT_TIMESTAMP = "pathstore_parent_timestamp";
+    public static final String PATHSTORE_DELETED = "pathstore_deleted";
+    public static final String PATHSTORE_DIRTY = "pathstore_dirty";
+    public static final String PATHSTORE_NODE = "pathstore_node";
+    public static final String PATHSTORE_INSERT_SID = "pathstore_insert_sid";
+  }
+
   public static final String PATHSTORE_APPLICATIONS = "pathstore_applications";
 
   public static final String TOPOLOGY = "topology";
