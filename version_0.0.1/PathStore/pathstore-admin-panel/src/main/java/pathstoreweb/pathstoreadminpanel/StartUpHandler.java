@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
+
 /**
  * This class is used to handle the startup sequence and allows a user to deploy the root node for
  * their new pathstore network
@@ -112,11 +114,11 @@ public class StartUpHandler {
               1,
               -1,
               Role.ROOTSERVER,
-              "localhost",
+              "127.0.0.1",
               rmiPort,
               "",
               rmiPort,
-              "localhost",
+              "127.0.0.1",
               cassandraPort,
               "",
               cassandraPort,
@@ -130,7 +132,7 @@ public class StartUpHandler {
         }
       }
 
-      StartupUTIL.writeServerRecordAndDropKeyspace(ip, cassandraPort, username, password);
+      StartupUTIL.writeServerRecordForRoot(ip, cassandraPort, username, password);
 
       this.generatePathStorePropertiesFile(ip, cassandraPort, rmiPort);
 
@@ -156,12 +158,12 @@ public class StartUpHandler {
   private void generatePathStorePropertiesFile(
       final String ip, final int cassandraPort, final int RMIPort) {
     Properties properties = new Properties();
-    properties.setProperty("NodeId", String.valueOf(1));
-    properties.setProperty("Role", Role.ROOTSERVER.toString());
-    properties.setProperty("CassandraIP", ip);
-    properties.setProperty("CassandraPort", String.valueOf(cassandraPort));
-    properties.setProperty("RMIRegistryIP", ip);
-    properties.setProperty("RMIRegistryPort", String.valueOf(RMIPort));
+
+    properties.setProperty(ROLE, Role.CLIENT.toString());
+    properties.setProperty(CASSANDRA_IP, ip);
+    properties.setProperty(CASSANDRA_PORT, String.valueOf(cassandraPort));
+    properties.setProperty(RMI_REGISTRY_IP, ip);
+    properties.setProperty(RMI_REGISTRY_PORT, String.valueOf(RMIPort));
 
     StringBuilder response = new StringBuilder();
     properties.forEach((k, v) -> response.append(k).append(": ").append(v).append("\n"));

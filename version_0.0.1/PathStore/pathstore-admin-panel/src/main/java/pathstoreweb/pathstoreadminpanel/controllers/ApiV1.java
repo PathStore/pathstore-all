@@ -1,6 +1,12 @@
 package pathstoreweb.pathstoreadminpanel.controllers;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import pathstoreweb.pathstoreadminpanel.Endpoints;
@@ -12,10 +18,17 @@ import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.U
 import pathstoreweb.pathstoreadminpanel.services.applications.AddApplication;
 import pathstoreweb.pathstoreadminpanel.services.applications.GetApplications;
 import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
+import pathstoreweb.pathstoreadminpanel.services.deployment.AddDeploymentRecords;
+import pathstoreweb.pathstoreadminpanel.services.deployment.GetDeploymentRecords;
+import pathstoreweb.pathstoreadminpanel.services.deployment.payload.AddDeploymentRecordPayload;
 import pathstoreweb.pathstoreadminpanel.services.servers.AddServer;
 import pathstoreweb.pathstoreadminpanel.services.servers.GetServers;
 import pathstoreweb.pathstoreadminpanel.services.servers.payload.AddServerPayload;
 import pathstoreweb.pathstoreadminpanel.services.topology.GetNetworkTopology;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /** Main controller for api. TODO: split up to sub functions */
 @RestController
@@ -104,9 +117,24 @@ public class ApiV1 {
   }
 
   @PostMapping(Endpoints.SERVERS)
-  public String addServer(@Valid final AddServerPayload payload, final BindingResult bindingResult) {
+  public String addServer(
+      @Valid final AddServerPayload payload, final BindingResult bindingResult) {
     return bindingResult.hasErrors()
         ? new ValidityErrorFormatter(bindingResult.getAllErrors()).format()
         : new AddServer(payload).response();
+  }
+
+  @GetMapping(Endpoints.DEPLOYMENT)
+  public String deploy() {
+    return new GetDeploymentRecords().response();
+  }
+
+  @PostMapping(Endpoints.DEPLOYMENT)
+  public String deploy(
+      @RequestBody @Valid final AddDeploymentRecordPayload payload,
+      final BindingResult bindingResult) {
+    return bindingResult.hasErrors()
+        ? new ValidityErrorFormatter(bindingResult.getAllErrors()).format()
+        : new AddDeploymentRecords(payload).response();
   }
 }
