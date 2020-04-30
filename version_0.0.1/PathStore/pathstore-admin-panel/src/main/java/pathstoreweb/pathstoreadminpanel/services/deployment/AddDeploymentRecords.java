@@ -3,7 +3,6 @@ package pathstoreweb.pathstoreadminpanel.services.deployment;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.deployment.deploymentFSM.DeploymentEntry;
@@ -17,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
+import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
 
 public class AddDeploymentRecords implements IService {
 
@@ -47,14 +47,15 @@ public class AddDeploymentRecords implements IService {
               record.parentId,
               UUID.fromString(record.serverUUID));
 
-      Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
-      update
-          .where(QueryBuilder.eq(NEW_NODE_ID, entry.newNodeId))
-          .and(QueryBuilder.eq(PARENT_NODE_ID, entry.parentNodeId))
-          .and(QueryBuilder.eq(SERVER_UUID, entry.serverUUID.toString()))
-          .with(QueryBuilder.set(PROCESS_STATUS, entry.deploymentProcessStatus.toString()));
+      Insert insert =
+          QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT)
+              .value(NEW_NODE_ID, entry.newNodeId)
+              .value(PARENT_NODE_ID, entry.parentNodeId)
+              .value(PROCESS_STATUS, entry.deploymentProcessStatus.toString())
+              .value(WAIT_FOR, entry.parentNodeId)
+              .value(SERVER_UUID, entry.serverUUID.toString());
 
-      session.execute(update);
+      session.execute(insert);
 
       linkedList.addFirst(entry);
     }

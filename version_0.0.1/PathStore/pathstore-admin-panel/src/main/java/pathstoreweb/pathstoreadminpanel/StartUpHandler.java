@@ -132,7 +132,7 @@ public class StartUpHandler {
         }
       }
 
-      StartupUTIL.writeServerRecordForRoot(ip, cassandraPort, username, password);
+      StartupUTIL.finalizeRootNodeInstallation(ip, cassandraPort, username, password);
 
       this.generatePathStorePropertiesFile(ip, cassandraPort, rmiPort);
 

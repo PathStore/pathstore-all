@@ -57,7 +57,8 @@ class NodeDeploymentModal extends Component {
             topology: props.topology.slice(),
             update: [],
             parentNodeId: null,
-            newNodeId: null
+            newNodeId: null,
+            serverUUID: null
         }
     }
 
@@ -112,15 +113,44 @@ class NodeDeploymentModal extends Component {
     onFormSubmit = (event) => {
         event.preventDefault();
 
-        this.state.topology.push({parentid: parseInt(this.state.parentNodeId), id: parseInt(this.state.newNodeId)});
-        this.state.update.push(parseInt(this.state.newNodeId));
-        this.setState({topology: this.state.topology, update: this.state.update});
-        ReactDOM.findDOMNode(this.messageForm).reset();
+        let data = JSON.stringify({
+            records: [
+                {
+                    parentId: this.state.parentNodeId,
+                    newNodeId: this.state.newNodeId,
+                    serverUUID: this.state.serverUUID
+                }
+            ]
+        });
+
+        alert(data);
+
+        fetch('/api/v1/deployment', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: data
+        })
+            .then(response => response.json())
+            .then(response => {
+                alert(JSON.stringify(response));
+                this.state.topology.push({
+                    parentid: parseInt(this.state.parentNodeId),
+                    id: parseInt(this.state.newNodeId)
+                });
+                this.state.update.push(parseInt(this.state.newNodeId));
+                this.setState({topology: this.state.topology, update: this.state.update});
+                ReactDOM.findDOMNode(this.messageForm).reset();
+            });
     };
 
     onParentNodeIdChange = (event) => this.setState({parentNodeId: parseInt(event.target.value)});
 
     onNewNodeIdChange = (event) => this.setState({newNodeId: parseInt(event.target.value)});
+
+    onServerUUIDChange = (event) => this.setState({serverUUID: event.target.value});
 
     onClose = () => this.setState({topology: this.props.topology, update: []}, this.props.callback);
 
@@ -150,6 +180,13 @@ class NodeDeploymentModal extends Component {
                         <Form.Group controlId="nodeId">
                             <Form.Label>New Node Id</Form.Label>
                             <Form.Control type="text" placeholder="New Node Id" onChange={this.onNewNodeIdChange}/>
+                            <Form.Text className="text-muted">
+                                Must be an integer
+                            </Form.Text>
+                        </Form.Group>
+                        <Form.Group controlId="server">
+                            <Form.Label>ServerUUID</Form.Label>
+                            <Form.Control type="text" placeholder="Valid Server UUID" onChange={this.onServerUUIDChange}/>
                             <Form.Text className="text-muted">
                                 Must be an integer
                             </Form.Text>
