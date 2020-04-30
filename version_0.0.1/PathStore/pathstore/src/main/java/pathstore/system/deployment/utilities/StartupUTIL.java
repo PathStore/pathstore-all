@@ -9,6 +9,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
+import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +20,9 @@ import java.util.UUID;
 
 import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
 import static pathstore.common.Constants.SERVERS_COLUMNS.*;
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 import static pathstore.common.Constants.PATHSTORE_COLUMNS.*;
+import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
 
 /** Things related to cassandra for startup that can't rely on pathstore properties file */
 public class StartupUTIL {
@@ -53,7 +56,7 @@ public class StartupUTIL {
    * @param username username to connect to root node
    * @param password password for root node
    */
-  public static void writeServerRecordForRoot(
+  public static void finalizeRootNodeInstallation(
       final String ip, final int cassandraPort, final String username, final String password) {
 
     System.out.println("Writing server record to root's table");
@@ -61,16 +64,31 @@ public class StartupUTIL {
     Cluster cluster = createCluster(ip, cassandraPort);
     Session session = cluster.connect();
 
+    UUID serverUUID = UUID.randomUUID();
+
     Insert insert =
         QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS)
             .value(PATHSTORE_VERSION, QueryBuilder.now())
             .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
             .value(PATHSTORE_DIRTY, true)
-            .value(SERVER_UUID, UUID.randomUUID().toString())
+            .value(SERVER_UUID, serverUUID.toString())
             .value(IP, ip)
             .value(USERNAME, username)
             .value(PASSWORD, password)
             .value(NAME, "Root Node");
+
+    session.execute(insert);
+
+    insert =
+        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT)
+            .value(PATHSTORE_VERSION, QueryBuilder.now())
+            .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
+            .value(PATHSTORE_DIRTY, true)
+            .value(NEW_NODE_ID, 1)
+            .value(PARENT_NODE_ID, -1)
+            .value(PROCESS_STATUS, DeploymentProcessStatus.DEPLOYED.toString())
+            .value(WAIT_FOR, -1)
+            .value(SERVER_UUID, serverUUID.toString());
 
     session.execute(insert);
 
@@ -123,8 +141,8 @@ public class StartupUTIL {
     properties.put(CASSANDRA_PORT, String.valueOf(cassandraPort));
     properties.put(CASSANDRA_PARENT_IP, cassandraParentIP);
     properties.put(CASSANDRA_PARENT_PORT, String.valueOf(cassandraParentPort));
-    properties.put(PUSH_SLEEP, 1000);
-    properties.put(PULL_SLEEP, 1000);
+    properties.put(PUSH_SLEEP, String.valueOf(1000));
+    properties.put(PULL_SLEEP, String.valueOf(1000));
 
     return properties;
   }
