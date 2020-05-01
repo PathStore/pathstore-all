@@ -33,6 +33,7 @@ export default class App extends Component {
 
         this.state = {
             topology: [],
+            deployment: [],
             applications: [],
             refresh: false
         }
@@ -42,22 +43,41 @@ export default class App extends Component {
      * Calls the topology end point and parses then data. Then calls the applications endpoint and parses that data.
      */
     componentDidMount() {
-        fetch('/api/v1/topology')
+
+        this.loadDeploy();
+
+        this.setState({timer: setInterval(this.loadDeploy, 5000)});
+
+        fetch('/api/v1/applications')
             .then(response => response.json())
-            .then(message => this.setState({topology: this.parse(message)}))
-            .then(() => {
-                fetch('/api/v1/applications')
-                    .then(response => response.json())
-                    .then(message => {
-                        let messages = [];
+            .then(response => {
+                let messages = [];
 
-                        for (let i = 0; i < message.length; i++)
-                            messages.push(this.createApplicationObject(message[i]));
+                for (let i = 0; i < response.length; i++)
+                    messages.push(this.createApplicationObject(response[i]));
 
-                        this.setState({applications: messages, refresh: !this.state.refresh});
-                    });
-            })
+                this.setState({applications: messages});
+            });
     }
+
+    componentWillUnmount() {
+        clearInterval(this.state.timer);
+    }
+
+    loadDeploy = () => {
+        fetch('/api/v1/deployment')
+            .then(response => response.json())
+            .then(response => {
+                let messages = [];
+
+                for (let i = 0; i < response.length; i++)
+                    messages.push(this.createDeploymentObject(response[i]));
+
+                console.log(messages);
+
+                this.setState({deployment: messages, refresh: !this.state.refresh});
+            })
+    };
 
     /**
      * Parses topology json array into an array of readable objects
@@ -86,6 +106,20 @@ export default class App extends Component {
     };
 
     /**
+     * Parse deployment object for the info you need
+     *
+     * @param object from api
+     * @returns {{newNodeId: *, processStatus: *, parentNodeId: *}}
+     */
+    createDeploymentObject = (object) => {
+        return {
+            id: parseInt(object.new_node_id),
+            parentid: parseInt(object.parent_node_id),
+            processStatus: object.process_status
+        }
+    };
+
+    /**
      * Swaps the refresh flip-flop and reloads the component
      */
     forceRefresh = () => this.setState({refresh: !this.state.refresh}, () => this.componentDidMount());
@@ -101,11 +135,11 @@ export default class App extends Component {
                 <div>
                     <div>
                         <h2>Network Topology</h2>
-                        <ViewTopology topology={this.state.topology} refresh={this.state.refresh}/>
+                        <ViewTopology topology={this.state.deployment} refresh={this.state.refresh}/>
                     </div>
                     <div>
                         <h2>Network Expansion</h2>
-                        <NodeDeployment topology={this.state.topology} refresh={this.state.refresh}/>
+                        <NodeDeployment topology={this.state.deployment} refresh={this.state.refresh}/>
                     </div>
                     <div>
                         <h2>Servers</h2>
@@ -116,7 +150,7 @@ export default class App extends Component {
                 <div>
                     <div>
                         <h2>Live Installation Viewer</h2>
-                        <LiveTransitionVisual applications={this.state.applications} topology={this.state.topology}
+                        <LiveTransitionVisual applications={this.state.applications} topology={this.state.deployment}
                                               refresh={this.state.refresh}/>
                     </div>
                     <br/>
@@ -131,7 +165,7 @@ export default class App extends Component {
                     <br/>
                     <div>
                         <h2>Application Deployment</h2>
-                        <DeployApplication topology={this.state.topology} applications={this.state.applications}
+                        <DeployApplication topology={this.state.deployment} applications={this.state.applications}
                                            refresh={this.state.refresh}/>
                     </div>
                 </div>

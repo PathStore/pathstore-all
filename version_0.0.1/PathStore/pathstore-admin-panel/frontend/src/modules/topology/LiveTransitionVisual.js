@@ -161,10 +161,12 @@ class LiveTransitionVisualModal extends Component {
         let children = [];
 
         for (let i = 0; i < array.length; i++)
-            if (parentId === -1) {
-                if (array[i].parentid === parentId) return this.createTreeObject(array[i].id, array);
-            } else {
-                if (array[i].parentid === parentId) children.push(this.createTreeObject(array[i].id, array));
+            if (array[i].processStatus === "DEPLOYED") {
+                if (parentId === -1) {
+                    if (array[i].parentid === parentId) return this.createTreeObject(array[i].id, array);
+                } else {
+                    if (array[i].parentid === parentId) children.push(this.createTreeObject(array[i].id, array));
+                }
             }
 
         return children;

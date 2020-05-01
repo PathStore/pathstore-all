@@ -44,9 +44,9 @@ export default class ViewTopology extends Component {
 
         for (let i = 0; i < array.length; i++)
             if (parentId === -1) {
-                if (array[i].parentid === parentId) return this.createTreeObject(array[i].id, array);
+                if (array[i].parentid === parentId) return this.createTreeObject(array[i], array);
             } else {
-                if (array[i].parentid === parentId) children.push(this.createTreeObject(array[i].id, array));
+                if (array[i].parentid === parentId) children.push(this.createTreeObject(array[i], array));
             }
 
 
@@ -56,15 +56,30 @@ export default class ViewTopology extends Component {
     /**
      * Name is the node id, textProps is the location of the text associated with the node, children is a list of children
      *
-     * @param name
+     * @param object
      * @param array
      * @returns {{textProps: {x: number, y: number}, children: ({textProps: {x: number, y: number}, children: *[], name: *}|*[]), name: *}}
      */
-    createTreeObject = (name, array) => {
+    createTreeObject = (object, array) => {
         return {
-            name: name,
+            name: object.id,
             textProps: {x: -20, y: 25},
-            children: this.createTree(array, name)
+            gProps: {
+                className: this.getClassName(object.processStatus),
+                onClick: this.handleClick
+            },
+            children: this.createTree(array, object.id)
+        }
+    };
+
+    getClassName = (status) => {
+        switch (status) {
+            case "WAITING_DEPLOYMENT":
+                return 'waiting_node';
+            case "DEPLOYING":
+                return 'installing_node';
+            default:
+                return 'installed_node';
         }
     };
 
@@ -95,10 +110,6 @@ export default class ViewTopology extends Component {
                       margins={{top: 20, bottom: 10, left: 20, right: 200}}
                       height={1000}
                       width={1080}
-                      gProps={{
-                          className: 'node',
-                          onClick: this.handleClick
-                      }}
                 />
                 {this.state.info}
             </div>

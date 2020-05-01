@@ -71,7 +71,8 @@ export default class DeployApplication extends Component {
         let array = [];
 
         for (let i = 0; i < topology.length; i++)
-            array.push(topology[i].id);
+            if (topology[i].processStatus === "DEPLOYED")
+                array.push(topology[i].id);
 
         return array.sort((a, b) => a > b ? 1 : -1);
     };

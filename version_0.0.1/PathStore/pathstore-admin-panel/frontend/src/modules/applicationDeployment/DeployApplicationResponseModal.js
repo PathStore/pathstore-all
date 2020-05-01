@@ -137,10 +137,12 @@ export default class DeployApplicationResponseModal extends Component {
         let children = [];
 
         for (let i = 0; i < array.length; i++)
-            if (parentId === -1) {
-                if (array[i].parentid === parentId) return this.createTreeObject(array[i].id, array, updates, previous);
-            } else {
-                if (array[i].parentid === parentId) children.push(this.createTreeObject(array[i].id, array, updates, previous));
+            if (array[i].processStatus === "DEPLOYED") {
+                if (parentId === -1) {
+                    if (array[i].parentid === parentId) return this.createTreeObject(array[i].id, array, updates, previous);
+                } else {
+                    if (array[i].parentid === parentId) children.push(this.createTreeObject(array[i].id, array, updates, previous));
+                }
             }
 
 

@@ -46,7 +46,6 @@ class NodeDeploymentModal extends Component {
     /**
      * State:
      * topology is array of objects denoting hierarchical structure
-     * update: list of hypothetical nodeid's
      *
      * @param props
      */
@@ -55,7 +54,6 @@ class NodeDeploymentModal extends Component {
 
         this.state = {
             topology: props.topology.slice(),
-            update: [],
             parentNodeId: null,
             newNodeId: null,
             serverUUID: null
@@ -74,9 +72,9 @@ class NodeDeploymentModal extends Component {
 
         for (let i = 0; i < array.length; i++)
             if (parentId === -1) {
-                if (array[i].parentid === parentId) return this.createTreeObject(array[i].id, array);
+                if (array[i].parentid === parentId) return this.createTreeObject(array[i], array);
             } else {
-                if (array[i].parentid === parentId) children.push(this.createTreeObject(array[i].id, array));
+                if (array[i].parentid === parentId) children.push(this.createTreeObject(array[i], array));
             }
 
         return children;
@@ -85,29 +83,33 @@ class NodeDeploymentModal extends Component {
     /**
      * Name is the node id, textProps is the location of the text associated with the node, children is a list of children
      *
-     * @param name
+     * @param object
      * @param array
      * @returns {{textProps: {x: number, y: number}, children: ({textProps: {x: number, y: number}, children: *[], name: *}|*[]), name: *}}
      */
-    createTreeObject = (name, array) => {
+    createTreeObject = (object, array) => {
         return {
-            name: name,
+            name: object.id,
             textProps: {x: -20, y: 25},
             pathProps: {className: 'installation_path'},
-            gProps: {className: this.isHypothetical(parseInt(name))},
-            children: this.createTree(array, name)
+            gProps: {className: this.isHypothetical(object.processStatus)},
+            children: this.createTree(array, object.id)
         }
     };
 
     /**
      * This function returns the css name for the node depending on whether the node is hypothetical or not
-     * @param name
+     * @param status
      * @returns {string}
      */
-    isHypothetical = (name) => {
-        for (let i = 0; i < this.state.update.length; i++)
-            if (this.state.update[i] === name) return 'hypothetical';
-        return 'not_set_node';
+    isHypothetical = (status) => {
+        switch (status) {
+            case "WAITING_DEPLOYMENT":
+            case "DEPLOYING":
+                return 'hypothetical';
+            default:
+                return 'not_set_node';
+        }
     };
 
     onFormSubmit = (event) => {
@@ -138,10 +140,10 @@ class NodeDeploymentModal extends Component {
                 alert(JSON.stringify(response));
                 this.state.topology.push({
                     parentid: parseInt(this.state.parentNodeId),
-                    id: parseInt(this.state.newNodeId)
+                    id: parseInt(this.state.newNodeId),
+                    processStatus: "WAITING_DEPLOYMENT"
                 });
-                this.state.update.push(parseInt(this.state.newNodeId));
-                this.setState({topology: this.state.topology, update: this.state.update});
+                this.setState({topology: this.state.topology});
                 ReactDOM.findDOMNode(this.messageForm).reset();
             });
     };
@@ -152,7 +154,7 @@ class NodeDeploymentModal extends Component {
 
     onServerUUIDChange = (event) => this.setState({serverUUID: event.target.value});
 
-    onClose = () => this.setState({topology: this.props.topology, update: []}, this.props.callback);
+    onClose = () => this.setState({topology: this.props.topology}, this.props.callback);
 
     render() {
         return (
@@ -186,7 +188,8 @@ class NodeDeploymentModal extends Component {
                         </Form.Group>
                         <Form.Group controlId="server">
                             <Form.Label>ServerUUID</Form.Label>
-                            <Form.Control type="text" placeholder="Valid Server UUID" onChange={this.onServerUUIDChange}/>
+                            <Form.Control type="text" placeholder="Valid Server UUID"
+                                          onChange={this.onServerUUIDChange}/>
                             <Form.Text className="text-muted">
                                 Must be an integer
                             </Form.Text>
@@ -199,7 +202,6 @@ class NodeDeploymentModal extends Component {
                 <div>
                     <p>Data:</p>
                     <p>{JSON.stringify(this.state.topology)}</p>
-                    <p>{JSON.stringify(this.state.update)}</p>
                 </div>
                 <button onClick={this.onClose}>close</button>
             </Modal>
