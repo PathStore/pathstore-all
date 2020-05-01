@@ -63,8 +63,8 @@ public @interface NodesExist {
       for (Row row : session.execute(queryTopology)) {
         int currentNode = row.getInt(NEW_NODE_ID);
         if (nodes.contains(currentNode)
-            && DeploymentProcessStatus.valueOf(PROCESS_STATUS) == DeploymentProcessStatus.DEPLOYED)
-          nodeExists.add(currentNode);
+            && DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS))
+                == DeploymentProcessStatus.DEPLOYED) nodeExists.add(currentNode);
       }
 
       return nodeExists.size() == nodes.size();
