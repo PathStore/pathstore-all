@@ -36,7 +36,7 @@ public class PathStoreServerImpl {
   /**
    * Startup tasks:
    *
-   * <p>0: setup rmi server 1: load applications keyspace 2: write to topology table 3: start
+   * <p>0: setup rmi server 1: load applications keyspace 2: start
    * daemons
    *
    * @param args
@@ -73,13 +73,10 @@ public class PathStoreServerImpl {
 
       SchemaInfo.getInstance().reset();
 
-      new TopologyUpdater().updateTable();
-      PathStoreDeploymentUtils.writeTaskDone(local, 2);
-
       System.err.println("PathStoreServer ready");
       System.out.println(PathStoreProperties.getInstance());
 
-      PathStoreDeploymentUtils.writeTaskDone(local, 3);
+      PathStoreDeploymentUtils.writeTaskDone(local, 2);
       obj.startDaemons();
 
     } catch (Exception e) {

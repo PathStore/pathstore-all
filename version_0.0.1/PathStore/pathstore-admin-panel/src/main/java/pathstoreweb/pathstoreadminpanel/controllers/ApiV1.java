@@ -24,25 +24,11 @@ import pathstoreweb.pathstoreadminpanel.services.deployment.payload.AddDeploymen
 import pathstoreweb.pathstoreadminpanel.services.servers.AddServer;
 import pathstoreweb.pathstoreadminpanel.services.servers.GetServers;
 import pathstoreweb.pathstoreadminpanel.services.servers.payload.AddServerPayload;
-import pathstoreweb.pathstoreadminpanel.services.topology.GetNetworkTopology;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /** Main controller for api. TODO: split up to sub functions */
 @RestController
 @RequestMapping(Endpoints.API)
 public class ApiV1 {
-
-  /**
-   * @return json array, of topology diagram
-   * @see GetNetworkTopology
-   */
-  @GetMapping(Endpoints.TOPOLOGY)
-  public String topology() {
-    return new GetNetworkTopology().response();
-  }
 
   /**
    * @return json array, of current states on each node.

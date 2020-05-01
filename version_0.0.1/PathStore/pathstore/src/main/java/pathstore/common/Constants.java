@@ -52,13 +52,6 @@ public final class Constants {
 
   public static final String PATHSTORE_APPLICATIONS = "pathstore_applications";
 
-  public static final String TOPOLOGY = "topology";
-
-  public static final class TOPOLOGY_COLUMNS {
-    public static final String NODE_ID = "nodeid";
-    public static final String PARENT_NODE_ID = "parent_nodeid";
-  }
-
   public static final String NODE_SCHEMAS = "node_schemas";
 
   public static final class NODE_SCHEMAS_COLUMNS {

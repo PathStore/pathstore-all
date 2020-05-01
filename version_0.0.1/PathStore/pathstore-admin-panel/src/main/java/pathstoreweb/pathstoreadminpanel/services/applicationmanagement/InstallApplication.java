@@ -6,6 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
 import pathstore.system.schemaFSM.ApplicationEntry;
 import pathstore.system.schemaFSM.ProccessStatus;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.UpdateApplicationStateFormatter;
@@ -73,12 +74,15 @@ public class InstallApplication implements IService {
     HashMap<Integer, Integer> childToParent = new HashMap<>();
 
     Select queryTopology =
-        QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.TOPOLOGY);
+        QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
 
     for (Row row : this.session.execute(queryTopology))
-      childToParent.put(
-          row.getInt(Constants.TOPOLOGY_COLUMNS.NODE_ID),
-          row.getInt(Constants.TOPOLOGY_COLUMNS.PARENT_NODE_ID));
+      if (DeploymentProcessStatus.valueOf(
+              row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS))
+          == DeploymentProcessStatus.DEPLOYED)
+        childToParent.put(
+            row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID),
+            row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID));
 
     return childToParent;
   }

@@ -20,8 +20,7 @@ public class WaitForPathStore implements ICommand {
   static {
     neededRecords.put(0, "RMI Server started");
     neededRecords.put(1, "Pathstore Application keyspace loaded");
-    neededRecords.put(2, "Topology Table written to");
-    neededRecords.put(3, "Daemons started");
+    neededRecords.put(2, "Daemons started");
   }
 
   /** Cluster created on initialization */

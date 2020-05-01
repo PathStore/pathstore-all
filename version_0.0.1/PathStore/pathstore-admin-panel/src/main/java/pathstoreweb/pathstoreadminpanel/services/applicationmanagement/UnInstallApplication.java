@@ -6,6 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
 import pathstore.system.schemaFSM.ApplicationEntry;
 import pathstore.system.schemaFSM.ProccessStatus;
 import pathstoreweb.pathstoreadminpanel.services.IService;
@@ -65,14 +66,17 @@ public class UnInstallApplication implements IService {
     HashMap<Integer, Set<Integer>> parentToChild = new HashMap<>();
 
     Select queryTopology =
-        QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.TOPOLOGY);
+        QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
 
-    for (Row row : this.session.execute(queryTopology)) {
-      int parentNodeId = row.getInt(Constants.TOPOLOGY_COLUMNS.PARENT_NODE_ID);
-      parentToChild
-          .computeIfAbsent(parentNodeId, k -> new HashSet<>())
-          .add(row.getInt(Constants.TOPOLOGY_COLUMNS.NODE_ID));
-    }
+    for (Row row : this.session.execute(queryTopology))
+      if (DeploymentProcessStatus.valueOf(
+              row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS))
+          == DeploymentProcessStatus.DEPLOYED) {
+        int parentNodeId = row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID);
+        parentToChild
+            .computeIfAbsent(parentNodeId, k -> new HashSet<>())
+            .add(row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID));
+      }
 
     return parentToChild;
   }

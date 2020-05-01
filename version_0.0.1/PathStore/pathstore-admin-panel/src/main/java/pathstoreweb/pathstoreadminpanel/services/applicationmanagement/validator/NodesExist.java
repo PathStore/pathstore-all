@@ -16,7 +16,10 @@ import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.validator.NodesExist.Validator;
+
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 
 /** Validator to check to see if all nodes passed are valid node id's */
 @Target({ElementType.FIELD})
@@ -53,13 +56,15 @@ public @interface NodesExist {
       Session session = PathStoreCluster.getInstance().connect();
 
       Select queryTopology =
-          QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.TOPOLOGY);
+          QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
 
       Set<Integer> nodeExists = new HashSet<>();
 
       for (Row row : session.execute(queryTopology)) {
-        int currentNode = row.getInt(Constants.TOPOLOGY_COLUMNS.NODE_ID);
-        if (nodes.contains(currentNode)) nodeExists.add(currentNode);
+        int currentNode = row.getInt(NEW_NODE_ID);
+        if (nodes.contains(currentNode)
+            && DeploymentProcessStatus.valueOf(PROCESS_STATUS) == DeploymentProcessStatus.DEPLOYED)
+          nodeExists.add(currentNode);
       }
 
       return nodeExists.size() == nodes.size();
