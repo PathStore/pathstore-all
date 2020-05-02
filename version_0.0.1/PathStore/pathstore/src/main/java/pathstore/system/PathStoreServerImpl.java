@@ -36,8 +36,7 @@ public class PathStoreServerImpl {
   /**
    * Startup tasks:
    *
-   * <p>0: setup rmi server 1: load applications keyspace 2: start
-   * daemons
+   * <p>0: setup rmi server 1: load applications keyspace 2: start daemons
    *
    * @param args
    */
@@ -49,7 +48,7 @@ public class PathStoreServerImpl {
       PathStoreServerImplRMI obj = new PathStoreServerImplRMI();
       PathStoreServer stub = (PathStoreServer) UnicastRemoteObject.exportObject(obj, 0);
 
-      System.out.println(PathStoreProperties.getInstance().RMIRegistryIP);
+      System.out.println(PathStoreProperties.getInstance().ExternalAddress);
 
       System.setProperty(
           "java.rmi.server.hostname", PathStoreProperties.getInstance().ExternalAddress);
