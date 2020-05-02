@@ -141,10 +141,6 @@ export default class App extends Component {
                         <h2>Network Expansion</h2>
                         <NodeDeployment topology={this.state.deployment} refresh={this.state.refresh}/>
                     </div>
-                    <div>
-                        <h2>Servers</h2>
-                        <Servers/>
-                    </div>
                 </div>
                 <br/>
                 <div>

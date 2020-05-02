@@ -4,6 +4,7 @@ import {Button} from "react-bootstrap";
 import Modal from "react-modal";
 import Tree from "react-tree-graph";
 import Form from "react-bootstrap/Form";
+import Servers from "../servers/Servers";
 
 
 /**
@@ -200,8 +201,7 @@ class NodeDeploymentModal extends Component {
                     </Form>
                 </div>
                 <div>
-                    <p>Data:</p>
-                    <p>{JSON.stringify(this.state.topology)}</p>
+                    <Servers/>
                 </div>
                 <button onClick={this.onClose}>close</button>
             </Modal>

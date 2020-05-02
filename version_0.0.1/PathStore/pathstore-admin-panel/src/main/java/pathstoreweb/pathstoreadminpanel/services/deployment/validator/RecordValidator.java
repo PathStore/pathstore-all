@@ -66,11 +66,12 @@ public @interface RecordValidator {
 
       Set<Integer> alreadyInstalledNewNodeIdSet = new HashSet<>();
 
-      // Check for Uniqueness of new Node id
+      // Check for Uniqueness of new Node id and for uniqueness of serverUUID
       for (Row row : session.execute(select)) {
         int current = row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID);
         alreadyInstalledNewNodeIdSet.add(current);
-        if (newNodeIdSet.contains(current)) return false;
+        String serverUUID = row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID);
+        if (newNodeIdSet.contains(current) || serverUUIDSet.contains(serverUUID)) return false;
       }
 
       // Check for valid parent Node id's either A) they're already installed nodes or B) they're
