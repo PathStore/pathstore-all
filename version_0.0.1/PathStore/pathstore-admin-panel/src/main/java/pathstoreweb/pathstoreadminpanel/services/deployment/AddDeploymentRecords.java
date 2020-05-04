@@ -8,7 +8,7 @@ import pathstore.common.Constants;
 import pathstore.system.deployment.deploymentFSM.DeploymentEntry;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
 import pathstoreweb.pathstoreadminpanel.services.IService;
-import pathstoreweb.pathstoreadminpanel.services.deployment.formatter.AddDeploymentRecordsFormatter;
+import pathstoreweb.pathstoreadminpanel.services.deployment.formatter.DeploymentRecordsFormatter;
 import pathstoreweb.pathstoreadminpanel.services.deployment.payload.AddDeploymentRecordPayload;
 
 import java.util.LinkedList;
@@ -18,19 +18,35 @@ import java.util.UUID;
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
 
+/** This class is used when the user passes a set of records to add */
 public class AddDeploymentRecords implements IService {
 
+  /**
+   * Valid payload given by user
+   *
+   * @see AddDeploymentRecordPayload
+   */
   private final AddDeploymentRecordPayload payload;
 
+  /** @param payload {@link #payload} */
   public AddDeploymentRecords(final AddDeploymentRecordPayload payload) {
     this.payload = payload;
   }
 
+  /** @return {@link DeploymentRecordsFormatter#format()} */
   @Override
   public String response() {
-    return new AddDeploymentRecordsFormatter(this.writeEntries()).format();
+    return new DeploymentRecordsFormatter(this.writeEntries()).format();
   }
 
+  /**
+   * Writes all entries that the user has provided with the {@link
+   * DeploymentProcessStatus#WAITING_DEPLOYMENT} status. The DeploymentFSM will handle the
+   * transitions of states and the slave deployment server will install when their state hits {@link
+   * DeploymentProcessStatus#DEPLOYING}
+   *
+   * @return list of entries written. This is so the user can see the output
+   */
   private List<DeploymentEntry> writeEntries() {
 
     Session session = PathStoreCluster.getInstance().connect();

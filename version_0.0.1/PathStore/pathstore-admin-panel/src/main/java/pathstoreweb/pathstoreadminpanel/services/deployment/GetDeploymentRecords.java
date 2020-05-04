@@ -9,7 +9,7 @@ import pathstore.common.Constants;
 import pathstore.system.deployment.deploymentFSM.DeploymentEntry;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
 import pathstoreweb.pathstoreadminpanel.services.IService;
-import pathstoreweb.pathstoreadminpanel.services.deployment.formatter.GetDeploymentRecordsFormatter;
+import pathstoreweb.pathstoreadminpanel.services.deployment.formatter.DeploymentRecordsFormatter;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -17,13 +17,23 @@ import java.util.UUID;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 
+/**
+ * This class is used when the user wants to get all deployment records to understand the topology
+ * of the network
+ */
 public class GetDeploymentRecords implements IService {
 
+  /** @return {@link DeploymentRecordsFormatter#format()} */
   @Override
   public String response() {
-    return new GetDeploymentRecordsFormatter(this.getRecords()).format();
+    return new DeploymentRecordsFormatter(this.getRecords()).format();
   }
 
+  /**
+   * Query all records from database and parse them into a entry class
+   *
+   * @return list of all parsed entries
+   */
   private List<DeploymentEntry> getRecords() {
 
     Session session = PathStoreCluster.getInstance().connect();

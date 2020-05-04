@@ -9,14 +9,18 @@ import java.util.List;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 
-public class GetDeploymentRecordsFormatter implements IFormatter {
+/** This class is used to format a set of records either given by add requests or get requests */
+public class DeploymentRecordsFormatter implements IFormatter {
 
+  /** List of entries */
   private final List<DeploymentEntry> entries;
 
-  public GetDeploymentRecordsFormatter(final List<DeploymentEntry> entries) {
+  /** @param entries {@link #entries} */
+  public DeploymentRecordsFormatter(final List<DeploymentEntry> entries) {
     this.entries = entries;
   }
 
+  /** @return converts list to a json array of data */
   @Override
   public String format() {
 
