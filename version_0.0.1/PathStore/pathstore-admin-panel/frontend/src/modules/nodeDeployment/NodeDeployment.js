@@ -211,7 +211,7 @@ class NodeDeploymentModal extends Component {
                             </Form.Text>
                         </Form.Group>
                         <Form.Control as="select" single onChange={this.onServerUUIDChange}
-                                      value={this.state.servers}>
+                                      value={this.state.serverUUID}>
                             {servers}
                         </Form.Control>
                         <Button variant="primary" type="submit">
