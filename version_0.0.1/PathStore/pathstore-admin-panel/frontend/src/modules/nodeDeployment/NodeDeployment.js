@@ -55,10 +55,23 @@ class NodeDeploymentModal extends Component {
 
         this.state = {
             topology: props.topology.slice(),
+            servers: [],
             parentNodeId: null,
             newNodeId: null,
             serverUUID: null
         }
+    }
+
+    /**
+     * Load all servers
+     */
+    componentDidMount() {
+        fetch('/api/v1/servers')
+            .then(response => response.json())
+            .then(response => this.setState({
+                servers: response,
+                serverUUID: response[0] !== undefined ? response[0].server_uuid : null
+            }))
     }
 
     /**
@@ -157,7 +170,17 @@ class NodeDeploymentModal extends Component {
 
     onClose = () => this.setState({topology: this.props.topology}, this.props.callback);
 
+    serverUpdateCallBack = () => this.componentDidMount();
+
     render() {
+
+        const servers = [];
+
+        for (let i = 0; i < this.state.servers.length; i++)
+            servers.push(
+                <option key={i}>{this.state.servers[i].server_uuid}</option>
+            );
+
         return (
             <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}}>
                 <div>
@@ -187,21 +210,17 @@ class NodeDeploymentModal extends Component {
                                 Must be an integer
                             </Form.Text>
                         </Form.Group>
-                        <Form.Group controlId="server">
-                            <Form.Label>ServerUUID</Form.Label>
-                            <Form.Control type="text" placeholder="Valid Server UUID"
-                                          onChange={this.onServerUUIDChange}/>
-                            <Form.Text className="text-muted">
-                                Must be an integer
-                            </Form.Text>
-                        </Form.Group>
+                        <Form.Control as="select" single onChange={this.onServerUUIDChange}
+                                      value={this.state.servers}>
+                            {servers}
+                        </Form.Control>
                         <Button variant="primary" type="submit">
                             Submit
                         </Button>
                     </Form>
                 </div>
                 <div>
-                    <Servers/>
+                    <Servers servers={this.state.servers} callback={this.serverUpdateCallBack}/>
                 </div>
                 <button onClick={this.onClose}>close</button>
             </Modal>

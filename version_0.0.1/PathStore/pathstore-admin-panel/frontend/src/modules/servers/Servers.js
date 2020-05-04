@@ -34,7 +34,6 @@ export default class Servers extends Component {
         super(props);
 
         this.state = {
-            servers: [],
             ip: "",
             username: "",
             password: "",
@@ -43,16 +42,6 @@ export default class Servers extends Component {
             responseModalShow: false,
             responseModalData: null
         }
-    }
-
-
-    /**
-     * Query all servers and store in state
-     */
-    componentDidMount() {
-        fetch('/api/v1/servers')
-            .then(response => response.json())
-            .then(response => this.setState({servers: response}))
     }
 
 
@@ -109,7 +98,7 @@ export default class Servers extends Component {
                         responseModalData: response
                     }, () => {
                         ReactDOM.findDOMNode(this.messageForm).reset();
-                        this.componentDidMount();
+                        this.props.callback();
                     });
                 });
         });
@@ -135,12 +124,12 @@ export default class Servers extends Component {
 
         const tbody = [];
 
-        for (let i = 0; i < this.state.servers.length; i++)
+        for (let i = 0; i < this.props.servers.length; i++)
             tbody.push(
                 <tr key={i}>
-                    <td>{this.state.servers[i].server_uuid}</td>
-                    <td>{this.state.servers[i].ip}</td>
-                    <td>{this.state.servers[i].name}</td>
+                    <td>{this.props.servers[i].server_uuid}</td>
+                    <td>{this.props.servers[i].ip}</td>
+                    <td>{this.props.servers[i].name}</td>
                 </tr>
             );
 
