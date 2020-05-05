@@ -15,13 +15,7 @@ import java.util.Map;
 public class WaitForPathStore implements ICommand {
 
   /** Tasks that need to be completed before we can consider pathstore to be officially online */
-  private static final Map<Integer, String> neededRecords = new HashMap<>();
-
-  static {
-    neededRecords.put(0, "RMI Server started");
-    neededRecords.put(1, "Pathstore Application keyspace loaded");
-    neededRecords.put(2, "Daemons started");
-  }
+  private final Map<Integer, String> neededRecords;
 
   /** Cluster created on initialization */
   private final Cluster cluster;
@@ -37,6 +31,10 @@ public class WaitForPathStore implements ICommand {
    */
   public WaitForPathStore(final String ip, final int port) {
     this.cluster = StartupUTIL.createCluster(ip, port);
+    this.neededRecords = new HashMap<>();
+    this.neededRecords.put(0, "RMI Server started");
+    this.neededRecords.put(1, "Pathstore Application keyspace loaded");
+    this.neededRecords.put(2, "Daemons started");
   }
 
   /**
