@@ -46,7 +46,11 @@ class NodeDeploymentModal extends Component {
 
     /**
      * State:
-     * topology is array of objects denoting hierarchical structure
+     * topology: is array of objects denoting hierarchical structure
+     * updates: array of cached updates to be pushed after creation of your network update
+     * parentNodeId: current parentNodeId inputted on the form
+     * newNodeId: current newNodeId inputted on the form
+     * serverUUID: currently selected serverUUID
      *
      * @param props
      */
@@ -55,6 +59,7 @@ class NodeDeploymentModal extends Component {
 
         this.state = {
             topology: props.topology.slice(),
+            updates: [],
             servers: [],
             parentNodeId: null,
             newNodeId: null,
@@ -126,50 +131,80 @@ class NodeDeploymentModal extends Component {
         }
     };
 
+
+    /**
+     * TODO: Check newNodeId and parentId is valid
+     *
+     * @param event
+     */
     onFormSubmit = (event) => {
         event.preventDefault();
 
-        let data = JSON.stringify({
-            records: [
-                {
-                    parentId: this.state.parentNodeId,
-                    newNodeId: this.state.newNodeId,
-                    serverUUID: this.state.serverUUID
-                }
-            ]
+        this.state.topology.push({
+            parentid: parseInt(this.state.parentNodeId),
+            id: parseInt(this.state.newNodeId),
+            processStatus: "WAITING_DEPLOYMENT"
         });
 
-        alert(data);
+        this.state.update.push({
+            parentId: this.state.parentNodeId,
+            newNodeId: this.state.newNodeId,
+            serverUUID: this.state.serverUUID
+        });
 
+        this.setState({topology: this.state.topology, record: this.state.update});
+        ReactDOM.findDOMNode(this.messageForm).reset();
+    };
+
+    /**
+     * Submit all updates to the api.
+     */
+    submit = () => {
         fetch('/api/v1/deployment', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
             },
-            body: data
+            body: JSON.stringify({
+                records: this.state.update
+            })
         })
             .then(response => response.json())
             .then(response => {
                 alert(JSON.stringify(response));
-                this.state.topology.push({
-                    parentid: parseInt(this.state.parentNodeId),
-                    id: parseInt(this.state.newNodeId),
-                    processStatus: "WAITING_DEPLOYMENT"
-                });
-                this.setState({topology: this.state.topology});
-                ReactDOM.findDOMNode(this.messageForm).reset();
             });
     };
 
+    /**
+     * Update the parentNodeId based on what the user has given in the form
+     *
+     * @param event
+     */
     onParentNodeIdChange = (event) => this.setState({parentNodeId: parseInt(event.target.value)});
 
+    /**
+     * Updates the newNodeId based on what the user has given in the form
+     *
+     * @param event
+     */
     onNewNodeIdChange = (event) => this.setState({newNodeId: parseInt(event.target.value)});
 
+    /**
+     * Updates the serverUUID based on what the user has given in the form
+     *
+     * @param event
+     */
     onServerUUIDChange = (event) => this.setState({serverUUID: event.target.value});
 
+    /**
+     * Closes modal without submitting updates
+     */
     onClose = () => this.setState({topology: this.props.topology}, this.props.callback);
 
+    /**
+     * Callback for server creater to reload all servers from api to display on the form
+     */
     serverUpdateCallBack = () => this.componentDidMount();
 
     render() {
@@ -222,7 +257,8 @@ class NodeDeploymentModal extends Component {
                 <div>
                     <Servers servers={this.state.servers} callback={this.serverUpdateCallBack}/>
                 </div>
-                <button onClick={this.onClose}>close</button>
+                <Button onClick={this.submit}>Submit changes</Button>
+                <Button onClick={this.onClose}>Close</Button>
             </Modal>
         );
     }
