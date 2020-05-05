@@ -146,13 +146,13 @@ class NodeDeploymentModal extends Component {
             processStatus: "WAITING_DEPLOYMENT"
         });
 
-        this.state.update.push({
+        this.state.updates.push({
             parentId: this.state.parentNodeId,
             newNodeId: this.state.newNodeId,
             serverUUID: this.state.serverUUID
         });
 
-        this.setState({topology: this.state.topology, record: this.state.update});
+        this.setState({topology: this.state.topology, updates: this.state.updates});
         ReactDOM.findDOMNode(this.messageForm).reset();
     };
 
@@ -167,7 +167,7 @@ class NodeDeploymentModal extends Component {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                records: this.state.update
+                records: this.state.updates
             })
         })
             .then(response => response.json())
