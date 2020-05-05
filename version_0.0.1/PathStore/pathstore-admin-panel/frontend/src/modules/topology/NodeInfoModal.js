@@ -14,6 +14,8 @@ export default class NodeInfoModal extends Component {
      *
      * message: queried from application_management and parsed into a table
      * server: html info on the server info that, that node has
+     * retry: retry is set to a button iff the node is at the failed state of deployment
+     * retryData: json to send if the user clicks retry button
      * isOpen: denotes whether the modal is open or not.
      */
     constructor(props) {
@@ -21,6 +23,8 @@ export default class NodeInfoModal extends Component {
         this.state = {
             message: [],
             server: null,
+            retry: null,
+            retryData: null,
             isOpen: true
         };
     }
@@ -67,6 +71,7 @@ export default class NodeInfoModal extends Component {
                 this.setState({
                     message: this.formatClickEvent(messages),
                     server: this.formatServer(this.props.topology, this.props.servers),
+                    retry: this.retryButton(this.props.topology),
                     currentMessage: this.props.node
                 });
             });
@@ -162,6 +167,46 @@ export default class NodeInfoModal extends Component {
     };
 
     /**
+     * If a node has failed load a button to allow the user to reset the deployment state to deploying
+     *
+     * @param topology
+     * @returns {null|*}
+     */
+    retryButton = (topology) => {
+        const deployObject = topology.filter(i => i.id === this.props.node);
+
+        if (deployObject[0].processStatus === "FAILED") {
+            this.setState({
+                retryData: {
+                    parentId: deployObject[0].parentId,
+                    newNodeId: deployObject[0].newNodeId,
+                    serverUUID: deployObject[0].serverUUID
+                }
+            });
+            return <Button onClick={this.retryOnClick}>Retry</Button>;
+        } else return null;
+    };
+
+    /**
+     * Send put request to api to update deployment record
+     */
+    retryOnClick = () => {
+        fetch('/api/v1/deployment', {
+            method: 'PUT',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({record: this.state.retryData})
+        })
+            .then(response => response.json())
+            .then(response => {
+                alert("Success " + JSON.stringify(response));
+            });
+
+    };
+
+    /**
      * This function is called when the user clicks the close button on the modal
      */
     closeModal = () => {
@@ -172,6 +217,7 @@ export default class NodeInfoModal extends Component {
         return (
             <Modal isOpen={this.state.isOpen} style={{overlay: {zIndex: 1}}}>
                 {this.state.server}
+                {this.state.retry}
                 <Table>{this.state.message}</Table>
                 <button onClick={this.closeModal}>close</button>
             </Modal>

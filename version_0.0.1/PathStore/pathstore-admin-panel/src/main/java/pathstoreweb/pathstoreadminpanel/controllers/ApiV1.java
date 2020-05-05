@@ -16,7 +16,10 @@ import pathstoreweb.pathstoreadminpanel.services.applications.GetApplications;
 import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
 import pathstoreweb.pathstoreadminpanel.services.deployment.AddDeploymentRecords;
 import pathstoreweb.pathstoreadminpanel.services.deployment.GetDeploymentRecords;
+import pathstoreweb.pathstoreadminpanel.services.deployment.UpdateDeploymentRecord;
 import pathstoreweb.pathstoreadminpanel.services.deployment.payload.AddDeploymentRecordPayload;
+import pathstoreweb.pathstoreadminpanel.services.deployment.payload.UpdateDeploymentRecordPayload;
+import pathstoreweb.pathstoreadminpanel.services.deployment.validator.ValidParentId;
 import pathstoreweb.pathstoreadminpanel.services.servers.AddServer;
 import pathstoreweb.pathstoreadminpanel.services.servers.GetServers;
 import pathstoreweb.pathstoreadminpanel.services.servers.payload.AddServerPayload;
@@ -138,5 +141,21 @@ public class ApiV1 {
     return bindingResult.hasErrors()
         ? new ValidityErrorFormatter(bindingResult.getAllErrors()).format()
         : new AddDeploymentRecords(payload).response();
+  }
+
+  /**
+   * Put request for deployment records to transfer a failed record to deploying
+   *
+   * @param payload valid payload
+   * @param bindingResult whether or not payload is valid
+   * @return response. Either 200 or 400
+   */
+  @PutMapping(Endpoints.DEPLOYMENT)
+  public ResponseEntity<String> deploy(
+      @RequestBody @Valid final UpdateDeploymentRecordPayload payload,
+      final BindingResult bindingResult) {
+    return bindingResult.hasErrors()
+        ? new ValidityErrorFormatter(bindingResult.getAllErrors()).format()
+        : new UpdateDeploymentRecord(payload).response();
   }
 }
