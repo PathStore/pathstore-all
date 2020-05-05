@@ -356,7 +356,10 @@ public class StartUpHandler {
     commands.add(new Exec(sshUtil, "docker build -t pathstore pathstore-install/pathstore", 0));
     // Start pathstore
     commands.add(
-        new Exec(sshUtil, "docker run --network=host -dit --rm --name pathstore pathstore", 0));
+        new Exec(
+            sshUtil,
+            "docker run --network=host -dit --rm -v ~/pathstore-install/pathstore:/etc/pathstore --name pathstore pathstore",
+            0));
     // Wait for pathstore to come online
     commands.add(new WaitForPathStore(ip, cassandraPort));
 

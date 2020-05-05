@@ -247,7 +247,8 @@ public class StartupUTIL {
     commands.add(new RemoveGeneratedPropertiesFile(destinationToStore));
     // Transfer base image
     commands.add(
-        new FileTransfer(sshUtil, "/etc/pathstore/base.tar", "pathstore-install/pathstore/base.tar"));
+        new FileTransfer(
+            sshUtil, "/etc/pathstore/base.tar", "pathstore-install/pathstore/base.tar"));
     // Transfer cassandra docker file
     commands.add(
         new FileTransfer(
@@ -273,7 +274,10 @@ public class StartupUTIL {
     commands.add(new Exec(sshUtil, "docker build -t pathstore pathstore-install/pathstore", 0));
     // Start pathstore
     commands.add(
-        new Exec(sshUtil, "docker run --network=host -dit --rm --name pathstore pathstore", 0));
+        new Exec(
+            sshUtil,
+            "docker run --network=host -dit --rm -v ~/pathstore-install/pathstore:/etc/pathstore --name pathstore pathstore",
+            0));
     // Wait for pathstore to come online
     commands.add(new WaitForPathStore(ip, cassandraPort));
 

@@ -1,11 +1,5 @@
 FROM base 
 
-# Copy base image tar file to /etc/pathstore
-COPY base.tar /etc/pathstore/base.tar
-
-# Copy config file
-COPY pathstore.properties /etc/pathstore/pathstore.properties
-
 # set workdir
 WORKDIR /cloudpath/version_0.0.1/PathStore/pathstore
 
