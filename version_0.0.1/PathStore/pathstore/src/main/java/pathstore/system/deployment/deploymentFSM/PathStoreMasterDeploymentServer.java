@@ -12,7 +12,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * This class is used to read the deployment table and determine when to transition nodes.
+ * TODO; Handle removal of nodes
+ *
+ * <p>This class is used to read the deployment table and determine when to transition nodes.
  *
  * <p>Once a record has been transitions to deploying the slave deployment server will then execute
  * the deployment step. Once this step occurs it can either transition to deployed or failed. If
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
  */
 public class PathStoreMasterDeploymentServer extends Thread {
 
+  /** Gather all deployment records into a set of ananlysis */
   @Override
   @SuppressWarnings("ALL")
   public void run() {
@@ -57,6 +60,13 @@ public class PathStoreMasterDeploymentServer extends Thread {
     }
   }
 
+  /**
+   * Produces a set of entries based on a certain status
+   *
+   * @param entries entries to filter
+   * @param state how to filter them
+   * @return set of entries that hold the filter state
+   */
   private Set<DeploymentEntry> parseByState(
       final Set<DeploymentEntry> entries, final DeploymentProcessStatus state) {
     return entries.stream()
@@ -64,6 +74,13 @@ public class PathStoreMasterDeploymentServer extends Thread {
         .collect(Collectors.toSet());
   }
 
+  /**
+   * Produces a set of node id's based on a deployment state
+   *
+   * @param entries entries to filter
+   * @param state how to filter them
+   * @return set of node id's that are at a certain state
+   */
   private Set<Integer> parseByStateToNewNodeID(
       final Set<DeploymentEntry> entries, final DeploymentProcessStatus state) {
     return entries.stream()
@@ -72,11 +89,25 @@ public class PathStoreMasterDeploymentServer extends Thread {
         .collect(Collectors.toSet());
   }
 
+  /**
+   * Logic to transition nodes
+   *
+   * <p>If an entry is waiting for -1 or the entry that its waiting for is finished transition the
+   * given node to deploying
+   *
+   * @param waiting set of waiting nodes
+   * @param deployed set of id's that are finished
+   */
   private void update(final Set<DeploymentEntry> waiting, final Set<Integer> deployed) {
     for (DeploymentEntry entry : waiting)
       if (entry.waitFor == -1 || deployed.contains(entry.waitFor)) this.transition(entry);
   }
 
+  /**
+   * Transition the node in the table from waiting to deploying
+   *
+   * @param entry entry to transition
+   */
   private void transition(final DeploymentEntry entry) {
     Session clientSession = PathStoreCluster.getInstance().connect();
 

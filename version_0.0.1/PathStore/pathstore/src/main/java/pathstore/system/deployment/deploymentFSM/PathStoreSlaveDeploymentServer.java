@@ -33,10 +33,13 @@ import static pathstore.common.Constants.SERVERS_COLUMNS.*;
  */
 public class PathStoreSlaveDeploymentServer extends Thread {
 
-  private static final String branch = "pathstore_init_script";
   private static final int cassandraPort = 9052;
   private static final int rmiPort = 1099;
 
+  /**
+   * Iterate over all deployment records. Find a record that has the parent node id as the current
+   * node. If the state of that node is deploying then start the deployment process
+   */
   @Override
   public void run() {
     while (true) {
@@ -85,6 +88,16 @@ public class PathStoreSlaveDeploymentServer extends Thread {
     }
   }
 
+  /**
+   * Deploy a node a new child node.
+   *
+   * @param entry record that triggered the deployment process
+   * @param ip ip of the server
+   * @param username username of the server
+   * @param password password of the server
+   * @see StartupUTIL#initList(SSHUtil, String, int, int, Role, String, int, String, int, String,
+   *     int, String, int, String)
+   */
   private void deploy(
       final DeploymentEntry entry, final String ip, final String username, final String password) {
     System.out.println(
@@ -100,7 +113,6 @@ public class PathStoreSlaveDeploymentServer extends Thread {
             StartupUTIL.initList(
                 sshUtil,
                 ip,
-                branch,
                 entry.newNodeId,
                 entry.parentNodeId,
                 Role.SERVER,
@@ -131,6 +143,12 @@ public class PathStoreSlaveDeploymentServer extends Thread {
     }
   }
 
+  /**
+   * Updates a records state to either failed or deployed based on the result of deployment
+   *
+   * @param entry record that triggered deployment
+   * @param status status to update entry to
+   */
   private void updateState(final DeploymentEntry entry, final DeploymentProcessStatus status) {
     Session clientSession = PathStoreCluster.getInstance().connect();
 

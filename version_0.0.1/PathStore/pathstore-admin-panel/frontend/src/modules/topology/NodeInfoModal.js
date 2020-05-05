@@ -1,6 +1,7 @@
 import React, {Component} from "react";
 import Modal from "react-modal";
 import Table from "react-bootstrap/Table";
+import Button from "react-bootstrap/Button";
 
 /**
  * This class displays the current applications installed on a specific node.
@@ -178,8 +179,8 @@ export default class NodeInfoModal extends Component {
         if (deployObject[0].processStatus === "FAILED") {
             this.setState({
                 retryData: {
-                    parentId: deployObject[0].parentId,
-                    newNodeId: deployObject[0].newNodeId,
+                    parentId: deployObject[0].parentid,
+                    newNodeId: deployObject[0].id,
                     serverUUID: deployObject[0].serverUUID
                 }
             });
@@ -191,6 +192,7 @@ export default class NodeInfoModal extends Component {
      * Send put request to api to update deployment record
      */
     retryOnClick = () => {
+        alert(JSON.stringify(this.state.retryData));
         fetch('/api/v1/deployment', {
             method: 'PUT',
             headers: {

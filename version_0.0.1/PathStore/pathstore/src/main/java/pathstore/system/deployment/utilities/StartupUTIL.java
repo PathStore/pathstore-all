@@ -167,7 +167,6 @@ public class StartupUTIL {
   /**
    * @param sshUtil used for commands that need to use ssh
    * @param ip ip of new node
-   * @param branch branch from github to build from
    * @param nodeID new node's id
    * @param parentNodeId new node's parent id
    * @param role role of new node
@@ -185,7 +184,6 @@ public class StartupUTIL {
   public static List<ICommand> initList(
       final SSHUtil sshUtil,
       final String ip,
-      final String branch,
       final int nodeID,
       final int parentNodeId,
       final Role role,
