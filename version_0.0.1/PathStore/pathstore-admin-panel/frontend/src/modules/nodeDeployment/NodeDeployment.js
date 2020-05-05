@@ -172,7 +172,7 @@ class NodeDeploymentModal extends Component {
         })
             .then(response => response.json())
             .then(response => {
-                alert("Success");
+                alert("Success " + JSON.stringify(response));
             }).catch(response => {
             alert("ERROR: " + JSON.stringify(response));
         });
@@ -197,7 +197,14 @@ class NodeDeploymentModal extends Component {
      *
      * @param event
      */
-    onServerUUIDChange = (event) => this.setState({serverUUID: event.target.value});
+    onServerUUIDChange = (event) => {
+
+        const serverName = event.target.value;
+
+        for (let i = 0; i < this.state.servers.length; i++)
+            if (this.state.servers[i].name === serverName)
+                this.setState({serverUUID: this.state.servers[i].server_uuid});
+    };
 
     /**
      * Closes modal without submitting updates
@@ -215,7 +222,7 @@ class NodeDeploymentModal extends Component {
 
         for (let i = 0; i < this.state.servers.length; i++)
             servers.push(
-                <option key={i}>{this.state.servers[i].server_uuid}</option>
+                <option key={i}>{this.state.servers[i].name}</option>
             );
 
         return (

@@ -1,6 +1,7 @@
 package pathstoreweb.pathstoreadminpanel.services.servers.payload;
 
 import pathstoreweb.pathstoreadminpanel.services.servers.Server;
+import pathstoreweb.pathstoreadminpanel.services.servers.validator.NameUnique;
 import pathstoreweb.pathstoreadminpanel.services.servers.validator.ServerConnectionTest;
 import pathstoreweb.pathstoreadminpanel.services.servers.validator.ServerUnique;
 
@@ -16,6 +17,10 @@ public final class AddServerPayload {
   @ServerUnique(message = "Server with that ip already exists")
   public final String ip;
 
+  /** Human identifiable name of server */
+  @NameUnique(message = "Name used to identify server must be unique")
+  public final String name;
+
   /**
    * TODO: Check if docker is installed and accessible with the credentials given
    *
@@ -30,6 +35,7 @@ public final class AddServerPayload {
   public AddServerPayload(
       final String ip, final String username, final String password, final String name) {
     this.ip = ip;
+    this.name = name;
     this.server = new Server(UUID.randomUUID(), ip, username, password, name);
   }
 }
