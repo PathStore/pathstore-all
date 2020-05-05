@@ -51,6 +51,7 @@ class NodeDeploymentModal extends Component {
      * parentNodeId: current parentNodeId inputted on the form
      * newNodeId: current newNodeId inputted on the form
      * serverUUID: currently selected serverUUID
+     * serverName: name of currently select server
      *
      * @param props
      */
@@ -63,7 +64,8 @@ class NodeDeploymentModal extends Component {
             servers: [],
             parentNodeId: null,
             newNodeId: null,
-            serverUUID: null
+            serverUUID: null,
+            serverName: null
         }
     }
 
@@ -203,7 +205,7 @@ class NodeDeploymentModal extends Component {
 
         for (let i = 0; i < this.state.servers.length; i++)
             if (this.state.servers[i].name === serverName)
-                this.setState({serverUUID: this.state.servers[i].server_uuid});
+                this.setState({serverUUID: this.state.servers[i].server_uuid, serverName: serverName});
     };
 
     /**
@@ -255,7 +257,7 @@ class NodeDeploymentModal extends Component {
                             </Form.Text>
                         </Form.Group>
                         <Form.Control as="select" single onChange={this.onServerUUIDChange}
-                                      value={this.state.serverUUID}>
+                                      value={this.state.serverName}>
                             {servers}
                         </Form.Control>
                         <Button variant="primary" type="submit">
