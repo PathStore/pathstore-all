@@ -95,38 +95,36 @@ public class PathStoreSlaveDeploymentServer extends Thread {
 
       System.out.println("Connection established to new node");
 
-      for (ICommand command :
-          StartupUTIL.initList(
-              sshUtil,
-              ip,
-              branch,
-              entry.newNodeId,
-              entry.parentNodeId,
-              Role.SERVER,
-              "127.0.0.1",
-              rmiPort,
-              PathStoreProperties.getInstance().ExternalAddress,
-              rmiPort,
-              "127.0.0.1",
-              cassandraPort,
-              PathStoreProperties.getInstance().ExternalAddress,
-              cassandraPort,
-              "../docker-files/pathstore/pathstore.properties")) {
-        System.out.println(command);
-        try {
+      try {
+        for (ICommand command :
+            StartupUTIL.initList(
+                sshUtil,
+                ip,
+                branch,
+                entry.newNodeId,
+                entry.parentNodeId,
+                Role.SERVER,
+                "127.0.0.1",
+                rmiPort,
+                PathStoreProperties.getInstance().ExternalAddress,
+                rmiPort,
+                "127.0.0.1",
+                cassandraPort,
+                PathStoreProperties.getInstance().ExternalAddress,
+                cassandraPort,
+                "../docker-files/pathstore/pathstore.properties")) {
+          System.out.println(command);
           command.execute();
-        } catch (CommandError commandError) {
-          System.out.println("[ERROR] " + commandError.errorMessage);
-          this.updateState(entry, DeploymentProcessStatus.FAILED);
-          break;
         }
+        System.out.println("Successfully deployed");
+        this.updateState(entry, DeploymentProcessStatus.DEPLOYED);
+      } catch (CommandError commandError) {
+        System.out.println("Deployment failed");
+        System.out.println("[ERROR] " + commandError.errorMessage);
+        this.updateState(entry, DeploymentProcessStatus.FAILED);
+      } finally {
+        sshUtil.disconnect();
       }
-
-      sshUtil.disconnect();
-
-      System.out.println("Successfully deployed");
-      this.updateState(entry, DeploymentProcessStatus.DEPLOYED);
-
     } catch (JSchException e) {
       System.err.println("Could not connect to new node");
       this.updateState(entry, DeploymentProcessStatus.FAILED);

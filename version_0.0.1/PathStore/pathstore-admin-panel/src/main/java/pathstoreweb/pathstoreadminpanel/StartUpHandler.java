@@ -343,10 +343,11 @@ public class StartUpHandler {
                 "docker build -t base --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\"%s\" pathstore-install/base",
                 branch),
             0));
-    // Save base to tar file and store in pathstore directory
-    commands.add(new Exec(sshUtil, "docker save -o pathstore-install/pathstore/base.tar base", 0));
     // Build cassandra
     commands.add(new Exec(sshUtil, "docker build -t cassandra pathstore-install/cassandra", 0));
+    // Save cassandra to tar file and store in pathstore directory
+    commands.add(
+        new Exec(sshUtil, "docker save -o pathstore-install/pathstore/cassandra.tar cassandra", 0));
     // Start cassandra
     commands.add(
         new Exec(sshUtil, "docker run --network=host -dit --rm --name cassandra cassandra", 0));
@@ -354,6 +355,9 @@ public class StartUpHandler {
     commands.add(new WaitForCassandra(ip, cassandraPort));
     // Build pathstore
     commands.add(new Exec(sshUtil, "docker build -t pathstore pathstore-install/pathstore", 0));
+    // Save pathstore to tar file and store in pathstore directory
+    commands.add(
+        new Exec(sshUtil, "docker save -o pathstore-install/pathstore/pathstore.tar pathstore", 0));
     // Start pathstore
     commands.add(
         new Exec(

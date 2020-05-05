@@ -245,10 +245,6 @@ public class StartupUTIL {
             sshUtil, destinationToStore, "pathstore-install/pathstore/pathstore.properties"));
     // Remove properties file
     commands.add(new RemoveGeneratedPropertiesFile(destinationToStore));
-    // Transfer base image
-    commands.add(
-        new FileTransfer(
-            sshUtil, "/etc/pathstore/base.tar", "pathstore-install/pathstore/base.tar"));
     // Transfer cassandra docker file
     commands.add(
         new FileTransfer(
@@ -261,17 +257,23 @@ public class StartupUTIL {
             sshUtil,
             "../docker-files/pathstore/Dockerfile",
             "pathstore-install/pathstore/Dockerfile"));
-    // Load base
-    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/pathstore/base.tar", 0));
-    // Build cassandra
-    commands.add(new Exec(sshUtil, "docker build -t cassandra pathstore-install/cassandra", 0));
+    // Transfer cassandra image
+    commands.add(
+        new FileTransfer(
+            sshUtil, "/etc/pathstore/cassandra.tar", "pathstore-install/pathstore/cassandra.tar"));
+    // Load cassandra
+    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/pathstore/cassandra.tar", 0));
     // Start cassandra
     commands.add(
         new Exec(sshUtil, "docker run --network=host -dit --rm --name cassandra cassandra", 0));
     // Wait for cassandra to start
     commands.add(new WaitForCassandra(ip, cassandraPort));
-    // Build pathstore
-    commands.add(new Exec(sshUtil, "docker build -t pathstore pathstore-install/pathstore", 0));
+    // Transfer pathstore image
+    commands.add(
+        new FileTransfer(
+            sshUtil, "/etc/pathstore/pathstore.tar", "pathstore-install/pathstore/pathstore.tar"));
+    // Load pathstore
+    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/pathstore/pathstore.tar", 0));
     // Start pathstore
     commands.add(
         new Exec(
