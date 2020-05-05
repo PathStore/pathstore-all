@@ -72,12 +72,20 @@ export default class ViewTopology extends Component {
         }
     };
 
+    /**
+     * Display different colour based on status
+     *
+     * @param status
+     * @returns {string}
+     */
     getClassName = (status) => {
         switch (status) {
             case "WAITING_DEPLOYMENT":
                 return 'waiting_node';
             case "DEPLOYING":
                 return 'installing_node';
+            case "FAILED":
+                return 'uninstalled_node';
             default:
                 return 'installed_node';
         }
