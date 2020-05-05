@@ -127,17 +127,18 @@ export default class DeployApplication extends Component {
 
         url += "&applicationName=" + this.state.application;
 
+        //TODO: Handle errors using catch
         fetch(url, {
             method: 'POST'
         }).then(response => response.json())
             .then(response => {
                 ReactDOM.findDOMNode(this.messageForm).reset();
-                this.setState({responseModalData: response, responseModalShow: true, responseModalType: 0});
-            }).catch(response => this.setState({
-            responseModalData: response,
-            responseModalShow: true,
-            responseModalType: Array.isArray(response) ? 1 : 2
-        }))
+                this.setState({
+                    responseModalData: response,
+                    responseModalShow: true,
+                    responseModalType: Array.isArray(response) ? response[0].error === undefined ? 0 : 1 : 2
+                });
+            });
     };
 
     /**

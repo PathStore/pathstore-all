@@ -32,7 +32,7 @@ export default class DeployApplicationResponseModal extends Component {
      * Queries the previously installed nodes and stores the array in the previous element in the state
      */
     componentDidMount() {
-        if (this.state.responseType === 0)
+        if (this.props.type === 0)
             fetch('/api/v1/application_management')
                 .then(response => response.json())
                 .then(response => this.setState({previous: response.filter(i => i.keyspace_name === this.props.data[0].keyspace_name).map(i => i.nodeid)}));
