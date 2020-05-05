@@ -56,7 +56,7 @@ export default class DeployApplication extends Component {
      * @param nextContext
      */
     componentWillReceiveProps(props, nextContext) {
-        if (this.props.refresh !== props.refresh)
+        if (this.props.refresh !== props.refresh || this.props.applications !== props.applications)
             this.setState({
                 topology: this.parseTopology(props.topology),
             }, () => this.componentDidMount());

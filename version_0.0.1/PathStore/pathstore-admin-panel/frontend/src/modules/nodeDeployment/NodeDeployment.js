@@ -11,9 +11,17 @@ import Servers from "../servers/Servers";
  * Props:
  *
  * topology: data from API
+ * servers: server info from api
+ * forceRefresh: refresh serverInfo
  */
 export default class NodeDeployment extends Component {
 
+    /**
+     * State:
+     * show: whether to show the modal or not
+     *
+     * @param props
+     */
     constructor(props) {
         super(props);
 
@@ -22,9 +30,16 @@ export default class NodeDeployment extends Component {
         };
     }
 
+    /**
+     * Close modal
+     */
     callBack = () => this.setState({show: false});
 
 
+    /**
+     * Render button
+     * @returns {*}
+     */
     render() {
         return (
             <div>
