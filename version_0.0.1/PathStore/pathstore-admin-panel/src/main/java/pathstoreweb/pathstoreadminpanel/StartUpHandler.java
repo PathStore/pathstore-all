@@ -3,8 +3,7 @@ package pathstoreweb.pathstoreadminpanel;
 import com.jcraft.jsch.JSchException;
 import pathstore.common.Constants;
 import pathstore.common.Role;
-import pathstore.system.deployment.commands.CommandError;
-import pathstore.system.deployment.commands.ICommand;
+import pathstore.system.deployment.commands.*;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstore.system.deployment.utilities.StartupUTIL;
 
@@ -107,7 +106,7 @@ public class StartUpHandler {
       System.out.println("Connected");
 
       for (ICommand command :
-          StartupUTIL.initList(
+          this.initList(
               sshUtil,
               ip,
               branch,
@@ -234,6 +233,134 @@ public class StartUpHandler {
           "You cannot respond with the following values: " + Arrays.toString(invalidResponses));
       return this.askQuestionWithInvalidResponse(question, invalidResponses);
     } else return response;
+  }
+
+  /**
+   * @param sshUtil used for commands that need to use ssh
+   * @param ip ip of new node
+   * @param branch branch from github to build from
+   * @param nodeID new node's id
+   * @param parentNodeId new node's parent id
+   * @param role role of new node
+   * @param rmiRegistryIP new node's local rmi registry ip
+   * @param rmiRegistryPort new node's local rmi registry port
+   * @param rmiRegistryParentIP new node's parent rmi registry ip
+   * @param rmiRegistryParentPort new node's parent rmi registry port
+   * @param cassandraIP new node's local cassandra instance ip
+   * @param cassandraPort new node's local cassandra instance port
+   * @param cassandraParentIP new node's parent cassandra instance ip
+   * @param cassandraParentPort new nodes' parent cassandra instance port
+   * @param destinationToStore where to store the new node's properties file
+   * @return list of deployment commands to execute
+   */
+  public List<ICommand> initList(
+      final SSHUtil sshUtil,
+      final String ip,
+      final String branch,
+      final int nodeID,
+      final int parentNodeId,
+      final Role role,
+      final String rmiRegistryIP,
+      final int rmiRegistryPort,
+      final String rmiRegistryParentIP,
+      final int rmiRegistryParentPort,
+      final String cassandraIP,
+      final int cassandraPort,
+      final String cassandraParentIP,
+      final int cassandraParentPort,
+      final String destinationToStore) {
+
+    List<ICommand> commands = new ArrayList<>();
+
+    // Check for docker access and that docker is online
+    commands.add(new Exec(sshUtil, "docker ps", 0));
+    // Potentially kill old cassandra container
+    commands.add(new Exec(sshUtil, "docker kill cassandra", -1));
+    // Potentially remove old cassandra image
+    commands.add(new Exec(sshUtil, "docker image rm cassandra", -1));
+    // Potentially kill old pathstore container
+    commands.add(new Exec(sshUtil, "docker kill pathstore", -1));
+    // Potentially remove old pathstore image
+    commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
+    // Potentially remove old file associated with install
+    commands.add(new Exec(sshUtil, "rm -rf pathstore-install", -1));
+    // Potentially remove old base image
+    commands.add(new Exec(sshUtil, "docker image rm base", -1));
+    // Create pathstore install dir
+    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install", 0));
+    // Create base dir
+    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/base", 0));
+    // Create cassandra dir
+    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/cassandra", 0));
+    // Create pathstore dir
+    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/pathstore", 0));
+    // Generate pathstore properties file
+    commands.add(
+        new GeneratePropertiesFile(
+            nodeID,
+            ip,
+            parentNodeId,
+            role,
+            rmiRegistryIP,
+            rmiRegistryPort,
+            rmiRegistryParentIP,
+            rmiRegistryParentPort,
+            cassandraIP,
+            cassandraPort,
+            cassandraParentIP,
+            cassandraParentPort,
+            destinationToStore));
+    // Transfer properties file
+    commands.add(
+        new FileTransfer(
+            sshUtil, destinationToStore, "pathstore-install/pathstore/pathstore.properties"));
+    // Remove properties file
+    commands.add(new RemoveGeneratedPropertiesFile(destinationToStore));
+    // Transfer deploy key
+    commands.add(
+        new FileTransfer(sshUtil, "../docker-files/deploy_key", "pathstore-install/deploy_key"));
+    // Transfer base docker file
+    commands.add(
+        new FileTransfer(
+            sshUtil, "../docker-files/base/Dockerfile", "pathstore-install/base/Dockerfile"));
+    // Transfer cassandra docker file
+    commands.add(
+        new FileTransfer(
+            sshUtil,
+            "../docker-files/cassandra/Dockerfile",
+            "pathstore-install/cassandra/Dockerfile"));
+    // Transfer pathstore docker file
+    commands.add(
+        new FileTransfer(
+            sshUtil,
+            "../docker-files/pathstore/Dockerfile",
+            "pathstore-install/pathstore/Dockerfile"));
+    // Build base
+    commands.add(
+        new Exec(
+            sshUtil,
+            String.format(
+                "docker build -t base --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\"%s\" pathstore-install/base",
+                branch),
+            0));
+    // Save base to tar file and store in pathstore directory
+    commands.add(new Exec(sshUtil, "docker save -o pathstore-install/pathstore/base.tar base", 0));
+    // Build cassandra
+    commands.add(new Exec(sshUtil, "docker build -t cassandra pathstore-install/cassandra", 0));
+    // Start cassandra
+    commands.add(
+        new Exec(sshUtil, "docker run --network=host -dit --rm --name cassandra cassandra", 0));
+    // Wait for cassandra to start
+    commands.add(new WaitForCassandra(ip, cassandraPort));
+    // Build pathstore
+    commands.add(new Exec(sshUtil, "docker build -t pathstore pathstore-install/pathstore", 0));
+    // Start pathstore
+    commands.add(
+        new Exec(sshUtil, "docker run --network=host -dit --rm --name pathstore pathstore", 0));
+    // Wait for pathstore to come online
+    commands.add(new WaitForPathStore(ip, cassandraPort));
+
+    return commands;
   }
 
   /** close scanner */
