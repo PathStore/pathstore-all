@@ -60,10 +60,16 @@ export default class App extends Component {
             });
     }
 
+    /**
+     * Remove timer when component unmounts
+     */
     componentWillUnmount() {
         clearInterval(this.state.timer);
     }
 
+    /**
+     * Load deployment records on a timer
+     */
     loadDeploy = () => {
         fetch('/api/v1/deployment')
             .then(response => response.json())
@@ -72,8 +78,6 @@ export default class App extends Component {
 
                 for (let i = 0; i < response.length; i++)
                     messages.push(this.createDeploymentObject(response[i]));
-
-                console.log(messages);
 
                 this.setState({deployment: messages, refresh: !this.state.refresh});
             })

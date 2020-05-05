@@ -5,6 +5,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import org.springframework.http.ResponseEntity;
 import pathstore.common.Constants;
 
 import java.util.HashMap;
@@ -98,7 +99,7 @@ class ApplicationUtil {
    * @param noWrittenEntriesErrorMessage state message for redundant requests
    * @return json formatted response
    */
-  static String handleResponse(
+  static ResponseEntity<String> handleResponse(
       final Session session,
       final Map<Integer, ApplicationEntry> currentState,
       final String conflictMessage,

@@ -2,6 +2,8 @@ package pathstoreweb.pathstoreadminpanel.services.servers.formatter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 import pathstoreweb.pathstoreadminpanel.services.servers.GetServers;
@@ -22,7 +24,7 @@ public class GetServersFormatter implements IFormatter {
 
   /** @return list of all servers queried in json format */
   @Override
-  public String format() {
+  public ResponseEntity<String> format() {
 
     JSONArray jsonArray = new JSONArray();
 
@@ -37,6 +39,6 @@ public class GetServersFormatter implements IFormatter {
       jsonArray.put(object);
     }
 
-    return jsonArray.toString();
+    return new ResponseEntity<>(jsonArray.toString(), HttpStatus.OK);
   }
 }

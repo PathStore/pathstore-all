@@ -2,6 +2,8 @@ package pathstoreweb.pathstoreadminpanel.services.applications.formatter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applications.Application;
@@ -32,7 +34,7 @@ public class GetApplicationsFormatter implements IFormatter {
    * @return json array
    */
   @Override
-  public String format() {
+  public ResponseEntity<String> format() {
     JSONArray response = new JSONArray();
 
     for (Application application : this.applications) {
@@ -45,6 +47,6 @@ public class GetApplicationsFormatter implements IFormatter {
       response.put(object);
     }
 
-    return response.toString();
+    return new ResponseEntity<>(response.toString(), HttpStatus.OK);
   }
 }

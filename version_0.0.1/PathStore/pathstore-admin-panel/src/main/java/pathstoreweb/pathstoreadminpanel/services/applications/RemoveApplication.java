@@ -1,5 +1,6 @@
 package pathstoreweb.pathstoreadminpanel.services.applications;
 
+import org.springframework.http.ResponseEntity;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 /**
@@ -10,7 +11,7 @@ import pathstoreweb.pathstoreadminpanel.services.IService;
  */
 public class RemoveApplication implements IService {
   @Override
-  public String response() {
+  public ResponseEntity<String> response() {
     return null;
   }
 }

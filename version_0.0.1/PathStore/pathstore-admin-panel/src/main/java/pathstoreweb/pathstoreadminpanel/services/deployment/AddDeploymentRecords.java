@@ -3,6 +3,7 @@ package pathstoreweb.pathstoreadminpanel.services.deployment;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.deployment.deploymentFSM.DeploymentEntry;
@@ -35,7 +36,7 @@ public class AddDeploymentRecords implements IService {
 
   /** @return {@link DeploymentRecordsFormatter#format()} */
   @Override
-  public String response() {
+  public ResponseEntity<String> response() {
     return new DeploymentRecordsFormatter(this.writeEntries()).format();
   }
 

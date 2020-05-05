@@ -9,6 +9,7 @@ import '../../Circles.css';
  * Props:
  * show: to show the modal or not
  * topology: topology array of network
+ * type: what type of data to display
  * data: response from api request
  * callback: to close the modal
  */
@@ -17,16 +18,13 @@ export default class DeployApplicationResponseModal extends Component {
     /**
      * State:
      * previous: list of nodes previously installed with the corresponding keyspace
-     * responseType: based on what kind of response we get we given an integer value to represent it. 0 is normal response,
-     * 1 is user input error, 2 is an error that occurred while executed the request
      *
      * @param props
      */
     constructor(props) {
         super(props);
         this.state = {
-            previous: null,
-            responseType: Array.isArray(this.props.data) ? (this.props.data[0].error === undefined ? 0 : 1) : 2
+            previous: null
         };
     }
 
@@ -46,7 +44,7 @@ export default class DeployApplicationResponseModal extends Component {
      * @returns {*}
      */
     parseData = (data) => {
-        switch (this.state.responseType) {
+        switch (this.props.type) {
             case 0:
                 return this.parseSuccess(data);
             case 1:
@@ -195,7 +193,7 @@ export default class DeployApplicationResponseModal extends Component {
         let data = null;
 
         if (parsedData !== null) {
-            switch (this.state.responseType) {
+            switch (this.props.type) {
                 case 0:
                     data = this.createTree(this.props.topology, -1, parsedData.data, this.state.previous);
                     break;
@@ -213,7 +211,7 @@ export default class DeployApplicationResponseModal extends Component {
         let tree = null;
 
         if (data !== null) {
-            switch (this.state.responseType) {
+            switch (this.props.type) {
                 case 0:
                     tree =
                         <div>

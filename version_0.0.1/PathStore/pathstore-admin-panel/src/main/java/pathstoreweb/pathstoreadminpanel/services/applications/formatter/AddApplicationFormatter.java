@@ -1,6 +1,8 @@
 package pathstoreweb.pathstoreadminpanel.services.applications.formatter;
 
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 
 /**
@@ -21,11 +23,11 @@ public class AddApplicationFormatter implements IFormatter {
 
   /** @return json wrapped status */
   @Override
-  public String format() {
+  public ResponseEntity<String> format() {
     JSONObject object = new JSONObject();
 
     object.put("keyspace_created", this.status);
 
-    return object.toString();
+    return new ResponseEntity<>(object.toString(), HttpStatus.OK);
   }
 }

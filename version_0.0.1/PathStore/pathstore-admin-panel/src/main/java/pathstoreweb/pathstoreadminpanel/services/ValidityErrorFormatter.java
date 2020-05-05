@@ -3,6 +3,8 @@ package pathstoreweb.pathstoreadminpanel.services;
 import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
 
@@ -23,7 +25,7 @@ public class ValidityErrorFormatter implements IFormatter {
 
   /** @return json array of all the errors */
   @Override
-  public String format() {
+  public ResponseEntity<String> format() {
     JSONArray array = new JSONArray();
 
     for (ObjectError error : this.objectErrorList) {
@@ -34,6 +36,6 @@ public class ValidityErrorFormatter implements IFormatter {
       array.put(object);
     }
 
-    return array.toString();
+    return new ResponseEntity<>(array.toString(), HttpStatus.BAD_REQUEST);
   }
 }

@@ -4,6 +4,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import org.springframework.http.ResponseEntity;
 import pathstore.common.Constants;
 import pathstore.system.PathStorePriviledgedCluster;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
@@ -71,7 +72,7 @@ public class AddApplication implements IService {
    * @return status: success / failure
    */
   @Override
-  public String response() {
+  public ResponseEntity<String> response() {
     try {
       this.loadSchemas(getMaxAppId(), this.getUserPassSchema());
     } catch (Exception e) {

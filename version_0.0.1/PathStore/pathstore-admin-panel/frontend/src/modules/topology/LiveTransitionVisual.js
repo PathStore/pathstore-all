@@ -124,7 +124,6 @@ class LiveTransitionVisualModal extends Component {
         fetch('/api/v1/application_management')
             .then(response => response.json())
             .then(response => {
-                console.log("Update");
                 const keyspace_filtered = response.filter(i => i.keyspace_name === this.props.keyspace);
                 this.setState({
                         waiting: keyspace_filtered.filter(i => i.process_status === "WAITING_INSTALL").map(i => parseInt(i.nodeid)),

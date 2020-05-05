@@ -1,6 +1,8 @@
 package pathstoreweb.pathstoreadminpanel.services.servers.formatter;
 
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 
@@ -26,13 +28,13 @@ public class AddServerFormatter implements IFormatter {
 
   /** @return {server_uuid: {@link #serverUUID}, ip: {@link #ip}} */
   @Override
-  public String format() {
+  public ResponseEntity<String> format() {
 
     JSONObject object = new JSONObject();
 
     object.put(Constants.SERVERS_COLUMNS.SERVER_UUID, this.serverUUID.toString());
     object.put(Constants.SERVERS_COLUMNS.IP, this.ip);
 
-    return object.toString();
+    return new ResponseEntity<>(object.toString(), HttpStatus.OK);
   }
 }

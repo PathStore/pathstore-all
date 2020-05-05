@@ -172,8 +172,10 @@ class NodeDeploymentModal extends Component {
         })
             .then(response => response.json())
             .then(response => {
-                alert(JSON.stringify(response));
-            });
+                alert("Success");
+            }).catch(response => {
+            alert("ERROR: " + JSON.stringify(response));
+        });
     };
 
     /**

@@ -2,6 +2,8 @@ package pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatte
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import pathstore.common.Constants;
 import pathstore.system.schemaFSM.ApplicationEntry;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
@@ -30,7 +32,7 @@ public class GetApplicationStateFormatter implements IFormatter {
    * @return json array of current node_schemas state.
    */
   @Override
-  public String format() {
+  public ResponseEntity<String> format() {
     JSONArray array = new JSONArray();
 
     for (ApplicationEntry entry : this.entryList) {
@@ -46,6 +48,6 @@ public class GetApplicationStateFormatter implements IFormatter {
       array.put(object);
     }
 
-    return array.toString();
+    return new ResponseEntity<>(array.toString(), HttpStatus.OK);
   }
 }

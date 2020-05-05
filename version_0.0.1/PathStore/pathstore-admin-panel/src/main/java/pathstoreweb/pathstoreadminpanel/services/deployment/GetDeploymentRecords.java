@@ -4,6 +4,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.deployment.deploymentFSM.DeploymentEntry;
@@ -25,7 +26,7 @@ public class GetDeploymentRecords implements IService {
 
   /** @return {@link DeploymentRecordsFormatter#format()} */
   @Override
-  public String response() {
+  public ResponseEntity<String> response() {
     return new DeploymentRecordsFormatter(this.getRecords()).format();
   }
 

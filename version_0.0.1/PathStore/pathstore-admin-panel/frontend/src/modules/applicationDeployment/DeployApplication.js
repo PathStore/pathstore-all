@@ -35,7 +35,8 @@ export default class DeployApplication extends Component {
             application: '',
             nodes: [],
             responseModalData: null,
-            responseModalShow: false
+            responseModalShow: false,
+            responseModalType: null
         };
     }
 
@@ -131,9 +132,12 @@ export default class DeployApplication extends Component {
         }).then(response => response.json())
             .then(response => {
                 ReactDOM.findDOMNode(this.messageForm).reset();
-                console.log(response);
-                this.setState({responseModalData: response, responseModalShow: true});
-            });
+                this.setState({responseModalData: response, responseModalShow: true, responseModalType: 0});
+            }).catch(response => this.setState({
+            responseModalData: response,
+            responseModalShow: true,
+            responseModalType: Array.isArray(response) ? 1 : 2
+        }))
     };
 
     /**
@@ -170,6 +174,7 @@ export default class DeployApplication extends Component {
 
         const modal = (this.state.responseModalShow ?
             <DeployApplicationResponseModal data={this.state.responseModalData} show={this.state.responseModalShow}
+                                            type={this.state.responseModalType}
                                             topology={this.props.topology}
                                             callback={this.closeModalCallback}/> : null);
 

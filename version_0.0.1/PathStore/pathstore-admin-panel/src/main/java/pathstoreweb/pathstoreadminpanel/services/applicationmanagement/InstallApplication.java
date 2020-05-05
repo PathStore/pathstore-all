@@ -4,6 +4,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
@@ -53,7 +54,7 @@ public class InstallApplication implements IService {
    * @see UpdateApplicationStateFormatter
    */
   @Override
-  public String response() {
+  public ResponseEntity<String> response() {
 
     Map<Integer, ApplicationEntry> currentState =
         this.getCurrentState(

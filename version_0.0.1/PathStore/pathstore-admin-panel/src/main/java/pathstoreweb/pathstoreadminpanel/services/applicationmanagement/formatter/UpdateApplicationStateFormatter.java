@@ -3,6 +3,8 @@ package pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatte
 import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import pathstore.common.Constants.NODE_SCHEMAS_COLUMNS;
 import pathstore.system.schemaFSM.ApplicationEntry;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
@@ -23,7 +25,7 @@ public class UpdateApplicationStateFormatter implements IFormatter {
 
   /** @return create json array of json objects for each record written */
   @Override
-  public String format() {
+  public ResponseEntity<String> format() {
     JSONArray array = new JSONArray();
 
     for (Map.Entry<Integer, ApplicationEntry> record : this.entriesWritten.entrySet()) {
@@ -40,6 +42,6 @@ public class UpdateApplicationStateFormatter implements IFormatter {
       array.put(object);
     }
 
-    return array.toString();
+    return new ResponseEntity<>(array.toString(), HttpStatus.OK);
   }
 }

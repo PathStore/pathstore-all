@@ -2,6 +2,8 @@ package pathstoreweb.pathstoreadminpanel.services.deployment.formatter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import pathstore.system.deployment.deploymentFSM.DeploymentEntry;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 
@@ -22,7 +24,7 @@ public class DeploymentRecordsFormatter implements IFormatter {
 
   /** @return converts list to a json array of data */
   @Override
-  public String format() {
+  public ResponseEntity<String> format() {
 
     JSONArray array = new JSONArray();
 
@@ -35,6 +37,6 @@ public class DeploymentRecordsFormatter implements IFormatter {
               .put(WAIT_FOR, entry.waitFor)
               .put(SERVER_UUID, entry.serverUUID));
 
-    return array.toString();
+    return new ResponseEntity<>(array.toString(), HttpStatus.OK);
   }
 }

@@ -3,6 +3,7 @@ package pathstoreweb.pathstoreadminpanel.services.servers;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IService;
@@ -34,7 +35,7 @@ public class AddServer implements IService {
    * @return response of the uuid and ip {@link AddServerFormatter}
    */
   @Override
-  public String response() {
+  public ResponseEntity<String> response() {
     this.writeServerRecord();
 
     return new AddServerFormatter(this.payload.server.serverUUID, this.payload.ip).format();

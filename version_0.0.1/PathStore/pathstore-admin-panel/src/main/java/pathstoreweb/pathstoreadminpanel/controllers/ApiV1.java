@@ -1,6 +1,8 @@
 package pathstoreweb.pathstoreadminpanel.controllers;
 
 import javax.validation.Valid;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import pathstoreweb.pathstoreadminpanel.Endpoints;
@@ -29,7 +31,7 @@ public class ApiV1 {
    * @see GetApplicationState
    */
   @GetMapping(Endpoints.APPLICATION_MANAGEMENT)
-  public String getApplicationState() {
+  public ResponseEntity<String> getApplicationState() {
     return new GetApplicationState().response();
   }
 
@@ -39,7 +41,7 @@ public class ApiV1 {
    * @return response
    */
   @PostMapping(Endpoints.APPLICATION_MANAGEMENT)
-  public String applicationManagementInstall(
+  public ResponseEntity<String> applicationManagementInstall(
       @Valid final UpdateApplicationStatePayload updateApplicationStatePayload,
       final BindingResult bindingResult) {
     return bindingResult.hasErrors()
@@ -53,7 +55,7 @@ public class ApiV1 {
    * @return response
    */
   @DeleteMapping(Endpoints.APPLICATION_MANAGEMENT)
-  public String applicationManagementRemove(
+  public ResponseEntity<String> applicationManagementRemove(
       @Valid final UpdateApplicationStatePayload updateApplicationStatePayload,
       final BindingResult bindingResult) {
     return bindingResult.hasErrors()
@@ -63,7 +65,7 @@ public class ApiV1 {
 
   /** @return List of applications on the system */
   @GetMapping(Endpoints.APPLICATIONS)
-  public String getApplications() {
+  public ResponseEntity<String> getApplications() {
     return new GetApplications().response();
   }
 
@@ -76,7 +78,7 @@ public class ApiV1 {
    * @return todo
    */
   @PostMapping(Endpoints.APPLICATIONS)
-  public String addApplication(
+  public ResponseEntity<String> addApplication(
       @Valid final AddApplicationPayload payload, final BindingResult bindingResult) {
 
     return bindingResult.hasErrors()
@@ -92,7 +94,7 @@ public class ApiV1 {
 
   /** @return JSON Array of all servers created */
   @GetMapping(Endpoints.SERVERS)
-  public String getServers() {
+  public ResponseEntity<String> getServers() {
     return new GetServers().response();
   }
 
@@ -105,20 +107,32 @@ public class ApiV1 {
    * @return either errors or success response
    */
   @PostMapping(Endpoints.SERVERS)
-  public String addServer(
+  public ResponseEntity<String> addServer(
       @Valid final AddServerPayload payload, final BindingResult bindingResult) {
     return bindingResult.hasErrors()
         ? new ValidityErrorFormatter(bindingResult.getAllErrors()).format()
         : new AddServer(payload).response();
   }
 
+  /**
+   * Get request for deployment records.
+   *
+   * @return returns all deployment records in the deployment table. No errors possible
+   */
   @GetMapping(Endpoints.DEPLOYMENT)
-  public String deploy() {
+  public ResponseEntity<String> deploy() {
     return new GetDeploymentRecords().response();
   }
 
+  /**
+   * Post request for deployment records.
+   *
+   * @param payload set of records to add
+   * @param bindingResult whether or not the payload is valid or not
+   * @return response. Either 200 or 400
+   */
   @PostMapping(Endpoints.DEPLOYMENT)
-  public String deploy(
+  public ResponseEntity<String> deploy(
       @RequestBody @Valid final AddDeploymentRecordPayload payload,
       final BindingResult bindingResult) {
     return bindingResult.hasErrors()

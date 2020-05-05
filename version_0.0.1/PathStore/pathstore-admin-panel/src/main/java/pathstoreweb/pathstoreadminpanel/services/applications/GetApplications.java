@@ -3,6 +3,7 @@ package pathstoreweb.pathstoreadminpanel.services.applications;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.applications.formatter.GetApplicationsFormatter;
@@ -20,7 +21,7 @@ public class GetApplications implements IService {
 
   /** @return formats data from {@link #getApplications()} */
   @Override
-  public String response() {
+  public ResponseEntity<String> response() {
     return new GetApplicationsFormatter(this.getApplications()).format();
   }
 
