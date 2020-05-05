@@ -29,6 +29,8 @@ export default class NodeDeployment extends Component {
         return (
             <div>
                 {this.state.show ? <NodeDeploymentModal topology={this.props.topology} show={this.state.show}
+                                                        servers={this.props.servers}
+                                                        forceRefresh={this.props.forceRefresh}
                                                         callback={this.callBack}/> : null}
                 <Button onClick={() => this.setState({show: true})}>Deploy Additional Nodes to Network</Button>
             </div>
@@ -61,7 +63,6 @@ class NodeDeploymentModal extends Component {
         this.state = {
             topology: props.topology.slice(),
             updates: [],
-            servers: [],
             parentNodeId: null,
             newNodeId: null,
             serverUUID: null,
@@ -70,15 +71,10 @@ class NodeDeploymentModal extends Component {
     }
 
     /**
-     * Load all servers
+     * Set initial serverUUID
      */
     componentDidMount() {
-        fetch('/api/v1/servers')
-            .then(response => response.json())
-            .then(response => this.setState({
-                servers: response,
-                serverUUID: response[0] !== undefined ? response[0].server_uuid : null
-            }))
+        this.setState({serverUUID: this.props.servers[0] !== undefined ? this.props.servers[0].server_uuid : null});
     }
 
     /**
@@ -203,9 +199,9 @@ class NodeDeploymentModal extends Component {
 
         const serverName = event.target.value;
 
-        for (let i = 0; i < this.state.servers.length; i++)
-            if (this.state.servers[i].name === serverName)
-                this.setState({serverUUID: this.state.servers[i].server_uuid, serverName: serverName});
+        for (let i = 0; i < this.props.servers.length; i++)
+            if (this.props.servers[i].name === serverName)
+                this.setState({serverUUID: this.props.servers[i].server_uuid, serverName: serverName});
     };
 
     /**
@@ -216,15 +212,18 @@ class NodeDeploymentModal extends Component {
     /**
      * Callback for server creater to reload all servers from api to display on the form
      */
-    serverUpdateCallBack = () => this.componentDidMount();
+    serverUpdateCallBack = () => {
+        this.props.forceRefresh();
+        this.componentDidMount();
+    };
 
     render() {
 
         const servers = [];
 
-        for (let i = 0; i < this.state.servers.length; i++)
+        for (let i = 0; i < this.props.servers.length; i++)
             servers.push(
-                <option key={i}>{this.state.servers[i].name}</option>
+                <option key={i}>{this.props.servers[i].name}</option>
             );
 
         return (
@@ -266,7 +265,7 @@ class NodeDeploymentModal extends Component {
                     </Form>
                 </div>
                 <div>
-                    <Servers servers={this.state.servers} callback={this.serverUpdateCallBack}/>
+                    <Servers servers={this.props.servers} callback={this.serverUpdateCallBack}/>
                 </div>
                 <Button onClick={this.submit}>Submit changes</Button>
                 <Button onClick={this.onClose}>Close</Button>

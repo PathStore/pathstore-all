@@ -26,6 +26,7 @@ export default class App extends Component {
      *
      * topology: array of parentid to childid objects used to denote the network structure
      * applications: array of currently created applications from {@link ApplicationCreation}
+     * servers: array of currently created servers
      * refresh: flip-flop. When changed the module is refreshed
      */
     constructor(props) {
@@ -35,6 +36,7 @@ export default class App extends Component {
             topology: [],
             deployment: [],
             applications: [],
+            servers: [],
             refresh: false
         }
     }
@@ -45,6 +47,8 @@ export default class App extends Component {
     componentDidMount() {
 
         this.loadDeploy();
+
+        this.loadServers();
 
         this.setState({timer: setInterval(this.loadDeploy, 5000)});
 
@@ -84,6 +88,15 @@ export default class App extends Component {
     };
 
     /**
+     * Load servers into state
+     */
+    loadServers = () => {
+        fetch('/api/v1/servers')
+            .then(response => response.json())
+            .then(response => this.setState({servers: response}));
+    };
+
+    /**
      * Parses topology json array into an array of readable objects
      *
      * @param message response from topology end point
@@ -119,7 +132,8 @@ export default class App extends Component {
         return {
             id: parseInt(object.new_node_id),
             parentid: parseInt(object.parent_node_id),
-            processStatus: object.process_status
+            processStatus: object.process_status,
+            serverUUID: object.server_uuid
         }
     };
 
@@ -139,11 +153,13 @@ export default class App extends Component {
                 <div>
                     <div>
                         <h2>Network Topology</h2>
-                        <ViewTopology topology={this.state.deployment} refresh={this.state.refresh}/>
+                        <ViewTopology topology={this.state.deployment} servers={this.state.servers}
+                                      refresh={this.state.refresh}/>
                     </div>
                     <div>
                         <h2>Network Expansion</h2>
-                        <NodeDeployment topology={this.state.deployment} refresh={this.state.refresh}/>
+                        <NodeDeployment topology={this.state.deployment} servers={this.state.servers}
+                                        refresh={this.state.refresh} forceRefresh={this.forceRefresh}/>
                     </div>
                 </div>
                 <br/>

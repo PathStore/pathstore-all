@@ -13,12 +13,14 @@ export default class NodeInfoModal extends Component {
      * State:
      *
      * message: queried from application_management and parsed into a table
+     * server: html info on the server info that, that node has
      * isOpen: denotes whether the modal is open or not.
      */
     constructor(props) {
         super(props);
         this.state = {
             message: [],
+            server: null,
             isOpen: true
         };
     }
@@ -62,7 +64,11 @@ export default class NodeInfoModal extends Component {
                     messages.push(this.createMessageObject(filtered[i]));
 
 
-                this.setState({message: this.formatClickEvent(messages), currentMessage: this.props.node});
+                this.setState({
+                    message: this.formatClickEvent(messages),
+                    server: this.formatServer(this.props.topology, this.props.servers),
+                    currentMessage: this.props.node
+                });
             });
     };
 
@@ -130,6 +136,32 @@ export default class NodeInfoModal extends Component {
     };
 
     /**
+     * Creates the server information section of the node information.
+     *
+     * First find the serverUUID from the topology information. Then filter all servers to get the server object needed to display the information to the user
+     *
+     * @param topology
+     * @param servers
+     * @returns {*}
+     */
+    formatServer = (topology, servers) => {
+
+        const deployObject = topology.filter(i => i.id === this.props.node);
+
+        console.log(servers.length);
+
+        const object = servers.filter(i => i.server_uuid === deployObject[0].serverUUID);
+
+        return <div>
+            <p>Server Information</p>
+            <p>UUID: {object[0].server_uuid}</p>
+            <p>IP: {object[0].ip}</p>
+            <p>Username: {object[0].username}</p>
+            <p>Name: {object[0].name}</p>
+        </div>;
+    };
+
+    /**
      * This function is called when the user clicks the close button on the modal
      */
     closeModal = () => {
@@ -139,6 +171,7 @@ export default class NodeInfoModal extends Component {
     render() {
         return (
             <Modal isOpen={this.state.isOpen} style={{overlay: {zIndex: 1}}}>
+                {this.state.server}
                 <Table>{this.state.message}</Table>
                 <button onClick={this.closeModal}>close</button>
             </Modal>

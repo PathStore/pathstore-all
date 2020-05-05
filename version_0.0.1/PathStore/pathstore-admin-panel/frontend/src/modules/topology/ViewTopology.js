@@ -91,7 +91,8 @@ export default class ViewTopology extends Component {
      */
     handleClick = (event, node) => {
         this.setState({
-            info: <NodeInfoModal node={node} refresh={!this.state.refreshInfo}/>,
+            info: <NodeInfoModal node={node} refresh={!this.state.refreshInfo} topology={this.props.topology}
+                                 servers={this.props.servers}/>,
             refreshInfo: !this.state.refreshInfo
         })
     };
