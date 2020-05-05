@@ -261,7 +261,7 @@ public class StartupUTIL {
             "../docker-files/pathstore/Dockerfile",
             "pathstore-install/pathstore/Dockerfile"));
     // Load base
-    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/base/base.tar", 0));
+    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/pathstore/base.tar", 0));
     // Build cassandra
     commands.add(new Exec(sshUtil, "docker build -t cassandra pathstore-install/cassandra", 0));
     // Start cassandra
