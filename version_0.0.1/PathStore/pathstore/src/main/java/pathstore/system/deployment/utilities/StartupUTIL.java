@@ -217,12 +217,6 @@ public class StartupUTIL {
     commands.add(new Exec(sshUtil, "docker image rm base", -1));
     // Create pathstore install dir
     commands.add(new Exec(sshUtil, "mkdir -p pathstore-install", 0));
-    // Create base dir
-    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/base", 0));
-    // Create cassandra dir
-    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/cassandra", 0));
-    // Create pathstore dir
-    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/pathstore", 0));
     // Generate pathstore properties file
     commands.add(
         new GeneratePropertiesFile(
@@ -242,27 +236,15 @@ public class StartupUTIL {
     // Transfer properties file
     commands.add(
         new FileTransfer(
-            sshUtil, destinationToStore, "pathstore-install/pathstore/pathstore.properties"));
+            sshUtil, destinationToStore, "pathstore-install/pathstore.properties"));
     // Remove properties file
     commands.add(new RemoveGeneratedPropertiesFile(destinationToStore));
-    // Transfer cassandra docker file
-    commands.add(
-        new FileTransfer(
-            sshUtil,
-            "../docker-files/cassandra/Dockerfile",
-            "pathstore-install/cassandra/Dockerfile"));
-    // Transfer pathstore docker file
-    commands.add(
-        new FileTransfer(
-            sshUtil,
-            "../docker-files/pathstore/Dockerfile",
-            "pathstore-install/pathstore/Dockerfile"));
     // Transfer cassandra image
     commands.add(
         new FileTransfer(
-            sshUtil, "/etc/pathstore/cassandra.tar", "pathstore-install/pathstore/cassandra.tar"));
+            sshUtil, "/etc/pathstore/cassandra.tar", "pathstore-install/cassandra.tar"));
     // Load cassandra
-    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/pathstore/cassandra.tar", 0));
+    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/cassandra.tar", 0));
     // Start cassandra
     commands.add(
         new Exec(sshUtil, "docker run --network=host -dit --rm --name cassandra cassandra", 0));
@@ -271,14 +253,14 @@ public class StartupUTIL {
     // Transfer pathstore image
     commands.add(
         new FileTransfer(
-            sshUtil, "/etc/pathstore/pathstore.tar", "pathstore-install/pathstore/pathstore.tar"));
+            sshUtil, "/etc/pathstore/pathstore.tar", "pathstore-install/pathstore.tar"));
     // Load pathstore
-    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/pathstore/pathstore.tar", 0));
+    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/pathstore.tar", 0));
     // Start pathstore
     commands.add(
         new Exec(
             sshUtil,
-            "docker run --network=host -dit --rm -v ~/pathstore-install/pathstore:/etc/pathstore --name pathstore pathstore",
+            "docker run --network=host -dit --rm -v ~/pathstore-install:/etc/pathstore --name pathstore pathstore",
             0));
     // Wait for pathstore to come online
     commands.add(new WaitForPathStore(ip, cassandraPort));
