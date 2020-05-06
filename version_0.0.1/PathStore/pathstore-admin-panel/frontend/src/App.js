@@ -7,7 +7,6 @@ import DisplayAvailableApplication from "./modules/installation/DisplayAvailable
 import DeployApplication from "./modules/applicationDeployment/DeployApplication";
 import LiveTransitionVisual from "./modules/topology/LiveTransitionVisual";
 import NodeDeployment from "./modules/nodeDeployment/NodeDeployment";
-import Servers from "./modules/servers/Servers";
 
 /**
  * This class is used to display needed sub-modules for the website

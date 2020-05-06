@@ -156,7 +156,8 @@ class NodeDeploymentModal extends Component {
         this.state.topology.push({
             parentid: parseInt(this.state.parentNodeId),
             id: parseInt(this.state.newNodeId),
-            processStatus: "WAITING_DEPLOYMENT"
+            processStatus: "WAITING_DEPLOYMENT",
+            serverUUID: this.state.serverUUID
         });
 
         this.state.updates.push({
@@ -167,6 +168,7 @@ class NodeDeploymentModal extends Component {
 
         this.setState({topology: this.state.topology, updates: this.state.updates});
         ReactDOM.findDOMNode(this.messageForm).reset();
+        this.componentDidMount();
     };
 
     /**
@@ -232,14 +234,53 @@ class NodeDeploymentModal extends Component {
         this.componentDidMount();
     };
 
+    /**
+     * Check if a serverUUID is inside the topology. If it is then return true else false
+     *
+     * @param server serverUUID to check
+     */
+    topologyContainsServer = (server) => {
+        for (let i = 0; i < this.state.topology.length; i++)
+            if (this.state.topology[i].serverUUID === server) return true;
+
+        return false;
+    };
+
     render() {
 
         const servers = [];
 
         for (let i = 0; i < this.props.servers.length; i++)
-            servers.push(
-                <option key={i}>{this.props.servers[i].name}</option>
-            );
+            if (!this.topologyContainsServer(this.props.servers[i].server_uuid))
+                servers.push(
+                    <option key={i}>{this.props.servers[i].name}</option>
+                );
+
+        const form = servers.length > 0 ?
+            <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
+                <Form.Group controlId="parentId">
+                    <Form.Label>Parent Node Id</Form.Label>
+                    <Form.Control type="text" placeholder="Parent Id" onChange={this.onParentNodeIdChange}/>
+                    <Form.Text className="text-muted">
+                        Must be an integer
+                    </Form.Text>
+                </Form.Group>
+                <Form.Group controlId="nodeId">
+                    <Form.Label>New Node Id</Form.Label>
+                    <Form.Control type="text" placeholder="New Node Id" onChange={this.onNewNodeIdChange}/>
+                    <Form.Text className="text-muted">
+                        Must be an integer
+                    </Form.Text>
+                </Form.Group>
+                <Form.Control as="select" single onChange={this.onServerUUIDChange}
+                              value={this.state.serverName}>
+                    {servers}
+                </Form.Control>
+                <Button variant="primary" type="submit">
+                    Submit
+                </Button>
+            </Form>
+            : <p>No free servers available, add servers to deploy new nodes</p>;
 
         return (
             <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}}>
@@ -255,29 +296,7 @@ class NodeDeploymentModal extends Component {
                     />
                 </div>
                 <div>
-                    <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
-                        <Form.Group controlId="parentId">
-                            <Form.Label>Parent Node Id</Form.Label>
-                            <Form.Control type="text" placeholder="Parent Id" onChange={this.onParentNodeIdChange}/>
-                            <Form.Text className="text-muted">
-                                Must be an integer
-                            </Form.Text>
-                        </Form.Group>
-                        <Form.Group controlId="nodeId">
-                            <Form.Label>New Node Id</Form.Label>
-                            <Form.Control type="text" placeholder="New Node Id" onChange={this.onNewNodeIdChange}/>
-                            <Form.Text className="text-muted">
-                                Must be an integer
-                            </Form.Text>
-                        </Form.Group>
-                        <Form.Control as="select" single onChange={this.onServerUUIDChange}
-                                      value={this.state.serverName}>
-                            {servers}
-                        </Form.Control>
-                        <Button variant="primary" type="submit">
-                            Submit
-                        </Button>
-                    </Form>
+                    {form}
                 </div>
                 <div>
                     <Servers servers={this.props.servers} callback={this.serverUpdateCallBack}/>
