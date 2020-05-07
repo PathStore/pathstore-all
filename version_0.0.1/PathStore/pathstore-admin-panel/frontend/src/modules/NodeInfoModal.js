@@ -150,7 +150,8 @@ export default class NodeInfoModal extends Component {
     render() {
         return (
             <Modal isOpen={this.props.show}
-                   style={{overlay: {zIndex: 1}}}>
+                   style={{overlay: {zIndex: 1}}}
+                   ariaHideApp={false}>
                 {this.formatServer(this.props.topology, this.props.servers)}
                 {this.retryButton(this.props.topology)}
                 <Table>

@@ -175,7 +175,7 @@ class LiveTransitionVisualModal extends Component {
      */
     render() {
         return (
-            <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}}>
+            <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
                 <div>
                     <p>Live updates for: {this.props.application}</p>
                     <p>Nodes installed are in green</p>

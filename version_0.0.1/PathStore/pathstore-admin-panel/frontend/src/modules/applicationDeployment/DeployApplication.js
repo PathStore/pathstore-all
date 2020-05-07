@@ -19,6 +19,7 @@ export default class DeployApplication extends Component {
 
     /**
      * State:
+     * responseModalApplication: application that was deployed
      * responseModalData: data to passed to response modal on request submit
      * responseModalShow: whether or not to show the response modal
      * responseModalError: whether to display the error response modal
@@ -28,6 +29,7 @@ export default class DeployApplication extends Component {
     constructor(props) {
         super(props);
         this.state = {
+            responseModalApplication: null,
             responseModalData: null,
             responseModalShow: false,
             responseModalError: false
@@ -72,6 +74,7 @@ export default class DeployApplication extends Component {
             .then(response => {
                 ReactDOM.findDOMNode(this.messageForm).reset();
                 this.setState({
+                    responseModalApplication: application,
                     responseModalData: response,
                     responseModalShow: true,
                     responseModalError: false,
@@ -113,7 +116,7 @@ export default class DeployApplication extends Component {
                     :
                     <DeployApplicationResponseModal data={this.state.responseModalData}
                                                     show={this.state.responseModalShow}
-                                                    applicationName={this.state.application}
+                                                    applicationName={this.state.responseModalApplication}
                                                     topology={this.props.topology}
                                                     applicationStatus={this.props.applicationStatus}
                                                     callback={this.closeModalCallback}/>
