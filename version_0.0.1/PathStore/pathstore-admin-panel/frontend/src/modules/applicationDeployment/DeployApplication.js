@@ -130,9 +130,10 @@ export default class DeployApplication extends Component {
         const nodes = [];
 
         for (let i = 0; i < this.props.topology.length; i++)
-            nodes.push(
-                <option key={i}>{this.props.topology[i].new_node_id}</option>
-            );
+            if (this.props.topology[i].process_status === "DEPLOYED")
+                nodes.push(
+                    <option key={i}>{this.props.topology[i].new_node_id}</option>
+                );
 
         let form = this.props.applications.length > 0 ?
             <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
