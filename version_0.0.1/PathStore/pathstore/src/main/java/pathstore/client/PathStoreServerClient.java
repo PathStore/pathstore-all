@@ -37,13 +37,18 @@ import pathstore.exception.PathStoreRemoteException;
 /** TODO: Comment */
 public class PathStoreServerClient {
 
+  /** Lock to sync creation of PathStoreServerClient */
+  private static final Object lock = new Object();
+
   private static PathStoreServerClient instance = null;
 
   private PathStoreServer stub;
 
   public static PathStoreServerClient getInstance() {
-    if (PathStoreServerClient.instance == null)
-      PathStoreServerClient.instance = new PathStoreServerClient();
+    synchronized (lock) {
+      if (PathStoreServerClient.instance == null)
+        PathStoreServerClient.instance = new PathStoreServerClient();
+    }
     return PathStoreServerClient.instance;
   }
 
