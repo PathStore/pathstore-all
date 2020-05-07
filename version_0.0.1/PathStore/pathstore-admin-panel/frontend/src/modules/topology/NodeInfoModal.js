@@ -2,104 +2,17 @@ import React, {Component} from "react";
 import Modal from "react-modal";
 import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
+import {webHandler} from "../Utils";
 
-/**
- * This class displays the current applications installed on a specific node.
- *
- * The rendering of this modal is triggered by clicking on a node in the tree of the ViewTopology Class
- */
 export default class NodeInfoModal extends Component {
 
-    /**
-     * State:
-     *
-     * message: queried from application_management and parsed into a table
-     * server: html info on the server info that, that node has
-     * retry: retry is set to a button iff the node is at the failed state of deployment
-     * retryData: json to send if the user clicks retry button
-     * isOpen: denotes whether the modal is open or not.
-     */
     constructor(props) {
         super(props);
         this.state = {
-            message: [],
-            server: null,
-            retry: null,
-            retryData: null,
-            isOpen: true
+            retryData: null
         };
     }
 
-    /**
-     * Used to remount component if the view topology says to
-     */
-    componentWillReceiveProps(props, nextContext) {
-        if (props.refresh !== this.props.refresh)
-            this.setState({isOpen: true, message: []}, () => this.componentDidMount());
-    }
-
-    /**
-     * Update components data every 1 sec
-     */
-    componentDidMount() {
-        this.loadData();
-
-        this.setState({timer: setInterval(this.loadData, 1000)});
-    }
-
-    /**
-     * Clear interval every second
-     */
-    componentWillUnmount() {
-        clearInterval(this.state.timer);
-    }
-
-    /**
-     * Query all applications and parse to only the nodeid that is currently selected
-     */
-    loadData = () => {
-        fetch('/api/v1/application_management')
-            .then(response => response.json())
-            .then(message => {
-                const filtered = message.filter(i => i.nodeid === this.props.node);
-
-                let messages = [];
-
-                for (let i = 0; i < filtered.length; i++)
-                    messages.push(this.createMessageObject(filtered[i]));
-
-
-                this.setState({
-                    message: this.formatClickEvent(messages),
-                    server: this.formatServer(this.props.topology, this.props.servers),
-                    retry: this.retryButton(this.props.topology),
-                    currentMessage: this.props.node
-                });
-            });
-    };
-
-    /**
-     * Create readable object for passed data
-     *
-     * @param object
-     * @returns {{jobUUID: *, application: *, waiting: *, nodeid: *, status: *}}
-     */
-    createMessageObject = (object) => {
-        return {
-            nodeid: object.nodeid,
-            application: object.keyspace_name,
-            status: object.process_status,
-            waiting: object.wait_for,
-            jobUUID: object.process_uuid
-        }
-    };
-
-    /**
-     * Format the states into a table
-     *
-     * @param messages
-     * @returns {[]}
-     */
     formatClickEvent = (messages) => {
 
         let response = [];
@@ -125,10 +38,10 @@ export default class NodeInfoModal extends Component {
             body.push(
                 <tr>
                     <td>{currentObject.nodeid}</td>
-                    <td>{currentObject.application}</td>
-                    <td>{currentObject.status}</td>
-                    <td>{currentObject.waiting}</td>
-                    <td>{currentObject.jobUUID}</td>
+                    <td>{currentObject.keyspace_name}</td>
+                    <td>{currentObject.process_status}</td>
+                    <td>{currentObject.wait_for}</td>
+                    <td>{currentObject.process_uuid}</td>
                 </tr>)
         }
 
@@ -141,22 +54,11 @@ export default class NodeInfoModal extends Component {
         return response;
     };
 
-    /**
-     * Creates the server information section of the node information.
-     *
-     * First find the serverUUID from the topology information. Then filter all servers to get the server object needed to display the information to the user
-     *
-     * @param topology
-     * @param servers
-     * @returns {*}
-     */
     formatServer = (topology, servers) => {
 
-        const deployObject = topology.filter(i => i.id === this.props.node);
+        const deployObject = topology.filter(i => i.new_node_id === this.props.node);
 
-        console.log(servers.length);
-
-        const object = servers.filter(i => i.server_uuid === deployObject[0].serverUUID);
+        const object = servers.filter(i => i.server_uuid === deployObject[0].server_uuid);
 
         return <div>
             <p>Server Information</p>
@@ -167,30 +69,21 @@ export default class NodeInfoModal extends Component {
         </div>;
     };
 
-    /**
-     * If a node has failed load a button to allow the user to reset the deployment state to deploying
-     *
-     * @param topology
-     * @returns {null|*}
-     */
     retryButton = (topology) => {
-        const deployObject = topology.filter(i => i.id === this.props.node);
+        const deployObject = topology.filter(i => i.new_node_id === this.props.node);
 
-        if (deployObject[0].processStatus === "FAILED") {
+        if (deployObject[0].process_status === "FAILED") {
             this.setState({
                 retryData: {
-                    parentId: deployObject[0].parentid,
-                    newNodeId: deployObject[0].id,
-                    serverUUID: deployObject[0].serverUUID
+                    parentId: deployObject[0].parent_node_id,
+                    newNodeId: deployObject[0].new_node_id,
+                    serverUUID: deployObject[0].server_uuid
                 }
             });
             return <Button onClick={this.retryOnClick}>Retry</Button>;
         } else return null;
     };
 
-    /**
-     * Send put request to api to update deployment record
-     */
     retryOnClick = () => {
         alert(JSON.stringify(this.state.retryData));
         fetch('/api/v1/deployment', {
@@ -201,27 +94,23 @@ export default class NodeInfoModal extends Component {
             },
             body: JSON.stringify({record: this.state.retryData})
         })
-            .then(response => response.json())
+            .then(webHandler)
             .then(response => {
                 alert("Success " + JSON.stringify(response));
-            });
+            }).catch(response => {
+            alert("Error " + JSON.stringify(response));
+        })
 
-    };
-
-    /**
-     * This function is called when the user clicks the close button on the modal
-     */
-    closeModal = () => {
-        this.setState({isOpen: false});
     };
 
     render() {
         return (
-            <Modal isOpen={this.state.isOpen} style={{overlay: {zIndex: 1}}}>
-                {this.state.server}
-                {this.state.retry}
-                <Table>{this.state.message}</Table>
-                <button onClick={this.closeModal}>close</button>
+            <Modal isOpen={this.props.show}
+                   style={{overlay: {zIndex: 1}}}>
+                {this.formatServer(this.props.topology, this.props.servers)}
+                {this.retryButton(this.props.topology)}
+                <Table>{this.formatClickEvent(this.props.applicationStatus.filter(i => i.nodeid === this.props.node))}</Table>
+                <button onClick={this.props.callback}>close</button>
             </Modal>
         );
     }

@@ -4,49 +4,26 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import ApplicationCreationResponseModal from "./ApplicationCreationResponseModal";
 import LoadingModal from "../LoadingModal";
+import {webHandler} from "../Utils";
+import ErrorResponseModal from "../ErrorResponseModal";
 
-/**
- * This model is used to load an application into the pathstore system
- * based on a file and a name the user has given
- */
 export default class ApplicationCreation extends Component {
 
-    /**
-     * Reference to form object so we can reset it on successful submit
-     */
-    messageForm = null;
-
-    /**
-     * State:
-     *
-     * file: file that is uploaded
-     *
-     * @param props
-     */
     constructor(props) {
         super(props);
         this.state = {
             file: null,
             loadingModalShow: false,
             responseModalShow: false,
-            responseModalData: null
+            responseModalData: null,
+            responseModalError: false
         };
     }
 
-    /**
-     * On Change function for the file handler. Updates state to the file the user passed
-     *
-     * @param event
-     */
-    handleFileSubmit = (event) => {
-        this.setState({file: event.target.files[0]})
-    };
+    handleFileSubmit = (event) => this.setState({file: event.target.files[0]});
 
-    /**
-     * Form submission function, this is used to check user input and to execute their request
-     *
-     * @param event
-     */
+    closeModalCallback = () => this.setState({responseModalShow: false});
+
     onFormSubmit = (event) => {
         event.preventDefault();
 
@@ -60,47 +37,53 @@ export default class ApplicationCreation extends Component {
             formData.append("applicationSchema", this.state.file);
 
         this.setState({loadingModalShow: true}, () => {
-                fetch("/api/v1/applications", {
-                    method: 'POST',
-                    body: formData
-                }).then(response => response.json())
-                    .then(response => {
-                        this.setState({loadingModalShow: false}, () => {
-                            this.props.forceRefresh();
-                            ReactDOM.findDOMNode(this.messageForm).reset();
-                            this.setState({
-                                responseModalShow: true,
-                                responseModalData: response
-                            });
+            fetch("/api/v1/applications", {
+                method: 'POST',
+                body: formData
+            }).then(webHandler)
+                .then(response => {
+                    this.setState({loadingModalShow: false}, () => {
+                        this.props.forceRefresh();
+                        ReactDOM.findDOMNode(this.messageForm).reset();
+                        this.setState({
+                            responseModalShow: true,
+                            responseModalData: response,
+                            responseModalError: false
                         });
                     });
-            }
-        );
+                }).catch(response => {
+                this.setState({loadingModalShow: false}, () => {
+                    this.props.forceRefresh();
+                    ReactDOM.findDOMNode(this.messageForm).reset();
+                    this.setState({
+                        responseModalShow: true,
+                        responseModalData: response,
+                        responseModalError: true
+                    });
+                });
+            })
+        });
     };
 
-    /**
-     * Callback function for the DeployApplicationResponseModal to reset the parent show attribute
-     */
-    closeModalCallback = () => this.setState({responseModalShow: false});
-
-    /**
-     * Renders the form
-     *
-     * @returns {*}
-     */
     render() {
 
         const loadingModal = (this.state.loadingModalShow ? <LoadingModal show={this.state.loadingModalShow}/> : null);
 
-        const modal = (this.state.responseModalShow ?
-            <ApplicationCreationResponseModal show={this.state.responseModalShow}
-                                              data={this.state.responseModalData}
-                                              callback={this.closeModalCallback}/> : null);
+        const responseModal = this.state.responseModalShow ?
+            this.state.responseModalError ?
+                <ErrorResponseModal show={this.state.responseModalShow}
+                                                  data={this.state.responseModalData}
+                                                  callback={this.closeModalCallback}/>
+                :
+                <ApplicationCreationResponseModal show={this.state.responseModalShow}
+                                                  data={this.state.responseModalData}
+                                                  callback={this.closeModalCallback}/>
+            : null;
 
         return (
             <div>
                 {loadingModal}
-                {modal}
+                {responseModal}
                 <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
                     <Form.Group controlId="application">
                         <Form.Label>Application Name</Form.Label>

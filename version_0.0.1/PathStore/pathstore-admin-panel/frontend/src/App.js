@@ -8,143 +8,102 @@ import DeployApplication from "./modules/applicationDeployment/DeployApplication
 import LiveTransitionVisual from "./modules/topology/LiveTransitionVisual";
 import NodeDeployment from "./modules/nodeDeployment/NodeDeployment";
 
-/**
- * This class is used to display needed sub-modules for the website
- *
- *  - ViewTopology (Used to show a graphical visualization of the network diagram)
- *  - ApplicationCreate (Used to allow a user to deploy a new application (DB Schema))
- *  - ApplicationInstallation (Used to allow a user to deploy a created application on a subset of nodes)
- *
- *  For more information on application creation / application installation please see the readme for the pathstore
- *  website API.
- */
 export default class App extends Component {
 
-    /**
-     * State:
-     *
-     * topology: array of parentid to childid objects used to denote the network structure
-     * applications: array of currently created applications from {@link ApplicationCreation}
-     * servers: array of currently created servers
-     * refresh: flip-flop. When changed the module is refreshed
-     */
     constructor(props) {
         super(props);
 
         this.state = {
-            topology: [],
             deployment: [],
-            applications: [],
             servers: [],
-            refresh: false
+            applications: [],
+            applicationStatus: []
         }
     }
 
-    /**
-     * Calls the topology end point and parses then data. Then calls the applications endpoint and parses that data.
-     */
     componentDidMount() {
+        this.queryAll();
 
-        this.loadDeploy();
-
-        this.loadServers();
-
-        this.setState({timer: setInterval(this.loadDeploy, 5000)});
-
-        fetch('/api/v1/applications')
-            .then(response => response.json())
-            .then(response => {
-                let messages = [];
-
-                for (let i = 0; i < response.length; i++)
-                    messages.push(this.createApplicationObject(response[i]));
-
-                this.setState({applications: messages});
-            });
+        this.timer = setInterval(this.queryAll, 2000);
     }
 
-    /**
-     * Remove timer when component unmounts
-     */
     componentWillUnmount() {
-        clearInterval(this.state.timer);
+        clearInterval(this.timer);
     }
 
-    /**
-     * Load deployment records on a timer
-     */
-    loadDeploy = () => {
-        fetch('/api/v1/deployment')
+    queryAll = () => {
+        this.loadAll().then(([deployment, servers, applications, applicationStatus]) =>
+            this.setState({
+                deployment: deployment,
+                servers: servers,
+                applications: applications,
+                applicationStatus: applicationStatus
+            }));
+    };
+
+    loadAll = () => {
+        return Promise.all(
+            [
+                this.genericLoadFunction('/api/v1/deployment', this.createDeploymentObject),
+                this.genericLoadFunction('/api/v1/servers', this.createServerObject),
+                this.genericLoadFunction('/api/v1/applications', this.createApplicationObject),
+                this.genericLoadFunction('/api/v1/application_management', this.createApplicationStatusObject)
+            ]
+        );
+    };
+
+    genericLoadFunction = (url, parsingFunction) => {
+        return fetch(url)
             .then(response => response.json())
             .then(response => {
                 let messages = [];
 
                 for (let i = 0; i < response.length; i++)
-                    messages.push(this.createDeploymentObject(response[i]));
+                    messages.push(parsingFunction(response[i]));
 
-                this.setState({deployment: messages, refresh: !this.state.refresh});
+                return messages;
             })
     };
 
-    /**
-     * Load servers into state
-     */
-    loadServers = () => {
-        fetch('/api/v1/servers')
-            .then(response => response.json())
-            .then(response => this.setState({servers: response}));
-    };
-
-    /**
-     * Parses topology json array into an array of readable objects
-     *
-     * @param message response from topology end point
-     * @returns array of readable data
-     */
-    parse = (message) => {
-        let array = [];
-
-        message.forEach(i => array.push({parentid: i.parent_nodeid, id: i.nodeid}));
-
-        return array;
-    };
-
-    /**
-     * Filters out un-needed data from api response
-     *
-     * @param object api response
-     * @returns {application: *}
-     */
-    createApplicationObject = (object) => {
-        return {
-            application: object.keyspace_name
-        }
-    };
-
-    /**
-     * Parse deployment object for the info you need
-     *
-     * @param object from api
-     * @returns {{newNodeId: *, processStatus: *, parentNodeId: *}}
-     */
     createDeploymentObject = (object) => {
         return {
-            id: parseInt(object.new_node_id),
-            parentid: parseInt(object.parent_node_id),
-            processStatus: object.process_status,
-            serverUUID: object.server_uuid
+            new_node_id: parseInt(object.new_node_id),
+            parent_node_id: parseInt(object.parent_node_id),
+            process_status: object.process_status,
+            server_uuid: object.server_uuid
         }
     };
 
-    /**
-     * Swaps the refresh flip-flop and reloads the component
-     */
-    forceRefresh = () => this.setState({refresh: !this.state.refresh}, () => this.componentDidMount());
+    createServerObject = (object) => {
+        return {
+            server_uuid: object.server_uuid,
+            ip: object.ip,
+            username: object.username,
+            name: object.name
+        }
+    };
 
-    /**
-     * Rends all needed components and spaced correctly
-     * @returns {*}
-     */
+    createApplicationObject = (object) => {
+        return {
+            keyspace_name: object.keyspace_name
+        }
+    };
+
+    createApplicationStatusObject = (object) => {
+        return {
+            nodeid: parseInt(object.nodeid),
+            keyspace_name: object.keyspace_name,
+            process_status: object.process_status,
+            wait_for: object.wait_for,
+            process_uuid: object.process_uuid
+        }
+    };
+
+    forceRefresh = () => this.setState({refresh: !this.state.refresh}, () => {
+        this.componentWillUnmount();
+        this.componentDidMount();
+    });
+
     render() {
         return (
             <div>
@@ -152,36 +111,39 @@ export default class App extends Component {
                 <div>
                     <div>
                         <h2>Network Topology</h2>
-                        <ViewTopology topology={this.state.deployment} servers={this.state.servers}
-                                      refresh={this.state.refresh}/>
+                        <ViewTopology topology={this.state.deployment}
+                                      servers={this.state.servers}
+                                      applicationStatus={this.state.applicationStatus}
+                        />
                     </div>
                     <div>
                         <h2>Network Expansion</h2>
-                        <NodeDeployment topology={this.state.deployment} servers={this.state.servers}
-                                        refresh={this.state.refresh} forceRefresh={this.forceRefresh}/>
+                        <NodeDeployment topology={this.state.deployment}
+                                        servers={this.state.servers}
+                                        forceRefresh={this.forceRefresh}/>
                     </div>
                 </div>
                 <br/>
                 <div>
                     <div>
                         <h2>Live Installation Viewer</h2>
-                        <LiveTransitionVisual applications={this.state.applications} topology={this.state.deployment}
-                                              refresh={this.state.refresh}/>
+                        <LiveTransitionVisual applications={this.state.applications}
+                                              applicationStatus={this.state.applicationStatus}
+                                              topology={this.state.deployment}/>
                     </div>
                     <br/>
                     <div>
                         <h2>Application Creation</h2>
-                        <DisplayAvailableApplication applications={this.state.applications}
-                                                     refresh={this.state.refresh}/>
+                        <DisplayAvailableApplication applications={this.state.applications}/>
                         <br/>
-                        <ApplicationCreation refresh={this.state.refresh}
-                                             forceRefresh={this.forceRefresh}/>
+                        <ApplicationCreation forceRefresh={this.forceRefresh}/>
                     </div>
                     <br/>
                     <div>
                         <h2>Application Deployment</h2>
-                        <DeployApplication topology={this.state.deployment} applications={this.state.applications}
-                                           refresh={this.state.refresh}/>
+                        <DeployApplication topology={this.state.deployment}
+                                           applications={this.state.applications}
+                                           applicationStatus={this.state.applicationStatus}/>
                     </div>
                 </div>
             </div>
