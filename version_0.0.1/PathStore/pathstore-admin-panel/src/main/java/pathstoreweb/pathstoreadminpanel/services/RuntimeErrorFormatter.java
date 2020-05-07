@@ -1,5 +1,6 @@
 package pathstoreweb.pathstoreadminpanel.services;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,6 @@ public class RuntimeErrorFormatter implements IFormatter {
 
     response.put("error", this.errorMessage);
 
-    return new ResponseEntity<>(response.toString(), HttpStatus.BAD_REQUEST);
+    return new ResponseEntity<>(new JSONArray().put(response).toString(), HttpStatus.BAD_REQUEST);
   }
 }
