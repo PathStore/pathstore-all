@@ -5,6 +5,8 @@ import PathStoreTopology from "../PathStoreTopology";
 import {contains} from "../Utils";
 
 /**
+ * TODO: Make nodes clickable
+ *
  * This component is loaded by DeployApplication on a successful POST request to the api.
  *
  * Props:
