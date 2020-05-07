@@ -6,8 +6,25 @@ import DeployApplicationResponseModal from "./DeployApplicationResponseModal";
 import {webHandler} from "../Utils";
 import ErrorResponseModal from "../ErrorResponseModal";
 
+/**
+ * This component is used to allow the user to select a set of nodes to install an application on
+ * It has a form which has two select dropdowns which are created using the data passed from PathStoreControlPanel
+ *
+ * Props:
+ * topology: list of deployment objects gathered from api
+ * applications: list of application objects gathered from api
+ * applicationStatus: list of application status objects gathered from api
+ */
 export default class DeployApplication extends Component {
 
+    /**
+     * State:
+     * responseModalData: data to passed to response modal on request submit
+     * responseModalShow: whether or not to show the response modal
+     * responseModalError: whether to display the error response modal
+     *
+     * @param props
+     */
     constructor(props) {
         super(props);
         this.state = {
@@ -17,6 +34,16 @@ export default class DeployApplication extends Component {
         };
     }
 
+    /**
+     * Gathers data from form submit and submits an api request.
+     *
+     * If success then the values are written to (responseModalData, responseModalShow, responseModalError) respectively
+     * as (response from api, true, false)
+     *
+     * If failed then the values are written respecitvely as (response from api, true, true)
+     *
+     * @param event
+     */
     onFormSubmit = (event) => {
         event.preventDefault();
 
@@ -58,8 +85,23 @@ export default class DeployApplication extends Component {
         );
     };
 
+    /**
+     * Callback given to the response modal to all it to close when the user clicks close.
+     * This allows for garbage collection of the component
+     */
     closeModalCallback = () => this.setState({responseModalShow: false});
 
+    /**
+     * First we figure out of a modal needs to be rendered
+     *
+     * Second we gather all application options
+     *
+     * Thirdly we gather all node options
+     *
+     * Finally if application options exist we render the form else we inform the user there are no application to deploy
+     *
+     * @returns {*}
+     */
     render() {
 
         const modal =

@@ -8,8 +8,27 @@ import ServerCreationResponseModal from "./ServerCreationResponseModal";
 import {webHandler} from "../Utils";
 import ErrorResponseModal from "../ErrorResponseModal";
 
+/**
+ * TODO: Split into add servers and display servers
+ *
+ * This component is used for the displaying and addition of servers.
+ *
+ * Props:
+ * servers: list of server objects from api
+ * callback: force refresh other components props
+ *
+ */
 export default class Servers extends Component {
 
+    /**
+     * Stats:
+     * loadingModalShow: whether to show the loading modal
+     * responseModalShow: whether to show the response modal
+     * responseModalData: what data to give to the response modal
+     * responseModalError: whether to display the error modal or not
+     *
+     * @param props
+     */
     constructor(props) {
         super(props);
 
@@ -21,6 +40,11 @@ export default class Servers extends Component {
         }
     }
 
+    /**
+     * Load all data from form and make the api call.
+     *
+     * @param event
+     */
     onFormSubmit = (event) => {
         event.preventDefault();
 
@@ -58,8 +82,22 @@ export default class Servers extends Component {
         });
     };
 
+    /**
+     * Callback for modals to close themselves
+     */
     callBack = () => this.setState({responseModalShow: false});
 
+    /**
+     * First figure out if you need to show the loading modal
+     *
+     * Second figure out if you need to display a response modal and if so which one
+     *
+     * Thirdly load create the body of the servers display table
+     *
+     * Finally render display table and form
+     *
+     * @returns {*}
+     */
     render() {
 
         const loadingModal = this.state.loadingModalShow ? <LoadingModal show={this.state.loadingModalShow}/> : null;

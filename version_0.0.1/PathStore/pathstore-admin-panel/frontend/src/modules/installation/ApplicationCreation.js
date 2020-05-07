@@ -7,8 +7,28 @@ import LoadingModal from "../LoadingModal";
 import {webHandler} from "../Utils";
 import ErrorResponseModal from "../ErrorResponseModal";
 
+/**
+ * TODO: Maybe add a colour underneath the application name if its valid or not
+ *
+ * This class is used to create an application by giving a name and a schema
+ *
+ * Props:
+ * forceRefresh: used to inform PathStoreControlPanel that an application has been loaded
+ */
 export default class ApplicationCreation extends Component {
 
+    /**
+     * TODO: See if you can remove file from state
+     *
+     * State:
+     * file: used to store file uploaded by user
+     * loadingModalShow: whether to show the loading modal or not
+     * responseModalShow: whether to show the response modal or not
+     * responseModalData: what data to give to the response modal on completion of the form
+     * responseModalError: whether to render the error response modal or not
+     *
+     * @param props
+     */
     constructor(props) {
         super(props);
         this.state = {
@@ -20,10 +40,24 @@ export default class ApplicationCreation extends Component {
         };
     }
 
+    /**
+     * Take file uploaded by user and store in the state
+     *
+     * @param event
+     */
     handleFileSubmit = (event) => this.setState({file: event.target.files[0]});
 
-    closeModalCallback = () => this.setState({responseModalShow: false});
-
+    /**
+     * Send FormData to api with the following format
+     *
+     * applicationSchema: file
+     * applicationName: name of new application
+     *
+     * On success render ApplicationCreationResponseModal
+     * On failure render ErrorResponseModal
+     *
+     * @param event
+     */
     onFormSubmit = (event) => {
         event.preventDefault();
 
@@ -53,8 +87,6 @@ export default class ApplicationCreation extends Component {
                     });
                 }).catch(response => {
                 this.setState({loadingModalShow: false}, () => {
-                    this.props.forceRefresh();
-                    ReactDOM.findDOMNode(this.messageForm).reset();
                     this.setState({
                         responseModalShow: true,
                         responseModalData: response,
@@ -65,20 +97,35 @@ export default class ApplicationCreation extends Component {
         });
     };
 
+    /**
+     * Function for response modals to close themselves. Used for gc of modals
+     */
+    closeModalCallback = () => this.setState({responseModalShow: false});
+
+    /**
+     * First determine if the loading modal needs to be shown
+     *
+     * Second determine if the response modal needs to be shown and if so which one to show
+     *
+     * Finally render any modals and the form
+     *
+     * @returns {*}
+     */
     render() {
 
         const loadingModal = (this.state.loadingModalShow ? <LoadingModal show={this.state.loadingModalShow}/> : null);
 
-        const responseModal = this.state.responseModalShow ?
-            this.state.responseModalError ?
-                <ErrorResponseModal show={this.state.responseModalShow}
-                                                  data={this.state.responseModalData}
-                                                  callback={this.closeModalCallback}/>
-                :
-                <ApplicationCreationResponseModal show={this.state.responseModalShow}
-                                                  data={this.state.responseModalData}
-                                                  callback={this.closeModalCallback}/>
-            : null;
+        const responseModal =
+            this.state.responseModalShow ?
+                this.state.responseModalError ?
+                    <ErrorResponseModal show={this.state.responseModalShow}
+                                        data={this.state.responseModalData}
+                                        callback={this.closeModalCallback}/>
+                    :
+                    <ApplicationCreationResponseModal show={this.state.responseModalShow}
+                                                      data={this.state.responseModalData}
+                                                      callback={this.closeModalCallback}/>
+                : null;
 
         return (
             <div>

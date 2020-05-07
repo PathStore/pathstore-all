@@ -1,8 +1,19 @@
 import React, {Component} from "react";
 import Table from "react-bootstrap/Table";
 
+/**
+ * This component is used to display all available applications to the user
+ *
+ * Props:
+ * applications: list of applications objects from api
+ */
 export default class DisplayAvailableApplication extends Component {
 
+    /**
+     * Generate a table to display all applications installed on the system
+     *
+     * @returns {*}
+     */
     render() {
         let response = [];
 

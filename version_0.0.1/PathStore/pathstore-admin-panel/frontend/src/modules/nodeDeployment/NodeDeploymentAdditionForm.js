@@ -2,11 +2,22 @@ import React, {Component} from "react";
 import Form from "react-bootstrap/Form";
 import {Button} from "react-bootstrap";
 import ReactDOM from "react-dom";
+import {contains} from "../Utils";
 
+/**
+ * TODO: Error check inputs and display to user
+ *
+ * This component is a form that allows users to hypothetically add a node to the network
+ *
+ * Props:
+ * topology: sliced topology from NodeDeployment state
+ * updates: list of nodes added that aren't committed. Stored in NodeDeployment
+ * servers: list of server objects from api
+ */
 export default class NodeDeploymentAdditionForm extends Component {
 
     /**
-     * TODO: Check newNodeId and parentId is valid
+     * Read all data from form and push that data to the topology array and the updates array. Also clear the form when finished
      *
      * @param event
      */
@@ -42,11 +53,20 @@ export default class NodeDeploymentAdditionForm extends Component {
     };
 
 
+    /**
+     * First gather all servers that are free (Not currently hosting another existing pathstore instance
+     * or are not in your hypothetical plan)
+     *
+     * Then if there are any free servers load the form for the user to use else inform them there are no
+     * free servers and they must create one to continue
+     *
+     * @returns {*}
+     */
     render() {
         const servers = [];
 
         for (let i = 0; i < this.props.servers.length; i++)
-            if (!topologyContainsServer(this.props.topology, this.props.servers[i].server_uuid))
+            if (!contains(this.props.topology.map(i => i.server_uuid), this.props.servers[i].server_uuid))
                 servers.push(
                     <option key={i}>{this.props.servers[i].name}</option>
                 );
@@ -83,11 +103,4 @@ export default class NodeDeploymentAdditionForm extends Component {
             </div>
         );
     }
-}
-
-function topologyContainsServer(topology, server) {
-    for (let i = 0; i < topology.length; i++)
-        if (topology[i].server_uuid === server) return true;
-
-    return false;
 }
