@@ -1,3 +1,6 @@
+/**
+ * Parse response from any deployment endpoint
+ */
 export interface Deployment {
     new_node_id: number
     parent_node_id: number
@@ -5,6 +8,9 @@ export interface Deployment {
     server_uuid: string
 }
 
+/**
+ * Parse response from any server endpoint
+ */
 export interface Server {
     server_uuid: string
     ip: string
@@ -12,10 +18,16 @@ export interface Server {
     name: string
 }
 
+/**
+ * Parse response from application endpoint
+ */
 export interface Application {
     keyspace_name: string
 }
 
+/**
+ * Parse response from application management
+ */
 export interface ApplicationStatus {
     nodeid: number
     keyspace_name: string
@@ -24,16 +36,25 @@ export interface ApplicationStatus {
     process_uuid: string
 }
 
+/**
+ * Way to format response on deployment update
+ */
 export interface Update {
     parentId: number
     newNodeId: number
     serverUUID: string
 }
 
+/**
+ * Parse error response (error code 400)
+ */
 export interface Error {
     error: string
 }
 
+/**
+ * Parse application success response
+ */
 export interface ApplicationCreationSuccess {
     keyspace_created: string
 }
