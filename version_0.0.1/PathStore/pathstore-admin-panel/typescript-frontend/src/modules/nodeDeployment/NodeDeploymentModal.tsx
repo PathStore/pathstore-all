@@ -16,7 +16,7 @@ interface NodeDeploymentModalProperties {
     /**
      * Whether to show the modal or not
      */
-    show: boolean
+    readonly show: boolean
 
     /**
      * List of deployment objects from api

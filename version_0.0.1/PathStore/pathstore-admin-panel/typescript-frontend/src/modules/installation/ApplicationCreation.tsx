@@ -117,7 +117,7 @@ export default class ApplicationCreation extends Component<ApplicationCreationPr
                 method: 'POST',
                 body: formData
             }).then(webHandler)
-                .then(response => {
+                .then((response: ApplicationCreationSuccess) => {
                     this.setState({loadingModalShow: false}, () => {
                         this.props.forceRefresh();
                         // @ts-ignore
@@ -128,11 +128,11 @@ export default class ApplicationCreation extends Component<ApplicationCreationPr
                             responseModalError: false
                         });
                     });
-                }).catch(response => {
+                }).catch((response: Error[]) => {
                 this.setState({loadingModalShow: false}, () => {
                     this.setState({
                         responseModalShow: true,
-                        responseModalData: response,
+                        responseModalErrorData: response,
                         responseModalError: true
                     });
                 });
