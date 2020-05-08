@@ -2,23 +2,20 @@ import ReactDOM from 'react-dom'
 import React, {Component} from "react";
 import Form from "react-bootstrap/Form";
 import {Button} from "react-bootstrap";
-import Table from "react-bootstrap/Table";
 import LoadingModal from "../LoadingModal";
 import ServerCreationResponseModal from "./ServerCreationResponseModal";
 import {webHandler} from "../Utils";
 import ErrorResponseModal from "../ErrorResponseModal";
 
 /**
- * TODO: Split into add servers and display servers
- *
- * This component is used for the displaying and addition of servers.
+ * This component is used for the addition of servers.
  *
  * Props:
  * servers: list of server objects from api
  * callback: force refresh other components props
  *
  */
-export default class Servers extends Component {
+export default class AddServers extends Component {
 
     /**
      * Stats:
@@ -92,9 +89,7 @@ export default class Servers extends Component {
      *
      * Second figure out if you need to display a response modal and if so which one
      *
-     * Thirdly load create the body of the servers display table
-     *
-     * Finally render display table and form
+     * Finally render display form
      *
      * @returns {*}
      */
@@ -114,33 +109,10 @@ export default class Servers extends Component {
                                                  callback={this.callBack}/>
                 : null;
 
-        const tbody = [];
-
-        for (let i = 0; i < this.props.servers.length; i++)
-            tbody.push(
-                <tr key={i}>
-                    <td>{this.props.servers[i].server_uuid}</td>
-                    <td>{this.props.servers[i].ip}</td>
-                    <td>{this.props.servers[i].name}</td>
-                </tr>
-            );
-
         return (
             <div>
                 {loadingModal}
                 {responseModal}
-                <Table>
-                    <thead>
-                    <tr>
-                        <th>Server UUID</th>
-                        <th>IP</th>
-                        <th>Server Name</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {tbody}
-                    </tbody>
-                </Table>
                 <h3>Create Server</h3>
                 <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
                     <Form.Group controlId="ip">

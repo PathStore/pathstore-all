@@ -1,10 +1,11 @@
 import React, {Component} from "react";
 import {Button} from "react-bootstrap";
 import Modal from "react-modal";
-import Servers from "../servers/Servers";
+import AddServers from "../servers/AddServers";
 import PathStoreTopology from "../PathStoreTopology";
 import NodeDeploymentAdditionForm from "./NodeDeploymentAdditionForm";
 import {contains} from "../Utils";
+import DisplayServers from "../servers/DisplayServers";
 
 
 /**
@@ -180,8 +181,10 @@ class NodeDeploymentModal extends Component {
                                             updates={this.state.updates}
                                             servers={this.props.servers}/>
 
-                <Servers servers={this.props.servers}
-                         callback={this.props.forceRefresh}/>
+                <DisplayServers servers={this.props.servers}/>
+
+                <AddServers servers={this.props.servers}
+                            callback={this.props.forceRefresh}/>
 
 
                 <div>

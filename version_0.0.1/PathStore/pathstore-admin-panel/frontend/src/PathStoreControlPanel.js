@@ -25,7 +25,7 @@ import {
  * NodeDeployment
  *  - NodeDeploymentModal
  *      - NodeDeploymentAdditionForm
- *      - Servers
+ *      - AddServers
  * LiveTransitionVisual
  *  - LiveTransitionVisualModal
  * DisplayAvailableApplications
