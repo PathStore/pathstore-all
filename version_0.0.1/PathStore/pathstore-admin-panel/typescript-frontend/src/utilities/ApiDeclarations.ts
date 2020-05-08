@@ -33,3 +33,7 @@ export interface Update {
 export interface Error {
     error: string
 }
+
+export interface ApplicationCreationSuccess {
+    keyspace_created: string
+}
