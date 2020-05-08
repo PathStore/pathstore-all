@@ -1,50 +1,105 @@
 import React, {Component} from "react";
 import Modal from "react-modal";
-import '../../Circles.css';
-import PathStoreTopology from "../PathStoreTopology";
-import {contains} from "../Utils";
+import {ApplicationStatus, Deployment, Server} from "../../utilities/ApiDeclarations";
 import NodeInfoModal from "../NodeInfoModal";
+import {PathStoreTopology} from "../PathStoreTopology";
+import {contains} from "../../utilities/Utils";
+
+/**
+ * Properties definition for {@link DeployApplicationResponseModal}
+ */
+interface DeployApplicationResponseModalProperties {
+    /**
+     * List of newly installed nodes
+     */
+    readonly data: ApplicationStatus[]
+
+    /**
+     * Whether to show the modal or not
+     */
+    readonly show: boolean
+
+    /**
+     * What application was just installed
+     */
+    readonly applicationName: string
+
+    /**
+     * List of deployment objects from api
+     */
+    readonly deployment: Deployment[]
+
+    /**
+     * List of node application status from api
+     */
+    readonly applicationStatus: ApplicationStatus[]
+
+    /**
+     * List of server objects from api
+     */
+    readonly servers: Server[]
+
+    /**
+     * Callback function to close modal on completion
+     */
+    readonly callback: () => void
+}
+
+/**
+ * State definition for {@link DeployApplicationResponseModal}
+ */
+interface DeployApplicationResponseModalState {
+    /**
+     * List of node id's that just got installed
+     */
+    readonly newlyInstalled: number[]
+
+    /**
+     * List of node id's that alread had the application installed on
+     */
+    readonly previouslyInstalled: number[]
+
+    /**
+     * Whether to show the info modal or not
+     */
+    readonly infoModalShow: boolean
+
+    /**
+     * What node to show in the info modal
+     */
+    readonly infoModalNode: number
+}
 
 /**
  * This component is loaded by DeployApplication on a successful POST request to the api.
  *
- * Props:
- * data: response data from api (Records that got written to table)
- * show: whether to show the modal or not
- * applicationName: name of the application that got deployed
- * topology: list of deployment objects from api
- * applicationStatus: list of node application statuses from api
- * servers: list of server objects from api
- * callback: callback function to close modal
- *
  * Note: The reason for not updating the component when the props change is because even if the props change
  * technically their request remains the same.
  */
-export default class DeployApplicationResponseModal extends Component {
+export default class DeployApplicationResponseModal
+    extends Component<DeployApplicationResponseModalProperties, DeployApplicationResponseModalState> {
 
     /**
-     * State:
-     * newlyInstalled: list of node id's that where installed via the users request
-     * previouslyInstalled: list of node id's that already had this keyspace installed
+     * Initializes props and state
      *
      * @param props
      */
-    constructor(props) {
+    constructor(props: DeployApplicationResponseModalProperties) {
         super(props);
 
         this.state = {
             newlyInstalled:
                 this.props.data
-                    .map(i => parseInt(i.nodeid)),
+                    .map(i => i.nodeid),
 
             previouslyInstalled:
                 this.props.applicationStatus
                     .filter(i => i.keyspace_name === this.props.applicationName)
                     .filter(i => i.process_status === "INSTALLED")
-                    .map(i => parseInt(i.nodeid)),
+                    .map(i => i.nodeid),
 
             infoModalShow: false,
-            infoModalNode: null
+            infoModalNode: -1
         };
     }
 
@@ -58,9 +113,9 @@ export default class DeployApplicationResponseModal extends Component {
      * @param object
      * @returns {string}
      */
-    getClassName = (object) => {
-        if (contains(this.state.newlyInstalled, object.new_node_id)) return 'installation_node';
-        else if (contains(this.state.previouslyInstalled, object.new_node_id)) return 'previous_node';
+    getClassName = (object: Deployment) => {
+        if (contains<number>(this.state.newlyInstalled, object.new_node_id)) return 'installation_node';
+        else if (contains<number>(this.state.previouslyInstalled, object.new_node_id)) return 'previous_node';
         else return 'not_set_node';
     };
 
@@ -70,7 +125,7 @@ export default class DeployApplicationResponseModal extends Component {
      * @param event
      * @param node
      */
-    handleClick = (event, node) => this.setState(
+    handleClick = (event: any, node: number) => this.setState(
         {
             infoModalShow: true,
             infoModalNode: node
@@ -83,7 +138,7 @@ export default class DeployApplicationResponseModal extends Component {
     closeModal = () => this.setState(
         {
             infoModalShow: false,
-            infoModalNode: null
+            infoModalNode: -1
         }
     );
 
@@ -98,7 +153,7 @@ export default class DeployApplicationResponseModal extends Component {
             this.state.infoModalShow ?
                 <NodeInfoModal show={this.state.infoModalShow}
                                node={this.state.infoModalNode}
-                               topology={this.props.topology}
+                               deployment={this.props.deployment}
                                applicationStatus={this.props.applicationStatus}
                                servers={this.props.servers}
                                callback={this.closeModal}/>
@@ -115,7 +170,7 @@ export default class DeployApplicationResponseModal extends Component {
                     <p>Black nodes are nodes that have not be installed on</p>
                 </div>
                 <div>
-                    <PathStoreTopology topology={this.props.topology.filter(i => i.process_status === "DEPLOYED")}
+                    <PathStoreTopology deployment={this.props.deployment.filter(i => i.process_status === "DEPLOYED")}
                                        get_colour={this.getClassName}
                                        get_click={this.handleClick}/>
                 </div>

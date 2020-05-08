@@ -1,28 +1,52 @@
 import React, {Component} from "react";
-import Form from "react-bootstrap/Form";
-import {Button} from "react-bootstrap";
 import ReactDOM from "react-dom";
-import {contains} from "../Utils";
+import {Deployment, Server, Update} from "../../utilities/ApiDeclarations";
+import {contains} from "../../utilities/Utils";
+import {Button, Form} from "react-bootstrap";
+
+/**
+ * Properties for {@link NodeDeploymentAdditionForm}
+ */
+interface NodeDeploymentAdditionFormProperties {
+    /**
+     * List of deployment nodes from {@link NodeDeploymentModal}
+     */
+    readonly deployment: Deployment[]
+
+    /**
+     * List of update nodes from {@link NodeDeploymentModal}
+     */
+    readonly updates: Update[]
+
+    /**
+     * List of server objects from the api
+     */
+    readonly servers: Server[]
+
+    /**
+     * Addition function to add a node to the hypothetical network
+     */
+    readonly addition: (deployment: Deployment, update: Update) => void
+}
 
 /**
  * TODO: Error check inputs and display to user
  *
  * This component is a form that allows users to hypothetically add a node to the network
- *
- * Props:
- * topology: sliced topology from NodeDeployment state
- * updates: list of nodes added that aren't committed. Stored in NodeDeployment
- * addition: callback function to add new node to parent state
- * servers: list of server objects from api
  */
-export default class NodeDeploymentAdditionForm extends Component {
+export default class NodeDeploymentAdditionForm extends Component<NodeDeploymentAdditionFormProperties> {
+
+    /**
+     * Used to clear message form
+     */
+    private messageForm: any;
 
     /**
      * Read all data from form and push that data to the topology array and the updates array. Also clear the form when finished
      *
      * @param event
      */
-    onFormSubmit = (event) => {
+    onFormSubmit = (event: any) => {
         event.preventDefault();
 
         const parentId = parseInt(event.target.elements.parentId.value);
@@ -31,11 +55,16 @@ export default class NodeDeploymentAdditionForm extends Component {
 
         const serverName = event.target.elements.serverName.value;
 
-        let serverUUID;
+        let serverUUID = null;
 
         for (let i = 0; i < this.props.servers.length; i++)
             if (this.props.servers[i].name === serverName)
                 serverUUID = this.props.servers[i].server_uuid;
+
+        if (serverUUID === null) {
+            alert("Something went wrong");
+            return;
+        }
 
         this.props.addition(
             {
@@ -45,12 +74,13 @@ export default class NodeDeploymentAdditionForm extends Component {
                 server_uuid: serverUUID
             },
             {
-                parent_node_id: parentId,
-                new_node_id: nodeId,
-                server_uuid: serverUUID
+                parentId: parentId,
+                newNodeId: nodeId,
+                serverUUID: serverUUID
             }
         );
 
+        // @ts-ignore
         ReactDOM.findDOMNode(this.messageForm).reset();
     };
 
@@ -68,13 +98,13 @@ export default class NodeDeploymentAdditionForm extends Component {
         const servers = [];
 
         for (let i = 0; i < this.props.servers.length; i++)
-            if (!contains(this.props.topology.map(i => i.server_uuid), this.props.servers[i].server_uuid))
+            if (!contains(this.props.deployment.map(i => i.server_uuid), this.props.servers[i].server_uuid))
                 servers.push(
                     <option key={i}>{this.props.servers[i].name}</option>
                 );
 
         const form = servers.length > 0 ?
-            <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
+            <Form onSubmit={this.onFormSubmit} ref={(form: any) => this.messageForm = form}>
                 <Form.Group controlId="parentId">
                     <Form.Label>Parent Node Id</Form.Label>
                     <Form.Control type="text" placeholder="Parent Id"/>

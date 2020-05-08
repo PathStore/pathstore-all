@@ -1,39 +1,91 @@
-import ReactDOM from 'react-dom'
 import React, {Component} from "react";
-import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
+import ReactDOM from 'react-dom'
+import {Application, ApplicationStatus, Deployment, Server, Error} from "../../utilities/ApiDeclarations";
+import {webHandler} from "../../utilities/Utils";
+import {ErrorResponseModal} from "../ErrorResponseModal";
+import {Button, Form} from "react-bootstrap";
 import DeployApplicationResponseModal from "./DeployApplicationResponseModal";
-import {webHandler} from "../Utils";
-import ErrorResponseModal from "../ErrorResponseModal";
+
+/**
+ * Properties definition for {@link DeployApplication}
+ */
+interface DeployApplicationProperties {
+    /**
+     * List of deployment objects from api
+     */
+    readonly deployment: Deployment[]
+
+    /**
+     * List of application objects from api
+     */
+    readonly applications: Application[]
+
+    /**
+     * List of node status objects from api
+     */
+    readonly applicationStatus: ApplicationStatus[]
+
+    /**
+     * List of server objects from api
+     */
+    readonly servers: Server[]
+}
+
+/**
+ * State definition for {@link DeployApplication}
+ */
+interface DeployApplicationState {
+    /**
+     * Application name to send to modal
+     */
+    readonly responseModalApplication: string
+
+    /**
+     * List of new deployed nodes (response from post call)
+     */
+    readonly responseModalData: ApplicationStatus[]
+
+    /**
+     * Whether to show the response modal or not
+     */
+    readonly responseModalShow: boolean
+
+    /**
+     * Whether to show the error modal or not
+     */
+    readonly responseModalError: boolean
+
+    /**
+     * List of errors to give the error modal if needed
+     */
+    readonly responseModalErrorData: Error[]
+}
 
 /**
  * This component is used to allow the user to select a set of nodes to install an application on
  * It has a form which has two select dropdowns which are created using the data passed from PathStoreControlPanel
- *
- * Props:
- * topology: list of deployment objects gathered from api
- * applications: list of application objects gathered from api
- * applicationStatus: list of application status objects gathered from api
- * servers: list of server objects gathered from api
  */
-export default class DeployApplication extends Component {
+export default class DeployApplication extends Component<DeployApplicationProperties, DeployApplicationState> {
 
     /**
-     * State:
-     * responseModalApplication: application that was deployed
-     * responseModalData: data to passed to response modal on request submit
-     * responseModalShow: whether or not to show the response modal
-     * responseModalError: whether to display the error response modal
+     * Used to clear form
+     */
+    private messageForm: any;
+
+    /**
+     * Initialize props and state
      *
      * @param props
      */
-    constructor(props) {
+    constructor(props: DeployApplicationProperties) {
         super(props);
+
         this.state = {
-            responseModalApplication: null,
-            responseModalData: null,
+            responseModalApplication: "",
+            responseModalData: [],
             responseModalShow: false,
-            responseModalError: false
+            responseModalError: false,
+            responseModalErrorData: []
         };
     }
 
@@ -47,7 +99,7 @@ export default class DeployApplication extends Component {
      *
      * @param event
      */
-    onFormSubmit = (event) => {
+    onFormSubmit = (event: any) => {
         event.preventDefault();
 
         const application = event.target.elements.application.value.trim();
@@ -72,7 +124,8 @@ export default class DeployApplication extends Component {
         fetch(url, {
             method: 'POST'
         }).then(webHandler)
-            .then(response => {
+            .then((response: ApplicationStatus[]) => {
+                // @ts-ignore
                 ReactDOM.findDOMNode(this.messageForm).reset();
                 this.setState({
                     responseModalApplication: application,
@@ -80,9 +133,9 @@ export default class DeployApplication extends Component {
                     responseModalShow: true,
                     responseModalError: false,
                 });
-            }).catch(response =>
+            }).catch((response: Error[]) =>
             this.setState({
-                responseModalData: response,
+                responseModalErrorData: response,
                 responseModalShow: true,
                 responseModalError: true,
             })
@@ -111,14 +164,14 @@ export default class DeployApplication extends Component {
         const modal =
             this.state.responseModalShow ?
                 this.state.responseModalError ?
-                    <ErrorResponseModal data={this.state.responseModalData}
+                    <ErrorResponseModal data={this.state.responseModalErrorData}
                                         show={this.state.responseModalShow}
                                         callback={this.closeModalCallback}/>
                     :
                     <DeployApplicationResponseModal data={this.state.responseModalData}
                                                     show={this.state.responseModalShow}
                                                     applicationName={this.state.responseModalApplication}
-                                                    topology={this.props.topology}
+                                                    deployment={this.props.deployment}
                                                     applicationStatus={this.props.applicationStatus}
                                                     servers={this.props.servers}
                                                     callback={this.closeModalCallback}/>
@@ -134,14 +187,14 @@ export default class DeployApplication extends Component {
 
         const nodes = [];
 
-        for (let i = 0; i < this.props.topology.length; i++)
-            if (this.props.topology[i].process_status === "DEPLOYED")
+        for (let i = 0; i < this.props.deployment.length; i++)
+            if (this.props.deployment[i].process_status === "DEPLOYED")
                 nodes.push(
-                    <option key={i}>{this.props.topology[i].new_node_id}</option>
+                    <option key={i}>{this.props.deployment[i].new_node_id}</option>
                 );
 
         let form = this.props.applications.length > 0 ?
-            <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
+            <Form onSubmit={this.onFormSubmit} ref={(form: any) => this.messageForm = form}>
                 <Form.Group controlId="application">
                     <Form.Label>Select Application</Form.Label>
                     <Form.Control as="select">

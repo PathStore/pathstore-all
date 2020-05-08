@@ -1,39 +1,82 @@
-import ReactDOM from 'react-dom'
-import React, {Component} from "react";
-import Form from "react-bootstrap/Form";
-import {Button} from "react-bootstrap";
-import LoadingModal from "../LoadingModal";
-import ServerCreationResponseModal from "./ServerCreationResponseModal";
-import {webHandler} from "../Utils";
-import ErrorResponseModal from "../ErrorResponseModal";
+import {Component} from "react";
+import ReactDOM from "react-dom";
+import {Server, Error} from "../../../utilities/ApiDeclarations";
+import {webHandler} from "../../../utilities/Utils";
+import {Button, Form} from "react-bootstrap";
+import React from "react";
+import {LoadingModal} from "../../LoadingModal";
+import {ErrorResponseModal} from "../../ErrorResponseModal";
+import {ServerCreationResponseModal} from "./ServerCreationResponseModal";
 
 /**
- * This component is used for the addition of servers.
- *
- * Props:
- * servers: list of server objects from api
- * callback: force refresh other components props
- *
+ * Properties definition for {@link AddServers}
  */
-export default class AddServers extends Component {
+interface AddServersProperties {
+    /**
+     * List of servers from api
+     */
+    readonly servers: Server[]
 
     /**
-     * Stats:
-     * loadingModalShow: whether to show the loading modal
-     * responseModalShow: whether to show the response modal
-     * responseModalData: what data to give to the response modal
-     * responseModalError: whether to display the error modal or not
+     * Callback to refresh component props
+     */
+    readonly callback: () => void
+}
+
+/**
+ * State definition for {@link AddServers}
+ */
+interface AddServersState {
+    /**
+     * Whether the loading modal is shown
+     */
+    readonly loadingModalShow: boolean
+
+    /**
+     * Whether the response modal is show
+     */
+    readonly responseModalShow: boolean
+
+    /**
+     * What server info to give to the response modal
+     */
+    readonly responseModalData: Server | null
+
+    /**
+     * Whether to load the error response modal
+     */
+    readonly responseModalError: boolean
+
+    /**
+     * Error response modal data (errors)
+     */
+    readonly responseModalErrorData: Error[]
+}
+
+/**
+ * This class is used by {@link NodeDeploymentModal} to allow the user to add servers
+ */
+export default class AddServers extends Component<AddServersProperties, AddServersState> {
+
+    /**
+     * Used to clear message form
+     */
+    private messageForm: any;
+
+    /**
+     * Initializes props and state
      *
      * @param props
      */
-    constructor(props) {
+    constructor(props: AddServersProperties) {
         super(props);
 
         this.state = {
             loadingModalShow: false,
             responseModalShow: false,
             responseModalData: null,
-            responseModalError: false
+            responseModalError: false,
+            responseModalErrorData: []
         }
     }
 
@@ -42,7 +85,7 @@ export default class AddServers extends Component {
      *
      * @param event
      */
-    onFormSubmit = (event) => {
+    onFormSubmit = (event: any) => {
         event.preventDefault();
 
         const ip = event.target.elements.ip.value.trim();
@@ -60,19 +103,20 @@ export default class AddServers extends Component {
             fetch(url, {
                 method: 'POST'
             }).then(webHandler)
-                .then(response => this.setState({
+                .then((response: Server) => this.setState({
                         loadingModalShow: false,
                         responseModalShow: true,
                         responseModalData: response,
                         responseModalError: false
                     }, () => {
+                        // @ts-ignore
                         ReactDOM.findDOMNode(this.messageForm).reset();
                         this.props.callback();
                     })
-                ).catch(response => this.setState({
+                ).catch((response: Error[]) => this.setState({
                     loadingModalShow: false,
                     responseModalShow: true,
-                    responseModalData: response,
+                    responseModalErrorData: response,
                     responseModalError: true
                 })
             );
@@ -101,7 +145,7 @@ export default class AddServers extends Component {
             this.state.responseModalShow ?
                 this.state.responseModalError ?
                     <ErrorResponseModal show={this.state.responseModalShow}
-                                        data={this.state.responseModalData}
+                                        data={this.state.responseModalErrorData}
                                         callback={this.callBack}/>
                     :
                     <ServerCreationResponseModal show={this.state.responseModalShow}
@@ -114,7 +158,7 @@ export default class AddServers extends Component {
                 {loadingModal}
                 {responseModal}
                 <h3>Create Server</h3>
-                <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
+                <Form onSubmit={this.onFormSubmit} ref={(form: any) => this.messageForm = form}>
                     <Form.Group controlId="ip">
                         <Form.Label>IP Address</Form.Label>
                         <Form.Control type="text" placeholder="ip address of server"/>

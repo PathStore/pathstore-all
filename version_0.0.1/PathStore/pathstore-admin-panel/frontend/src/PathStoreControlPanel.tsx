@@ -1,17 +1,36 @@
 import React, {Component} from 'react';
-import 'react-tree-graph/dist/style.css'
+import {Application, ApplicationStatus, Deployment, Server} from "./utilities/ApiDeclarations";
 import ViewTopology from "./modules/topology/ViewTopology";
-import ApplicationCreation from "./modules/installation/ApplicationCreation";
-import DisplayAvailableApplication from "./modules/installation/DisplayAvailableApplication";
-import DeployApplication from "./modules/applicationDeployment/DeployApplication";
-import LiveTransitionVisual from "./modules/topology/LiveTransitionVisual";
 import NodeDeployment from "./modules/nodeDeployment/NodeDeployment";
-import {
-    createApplicationObject,
-    createApplicationStatusObject,
-    createDeploymentObject,
-    createServerObject
-} from "./modules/Utils";
+import LiveTransitionVisual from "./modules/topology/LiveTransitionVisual";
+import {DisplayAvailableApplications} from "./modules/installation/DisplayAvailableApplications";
+import ApplicationCreation from "./modules/installation/ApplicationCreation";
+import DeployApplication from "./modules/deployment/DeployApplication";
+
+/**
+ * State definition for {@link PathStoreControlPanel}
+ */
+interface PathStoreControlPanelState {
+    /**
+     * List of deployment objects from api
+     */
+    readonly deployment: Deployment[]
+
+    /**
+     * List of server objects from api
+     */
+    readonly servers: Server[]
+
+    /**
+     * List of application objects from api
+     */
+    readonly applications: Application[]
+
+    /**
+     * List of node application status from api
+     */
+    readonly applicationStatus: ApplicationStatus[]
+}
 
 /**
  * This is the main component for the PathStore Control Panel it is the parent of multiple sub components and has the
@@ -26,11 +45,15 @@ import {
  *  - NodeDeploymentModal
  *      - NodeDeploymentAdditionForm
  *      - AddServers
+ *          - ServerCreationResponseModal
+ *      - DisplayServers
  * LiveTransitionVisual
  *  - LiveTransitionVisualModal
  * DisplayAvailableApplications
  * ApplicationCreation
+ *  - ApplicationCreationResponseModal
  * DeployApplication
+ *  - DeployApplicationResponseModal
  *
  * The Common components used throughout the application are:
  * PathStoreTopology
@@ -39,25 +62,26 @@ import {
  * NodeInfoModal
  *
  * And all global function are in
- * Utils.js
+ * Utils.tsx
+ *
+ * And all api responses and formats are in
+ * ApiDeclarations.ts
  *
  * For more information about this code base and the project see the pathstore github page
  */
-export default class PathStoreControlPanel extends Component {
+export default class PathStoreControlPanel extends Component<{}, PathStoreControlPanelState> {
 
     /**
-     * Global:
-     * timer: stores the timer object used for gc on closure of the component
-     *
-     * State:
-     * deployment: list of deployment objects from api
-     * servers: list of server objects from api
-     * applications: list of application objects from api
-     * applicationStatus: list of node status based on applications from api
+     * Timer for auto refresh of data
+     */
+    private timer: any;
+
+    /**
+     * Initialize state and empty props
      *
      * @param props
      */
-    constructor(props) {
+    constructor(props = {}) {
         super(props);
 
         this.state = {
@@ -72,7 +96,7 @@ export default class PathStoreControlPanel extends Component {
      * On mount of the component query all needed data to fill the state and set a timer to refresh this data every 2
      * seconds
      */
-    componentDidMount() {
+    componentDidMount(): void {
         this.queryAll();
 
         this.timer = setInterval(this.queryAll, 2000);
@@ -81,7 +105,7 @@ export default class PathStoreControlPanel extends Component {
     /**
      * Garbage collect interval thread
      */
-    componentWillUnmount() {
+    componentWillUnmount(): void {
         clearInterval(this.timer);
     }
 
@@ -89,50 +113,27 @@ export default class PathStoreControlPanel extends Component {
      * Call fetch all to get all the responses and load them into the state
      */
     queryAll = () => {
-        this.fetchAll().then(([deployment, servers, applications, applicationStatus]) =>
-            this.setState({
-                deployment: deployment,
-                servers: servers,
-                applications: applications,
-                applicationStatus: applicationStatus
-            }));
-    };
+        this.genericLoadFunction<Deployment>('/api/v1/deployment')
+            .then((response: Deployment[]) => this.setState({deployment: response}));
 
-    /**
-     * Fetches all data needed for the website from the api
-     *
-     * @returns {Promise<[[], [], [], []]>} 4 array responses
-     */
-    fetchAll = () => {
-        return Promise.all(
-            [
-                this.genericLoadFunction('/api/v1/deployment', createDeploymentObject),
-                this.genericLoadFunction('/api/v1/servers', createServerObject),
-                this.genericLoadFunction('/api/v1/applications', createApplicationObject),
-                this.genericLoadFunction('/api/v1/application_management', createApplicationStatusObject)
-            ]
-        );
+        this.genericLoadFunction<Server>('/api/v1/servers')
+            .then((response: Server[]) => this.setState({servers: response}));
+
+        this.genericLoadFunction<Application>('/api/v1/applications')
+            .then((response: Application[]) => this.setState({applications: response}));
+
+        this.genericLoadFunction<ApplicationStatus>('/api/v1/application_management')
+            .then((response: ApplicationStatus[]) => this.setState({applicationStatus: response}));
     };
 
     /**
      * This function is used to return an array of parsed object data from the api.
      *
-     * @param url which url to query
-     * @param parsingFunction how to parse each json object in a json array
-     * @returns {Promise<[]>} parsed array response
+     * @param url url to query
      */
-    genericLoadFunction = (url, parsingFunction) => {
-        return fetch(url)
-            .then(response => response.json())
-            .then(response => {
-                let messages = [];
-
-                for (let i = 0; i < response.length; i++)
-                    messages.push(parsingFunction(response[i]));
-
-                return messages;
-            })
-    };
+    genericLoadFunction = <T extends unknown>(url: string): Promise<T[]> =>
+        fetch(url)
+            .then(response => response.json() as Promise<T[]>);
 
     /**
      * Used by child component to force refresh this data. This is only given to child components who are capable
@@ -152,51 +153,48 @@ export default class PathStoreControlPanel extends Component {
      *
      * @returns {*}
      */
-    render() {
-        return (
+    render = () => (
+        <div>
+            <h1>PathStore Control Panel</h1>
             <div>
-                <h1>PathStore Control Panel</h1>
                 <div>
-                    <div>
-                        <h2>Network Topology</h2>
-                        <ViewTopology topology={this.state.deployment}
-                                      servers={this.state.servers}
-                                      applicationStatus={this.state.applicationStatus}
-                        />
-                    </div>
-                    <br/>
-                    <div>
-                        <h2>Network Expansion</h2>
-                        <NodeDeployment topology={this.state.deployment}
-                                        servers={this.state.servers}
-                                        forceRefresh={this.forceRefresh}/>
-                    </div>
+                    <h2>Network Topology</h2>
+                    <ViewTopology deployment={this.state.deployment}
+                                  servers={this.state.servers}
+                                  applicationStatus={this.state.applicationStatus}
+                    />
                 </div>
                 <br/>
+                <div>
+                    <h2>Network Expansion</h2>
+                    <NodeDeployment deployment={this.state.deployment}
+                                    servers={this.state.servers}
+                                    forceRefresh={this.forceRefresh}/>
+                </div>
                 <div>
                     <div>
                         <h2>Live Installation Viewer</h2>
                         <LiveTransitionVisual applications={this.state.applications}
                                               applicationStatus={this.state.applicationStatus}
-                                              topology={this.state.deployment}/>
+                                              deployment={this.state.deployment}/>
                     </div>
                     <br/>
                     <div>
                         <h2>Application Creation</h2>
-                        <DisplayAvailableApplication applications={this.state.applications}/>
+                        <DisplayAvailableApplications applications={this.state.applications}/>
                         <br/>
                         <ApplicationCreation forceRefresh={this.forceRefresh}/>
                     </div>
                     <br/>
                     <div>
                         <h2>Application Deployment</h2>
-                        <DeployApplication topology={this.state.deployment}
+                        <DeployApplication deployment={this.state.deployment}
                                            applications={this.state.applications}
                                            applicationStatus={this.state.applicationStatus}
                                            servers={this.state.servers}/>
                     </div>
                 </div>
             </div>
-        );
-    }
+        </div>
+    );
 }

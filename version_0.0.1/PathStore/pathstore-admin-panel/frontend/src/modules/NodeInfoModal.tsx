@@ -1,31 +1,59 @@
-import React, {Component} from "react";
+import {ApplicationStatus, Deployment, Server} from "../utilities/ApiDeclarations";
 import Modal from "react-modal";
 import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
-import {formatServer, webHandler} from "./Utils";
+import React, {Component} from "react";
+import {formatServer, webHandler} from "../utilities/Utils";
+
+/**
+ * Properties definition for {@link NodeInfoModal}
+ */
+interface NodeInfoModalProperties {
+    /**
+     * Node id of node to show info of
+     */
+    readonly node: number
+
+    /**
+     * Whether to display the modal or not
+     */
+    readonly show: boolean
+
+    /**
+     * List of deployment objects from api
+     */
+    readonly deployment: Deployment[]
+
+    /**
+     * List of node application status from api
+     */
+    readonly applicationStatus: ApplicationStatus[]
+
+    /**
+     * List of server objects from api
+     */
+    readonly servers: Server[]
+
+    /**
+     * Callback function to close modal on completion
+     */
+    readonly callback: () => void
+}
 
 /**
  * This component is used when a user clicks on a node in a pathstore topology to give the user some information
  * about the node.
- *
- * Props:
- * node: node id of the node to display information about
- * show: whether to display the modal or not
- * topology: list of deployment objects from api
- * applicationStatus: list of node application status from api
- * servers: list of server objects from api
- * callback: callback function to close modal
- *
  */
-export default class NodeInfoModal extends Component {
+export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
+
     /**
      * Formats the data for the application status table which informs the user about the current status of
      * application installation on this particular node
      *
-     * @param messages
+     * @param applicationStatus
      * @returns {[]}
      */
-    formatApplicationStatusTable = (messages) => {
+    formatApplicationStatusTable = (applicationStatus: ApplicationStatus[]) => {
 
         let response = [];
 
@@ -43,9 +71,9 @@ export default class NodeInfoModal extends Component {
 
         let body = [];
 
-        for (let i = 0; i < messages.length; i++) {
+        for (let i = 0; i < applicationStatus.length; i++) {
 
-            let currentObject = messages[i];
+            let currentObject = applicationStatus[i];
 
             body.push(
                 <tr>
@@ -69,11 +97,11 @@ export default class NodeInfoModal extends Component {
     /**
      * Returns a button or null iff the node is eligible for re-trying deployment (the node has failed deployment)
      *
-     * @param topology
+     * @param deployment
      * @returns {null|*}
      */
-    retryButton = (topology) => {
-        const deployObject = topology.filter(i => i.new_node_id === this.props.node);
+    retryButton = (deployment: Deployment[]) => {
+        const deployObject = deployment.filter(i => i.new_node_id === this.props.node);
 
         if (deployObject[0].process_status === "FAILED")
             return <Button onClick={this.retryOnClick}>Retry</Button>;
@@ -83,11 +111,11 @@ export default class NodeInfoModal extends Component {
     /**
      * Get data for retry
      *
-     * @param topology
+     * @param deployment
      * @returns {{newNodeId: number, serverUUID, parentId: number}}
      */
-    retryData = (topology) => {
-        const deployObject = topology.filter(i => i.new_node_id === this.props.node);
+    retryData = (deployment: Deployment[]) => {
+        const deployObject = deployment.filter(i => i.new_node_id === this.props.node);
 
         return {
             parentId: deployObject[0].parent_node_id,
@@ -97,7 +125,7 @@ export default class NodeInfoModal extends Component {
     };
 
     /**
-     * TODO: Response Modals
+     * TODO: Response Modals.
      *
      * PUT request to api with retryData as the body to inform the root node
      * that this node should be re-tried for deployment
@@ -109,7 +137,7 @@ export default class NodeInfoModal extends Component {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({record: this.retryData(this.props.topology)})
+            body: JSON.stringify({record: this.retryData(this.props.deployment)})
         })
             .then(webHandler)
             .then(response => {
@@ -130,8 +158,8 @@ export default class NodeInfoModal extends Component {
             <Modal isOpen={this.props.show}
                    style={{overlay: {zIndex: 1}}}
                    ariaHideApp={false}>
-                {formatServer(this.props.topology, this.props.servers, this.props.node)}
-                {this.retryButton(this.props.topology)}
+                {formatServer(this.props.deployment, this.props.servers, this.props.node)}
+                {this.retryButton(this.props.deployment)}
                 <Table>
                     {this.formatApplicationStatusTable(
                         this.props.applicationStatus
@@ -141,4 +169,4 @@ export default class NodeInfoModal extends Component {
             </Modal>
         );
     }
-}
+};

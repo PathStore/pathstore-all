@@ -1,42 +1,84 @@
-import ReactDOM from 'react-dom'
 import React, {Component} from "react";
-import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
-import ApplicationCreationResponseModal from "./ApplicationCreationResponseModal";
-import LoadingModal from "../LoadingModal";
-import {webHandler} from "../Utils";
-import ErrorResponseModal from "../ErrorResponseModal";
+import ReactDOM from 'react-dom'
+import {ApplicationCreationSuccess, Error} from "../../utilities/ApiDeclarations";
+import {webHandler} from "../../utilities/Utils";
+import {LoadingModal} from "../LoadingModal";
+import {ErrorResponseModal} from "../ErrorResponseModal";
+import {Button, Form} from "react-bootstrap";
+import {ApplicationCreationResponseModal} from "./ApplicationCreationResponseModal";
+
+/**
+ * Props definition for {@link ApplicationCreation}
+ */
+interface ApplicationCreationProperties {
+    /**
+     * Callback function to refresh components props
+     */
+    readonly forceRefresh: () => void
+}
+
+/**
+ * State definition for {@link ApplicationCreation}
+ */
+interface ApplicationCreationState {
+    /**
+     * File to send to api on submission
+     */
+    readonly file: File | null
+
+    /**
+     * Whether or not to show the loading modal
+     */
+    readonly loadingModalShow: boolean
+
+    /**
+     * Whwther or not to show the response modal
+     */
+    readonly responseModalShow: boolean
+
+    /**
+     * What application was created (api response)
+     */
+    readonly responseModalData: ApplicationCreationSuccess | null
+
+    /**
+     * If api response code is >= 400
+     */
+    readonly responseModalError: boolean
+
+    /**
+     * Api message on error
+     */
+    readonly  responseModalErrorData: Error[]
+}
 
 /**
  * TODO: Maybe add a colour underneath the application name if its valid or not
  *
  * This class is used to create an application by giving a name and a schema
- *
- * Props:
- * forceRefresh: used to inform PathStoreControlPanel that an application has been loaded
  */
-export default class ApplicationCreation extends Component {
+export default class ApplicationCreation extends Component<ApplicationCreationProperties, ApplicationCreationState> {
 
     /**
-     * TODO: See if you can remove file from state
-     *
-     * State:
-     * file: used to store file uploaded by user
-     * loadingModalShow: whether to show the loading modal or not
-     * responseModalShow: whether to show the response modal or not
-     * responseModalData: what data to give to the response modal on completion of the form
-     * responseModalError: whether to render the error response modal or not
+     * Used to clear form on completion
+     */
+    private messageForm: any;
+
+    /**
+     * Initialize props and state
      *
      * @param props
      */
-    constructor(props) {
+    constructor(props: ApplicationCreationProperties) {
         super(props);
+
         this.state = {
             file: null,
             loadingModalShow: false,
             responseModalShow: false,
             responseModalData: null,
-            responseModalError: false
+            responseModalError: false,
+            responseModalErrorData: []
         };
     }
 
@@ -45,7 +87,7 @@ export default class ApplicationCreation extends Component {
      *
      * @param event
      */
-    handleFileSubmit = (event) => this.setState({file: event.target.files[0]});
+    handleFileSubmit = (event: any) => this.setState({file: event.target.files[0]});
 
     /**
      * Send FormData to api with the following format
@@ -58,7 +100,7 @@ export default class ApplicationCreation extends Component {
      *
      * @param event
      */
-    onFormSubmit = (event) => {
+    onFormSubmit = (event: any) => {
         event.preventDefault();
 
         const applicationName = event.target.elements.application.value.trim();
@@ -75,9 +117,10 @@ export default class ApplicationCreation extends Component {
                 method: 'POST',
                 body: formData
             }).then(webHandler)
-                .then(response => {
+                .then((response: ApplicationCreationSuccess) => {
                     this.setState({loadingModalShow: false}, () => {
                         this.props.forceRefresh();
+                        // @ts-ignore
                         ReactDOM.findDOMNode(this.messageForm).reset();
                         this.setState({
                             responseModalShow: true,
@@ -85,11 +128,11 @@ export default class ApplicationCreation extends Component {
                             responseModalError: false
                         });
                     });
-                }).catch(response => {
+                }).catch((response: Error[]) => {
                 this.setState({loadingModalShow: false}, () => {
                     this.setState({
                         responseModalShow: true,
-                        responseModalData: response,
+                        responseModalErrorData: response,
                         responseModalError: true
                     });
                 });
@@ -119,7 +162,7 @@ export default class ApplicationCreation extends Component {
             this.state.responseModalShow ?
                 this.state.responseModalError ?
                     <ErrorResponseModal show={this.state.responseModalShow}
-                                        data={this.state.responseModalData}
+                                        data={this.state.responseModalErrorData}
                                         callback={this.closeModalCallback}/>
                     :
                     <ApplicationCreationResponseModal show={this.state.responseModalShow}
@@ -131,7 +174,7 @@ export default class ApplicationCreation extends Component {
             <div>
                 {loadingModal}
                 {responseModal}
-                <Form onSubmit={this.onFormSubmit} ref={form => this.messageForm = form}>
+                <Form onSubmit={this.onFormSubmit} ref={(form: any) => this.messageForm = form}>
                     <Form.Group controlId="application">
                         <Form.Label>Application Name</Form.Label>
                         <Form.Control type="text" placeholder="Enter application name here"/>

@@ -1,104 +1,94 @@
 import React, {Component} from "react";
-import {Button} from "react-bootstrap";
+import {Deployment, Server, Update} from "../../utilities/ApiDeclarations";
+import {contains} from "../../utilities/Utils";
+import {PathStoreTopology} from "../PathStoreTopology";
+import Button from "react-bootstrap/Button";
 import Modal from "react-modal";
-import AddServers from "../servers/AddServers";
-import PathStoreTopology from "../PathStoreTopology";
+import {HypotheticalInfoModal} from "./HypotheticalInfoModal";
 import NodeDeploymentAdditionForm from "./NodeDeploymentAdditionForm";
-import {contains} from "../Utils";
-import DisplayServers from "../servers/DisplayServers";
-import HypotheticalInfoModal from "./HypotheticalInfoModal";
-
+import AddServers from "./servers/AddServers"
+import {DisplayServers} from "./servers/DisplayServers";
 
 /**
- * This is the parent class for the node deployment section of the website. This component is used
- * to add servers and deploy additional nodes to the topology
- *
- * Props:
- * topology: list of deployment objects form api
- * servers: list of server objects from api
- * forceRefresh: callback to force refresh all other components props
+ * Properties definition for {@link NodeDeploymentModal}
  */
-export default class NodeDeployment extends Component {
+interface NodeDeploymentModalProperties {
+    /**
+     * Whether to show the modal or not
+     */
+    readonly show: boolean
 
     /**
-     * State:
-     * show: whether or not to show the node deployment modal
-     *
-     * @param props
+     * List of deployment objects from api
      */
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            show: false
-        };
-    }
+    readonly deployment: Deployment[]
 
     /**
-     * Used to call when the user clicks the show modal button
+     * List of server objects from api
      */
-    showModal = () => this.setState({show: true});
+    readonly servers: Server[]
 
     /**
-     * Used for the modal to close itself
+     * Callback function to refresh all component props
      */
-    callBack = () => this.setState({show: false});
+    readonly forceRefresh: () => void
 
     /**
-     * Check if you need to render the modal and then render the deploy additional nodes button
-     *
-     * @returns {*}
+     * Callback function to close modal
      */
-    render() {
+    readonly callback: () => void
+}
 
-        const modal =
-            this.state.show ?
-                <NodeDeploymentModal show={this.state.show}
-                                     topology={this.props.topology}
-                                     servers={this.props.servers}
-                                     forceRefresh={this.props.forceRefresh}
-                                     callback={this.callBack}/>
-                : null;
+/**
+ * State definition for {@link NodeDeploymentModal}
+ */
+interface NodeDeploymentModalState {
+    /**
+     * Copied list of deployment objects for local customization
+     */
+    readonly deployment: Deployment[]
 
-        return (
-            <div>
-                {modal}
-                <Button onClick={this.showModal}>Deploy Additional Nodes to Network</Button>
-            </div>
-        );
-    }
+    /**
+     * List of updates nodes to determine a node is hypothetical or not
+     */
+    readonly updates: Update[]
+
+    /**
+     * Whether or not to show the info modal
+     */
+    readonly infoModalShow: boolean
+
+    /**
+     * Whether the node clicked is a hypothetical node
+     */
+    readonly infoModalIsHypothetical: boolean
+
+    /**
+     * What node was clicked
+     */
+    readonly infoModalNodeNumber: number
 }
 
 /**
  * This component is used to allow users to deploy additional nodes to their pathstore network
- *
- * Props:
- * show: whether to show the modal or not
- * topology: list of deployment objects from api
- * servers: list of server objects from api
- * forceRefresh: callback function to resfresh all components props
- * callback: callback function to close modal
  */
-class NodeDeploymentModal extends Component {
+export default class NodeDeploymentModal extends Component<NodeDeploymentModalProperties, NodeDeploymentModalState> {
 
     /**
-     * State:
-     * topology: internal topology array as this will be used to render a hypothetical tree
-     *           that shouldn't be propagated to other components
-     * updates: list of update nodes. Used when the user wants to submit their changes to the network
+     * Initialize props and state
      *
      * @param props
      */
-    constructor(props) {
+    constructor(props: NodeDeploymentModalProperties) {
         super(props);
 
         this.state = {
-            topology: props.topology.slice(),
+            deployment: props.deployment.slice(),
             updates: [],
             infoModalShow: false,
             infoModalIsHypothetical: false,
-            infoModalNodeNumber: null
-        }
+            infoModalNodeNumber: -1
+        };
     }
 
     /**
@@ -112,18 +102,7 @@ class NodeDeploymentModal extends Component {
      *
      */
     submit = () => {
-
-        const formattedUpdates = [];
-
-        for (let i = 0; i < this.state.updates.length; i++) {
-            formattedUpdates.push({
-                parentId: this.state.updates[i].parent_node_id,
-                newNodeId: this.state.updates[i].new_node_id,
-                serverUUID: this.state.updates[i].server_uuid
-            })
-        }
-
-        if (formattedUpdates.length <= 0) {
+        if (this.state.updates.length <= 0) {
             alert("You have not made any changes to the network");
             return;
         }
@@ -135,7 +114,7 @@ class NodeDeploymentModal extends Component {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                records: formattedUpdates
+                records: this.state.updates
             })
         })
             .then(response => response.json())
@@ -157,8 +136,10 @@ class NodeDeploymentModal extends Component {
      * @param object
      * @returns {string}
      */
-    isHypothetical = (object) =>
-        contains(this.state.updates.map(i => i.new_node_id), object.new_node_id) ? 'hypothetical' : 'not_set_node';
+    isHypothetical = (object: Deployment) =>
+        contains<number>(this.state.updates.map(i => i.newNodeId), object.new_node_id) ?
+            'hypothetical'
+            : 'not_set_node';
 
     /**
      * This function is used to update the state to display an info modal on click
@@ -166,11 +147,11 @@ class NodeDeploymentModal extends Component {
      * @param event
      * @param node
      */
-    handleClick = (event, node) => this.setState(
+    handleClick = (event: any, node: number) => this.setState(
         {
             infoModalShow: true,
-            infoModalIsHypothetical: contains(this.state.updates.map(i => i.new_node_id), node),
-            infoModalNodeNumber: parseInt(node)
+            infoModalIsHypothetical: contains<number>(this.state.updates.map(i => i.newNodeId), node),
+            infoModalNodeNumber: node
         }
     );
 
@@ -180,23 +161,12 @@ class NodeDeploymentModal extends Component {
      * @param topologyRecord record to write to topology
      * @param updateRecord record to write to updates
      */
-    handleAddition = (topologyRecord, updateRecord) => {
-        this.state.topology.push(topologyRecord);
+    handleAddition = (topologyRecord: Deployment, updateRecord: Update) => {
+        this.state.deployment.push(topologyRecord);
         this.state.updates.push(updateRecord);
 
-        this.setState({topology: this.state.topology, updates: this.state.updates});
+        this.setState({deployment: this.state.deployment, updates: this.state.updates});
     };
-
-    /**
-     * Used by info modal to close itself and reset all state data associated with the modal
-     */
-    handleClose = () => this.setState(
-        {
-            infoModalShow: false,
-            infoModalIsHypothetical: false,
-            infoModalNodeNumber: null
-        }
-    );
 
     /**
      * Used by info modal to delete a node from the topology iff the node is hypothetical.
@@ -208,17 +178,27 @@ class NodeDeploymentModal extends Component {
      *
      * @param event not used
      */
-    handleDelete = (event) => {
+    handleDelete = (event: any) => {
         this.setState({
             infoModalShow: false,
             infoModalIsHypothetical: false
         }, () => this.setState({
-            topology: this.state.topology.filter(i => i.new_node_id !== this.state.infoModalNodeNumber),
-            updates: this.state.updates.filter(i => i.new_node_id !== this.state.infoModalNodeNumber),
-            infoModalNodeNumber: null
+            deployment: this.state.deployment.filter(i => i.new_node_id !== this.state.infoModalNodeNumber),
+            updates: this.state.updates.filter(i => i.newNodeId !== this.state.infoModalNodeNumber),
+            infoModalNodeNumber: -1
         }));
     };
 
+    /**
+     * Used by info modal to close itself and reset all state data associated with the modal
+     */
+    handleClose = () => this.setState(
+        {
+            infoModalShow: false,
+            infoModalIsHypothetical: false,
+            infoModalNodeNumber: -1
+        }
+    );
 
     /**
      * Render Modal and show the hypothetical topology
@@ -237,7 +217,7 @@ class NodeDeploymentModal extends Component {
                                        hypothetical={this.state.infoModalIsHypothetical}
                                        node={this.state.infoModalNodeNumber}
                                        servers={this.props.servers}
-                                       topology={this.state.topology}
+                                       deployment={this.state.deployment}
                                        deleteNode={this.handleDelete}
                                        callback={this.handleClose}/>
                 : null;
@@ -246,15 +226,15 @@ class NodeDeploymentModal extends Component {
             <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
                 {modal}
                 <div>
-                    <PathStoreTopology topology={this.state.topology}
+                    <PathStoreTopology deployment={this.state.deployment}
                                        get_colour={this.isHypothetical}
                                        get_click={this.handleClick}/>
                 </div>
 
-                <NodeDeploymentAdditionForm topology={this.state.topology}
+                <NodeDeploymentAdditionForm deployment={this.state.deployment}
                                             updates={this.state.updates}
-                                            addition={this.handleAddition}
-                                            servers={this.props.servers}/>
+                                            servers={this.props.servers}
+                                            addition={this.handleAddition}/>
 
                 <DisplayServers servers={this.props.servers}/>
 
