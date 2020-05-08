@@ -192,7 +192,8 @@ export default class PathStoreControlPanel extends Component {
                         <h2>Application Deployment</h2>
                         <DeployApplication topology={this.state.deployment}
                                            applications={this.state.applications}
-                                           applicationStatus={this.state.applicationStatus}/>
+                                           applicationStatus={this.state.applicationStatus}
+                                           servers={this.state.servers}/>
                     </div>
                 </div>
             </div>

@@ -14,6 +14,7 @@ import ErrorResponseModal from "../ErrorResponseModal";
  * topology: list of deployment objects gathered from api
  * applications: list of application objects gathered from api
  * applicationStatus: list of application status objects gathered from api
+ * servers: list of server objects gathered from api
  */
 export default class DeployApplication extends Component {
 
@@ -119,6 +120,7 @@ export default class DeployApplication extends Component {
                                                     applicationName={this.state.responseModalApplication}
                                                     topology={this.props.topology}
                                                     applicationStatus={this.props.applicationStatus}
+                                                    servers={this.props.servers}
                                                     callback={this.closeModalCallback}/>
                 : null;
 
