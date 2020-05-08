@@ -2,7 +2,7 @@ import React, {Component} from "react";
 import Modal from "react-modal";
 import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
-import {webHandler} from "./Utils";
+import {formatServer, webHandler} from "./Utils";
 
 /**
  * This component is used when a user clicks on a node in a pathstore topology to give the user some information
@@ -64,28 +64,6 @@ export default class NodeInfoModal extends Component {
         );
 
         return response;
-    };
-
-    /**
-     * Format the server information about the currently selected node
-     *
-     * @param topology
-     * @param servers
-     * @returns {*}
-     */
-    formatServer = (topology, servers) => {
-
-        const deployObject = topology.filter(i => i.new_node_id === this.props.node);
-
-        const object = servers.filter(i => i.server_uuid === deployObject[0].server_uuid);
-
-        return <div>
-            <p>Server Information</p>
-            <p>UUID: {object[0].server_uuid}</p>
-            <p>IP: {object[0].ip}</p>
-            <p>Username: {object[0].username}</p>
-            <p>Name: {object[0].name}</p>
-        </div>;
     };
 
     /**
@@ -152,7 +130,7 @@ export default class NodeInfoModal extends Component {
             <Modal isOpen={this.props.show}
                    style={{overlay: {zIndex: 1}}}
                    ariaHideApp={false}>
-                {this.formatServer(this.props.topology, this.props.servers)}
+                {formatServer(this.props.topology, this.props.servers, this.props.node)}
                 {this.retryButton(this.props.topology)}
                 <Table>
                     {this.formatApplicationStatusTable(

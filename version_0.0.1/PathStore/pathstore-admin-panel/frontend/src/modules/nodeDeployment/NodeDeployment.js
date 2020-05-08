@@ -6,6 +6,7 @@ import PathStoreTopology from "../PathStoreTopology";
 import NodeDeploymentAdditionForm from "./NodeDeploymentAdditionForm";
 import {contains} from "../Utils";
 import DisplayServers from "../servers/DisplayServers";
+import HypotheticalInfoModal from "./HypotheticalInfoModal";
 
 
 /**
@@ -69,9 +70,6 @@ export default class NodeDeployment extends Component {
 }
 
 /**
- * TODO: Make nodes in hypo topology clickable
- * TODO: Make nodes in hypo topology deletable
- *
  * This component is used to allow users to deploy additional nodes to their pathstore network
  *
  * Props:
@@ -96,7 +94,10 @@ class NodeDeploymentModal extends Component {
 
         this.state = {
             topology: props.topology.slice(),
-            updates: []
+            updates: [],
+            infoModalShow: false,
+            infoModalIsHypothetical: false,
+            infoModalNodeNumber: null
         }
     }
 
@@ -159,6 +160,65 @@ class NodeDeploymentModal extends Component {
     isHypothetical = (object) =>
         contains(this.state.updates.map(i => i.new_node_id), object.new_node_id) ? 'hypothetical' : 'not_set_node';
 
+    /**
+     * This function is used to update the state to display an info modal on click
+     *
+     * @param event
+     * @param node
+     */
+    handleClick = (event, node) => this.setState(
+        {
+            infoModalShow: true,
+            infoModalIsHypothetical: contains(this.state.updates.map(i => i.new_node_id), node),
+            infoModalNodeNumber: parseInt(node)
+        }
+    );
+
+    /**
+     * Callback function used for NodeDeploymentAdditionForm to handle new node creation
+     *
+     * @param topologyRecord record to write to topology
+     * @param updateRecord record to write to updates
+     */
+    handleAddition = (topologyRecord, updateRecord) => {
+        this.state.topology.push(topologyRecord);
+        this.state.updates.push(updateRecord);
+
+        this.setState({topology: this.state.topology, updates: this.state.updates});
+    };
+
+    /**
+     * Used by info modal to close itself and reset all state data associated with the modal
+     */
+    handleClose = () => this.setState(
+        {
+            infoModalShow: false,
+            infoModalIsHypothetical: false,
+            infoModalNodeNumber: null
+        }
+    );
+
+    /**
+     * Used by info modal to delete a node from the topology iff the node is hypothetical.
+     *
+     * We first must update the state so that the info modal is closed as otherwise an error will occur within the
+     * info modal.
+     *
+     * Then the topology and updates arrays are filtered to remove the delete node and infoModalNodeNumber is reset
+     *
+     * @param event not used
+     */
+    handleDelete = (event) => {
+        this.setState({
+            infoModalShow: false,
+            infoModalIsHypothetical: false
+        }, () => this.setState({
+            topology: this.state.topology.filter(i => i.new_node_id !== this.state.infoModalNodeNumber),
+            updates: this.state.updates.filter(i => i.new_node_id !== this.state.infoModalNodeNumber),
+            infoModalNodeNumber: null
+        }));
+    };
+
 
     /**
      * Render Modal and show the hypothetical topology
@@ -170,15 +230,30 @@ class NodeDeploymentModal extends Component {
      * @returns {*}
      */
     render() {
+
+        const modal =
+            this.state.infoModalShow ?
+                <HypotheticalInfoModal show={this.state.infoModalShow}
+                                       hypothetical={this.state.infoModalIsHypothetical}
+                                       node={this.state.infoModalNodeNumber}
+                                       servers={this.props.servers}
+                                       topology={this.state.topology}
+                                       deleteNode={this.handleDelete}
+                                       callback={this.handleClose}/>
+                : null;
+
         return (
             <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
+                {modal}
                 <div>
                     <PathStoreTopology topology={this.state.topology}
-                                       get_colour={this.isHypothetical}/>
+                                       get_colour={this.isHypothetical}
+                                       get_click={this.handleClick}/>
                 </div>
 
                 <NodeDeploymentAdditionForm topology={this.state.topology}
                                             updates={this.state.updates}
+                                            addition={this.handleAddition}
                                             servers={this.props.servers}/>
 
                 <DisplayServers servers={this.props.servers}/>

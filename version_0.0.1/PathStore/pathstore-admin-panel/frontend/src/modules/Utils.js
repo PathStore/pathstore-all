@@ -1,3 +1,5 @@
+import React from "react";
+
 /**
  * Simple function to be used on the response of a potentially errorable web request.
  *
@@ -27,6 +29,29 @@ export function contains(array, value) {
         if (array[i] === value) return true;
 
     return false;
+}
+
+/**
+ * Format the server information about the currently selected node
+ *
+ * @param topology
+ * @param servers
+ * @param node
+ * @returns {*}
+ */
+export function formatServer(topology, servers, node) {
+
+    const deployObject = topology.filter(i => i.new_node_id === node);
+
+    const object = servers.filter(i => i.server_uuid === deployObject[0].server_uuid);
+
+    return <div>
+        <p>Server Information</p>
+        <p>UUID: {object[0].server_uuid}</p>
+        <p>IP: {object[0].ip}</p>
+        <p>Username: {object[0].username}</p>
+        <p>Name: {object[0].name}</p>
+    </div>;
 }
 
 /**
@@ -77,7 +102,7 @@ export function createApplicationObject(object) {
  * @param object
  * @returns {{keyspace_name: *, process_status: string, process_uuid: *, wait_for: *, nodeid: number}}
  */
-export function createApplicationStatusObject(object){
+export function createApplicationStatusObject(object) {
     return {
         nodeid: parseInt(object.nodeid),
         keyspace_name: object.keyspace_name,

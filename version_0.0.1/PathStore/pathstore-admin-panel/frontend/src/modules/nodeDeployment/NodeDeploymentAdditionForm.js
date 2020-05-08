@@ -12,6 +12,7 @@ import {contains} from "../Utils";
  * Props:
  * topology: sliced topology from NodeDeployment state
  * updates: list of nodes added that aren't committed. Stored in NodeDeployment
+ * addition: callback function to add new node to parent state
  * servers: list of server objects from api
  */
 export default class NodeDeploymentAdditionForm extends Component {
@@ -36,18 +37,19 @@ export default class NodeDeploymentAdditionForm extends Component {
             if (this.props.servers[i].name === serverName)
                 serverUUID = this.props.servers[i].server_uuid;
 
-        this.props.topology.push({
-            parent_node_id: parentId,
-            new_node_id: nodeId,
-            process_status: "WAITING_DEPLOYMENT",
-            server_uuid: serverUUID
-        });
-
-        this.props.updates.push({
-            parent_node_id: parentId,
-            new_node_id: nodeId,
-            server_uuid: serverUUID
-        });
+        this.props.addition(
+            {
+                parent_node_id: parentId,
+                new_node_id: nodeId,
+                process_status: "WAITING_DEPLOYMENT",
+                server_uuid: serverUUID
+            },
+            {
+                parent_node_id: parentId,
+                new_node_id: nodeId,
+                server_uuid: serverUUID
+            }
+        );
 
         ReactDOM.findDOMNode(this.messageForm).reset();
     };
