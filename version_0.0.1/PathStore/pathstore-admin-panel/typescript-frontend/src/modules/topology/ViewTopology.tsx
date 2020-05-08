@@ -3,19 +3,54 @@ import {ApplicationStatus, Deployment, Server} from "../../utilities/ApiDeclarat
 import {PathStoreTopology} from "../PathStoreTopology";
 import NodeInfoModal from "../NodeInfoModal";
 
+/**
+ * Properties definition for {@link ViewTopology}
+ */
 interface ViewTopologyProps {
+
+    /**
+     * List of deployment objects from api
+     */
     readonly deployment: Deployment[]
+
+    /**
+     * List of server objects from api
+     */
     readonly servers: Server[]
+
+    /**
+     * List of node application status from api
+     */
     readonly applicationStatus: ApplicationStatus[]
 }
 
+/**
+ * State definition for {@link ViewTopology}
+ */
 interface ViewTopologyState {
+
+    /**
+     * Whether to show the info modal or not
+     */
     readonly infoModalShow: boolean
+
+    /**
+     * What node id was clicked
+     */
     readonly infoModalData: number
 }
 
+/**
+ * This component is used to give a visual of the network topology. This topology will display all nodes regardless
+ * of their stage in deployment and will be coloured based on their stage.
+ */
 export default class ViewTopology extends Component<ViewTopologyProps, ViewTopologyState> {
 
+    /**
+     * Initializes props and state
+     *
+     * @param props
+     */
     constructor(props: ViewTopologyProps) {
         super(props);
 
@@ -25,6 +60,17 @@ export default class ViewTopology extends Component<ViewTopologyProps, ViewTopol
         }
     }
 
+    /**
+     * Pathstore topology colour function. This function colours nodes based on their deployment status
+     *
+     * Waiting is orange (waiting_node)
+     * Installing is blue (installing_node)
+     * Failed is red (uninstalled_node)
+     * Deployed is green (installed_node)
+     *
+     * @param object
+     * @returns {string}
+     */
     getClassName = (object: Deployment) => {
         switch (object.process_status) {
             case "WAITING_DEPLOYMENT":
@@ -51,6 +97,13 @@ export default class ViewTopology extends Component<ViewTopologyProps, ViewTopol
      */
     callback = () => this.setState({infoModalData: -1, infoModalShow: false});
 
+    /**
+     * First determine if an info modal needs to be shown
+     *
+     * Then display the topology to the user
+     *
+     * @returns {*}
+     */
     render() {
 
         const modal =
