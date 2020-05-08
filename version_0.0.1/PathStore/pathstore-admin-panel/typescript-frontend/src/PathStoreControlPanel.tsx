@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import {Application, ApplicationStatus, Deployment, Server} from "./utilities/ApiDeclarations";
 import ViewTopology from "./modules/topology/ViewTopology";
+import NodeDeployment from "./modules/nodeDeployment/NodeDeployment";
 
 interface PathStoreControlPanelState {
     deployment: Deployment[]
@@ -52,6 +53,11 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
         fetch(url)
             .then(response => response.json() as Promise<T[]>);
 
+    forceRefresh = () => {
+        this.componentWillUnmount();
+        this.componentDidMount();
+    };
+
 
     render = () => (
         <div>
@@ -63,6 +69,13 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
                                   servers={this.state.servers}
                                   applicationStatus={this.state.applicationStatus}
                     />
+                </div>
+                <br/>
+                <div>
+                    <h2>Network Expansion</h2>
+                    <NodeDeployment deployment={this.state.deployment}
+                                    servers={this.state.servers}
+                                    forceRefresh={this.forceRefresh}/>
                 </div>
             </div>
         </div>

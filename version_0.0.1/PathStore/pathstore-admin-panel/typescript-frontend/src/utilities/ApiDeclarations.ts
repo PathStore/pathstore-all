@@ -23,3 +23,13 @@ export interface ApplicationStatus {
     wait_for: number[]
     process_uuid: string
 }
+
+export interface Update {
+    parentId: number
+    newNodeId: number
+    serverUUID: string
+}
+
+export interface Error {
+    error: string
+}
