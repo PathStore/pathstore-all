@@ -22,6 +22,11 @@ interface ViewTopologyProps {
      * List of node application status from api
      */
     readonly applicationStatus: ApplicationStatus[]
+
+    /**
+     * Force refresh other props components
+     */
+    readonly forceRefresh: () => void
 }
 
 /**
@@ -71,7 +76,7 @@ export default class ViewTopology extends Component<ViewTopologyProps, ViewTopol
      * @param object
      * @returns {string}
      */
-    getClassName = (object: Deployment) => {
+    getClassName = (object: Deployment): string => {
         switch (object.process_status) {
             case "WAITING_DEPLOYMENT":
                 return 'waiting_node';
@@ -90,12 +95,12 @@ export default class ViewTopology extends Component<ViewTopologyProps, ViewTopol
      * @param event
      * @param node node id
      */
-    handleClick = (event: any, node: number) => this.setState({infoModalData: node, infoModalShow: true});
+    handleClick = (event: any, node: number): void => this.setState({infoModalData: node, infoModalShow: true});
 
     /**
      * Callback function for info modal to close itself
      */
-    callback = () => this.setState({infoModalData: -1, infoModalShow: false});
+    callback = (): void => this.setState({infoModalData: -1, infoModalShow: false});
 
     /**
      * First determine if an info modal needs to be shown
@@ -113,7 +118,8 @@ export default class ViewTopology extends Component<ViewTopologyProps, ViewTopol
                                deployment={this.props.deployment}
                                applicationStatus={this.props.applicationStatus}
                                servers={this.props.servers}
-                               callback={this.callback}/>
+                               callback={this.callback}
+                               forceRefresh={this.props.forceRefresh}/>
                 : null;
 
         return (

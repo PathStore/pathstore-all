@@ -53,12 +53,12 @@ export default class NodeDeployment extends Component<NodeDeploymentProperties, 
     /**
      * Used to call when the user clicks the show modal button
      */
-    showModal = () => this.setState({show: true});
+    showModal = (): void => this.setState({show: true});
 
     /**
      * Used for the modal to close itself
      */
-    callBack = () => this.setState({show: false});
+    callBack = (): void => this.setState({show: false});
 
     /**
      * Check if you need to render the modal and then render the deploy additional nodes button

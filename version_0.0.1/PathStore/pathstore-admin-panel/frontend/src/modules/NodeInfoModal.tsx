@@ -1,4 +1,4 @@
-import {ApplicationStatus, Deployment, Server} from "../utilities/ApiDeclarations";
+import {ApplicationStatus, Deployment, Server, Update} from "../utilities/ApiDeclarations";
 import Modal from "react-modal";
 import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
@@ -35,6 +35,11 @@ interface NodeInfoModalProperties {
     readonly servers: Server[]
 
     /**
+     * Force refresh props on other components
+     */
+    readonly forceRefresh?: () => void
+
+    /**
      * Callback function to close modal on completion
      */
     readonly callback: () => void
@@ -53,7 +58,7 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
      * @param applicationStatus
      * @returns {[]}
      */
-    formatApplicationStatusTable = (applicationStatus: ApplicationStatus[]) => {
+    formatApplicationStatusTable = (applicationStatus: ApplicationStatus[]): {}[] => {
 
         let response = [];
 
@@ -100,7 +105,7 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
      * @param deployment
      * @returns {null|*}
      */
-    retryButton = (deployment: Deployment[]) => {
+    retryButton = (deployment: Deployment[]): {} | null => {
         const deployObject = deployment.filter(i => i.new_node_id === this.props.node);
 
         if (deployObject[0].process_status === "FAILED")
@@ -114,7 +119,7 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
      * @param deployment
      * @returns {{newNodeId: number, serverUUID, parentId: number}}
      */
-    retryData = (deployment: Deployment[]) => {
+    retryData = (deployment: Deployment[]): Update => {
         const deployObject = deployment.filter(i => i.new_node_id === this.props.node);
 
         return {
@@ -130,7 +135,7 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
      * PUT request to api with retryData as the body to inform the root node
      * that this node should be re-tried for deployment
      */
-    retryOnClick = () => {
+    retryOnClick = (): void => {
         fetch('/api/v1/deployment', {
             method: 'PUT',
             headers: {
@@ -140,11 +145,12 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
             body: JSON.stringify({record: this.retryData(this.props.deployment)})
         })
             .then(webHandler)
-            .then(response => {
-                alert("Success " + JSON.stringify(response));
-            }).catch(response => {
-            alert("Error " + JSON.stringify(response));
-        })
+            .then(() => {
+                // Optional query iff the prop exists
+                this.props.forceRefresh?.();
+                this.props.callback();
+            })
+            .catch(response => alert("Error " + JSON.stringify(response)));
 
     };
 

@@ -85,7 +85,7 @@ export default class LiveTransitionVisualModal extends Component<LiveTransitionV
      * @param prevState
      * @returns {{installed: number[], waiting: number[], installing: number[]}}
      */
-    static getDerivedStateFromProps(nextProps: LiveTransitionVisualModalProperties, prevState: LiveTransitionVisualModalState) {
+    static getDerivedStateFromProps(nextProps: LiveTransitionVisualModalProperties, prevState: LiveTransitionVisualModalState): LiveTransitionVisualModalState {
         return {
             waiting:
                 nextProps.applicationStatus
@@ -115,7 +115,7 @@ export default class LiveTransitionVisualModal extends Component<LiveTransitionV
      * @param object
      * @returns {string}
      */
-    getClassName = (object: Deployment) => {
+    getClassName = (object: Deployment): string => {
         const name = object.new_node_id;
 
         if (contains<number>(this.state.installed, name)) return 'installed_node';

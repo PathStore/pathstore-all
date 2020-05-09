@@ -1,6 +1,6 @@
 import React, {Component} from "react";
 import {Deployment, Server, Update} from "../../utilities/ApiDeclarations";
-import {contains} from "../../utilities/Utils";
+import {contains, webHandler} from "../../utilities/Utils";
 import {PathStoreTopology} from "../PathStoreTopology";
 import Button from "react-bootstrap/Button";
 import Modal from "react-modal";
@@ -101,7 +101,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
      * Then make the request with a json body of all the updates
      *
      */
-    submit = () => {
+    submit = (): void => {
         if (this.state.updates.length <= 0) {
             alert("You have not made any changes to the network");
             return;
@@ -117,12 +117,14 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
                 records: this.state.updates
             })
         })
-            .then(response => response.json())
-            .then(response => {
-                alert("Success " + JSON.stringify(response));
-            }).catch(response => {
-            alert("ERROR: " + JSON.stringify(response));
-        });
+            .then(webHandler)
+            .then(() => {
+                this.props.forceRefresh();
+                this.props.callback();
+            })
+            .catch(response => {
+                alert("ERROR: " + JSON.stringify(response));
+            });
     };
 
     /**
@@ -136,7 +138,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
      * @param object
      * @returns {string}
      */
-    isHypothetical = (object: Deployment) =>
+    isHypothetical = (object: Deployment): string =>
         contains<number>(this.state.updates.map(i => i.newNodeId), object.new_node_id) ?
             'hypothetical'
             : 'not_set_node';
@@ -147,7 +149,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
      * @param event
      * @param node
      */
-    handleClick = (event: any, node: number) => this.setState(
+    handleClick = (event: any, node: number): void => this.setState(
         {
             infoModalShow: true,
             infoModalIsHypothetical: contains<number>(this.state.updates.map(i => i.newNodeId), node),
@@ -161,7 +163,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
      * @param topologyRecord record to write to topology
      * @param updateRecord record to write to updates
      */
-    handleAddition = (topologyRecord: Deployment, updateRecord: Update) => {
+    handleAddition = (topologyRecord: Deployment, updateRecord: Update): void => {
         this.state.deployment.push(topologyRecord);
         this.state.updates.push(updateRecord);
 
@@ -178,7 +180,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
      *
      * @param event not used
      */
-    handleDelete = (event: any) => {
+    handleDelete = (event: any): void => {
         this.setState({
             infoModalShow: false,
             infoModalIsHypothetical: false
@@ -192,7 +194,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
     /**
      * Used by info modal to close itself and reset all state data associated with the modal
      */
-    handleClose = () => this.setState(
+    handleClose = (): void => this.setState(
         {
             infoModalShow: false,
             infoModalIsHypothetical: false,
@@ -210,7 +212,6 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
      * @returns {*}
      */
     render() {
-
         const modal =
             this.state.infoModalShow ?
                 <HypotheticalInfoModal show={this.state.infoModalShow}

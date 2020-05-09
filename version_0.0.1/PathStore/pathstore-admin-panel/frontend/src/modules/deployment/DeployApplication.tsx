@@ -99,7 +99,7 @@ export default class DeployApplication extends Component<DeployApplicationProper
      *
      * @param event
      */
-    onFormSubmit = (event: any) => {
+    onFormSubmit = (event: any): void => {
         event.preventDefault();
 
         const application = event.target.elements.application.value.trim();
@@ -146,7 +146,7 @@ export default class DeployApplication extends Component<DeployApplicationProper
      * Callback given to the response modal to all it to close when the user clicks close.
      * This allows for garbage collection of the component
      */
-    closeModalCallback = () => this.setState({responseModalShow: false});
+    closeModalCallback = (): void => this.setState({responseModalShow: false});
 
     /**
      * First we figure out of a modal needs to be rendered

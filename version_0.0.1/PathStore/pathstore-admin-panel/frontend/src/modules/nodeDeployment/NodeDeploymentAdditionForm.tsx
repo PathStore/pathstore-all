@@ -46,7 +46,7 @@ export default class NodeDeploymentAdditionForm extends Component<NodeDeployment
      *
      * @param event
      */
-    onFormSubmit = (event: any) => {
+    onFormSubmit = (event: any): void => {
         event.preventDefault();
 
         const parentId = parseInt(event.target.elements.parentId.value);

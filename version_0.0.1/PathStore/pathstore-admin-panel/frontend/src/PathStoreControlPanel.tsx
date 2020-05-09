@@ -112,7 +112,7 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
     /**
      * Call fetch all to get all the responses and load them into the state
      */
-    queryAll = () => {
+    queryAll = (): void => {
         this.genericLoadFunction<Deployment>('/api/v1/deployment')
             .then((response: Deployment[]) => this.setState({deployment: response}));
 
@@ -139,7 +139,7 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
      * Used by child component to force refresh this data. This is only given to child components who are capable
      * of making state changing operations (i.e effecting our state data within this class)
      */
-    forceRefresh = () => {
+    forceRefresh = (): void => {
         this.componentWillUnmount();
         this.componentDidMount();
     };
@@ -162,7 +162,7 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
                     <ViewTopology deployment={this.state.deployment}
                                   servers={this.state.servers}
                                   applicationStatus={this.state.applicationStatus}
-                    />
+                                  forceRefresh={this.forceRefresh}/>
                 </div>
                 <br/>
                 <div>

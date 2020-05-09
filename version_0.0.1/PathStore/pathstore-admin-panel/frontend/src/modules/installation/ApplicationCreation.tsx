@@ -87,7 +87,7 @@ export default class ApplicationCreation extends Component<ApplicationCreationPr
      *
      * @param event
      */
-    handleFileSubmit = (event: any) => this.setState({file: event.target.files[0]});
+    handleFileSubmit = (event: any): void => this.setState({file: event.target.files[0]});
 
     /**
      * Send FormData to api with the following format
@@ -100,7 +100,7 @@ export default class ApplicationCreation extends Component<ApplicationCreationPr
      *
      * @param event
      */
-    onFormSubmit = (event: any) => {
+    onFormSubmit = (event: any): void => {
         event.preventDefault();
 
         const applicationName = event.target.elements.application.value.trim();
@@ -143,7 +143,7 @@ export default class ApplicationCreation extends Component<ApplicationCreationPr
     /**
      * Function for response modals to close themselves. Used for gc of modals
      */
-    closeModalCallback = () => this.setState({responseModalShow: false});
+    closeModalCallback = (): void => this.setState({responseModalShow: false});
 
     /**
      * First determine if the loading modal needs to be shown

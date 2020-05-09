@@ -62,12 +62,12 @@ export default class LiveTransitionVisual extends Component<LiveTransitionVisual
      *
      * @param event
      */
-    onButtonClick = (event: any) => this.setState({showModal: true, dataModal: event.target.value});
+    onButtonClick = (event: any): void => this.setState({showModal: true, dataModal: event.target.value});
 
     /**
      * Callback for modal to close itself
      */
-    callBack = () => this.setState({showModal: false});
+    callBack = (): void => this.setState({showModal: false});
 
     /**
      * First gather all buttons based on the number of applications installed on the network

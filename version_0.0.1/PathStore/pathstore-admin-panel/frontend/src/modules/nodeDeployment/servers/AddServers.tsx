@@ -85,7 +85,7 @@ export default class AddServers extends Component<AddServersProperties, AddServe
      *
      * @param event
      */
-    onFormSubmit = (event: any) => {
+    onFormSubmit = (event: any): void => {
         event.preventDefault();
 
         const ip = event.target.elements.ip.value.trim();
@@ -126,7 +126,7 @@ export default class AddServers extends Component<AddServersProperties, AddServe
     /**
      * Callback for modals to close themselves
      */
-    callBack = () => this.setState({responseModalShow: false});
+    callBack = (): void => this.setState({responseModalShow: false});
 
     /**
      * First figure out if you need to show the loading modal

@@ -113,7 +113,7 @@ export default class DeployApplicationResponseModal
      * @param object
      * @returns {string}
      */
-    getClassName = (object: Deployment) => {
+    getClassName = (object: Deployment): string => {
         if (contains<number>(this.state.newlyInstalled, object.new_node_id)) return 'installation_node';
         else if (contains<number>(this.state.previouslyInstalled, object.new_node_id)) return 'previous_node';
         else return 'not_set_node';
@@ -125,7 +125,7 @@ export default class DeployApplicationResponseModal
      * @param event
      * @param node
      */
-    handleClick = (event: any, node: number) => this.setState(
+    handleClick = (event: any, node: number): void => this.setState(
         {
             infoModalShow: true,
             infoModalNode: node
@@ -135,7 +135,7 @@ export default class DeployApplicationResponseModal
     /**
      * Callback function for modal to close itself
      */
-    closeModal = () => this.setState(
+    closeModal = (): void => this.setState(
         {
             infoModalShow: false,
             infoModalNode: -1
