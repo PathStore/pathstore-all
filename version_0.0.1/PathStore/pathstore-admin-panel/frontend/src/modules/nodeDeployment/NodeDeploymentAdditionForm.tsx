@@ -53,6 +53,11 @@ export default class NodeDeploymentAdditionForm extends Component<NodeDeployment
 
         const nodeId = parseInt(event.target.elements.nodeId.value);
 
+        if (!this.checkValidityOfInput(parentId, nodeId)) {
+            alert("You must entered a valid node id as the parent id and a unique node id as the new node id");
+            return;
+        }
+
         const serverName = event.target.elements.serverName.value;
 
         let serverUUID = null;
@@ -62,7 +67,7 @@ export default class NodeDeploymentAdditionForm extends Component<NodeDeployment
                 serverUUID = this.props.servers[i].server_uuid;
 
         if (serverUUID === null) {
-            alert("Something went wrong");
+            alert("Unable to find the serverUUID from servername");
             return;
         }
 
@@ -82,6 +87,19 @@ export default class NodeDeploymentAdditionForm extends Component<NodeDeployment
 
         // @ts-ignore
         ReactDOM.findDOMNode(this.messageForm).reset();
+    };
+
+    /**
+     * This function ensures that the inputted parentId and nodeId are valid. As in
+     * the parent id exists already within the topology and the nodeId is unique
+     *
+     * @param parentId inputted parentNodeId
+     * @param nodeId inputted nodeId
+     */
+    checkValidityOfInput = (parentId: number, nodeId: number): boolean => {
+        const mapDeployment = this.props.deployment.map(i => i.new_node_id);
+
+        return contains<number>(mapDeployment, parentId) && !contains<number>(mapDeployment, nodeId);
     };
 
 
