@@ -13,11 +13,21 @@ import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
  */
 public class WaitForCassandra implements ICommand {
 
+  /**
+   * TODO: Make timeout function optional
+   *
+   * <p>Max wait time is 5 minutes
+   */
+  private static final int maxWaitTime = 60 * 5;
+
   /** Ip of new root node */
   private final String ip;
 
   /** Cassandra port */
   private final int port;
+
+  /** Denotes the current amount of time waited */
+  private int currentWaitCount;
 
   /**
    * @param ip {@link #ip}
@@ -26,6 +36,7 @@ public class WaitForCassandra implements ICommand {
   public WaitForCassandra(final String ip, final int port) {
     this.ip = ip;
     this.port = port;
+    this.currentWaitCount = 0;
   }
 
   /**
@@ -46,10 +57,14 @@ public class WaitForCassandra implements ICommand {
       cluster.close();
     } catch (NoHostAvailableException e) {
       try {
+        if (this.currentWaitCount >= maxWaitTime)
+          throw new CommandError(
+              String.format("Exceeded max wait time of %d seconds", maxWaitTime));
+
+        this.currentWaitCount++;
         Thread.sleep(1000);
       } catch (InterruptedException ex) {
-        throw new CommandError(
-            "Sleep was interrupted while waiting for cassandra to come online");
+        throw new CommandError("Sleep was interrupted while waiting for cassandra to come online");
       }
       this.execute();
     }

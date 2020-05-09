@@ -14,6 +14,13 @@ import java.util.Map;
 /** This class is used to wait for pathstore to start up */
 public class WaitForPathStore implements ICommand {
 
+  /**
+   * TODO: Make timeout function optional
+   *
+   * <p>Max wait time is 5 minutes
+   */
+  private static final int maxWaitTime = 60 * 5;
+
   /** Tasks that need to be completed before we can consider pathstore to be officially online */
   private final Map<Integer, String> neededRecords;
 
@@ -23,6 +30,9 @@ public class WaitForPathStore implements ICommand {
   /** Connects once this command is called, not local to avoid multiple connections */
   private Session session = null;
 
+  /** Denotes the current amount of time waited in seconds */
+  private int currentWaitCount;
+
   /**
    * Creates cluster
    *
@@ -31,6 +41,7 @@ public class WaitForPathStore implements ICommand {
    */
   public WaitForPathStore(final String ip, final int port) {
     this.cluster = StartupUTIL.createCluster(ip, port);
+    this.currentWaitCount = 0;
     this.neededRecords = new HashMap<>();
     this.neededRecords.put(0, "RMI Server started");
     this.neededRecords.put(1, "Pathstore Application keyspace loaded");
@@ -61,6 +72,11 @@ public class WaitForPathStore implements ICommand {
 
     if (neededRecords.size() > 0) {
       try {
+        if (this.currentWaitCount >= maxWaitTime)
+          throw new CommandError(
+              String.format("Exceeded max wait time of %d seconds", maxWaitTime));
+
+        this.currentWaitCount++;
         Thread.sleep(1000);
         this.execute();
       } catch (InterruptedException e) {
