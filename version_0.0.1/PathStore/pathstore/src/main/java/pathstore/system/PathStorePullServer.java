@@ -34,15 +34,16 @@ import org.slf4j.LoggerFactory;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
 import pathstore.common.QueryCacheEntry;
+import pathstore.common.logger.PathStoreLogger;
+import pathstore.common.logger.PathStoreLoggerFactory;
 
 /** TODO: Comment */
 public class PathStorePullServer extends Thread {
-  private final Logger logger = LoggerFactory.getLogger(PathStorePullServer.class);
 
-  public PathStorePullServer() {}
+  private final PathStoreLogger logger =
+      PathStoreLoggerFactory.getLogger(PathStorePullServer.class);
 
   private void pull() {
-    //		logger.info("Run pull");
     HashMap<String, HashMap<String, List<QueryCacheEntry>>> entries =
         QueryCache.getInstance().getEntries();
 
@@ -66,10 +67,10 @@ public class PathStorePullServer extends Thread {
   }
 
   public synchronized void run() {
-    logger.info("Spawned pathstore pull server thread");
-
+    logger.info("Pull Server spawned");
     while (true) {
       try {
+        logger.debug("Pull server ran");
         pull();
         this.wait(PathStoreProperties.getInstance().PullSleep);
       } catch (InterruptedException e) {

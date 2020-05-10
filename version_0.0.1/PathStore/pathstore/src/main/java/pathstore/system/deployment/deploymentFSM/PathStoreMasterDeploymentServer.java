@@ -7,6 +7,8 @@ import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.common.logger.PathStoreLogger;
+import pathstore.common.logger.PathStoreLoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,11 +27,17 @@ import java.util.stream.Collectors;
  */
 public class PathStoreMasterDeploymentServer extends Thread {
 
+  /** Logger */
+  private final PathStoreLogger logger =
+      PathStoreLoggerFactory.getLogger(PathStoreMasterDeploymentServer.class);
+
   /** Gather all deployment records into a set of ananlysis */
   @Override
   @SuppressWarnings("ALL")
   public void run() {
     while (true) {
+
+      logger.debug("Deployment run");
 
       Session clientSession = PathStoreCluster.getInstance().connect();
 
@@ -111,7 +119,7 @@ public class PathStoreMasterDeploymentServer extends Thread {
   private void transition(final DeploymentEntry entry) {
     Session clientSession = PathStoreCluster.getInstance().connect();
 
-    System.out.println(
+    logger.info(
         String.format(
             "Deploying a new child to %d with id %d", entry.parentNodeId, entry.newNodeId));
 

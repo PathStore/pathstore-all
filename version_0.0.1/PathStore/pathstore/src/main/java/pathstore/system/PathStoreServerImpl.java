@@ -24,11 +24,17 @@ import com.datastax.driver.core.Session;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreServer;
+import pathstore.common.logger.PathStoreLogger;
+import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstore.util.SchemaInfo;
 
 public class PathStoreServerImpl {
+
+  /** Logger for {@link PathStoreServerImpl} */
+  private static final PathStoreLogger logger =
+      PathStoreLoggerFactory.getLogger(PathStoreServerImpl.class);
 
   /**
    * Startup tasks:
@@ -40,7 +46,18 @@ public class PathStoreServerImpl {
   public static void main(final String args[]) {
     try {
 
+      logger.info(
+          String.format(
+              "PathStore has started up with the external ip of %s",
+              PathStoreProperties.getInstance().ExternalAddress));
+
+      logger.debug(String.format("Properties info:\n%s", PathStoreProperties.getInstance()));
+
+      logger.info("Initial connect to database");
+
       Session local = PathStorePriviledgedCluster.getInstance().connect();
+
+      logger.info("Connected");
 
       PathStoreServerImplRMI obj = new PathStoreServerImplRMI();
       PathStoreServer stub = (PathStoreServer) UnicastRemoteObject.exportObject(obj, 0);
@@ -62,22 +79,25 @@ public class PathStoreServerImpl {
         PathStoreDeploymentUtils.writeTaskDone(local, 0);
       }
 
+      logger.info("Binded to java RMI");
+
       if (!SchemaInfo.getInstance().getSchemaInfo().containsKey(Constants.PATHSTORE_APPLICATIONS)) {
+        logger.info("Application keyspace not detected, attempting to load");
         PathStoreSchemaLoaderUtils.loadApplicationSchema(local);
         PathStoreDeploymentUtils.writeTaskDone(local, 1);
-      }
+      } else logger.info("Application keyspace already loaded");
+
+      logger.info("Application keyspace successfully loaded");
 
       SchemaInfo.getInstance().reset();
 
-      System.err.println("PathStoreServer ready");
-      System.out.println(PathStoreProperties.getInstance());
+      logger.info("PathStore Ready");
 
       PathStoreDeploymentUtils.writeTaskDone(local, 2);
       obj.startDaemons();
 
     } catch (Exception e) {
-      System.err.println("PathStoreServer exception: " + e.toString());
-      e.printStackTrace();
+      logger.error(e);
     }
   }
 }

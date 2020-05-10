@@ -10,10 +10,13 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.Role;
+import pathstore.common.logger.PathStoreLogger;
+import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.deployment.commands.CommandError;
 import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstore.system.deployment.utilities.StartupUTIL;
+import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
 
 import java.util.UUID;
 
@@ -33,6 +36,10 @@ import static pathstore.common.Constants.SERVERS_COLUMNS.*;
  */
 public class PathStoreSlaveDeploymentServer extends Thread {
 
+  /** Logger */
+  private final PathStoreLogger logger =
+      PathStoreLoggerFactory.getLogger(PathStoreSlaveSchemaServer.class);
+
   private static final int cassandraPort = 9052;
   private static final int rmiPort = 1099;
 
@@ -43,6 +50,7 @@ public class PathStoreSlaveDeploymentServer extends Thread {
   @Override
   public void run() {
     while (true) {
+      logger.debug("Slave Schema run");
 
       Session session = PathStoreCluster.getInstance().connect();
 
@@ -100,13 +108,13 @@ public class PathStoreSlaveDeploymentServer extends Thread {
    */
   private void deploy(
       final DeploymentEntry entry, final String ip, final String username, final String password) {
-    System.out.println(
-        String.format("Deploying %d from node %d", entry.newNodeId, entry.parentNodeId));
+
+    logger.info(String.format("Deploying %d from node %d", entry.newNodeId, entry.parentNodeId));
 
     try {
       SSHUtil sshUtil = new SSHUtil(ip, username, password, 22);
 
-      System.out.println("Connection established to new node");
+      logger.debug("Connection established to new node");
 
       try {
         for (ICommand command :
@@ -125,20 +133,20 @@ public class PathStoreSlaveDeploymentServer extends Thread {
                 PathStoreProperties.getInstance().ExternalAddress,
                 cassandraPort,
                 "../docker-files/pathstore/pathstore.properties")) {
-          System.out.println(command);
+          logger.info(command.toString());
           command.execute();
         }
-        System.out.println("Successfully deployed");
+        logger.info("Successfully deployed");
         this.updateState(entry, DeploymentProcessStatus.DEPLOYED);
       } catch (CommandError commandError) {
-        System.out.println("Deployment failed");
-        System.out.println("[ERROR] " + commandError.errorMessage);
+        logger.error("Deployment failed");
+        logger.error("[ERROR] " + commandError.errorMessage);
         this.updateState(entry, DeploymentProcessStatus.FAILED);
       } finally {
         sshUtil.disconnect();
       }
     } catch (JSchException e) {
-      System.err.println("Could not connect to new node");
+      logger.error("Could not connect to new node");
       this.updateState(entry, DeploymentProcessStatus.FAILED);
     }
   }

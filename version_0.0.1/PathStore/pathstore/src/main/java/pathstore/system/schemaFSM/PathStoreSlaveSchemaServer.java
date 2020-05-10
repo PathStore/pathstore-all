@@ -8,6 +8,8 @@ import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
+import pathstore.common.logger.PathStoreLogger;
+import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.PathStorePriviledgedCluster;
 import pathstore.util.SchemaInfo;
 
@@ -21,6 +23,10 @@ import pathstore.util.SchemaInfo;
  */
 public class PathStoreSlaveSchemaServer extends Thread {
 
+  /** Logger */
+  private final PathStoreLogger logger =
+      PathStoreLoggerFactory.getLogger(PathStoreSlaveSchemaServer.class);
+
   /**
    * Selects all rows related to the nodeid specified in {@link PathStoreProperties#NodeID}
    *
@@ -31,6 +37,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
   @Override
   public void run() {
     while (true) {
+      logger.debug("Slave Schema check");
       Session session = PathStoreCluster.getInstance().connect();
       Select current_processes_select_all =
           QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);
@@ -77,7 +84,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        logger.error(e);
       }
     }
   }
@@ -95,7 +102,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
       final String augmentedSchema,
       final String process_uuid) {
     // Query application, if not exist then just continue and wait for it to exist
-    System.out.println("Loading application: " + keyspace);
+    logger.info("Loading application: " + keyspace);
 
     PathStoreSchemaLoaderUtils.parseSchema(augmentedSchema)
         .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
@@ -125,7 +132,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
    */
   private void remove_application(
       final Session session, final String keyspace, final String process_uuid) {
-    System.out.println("Removing application " + keyspace);
+    logger.info("Removing application " + keyspace);
     SchemaInfo.getInstance().removeKeyspace(keyspace);
     PathStorePriviledgedCluster.getInstance()
         .connect()

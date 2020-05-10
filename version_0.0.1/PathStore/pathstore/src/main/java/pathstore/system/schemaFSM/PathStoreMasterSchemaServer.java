@@ -5,6 +5,8 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.*;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.common.logger.PathStoreLogger;
+import pathstore.common.logger.PathStoreLoggerFactory;
 
 import java.util.*;
 
@@ -21,6 +23,10 @@ import java.util.*;
  */
 public class PathStoreMasterSchemaServer extends Thread {
 
+  /** Logger */
+  private final PathStoreLogger logger =
+      PathStoreLoggerFactory.getLogger(PathStoreMasterSchemaServer.class);
+
   /**
    * First sort all rows into groups based on their process id's
    *
@@ -31,6 +37,9 @@ public class PathStoreMasterSchemaServer extends Thread {
   @SuppressWarnings("ALL")
   public void run() {
     while (true) {
+
+      logger.debug("Checking Master");
+
       Session client_session = PathStoreCluster.getInstance().connect();
 
       Map<UUID, ProccessStatus> proccessStatusMap = new HashMap<>();
@@ -103,7 +112,7 @@ public class PathStoreMasterSchemaServer extends Thread {
       try {
         Thread.sleep(5000);
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        logger.error(e);
       }
     }
   }
@@ -189,7 +198,7 @@ public class PathStoreMasterSchemaServer extends Thread {
       final ProccessStatus status,
       final UUID processUuid) {
 
-    System.out.println(
+    logger.info(
         (status == ProccessStatus.INSTALLING ? "Installing application " : "Removing application ")
             + keyspaceName
             + " on node "
