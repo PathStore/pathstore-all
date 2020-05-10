@@ -82,6 +82,14 @@ public final class Constants {
     public static final String SERVER_UUID = "server_uuid";
   }
 
+  public static final String LOGS = "logs";
+
+  public static final class LOGS_COLUMNS {
+    public static final String NODE_ID = "node_id";
+    public static final String LOG = "log";
+    public static final String LOG_LEVEL = "log_level";
+  }
+
   public static final String APPS = "apps";
 
   public static final class APPS_COLUMNS {

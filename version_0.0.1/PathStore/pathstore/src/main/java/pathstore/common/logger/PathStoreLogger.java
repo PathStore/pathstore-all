@@ -137,7 +137,7 @@ public class PathStoreLogger {
    */
   protected Map<Integer, LoggerMessage> getMessages(final LoggerLevel loggerLevel) {
 
-    this.setNew(loggerLevel, false);
+    //this.setNew(loggerLevel, false);
 
     return this.messages;
   }

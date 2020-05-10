@@ -9,6 +9,7 @@ import pathstore.common.Role;
 import pathstore.exception.PathMigrateAlreadyGoneException;
 import pathstore.system.deployment.deploymentFSM.PathStoreMasterDeploymentServer;
 import pathstore.system.deployment.deploymentFSM.PathStoreSlaveDeploymentServer;
+import pathstore.system.logging.PathStoreLoggerDaemon;
 import pathstore.system.schemaFSM.PathStoreMasterSchemaServer;
 import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
 
@@ -26,8 +27,10 @@ public class PathStoreServerImplRMI implements PathStoreServer {
   private PathStoreSlaveDeploymentServer slaveDeploymentServer;
   private PathStorePullServer pullServer = null;
   private PathStorePushServer pushServer = null;
+  private PathStoreLoggerDaemon loggerDaemon = null;
 
   public PathStoreServerImplRMI() {
+    this.loggerDaemon = new PathStoreLoggerDaemon();
     this.slaveSchemaServer = new PathStoreSlaveSchemaServer();
     this.slaveDeploymentServer = new PathStoreSlaveDeploymentServer();
     if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
@@ -39,10 +42,9 @@ public class PathStoreServerImplRMI implements PathStoreServer {
     }
   }
 
-
-
   void startDaemons() {
     try {
+      this.loggerDaemon.start();
       this.slaveSchemaServer.start();
       this.slaveDeploymentServer.start();
       if (PathStoreProperties.getInstance().role == Role.ROOTSERVER) {
