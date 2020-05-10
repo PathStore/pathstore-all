@@ -18,34 +18,31 @@ import java.util.List;
  */
 public class PathStoreLoggerDaemon extends Thread {
 
+  private final LoggerLevel level = LoggerLevel.FINEST;
+
   /**
+   * Every 5 seconds write the lowest ordinal log level to the logs table.
    *
-   *
-   * */
+   * <p>Note: Parsing of this log based on log level will be done on the frontend to reduce api
+   * traffic and to reduce number of records written to the logs table
+   */
   @Override
   public void run() {
     Session session = PathStoreCluster.getInstance().connect();
 
     while (true) {
 
-      for (LoggerLevel level : LoggerLevel.values()) {
-        if (PathStoreLoggerFactory.hasNew(level)) {
+      if (PathStoreLoggerFactory.hasNew(level)) {
 
-          List<String> mergedMessages = PathStoreLoggerFactory.getMergedLog(level);
+        List<String> mergedMessages = PathStoreLoggerFactory.getMergedLog(level);
 
-          StringBuilder log = new StringBuilder();
+        Insert insert = QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
 
-          mergedMessages.forEach(s -> log.append(s).append("\n"));
+        insert
+            .value(Constants.LOGS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID)
+            .value(Constants.LOGS_COLUMNS.LOG, mergedMessages);
 
-          Insert insert = QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
-
-          insert
-              .value(Constants.LOGS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID)
-              .value(Constants.LOGS_COLUMNS.LOG, log.toString())
-              .value(Constants.LOGS_COLUMNS.LOG_LEVEL, level.toString());
-
-          session.execute(insert);
-        }
+        session.execute(insert);
       }
 
       try {

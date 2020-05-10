@@ -87,7 +87,6 @@ public final class Constants {
   public static final class LOGS_COLUMNS {
     public static final String NODE_ID = "node_id";
     public static final String LOG = "log";
-    public static final String LOG_LEVEL = "log_level";
   }
 
   public static final String APPS = "apps";
