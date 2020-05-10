@@ -19,7 +19,7 @@ import java.util.List;
 public class PathStoreLoggerDaemon extends Thread {
 
   /**
-   * 
+   *
    *
    * */
   @Override
@@ -49,7 +49,7 @@ public class PathStoreLoggerDaemon extends Thread {
       }
 
       try {
-        Thread.sleep(1000);
+        Thread.sleep(5000);
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
