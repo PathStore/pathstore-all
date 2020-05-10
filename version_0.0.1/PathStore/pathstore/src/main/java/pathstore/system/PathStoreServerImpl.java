@@ -24,9 +24,6 @@ import com.datastax.driver.core.Session;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreServer;
-import pathstore.common.Role;
-
-import org.apache.commons.cli.*;
 import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstore.util.SchemaInfo;
