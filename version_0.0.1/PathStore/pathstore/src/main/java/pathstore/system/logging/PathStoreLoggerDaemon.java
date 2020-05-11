@@ -3,12 +3,14 @@ package pathstore.system.logging;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.logger.LoggerLevel;
 import pathstore.common.logger.PathStoreLoggerFactory;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -30,23 +32,35 @@ public class PathStoreLoggerDaemon extends Thread {
   public void run() {
     Session session = PathStoreCluster.getInstance().connect();
 
+    Insert insert = QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
+
+    insert
+        .value(Constants.LOGS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID)
+        .value(Constants.LOGS_COLUMNS.LOG, new LinkedList<>());
+
+    session.execute(insert);
+
     while (true) {
+
+      System.out.println("LOGGING");
 
       if (PathStoreLoggerFactory.hasNew(level)) {
 
         List<String> mergedMessages = PathStoreLoggerFactory.getMergedLog(level);
 
-        Insert insert = QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
+        Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
 
-        insert
-            .value(Constants.LOGS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID)
-            .value(Constants.LOGS_COLUMNS.LOG, mergedMessages);
+        update
+            .where(
+                QueryBuilder.eq(
+                    Constants.LOGS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID))
+            .with(QueryBuilder.set(Constants.LOGS_COLUMNS.LOG, mergedMessages));
 
-        session.execute(insert);
+        session.execute(update);
       }
 
       try {
-        Thread.sleep(5000);
+        Thread.sleep(1000);
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
