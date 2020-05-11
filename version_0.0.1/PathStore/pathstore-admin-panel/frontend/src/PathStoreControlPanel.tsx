@@ -82,6 +82,11 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
     private timer: any;
 
     /**
+     * Denotes whether or not a specific request is still loading (Fixes issue with request stacking)
+     */
+    private loading: boolean[] = [false, false, false, false, false];
+
+    /**
      * Initialize state and empty props
      *
      * @param props
@@ -119,30 +124,39 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
      * Call fetch all to get all the responses and load them into the state
      */
     queryAll = (): void => {
-        this.genericLoadFunction<Deployment>('/api/v1/deployment')
-            .then((response: Deployment[]) => this.setState({deployment: response}));
 
-        this.genericLoadFunction<Server>('/api/v1/servers')
-            .then((response: Server[]) => this.setState({servers: response}));
+        if (!this.loading[0])
+            this.genericLoadFunction<Deployment>('/api/v1/deployment', 0)
+                .then((response: Deployment[]) => this.setState({deployment: response}, () => this.loading[0] = false));
 
-        this.genericLoadFunction<Application>('/api/v1/applications')
-            .then((response: Application[]) => this.setState({applications: response}));
+        if (!this.loading[1])
+            this.genericLoadFunction<Server>('/api/v1/servers', 1)
+                .then((response: Server[]) => this.setState({servers: response}, () => this.loading[1] = false));
 
-        this.genericLoadFunction<ApplicationStatus>('/api/v1/application_management')
-            .then((response: ApplicationStatus[]) => this.setState({applicationStatus: response}));
+        if (!this.loading[2])
+            this.genericLoadFunction<Application>('/api/v1/applications', 2)
+                .then((response: Application[]) => this.setState({applications: response}, () => this.loading[2] = false));
 
-        this.genericLoadFunction<Log>('/api/v1/logs')
-            .then((response: Log[]) => this.setState({logs: response}));
+        if (!this.loading[3])
+            this.genericLoadFunction<ApplicationStatus>('/api/v1/application_management', 3)
+                .then((response: ApplicationStatus[]) => this.setState({applicationStatus: response}, () => this.loading[3] = false));
+
+        if (!this.loading[4])
+            this.genericLoadFunction<Log>('/api/v1/logs', 4)
+                .then((response: Log[]) => this.setState({logs: response}, () => this.loading[4] = false));
     };
 
     /**
      * This function is used to return an array of parsed object data from the api.
      *
      * @param url url to query
+     * @param index index of loading to set
      */
-    genericLoadFunction = <T extends unknown>(url: string): Promise<T[]> =>
-        fetch(url)
+    genericLoadFunction = <T extends unknown>(url: string, index: number): Promise<T[]> => {
+        this.loading[index] = true;
+        return fetch(url)
             .then(response => response.json() as Promise<T[]>);
+    };
 
     /**
      * Used by child component to force refresh this data. This is only given to child components who are capable

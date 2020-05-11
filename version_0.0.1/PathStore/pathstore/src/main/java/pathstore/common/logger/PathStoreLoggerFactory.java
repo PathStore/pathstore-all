@@ -55,20 +55,19 @@ public final class PathStoreLoggerFactory {
    * @return list of merged strings
    * @apiNote merging is controlled by {@link PathStoreLogger#counter}
    */
-  public static List<String> getMergedLog(final LoggerLevel level) {
+  public static List<PathStoreLoggerMessage> getMergedLog(final LoggerLevel level) {
     int currentOrdinal = level.ordinal();
 
-    Map<Integer, LoggerMessage> map = new HashMap<>();
+    Map<Integer, PathStoreLoggerMessage> map = new HashMap<>();
 
     for (PathStoreLogger logger : loggers.values()) map.putAll(logger.getMessages(level));
 
-    LinkedList<String> messages = new LinkedList<>();
+    LinkedList<PathStoreLoggerMessage> messages = new LinkedList<>();
 
     for (int i = 0; i < PathStoreLogger.counter.get(); i++) {
-      LoggerMessage current = map.get(i);
+      PathStoreLoggerMessage current = map.get(i);
       if (current == null) continue;
-      if (current.getLoggerLevel().ordinal() >= currentOrdinal)
-        messages.addLast(current.getFormattedMessage());
+      if (current.getLoggerLevel().ordinal() >= currentOrdinal) messages.addLast(current);
     }
 
     return messages;

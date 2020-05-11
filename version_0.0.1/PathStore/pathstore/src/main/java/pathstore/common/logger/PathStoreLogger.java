@@ -25,7 +25,7 @@ public class PathStoreLogger {
   private final String name;
 
   /** Map of messages used to allow for merging of multiple loggers concurrently */
-  private final Map<Integer, LoggerMessage> messages;
+  private final Map<Integer, PathStoreLoggerMessage> messages;
 
   /** Used to denote what level of messages are displayed */
   private LoggerLevel displayLevel;
@@ -100,7 +100,7 @@ public class PathStoreLogger {
 
     int count = counter.getAndIncrement();
 
-    LoggerMessage loggerMessage = new LoggerMessage(count, loggerLevel, message, this.name);
+    PathStoreLoggerMessage loggerMessage = new PathStoreLoggerMessage(count, loggerLevel, message, this.name);
 
     this.messages.put(count, loggerMessage);
 
@@ -135,7 +135,7 @@ public class PathStoreLogger {
    *     PathStoreLoggerFactory#getMergedLog(LoggerLevel)} will check for proper bounds. This helps
    *     not produce null pointer exceptions as all messages are ordered by {@link #counter}
    */
-  protected Map<Integer, LoggerMessage> getMessages(final LoggerLevel loggerLevel) {
+  protected Map<Integer, PathStoreLoggerMessage> getMessages(final LoggerLevel loggerLevel) {
 
     this.setNew(loggerLevel, false);
 

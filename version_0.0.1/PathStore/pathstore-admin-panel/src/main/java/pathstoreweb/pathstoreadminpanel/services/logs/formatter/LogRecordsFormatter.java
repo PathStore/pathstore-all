@@ -37,7 +37,12 @@ public class LogRecordsFormatter implements IFormatter {
 
       JSONArray array = new JSONArray();
 
-      log.log.forEach(array::put);
+      log.log.forEach(
+          i ->
+              array.put(
+                  new JSONObject()
+                      .put(Constants.LOG_MESSAGE_PROPERTIES.MESSAGE_TYPE, i.loggerLevel.name())
+                      .put(Constants.LOG_MESSAGE_PROPERTIES.MESSAGE, i.message)));
 
       object.put(Constants.LOGS_COLUMNS.LOG, array);
 

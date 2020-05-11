@@ -3,6 +3,7 @@ package pathstore.test;
 import pathstore.common.logger.LoggerLevel;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
+import pathstore.common.logger.PathStoreLoggerMessage;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -60,10 +61,10 @@ public class LoggerTest {
 
     if (PathStoreLoggerFactory.hasNew(loggerLevel)) {
 
-      List<String> mergedMessages = PathStoreLoggerFactory.getMergedLog(loggerLevel);
+      List<PathStoreLoggerMessage> mergedMessages = PathStoreLoggerFactory.getMergedLog(loggerLevel);
 
-      for (String s : mergedMessages) {
-        System.out.println(s);
+      for (PathStoreLoggerMessage s : mergedMessages) {
+        System.out.println(s.getFormattedMessage());
       }
 
       System.out.println("\n\nSize: " + mergedMessages.size());

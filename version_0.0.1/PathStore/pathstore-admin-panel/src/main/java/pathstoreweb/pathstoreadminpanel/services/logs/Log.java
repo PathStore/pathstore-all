@@ -10,13 +10,13 @@ public class Log {
   public final int nodeId;
 
   /** List of messages from user */
-  public final List<String> log;
+  public final List<LogMessage> log;
 
   /**
    * @param nodeId {@link #nodeId}
    * @param log {@link #log}
    */
-  public Log(final int nodeId, final List<String> log) {
+  public Log(final int nodeId, final List<LogMessage> log) {
     this.nodeId = nodeId;
     this.log = log;
   }
