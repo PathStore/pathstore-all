@@ -20,6 +20,7 @@ import pathstoreweb.pathstoreadminpanel.services.deployment.UpdateDeploymentReco
 import pathstoreweb.pathstoreadminpanel.services.deployment.payload.AddDeploymentRecordPayload;
 import pathstoreweb.pathstoreadminpanel.services.deployment.payload.UpdateDeploymentRecordPayload;
 import pathstoreweb.pathstoreadminpanel.services.deployment.validator.ValidParentId;
+import pathstoreweb.pathstoreadminpanel.services.logs.GetLogRecords;
 import pathstoreweb.pathstoreadminpanel.services.servers.AddServer;
 import pathstoreweb.pathstoreadminpanel.services.servers.GetServers;
 import pathstoreweb.pathstoreadminpanel.services.servers.payload.AddServerPayload;
@@ -157,5 +158,11 @@ public class ApiV1 {
     return bindingResult.hasErrors()
         ? new ValidityErrorFormatter(bindingResult.getAllErrors()).format()
         : new UpdateDeploymentRecord(payload).response();
+  }
+
+  /** @return list of logs for the user to see for each node */
+  @GetMapping(Endpoints.LOGS)
+  public ResponseEntity<String> logs() {
+    return new GetLogRecords().response();
   }
 }
