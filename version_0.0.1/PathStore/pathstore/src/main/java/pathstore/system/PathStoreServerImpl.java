@@ -94,8 +94,9 @@ public class PathStoreServerImpl {
       logger.info("PathStore Ready");
 
       PathStoreDeploymentUtils.writeTaskDone(local, 2);
-      obj.startDaemons();
 
+      DaemonManager manager = new DaemonManager();
+      manager.startDaemons();
     } catch (Exception e) {
       logger.error(e);
     }

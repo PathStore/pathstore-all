@@ -21,46 +21,6 @@ import java.util.UUID;
 public class PathStoreServerImplRMI implements PathStoreServer {
   private final Logger logger = LoggerFactory.getLogger(PathStoreServerImplRMI.class);
 
-  private PathStoreMasterSchemaServer masterSchemaServer = null;
-  private PathStoreSlaveSchemaServer slaveSchemaServer;
-  private PathStoreMasterDeploymentServer masterDeploymentServer = null;
-  private PathStoreSlaveDeploymentServer slaveDeploymentServer;
-  private PathStorePullServer pullServer = null;
-  private PathStorePushServer pushServer = null;
-  private PathStoreLoggerDaemon loggerDaemon = null;
-
-  public PathStoreServerImplRMI() {
-    this.loggerDaemon = new PathStoreLoggerDaemon();
-    this.slaveSchemaServer = new PathStoreSlaveSchemaServer();
-    this.slaveDeploymentServer = new PathStoreSlaveDeploymentServer();
-    if (PathStoreProperties.getInstance().role != Role.ROOTSERVER) {
-      this.pullServer = new PathStorePullServer();
-      this.pushServer = new PathStorePushServer();
-    } else {
-      this.masterSchemaServer = new PathStoreMasterSchemaServer();
-      this.masterDeploymentServer = new PathStoreMasterDeploymentServer();
-    }
-  }
-
-  void startDaemons() {
-    try {
-      this.loggerDaemon.start();
-      this.slaveSchemaServer.start();
-      this.slaveDeploymentServer.start();
-      if (PathStoreProperties.getInstance().role == Role.ROOTSERVER) {
-        this.masterSchemaServer.start();
-        this.masterDeploymentServer.start();
-        this.masterDeploymentServer.join();
-      } else {
-        this.pushServer.start();
-        this.pullServer.start();
-        this.pullServer.join();
-      }
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-  }
-
   @Override // child calls this (maybe client or child node)
   public String addUserCommandEntry(
       String user, String keyspace, String table, byte[] clauses, int limit)
