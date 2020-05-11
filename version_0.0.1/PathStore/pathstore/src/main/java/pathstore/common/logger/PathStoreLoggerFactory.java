@@ -66,6 +66,7 @@ public final class PathStoreLoggerFactory {
 
     for (int i = 0; i < PathStoreLogger.counter.get(); i++) {
       LoggerMessage current = map.get(i);
+      if (current == null) continue;
       if (current.getLoggerLevel().ordinal() >= currentOrdinal)
         messages.addLast(current.getFormattedMessage());
     }
