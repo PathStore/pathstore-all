@@ -6,6 +6,8 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.common.Constants;
+import pathstore.common.logger.PathStoreLogger;
+import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.deployment.utilities.StartupUTIL;
 
 import java.util.HashMap;
@@ -13,6 +15,9 @@ import java.util.Map;
 
 /** This class is used to wait for pathstore to start up */
 public class WaitForPathStore implements ICommand {
+
+  /** Logger */
+  private final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(WaitForPathStore.class);
 
   /**
    * TODO: Make timeout function optional
@@ -65,7 +70,7 @@ public class WaitForPathStore implements ICommand {
       int task = row.getInt(Constants.STARTUP_COLUMNS.TASK_DONE);
 
       if (neededRecords.containsKey(task)) {
-        System.out.println(neededRecords.get(task));
+        logger.info(neededRecords.get(task));
         neededRecords.remove(task);
       }
     }
@@ -83,6 +88,7 @@ public class WaitForPathStore implements ICommand {
         throw new CommandError("Sleep was interrupted while waiting for pathstore to come online");
       }
     } else {
+      logger.info("PathStore started up");
       this.session.close();
       this.cluster.close();
     }

@@ -3,6 +3,8 @@ package pathstore.system.deployment.commands;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import pathstore.common.logger.PathStoreLogger;
+import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.deployment.utilities.StartupUTIL;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 
@@ -12,6 +14,9 @@ import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
  * will have to do it.
  */
 public class WaitForCassandra implements ICommand {
+
+  /** Logger */
+  private final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(WaitForCassandra.class);
 
   /**
    * TODO: Make timeout function optional
@@ -50,6 +55,8 @@ public class WaitForCassandra implements ICommand {
     try {
       Cluster cluster = StartupUTIL.createCluster(this.ip, this.port);
       Session session = cluster.connect();
+
+      logger.info("Cassandra is online, loading local keyspace for pathstore started");
 
       PathStoreSchemaLoaderUtils.loadLocalKeyspace(session);
 

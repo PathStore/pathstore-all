@@ -122,6 +122,8 @@ public class PathStoreSlaveSchemaServer extends Thread {
                 ProccessStatus.INSTALLED.toString()));
 
     session.execute(update);
+
+    logger.info("Application loaded " + keyspace);
   }
 
   /**
@@ -149,5 +151,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
             QueryBuilder.set(
                 Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, ProccessStatus.REMOVED.toString()));
     session.execute(update);
+
+      logger.info("Application removed " + keyspace);
   }
 }

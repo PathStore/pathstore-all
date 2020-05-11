@@ -8,6 +8,11 @@ import pathstore.system.logging.PathStoreLoggerDaemon;
 import pathstore.system.schemaFSM.PathStoreMasterSchemaServer;
 import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
 
+/**
+ * This class is used to manage all daemons that are spawned after initial setup.
+ *
+ * <p>These daemons represent all pathstore based features and functionality
+ */
 public class DaemonManager {
   private PathStoreMasterSchemaServer masterSchemaServer = null;
   private PathStoreSlaveSchemaServer slaveSchemaServer;
@@ -17,6 +22,27 @@ public class DaemonManager {
   private PathStorePushServer pushServer = null;
   private PathStoreLoggerDaemon loggerDaemon = null;
 
+  /**
+   * All Nodes:
+   *
+   * <p>loggerDaemon
+   *
+   * <p>slaveSchemaServer
+   *
+   * <p>slaveDeploymentServer
+   *
+   * <p>Server:
+   *
+   * <p>pullServer
+   *
+   * <p>pushServer
+   *
+   * <p>Root Server:
+   *
+   * <p>masterSchemaServer
+   *
+   * <p>masterDeploymentServer
+   */
   public DaemonManager() {
     this.loggerDaemon = new PathStoreLoggerDaemon();
     this.slaveSchemaServer = new PathStoreSlaveSchemaServer();
@@ -30,6 +56,7 @@ public class DaemonManager {
     }
   }
 
+  /** Starts all daemons based on role */
   void startDaemons() {
     try {
       this.loggerDaemon.start();
