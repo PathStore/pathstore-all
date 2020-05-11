@@ -140,7 +140,7 @@ public class PathStoreSlaveDeploymentServer extends Thread {
         this.updateState(entry, DeploymentProcessStatus.DEPLOYED);
       } catch (CommandError commandError) {
         logger.error("Deployment failed");
-        logger.error("[ERROR] " + commandError.errorMessage);
+        logger.error(commandError.errorMessage);
         this.updateState(entry, DeploymentProcessStatus.FAILED);
       } finally {
         sshUtil.disconnect();
