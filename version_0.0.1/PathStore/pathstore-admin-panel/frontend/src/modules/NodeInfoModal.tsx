@@ -1,9 +1,10 @@
-import {ApplicationStatus, Deployment, Server, Update} from "../utilities/ApiDeclarations";
+import {ApplicationStatus, Deployment, Log, Server, Update} from "../utilities/ApiDeclarations";
 import Modal from "react-modal";
 import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
 import React, {Component} from "react";
 import {formatServer, webHandler} from "../utilities/Utils";
+import {LogViewer} from "./LogViewer";
 
 /**
  * Properties definition for {@link NodeInfoModal}
@@ -33,6 +34,11 @@ interface NodeInfoModalProperties {
      * List of server objects from api
      */
     readonly servers: Server[]
+
+    /**
+     * Optional List of logs for all node from api
+     */
+    readonly logs?: Log[]
 
     /**
      * Force refresh props on other components
@@ -160,6 +166,7 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
      * @returns {*}
      */
     render() {
+
         return (
             <Modal isOpen={this.props.show}
                    style={{overlay: {zIndex: 1}}}
@@ -171,6 +178,7 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
                         this.props.applicationStatus
                             .filter(i => i.nodeid === this.props.node))}
                 </Table>
+                <LogViewer node={this.props.node} logs={this.props.logs}/>
                 <button onClick={this.props.callback}>close</button>
             </Modal>
         );

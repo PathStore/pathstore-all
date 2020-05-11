@@ -82,3 +82,12 @@ span {
 .hypothetical {
     fill: blue;
 }
+
+.logViewer {
+    overflow-y: scroll;
+    height: 600px;
+}
+
+#log {
+    white-space: pre-line;
+}

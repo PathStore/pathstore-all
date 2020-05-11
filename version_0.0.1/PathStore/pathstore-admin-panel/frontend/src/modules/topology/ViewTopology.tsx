@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {ApplicationStatus, Deployment, Server} from "../../utilities/ApiDeclarations";
+import {ApplicationStatus, Deployment, Log, Server} from "../../utilities/ApiDeclarations";
 import {PathStoreTopology} from "../PathStoreTopology";
 import NodeInfoModal from "../NodeInfoModal";
 
@@ -22,6 +22,11 @@ interface ViewTopologyProps {
      * List of node application status from api
      */
     readonly applicationStatus: ApplicationStatus[]
+
+    /**
+     * List of logs for all node from api
+     */
+    readonly logs: Log[]
 
     /**
      * Force refresh other props components
@@ -118,6 +123,7 @@ export default class ViewTopology extends Component<ViewTopologyProps, ViewTopol
                                deployment={this.props.deployment}
                                applicationStatus={this.props.applicationStatus}
                                servers={this.props.servers}
+                               logs={this.props.logs}
                                callback={this.callback}
                                forceRefresh={this.props.forceRefresh}/>
                 : null;

@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Application, ApplicationStatus, Deployment, Server} from "./utilities/ApiDeclarations";
+import {Application, ApplicationStatus, Deployment, Log, Server} from "./utilities/ApiDeclarations";
 import ViewTopology from "./modules/topology/ViewTopology";
 import NodeDeployment from "./modules/nodeDeployment/NodeDeployment";
 import LiveTransitionVisual from "./modules/topology/LiveTransitionVisual";
@@ -30,6 +30,11 @@ interface PathStoreControlPanelState {
      * List of node application status from api
      */
     readonly applicationStatus: ApplicationStatus[]
+
+    /**
+     * List of logs for all node from api
+     */
+    readonly logs: Log[]
 }
 
 /**
@@ -88,7 +93,8 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
             deployment: [],
             servers: [],
             applications: [],
-            applicationStatus: []
+            applicationStatus: [],
+            logs: []
         }
     }
 
@@ -124,6 +130,9 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
 
         this.genericLoadFunction<ApplicationStatus>('/api/v1/application_management')
             .then((response: ApplicationStatus[]) => this.setState({applicationStatus: response}));
+
+        this.genericLoadFunction<Log>('/api/v1/logs')
+            .then((response: Log[]) => this.setState({logs: response}));
     };
 
     /**
@@ -162,6 +171,7 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
                     <ViewTopology deployment={this.state.deployment}
                                   servers={this.state.servers}
                                   applicationStatus={this.state.applicationStatus}
+                                  logs={this.state.logs}
                                   forceRefresh={this.forceRefresh}/>
                 </div>
                 <br/>

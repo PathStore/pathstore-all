@@ -41,9 +41,6 @@ public class PathStoreLoggerDaemon extends Thread {
     session.execute(insert);
 
     while (true) {
-
-      System.out.println("LOGGING");
-
       if (PathStoreLoggerFactory.hasNew(level)) {
 
         List<String> mergedMessages = PathStoreLoggerFactory.getMergedLog(level);
@@ -60,7 +57,7 @@ public class PathStoreLoggerDaemon extends Thread {
       }
 
       try {
-        Thread.sleep(1000);
+        Thread.sleep(2500);
       } catch (InterruptedException e) {
         e.printStackTrace();
       }

@@ -37,6 +37,14 @@ export interface ApplicationStatus {
 }
 
 /**
+ * Parse log response
+ */
+export interface Log {
+    node_id: number
+    log: string[]
+}
+
+/**
  * Way to format response on deployment update
  */
 export interface Update {
