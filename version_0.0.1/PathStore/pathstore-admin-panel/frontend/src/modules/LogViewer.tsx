@@ -33,8 +33,7 @@ export const LogViewer: FunctionComponent<LogViewerProps> = (props) => {
     let response = "";
 
     for (let i = 0; i < log[0].log.length; i++)
-        if (log[0].log[i].log_level === "INFO")
-            response += log[0].log[i].log + "\n";
+        response += log[0].log[i].log + "\n";
 
     return (
         <div className={"logViewer"}>

@@ -1,9 +1,14 @@
 package pathstoreweb.pathstoreadminpanel;
 
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.Insert;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.jcraft.jsch.JSchException;
 import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
+import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstore.system.deployment.utilities.StartupUTIL;
 
@@ -12,7 +17,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.WAIT_FOR;
+import static pathstore.common.Constants.PATHSTORE_COLUMNS.*;
+import static pathstore.common.Constants.PATHSTORE_COLUMNS.PATHSTORE_DIRTY;
 import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
+import static pathstore.common.Constants.SERVERS_COLUMNS.*;
+import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
 
 /**
  * This class is used to handle the startup sequence and allows a user to deploy the root node for
@@ -89,8 +100,8 @@ public class StartUpHandler {
 
   /**
    * First get information about the network and then connect to the server. Then run through the
-   * list of commands {@link StartupUTIL#initList(SSHUtil, String, String, int, int, Role, String,
-   * int, String, int, String, int, String, int, String)}
+   * list of commands {@link #initList(SSHUtil, String, String, int, int, Role, String, int, String,
+   * int, String, int, String, int, String)}
    */
   public void createNewNetwork() {
 
@@ -130,8 +141,8 @@ public class StartUpHandler {
           System.exit(-1);
         }
       }
-
-      StartupUTIL.finalizeRootNodeInstallation(ip, cassandraPort, username, password);
+      
+      this.finalizeRootNodeInstallation(ip, cassandraPort, username, password);
 
       this.generatePathStorePropertiesFile(ip, cassandraPort, rmiPort);
 
@@ -368,6 +379,55 @@ public class StartUpHandler {
     commands.add(new WaitForPathStore(ip, cassandraPort));
 
     return commands;
+  }
+
+  /**
+   * This function rights the recorded to the server table to disallow multiple deployments to the
+   * same node and drops startup keyspace once finished
+   *
+   * @param ip ip address of root node
+   * @param cassandraPort cassandra port
+   * @param username username to connect to root node
+   * @param password password for root node
+   */
+  private void finalizeRootNodeInstallation(
+      final String ip, final int cassandraPort, final String username, final String password) {
+
+    System.out.println("Writing server record to root's table");
+
+    Cluster cluster = StartupUTIL.createCluster(ip, cassandraPort);
+    Session session = cluster.connect();
+
+    UUID serverUUID = UUID.randomUUID();
+
+    Insert insert =
+        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS)
+            .value(PATHSTORE_VERSION, QueryBuilder.now())
+            .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
+            .value(PATHSTORE_DIRTY, true)
+            .value(SERVER_UUID, serverUUID.toString())
+            .value(IP, ip)
+            .value(USERNAME, username)
+            .value(PASSWORD, password)
+            .value(NAME, "Root Node");
+
+    session.execute(insert);
+
+    insert =
+        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT)
+            .value(PATHSTORE_VERSION, QueryBuilder.now())
+            .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
+            .value(PATHSTORE_DIRTY, true)
+            .value(NEW_NODE_ID, 1)
+            .value(PARENT_NODE_ID, -1)
+            .value(PROCESS_STATUS, DeploymentProcessStatus.DEPLOYED.toString())
+            .value(WAIT_FOR, -1)
+            .value(SERVER_UUID, serverUUID.toString());
+
+    session.execute(insert);
+
+    session.close();
+    cluster.close();
   }
 
   /** close scanner */
