@@ -112,6 +112,7 @@ public class PathStoreLogger {
    * @return internal messages written by this logger
    */
   protected Map<Integer, PathStoreLoggerMessage> getMessages() {
+    this.hasNew = false;
     return this.messages;
   }
 
