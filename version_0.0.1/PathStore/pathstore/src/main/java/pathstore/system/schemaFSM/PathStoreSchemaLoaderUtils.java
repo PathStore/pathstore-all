@@ -60,7 +60,7 @@ public class PathStoreSchemaLoaderUtils {
             + "    pathstore_node int,\n"
             + "    pathstore_parent_timestamp timeuuid,\n"
             + "    PRIMARY KEY ((node_id, date), count, pathstore_version)\n"
-            + ") WITH CLUSTERING ORDER BY (pathstore_version DESC)\n"
+            + ") WITH CLUSTERING ORDER BY (count DESC, pathstore_version DESC)\n"
             + "   AND read_repair_chance = 0.0\n"
             + "   AND dclocal_read_repair_chance = 0.0\n"
             + "   AND gc_grace_seconds = 604800\n"
