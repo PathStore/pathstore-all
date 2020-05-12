@@ -48,8 +48,8 @@ export interface Log {
  * Parse Log message
  */
 export interface LogMessage {
-    message_type: string
-    message: string
+    log_level: string
+    log: string
 }
 
 /**

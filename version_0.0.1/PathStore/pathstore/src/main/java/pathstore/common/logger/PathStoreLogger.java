@@ -18,9 +18,6 @@ public class PathStoreLogger {
   /** Denotes the counter */
   static final AtomicInteger counter = new AtomicInteger(0);
 
-  /** Denotes the max size of log level list */
-  private static final int MAX_ORDINAL = LoggerLevel.values().length;
-
   /** Name of logger */
   private final String name;
 
@@ -31,14 +28,14 @@ public class PathStoreLogger {
   private LoggerLevel displayLevel;
 
   /** Is there new data available to read from */
-  private boolean[] hasNew;
+  private boolean hasNew;
 
   /** @param name name of logger */
   protected PathStoreLogger(final String name) {
     this.name = name;
     this.messages = new ConcurrentHashMap<>();
     this.displayLevel = LoggerLevel.INFO;
-    this.hasNew = new boolean[MAX_ORDINAL];
+    this.hasNew = false;
   }
 
   /**
@@ -96,11 +93,12 @@ public class PathStoreLogger {
    */
   public void log(final LoggerLevel loggerLevel, final String message) {
 
-    this.setNew(loggerLevel, true);
+    this.hasNew = true;
 
     int count = counter.getAndIncrement();
 
-    PathStoreLoggerMessage loggerMessage = new PathStoreLoggerMessage(count, loggerLevel, message, this.name);
+    PathStoreLoggerMessage loggerMessage =
+        new PathStoreLoggerMessage(count, loggerLevel, message, this.name);
 
     this.messages.put(count, loggerMessage);
 
@@ -109,50 +107,21 @@ public class PathStoreLogger {
   }
 
   /**
-   * Allows the class to write updates to the new array to denote whether messages have been written
-   * or not
-   *
-   * <p>The state is set from loggerLevel -> MAX to status
-   *
-   * @param loggerLevel min logger level
-   * @param status what status to set
-   */
-  private void setNew(final LoggerLevel loggerLevel, final boolean status) {
-    int ordinal = loggerLevel.ordinal();
-
-    do {
-      this.hasNew[ordinal] = status;
-    } while ((ordinal += 1) < MAX_ORDINAL);
-  }
-
-  /**
    * Sets has new to false as the logger factory as pulled the messages recently
    *
-   * @param loggerLevel what logger level of messages are you looking for
    * @return internal messages written by this logger
-   * @apiNote Since this function is used for {@link PathStoreLoggerFactory} we don't need to filter
-   *     off messages that are in the bound of [0, loggerLevel] as {@link
-   *     PathStoreLoggerFactory#getMergedLog(LoggerLevel)} will check for proper bounds. This helps
-   *     not produce null pointer exceptions as all messages are ordered by {@link #counter}
    */
-  protected Map<Integer, PathStoreLoggerMessage> getMessages(final LoggerLevel loggerLevel) {
-
-    this.setNew(loggerLevel, false);
-
+  protected Map<Integer, PathStoreLoggerMessage> getMessages() {
     return this.messages;
   }
 
-  /**
-   * Checks to see if new messages are available
-   *
-   * @param loggerLevel what minimum logger level to check
-   * @return true if any logger level greater than or equal to loggerLevel is true
-   */
-  protected boolean hasNew(final LoggerLevel loggerLevel) {
+  /** @return iff there is new data for this logger */
+  protected boolean hasNew() {
+    return this.hasNew;
+  }
 
-    for (int ordinal = loggerLevel.ordinal(); ordinal < MAX_ORDINAL; ordinal++)
-      if (this.hasNew[ordinal]) return true;
-
-    return false;
+  /** Clears the internal messages from memory after merger */
+  protected void clear() {
+    this.messages.clear();
   }
 }

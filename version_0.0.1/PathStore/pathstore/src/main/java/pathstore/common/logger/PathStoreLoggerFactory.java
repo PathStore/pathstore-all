@@ -13,6 +13,15 @@ public final class PathStoreLoggerFactory {
   private static final Map<String, PathStoreLogger> loggers = new ConcurrentHashMap<>();
 
   /**
+   * Denotes the start point to start the merge from.
+   *
+   * <p>This is used because everytime the daemon requests the merged log all in-memory logs are
+   * cleared. Thus instead of looping from 0 to the current count we have a starting point. This is
+   * simply a small optimization to {@link #getMergedLog()}
+   */
+  private static int startPoint = 0;
+
+  /**
    * Lazy function to pass class object instead of name
    *
    * @param c current class the logger is in
@@ -37,13 +46,12 @@ public final class PathStoreLoggerFactory {
    * This function is used to check to see if there are new messages available (This is to avoid
    * redundant writes to cassandra)
    *
-   * @param level minimum logging level to check
-   * @return true iff a single logger has new logs under the minimum log constraint
-   * @see PathStoreLogger#hasNew(LoggerLevel)
+   * @return true iff a single logger has new logs
+   * @see PathStoreLogger#hasNew()
    */
-  public static boolean hasNew(final LoggerLevel level) {
+  public static boolean hasNew() {
 
-    for (PathStoreLogger logger : loggers.values()) if (logger.hasNew(level)) return true;
+    for (PathStoreLogger logger : loggers.values()) if (logger.hasNew()) return true;
 
     return false;
   }
@@ -51,24 +59,31 @@ public final class PathStoreLoggerFactory {
   /**
    * Allows the log daemon to query a merged log of all loggers used within pathstore
    *
-   * @param level what is the minimum level of logger to filter by
    * @return list of merged strings
    * @apiNote merging is controlled by {@link PathStoreLogger#counter}
    */
-  public static List<PathStoreLoggerMessage> getMergedLog(final LoggerLevel level) {
-    int currentOrdinal = level.ordinal();
+  public static List<PathStoreLoggerMessage> getMergedLog() {
 
     Map<Integer, PathStoreLoggerMessage> map = new HashMap<>();
 
-    for (PathStoreLogger logger : loggers.values()) map.putAll(logger.getMessages(level));
+    for (PathStoreLogger logger : loggers.values()) map.putAll(logger.getMessages());
 
     LinkedList<PathStoreLoggerMessage> messages = new LinkedList<>();
 
-    for (int i = 0; i < PathStoreLogger.counter.get(); i++) {
+    int endPoint = PathStoreLogger.counter.get();
+
+    // Create the merged log
+    for (int i = startPoint; i < endPoint; i++) {
       PathStoreLoggerMessage current = map.get(i);
       if (current == null) continue;
-      if (current.getLoggerLevel().ordinal() >= currentOrdinal) messages.addLast(current);
+      messages.addLast(current);
     }
+
+    // Clear all in memory logger data
+    loggers.values().forEach(PathStoreLogger::clear);
+
+    // Set start point
+    startPoint = endPoint;
 
     return messages;
   }

@@ -82,17 +82,13 @@ public final class Constants {
     public static final String SERVER_UUID = "server_uuid";
   }
 
-  public static final String LOG_MESSAGE = "log_message";
-
-  public static final class LOG_MESSAGE_PROPERTIES {
-    public static final String MESSAGE_TYPE = "message_type";
-    public static final String MESSAGE = "message";
-  }
-
   public static final String LOGS = "logs";
 
   public static final class LOGS_COLUMNS {
     public static final String NODE_ID = "node_id";
+    public static final String DATE = "date";
+    public static final String COUNT = "count";
+    public static final String LOG_LEVEL = "log_level";
     public static final String LOG = "log";
   }
 
