@@ -6,6 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
+import pathstore.common.logger.LoggerLevel;
 import pathstore.common.logger.PathStoreLoggerFactory;
 
 import java.text.SimpleDateFormat;
@@ -34,7 +35,8 @@ public class PathStoreLoggerDaemon extends Thread {
 
     while (true) {
       if (PathStoreLoggerFactory.hasNew()) {
-        PathStoreLoggerFactory.getMergedLog()
+        PathStoreLoggerFactory.getMergedLog().stream()
+            .filter(i -> i.getLoggerLevel().ordinal() >= LoggerLevel.INFO.ordinal())
             .forEach(
                 i -> {
                   Insert insert =
