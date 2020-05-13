@@ -20,7 +20,9 @@ import java.util.List;
 public class PathStoreLoggerDaemon extends Thread {
 
   /** String to denote how to format the date */
-  private static String dateFormat = "yyyy-MM-dd";
+  private static String DATE_FORMAT = "yyyy-MM-dd";
+
+  private static String LOGS_DIRECTORY = "/etc/pathstore/logs";
 
   /** Logger to write any errors that occur during the writing of */
   private final PathStoreLogger logger =
@@ -31,6 +33,11 @@ public class PathStoreLoggerDaemon extends Thread {
 
   public PathStoreLoggerDaemon() {
     this.currentDate = this.getAndSetDate();
+
+    // Create logs directory
+    File file = new File(LOGS_DIRECTORY);
+
+    if (!file.exists()) file.mkdir();
   }
 
   /**
@@ -80,7 +87,7 @@ public class PathStoreLoggerDaemon extends Thread {
    * @return get current date and update internally stored date iff they're different (day change)
    */
   private String getAndSetDate() {
-    String date = new SimpleDateFormat(dateFormat).format(new Date());
+    String date = new SimpleDateFormat(DATE_FORMAT).format(new Date());
 
     if (!date.equals(this.currentDate)) this.currentDate = date;
 
@@ -89,7 +96,7 @@ public class PathStoreLoggerDaemon extends Thread {
 
   /** @return formats a log file name based on the current date {@link #currentDate} */
   private String formatFileName() {
-    return String.format("/etc/pathstore/logs/log-%s.txt", this.currentDate);
+    return String.format("%s/log-%s.txt", LOGS_DIRECTORY, this.currentDate);
   }
 
   /**
