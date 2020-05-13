@@ -49,8 +49,8 @@ public class LogRecordsFormatter implements IFormatter {
       }
 
       nodeObject.put("dates", dates);
+      data.put(nodeObject);
     }
-    data.put(nodeObject);
 
     return new ResponseEntity<>(data.toString(), HttpStatus.OK);
   }
