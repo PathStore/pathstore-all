@@ -43,7 +43,7 @@ public class PathStoreLoggerMessage {
    */
   private String formatMessage() {
     return String.format(
-        "[%4.6s][%-20s][%s] %s",
+        "[%4.6s][%-40s][%s] %s",
         this.loggerLevel.toString(),
         this.loggerName,
         new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()),
