@@ -89,7 +89,7 @@ public class PathStoreLoggerDaemon extends Thread {
 
   /** @return formats a log file name based on the current date {@link #currentDate} */
   private String formatFileName() {
-    return String.format("log-%s.txt", this.currentDate);
+    return String.format("/etc/pathstore/log-%s.txt", this.currentDate);
   }
 
   /**
