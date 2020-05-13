@@ -46,7 +46,7 @@ export interface Log {
 
 export interface LogByDate {
     date: string
-    logs: string[]
+    log: string[]
 }
 
 /**
