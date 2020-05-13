@@ -102,6 +102,8 @@ public class PathStoreLoggerDaemon extends Thread {
 
     String fileName = this.formatFileName();
 
+    System.out.println(String.format("Writing %d messages to %s", newMessages.size(), fileName));
+
     try (FileWriter fw = new FileWriter(fileName, true);
         BufferedWriter bw = new BufferedWriter(fw);
         PrintWriter out = new PrintWriter(bw)) {
