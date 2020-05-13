@@ -41,15 +41,12 @@ export interface ApplicationStatus {
  */
 export interface Log {
     node_id: number
-    log: LogMessage[]
+    dates: LogByDate[]
 }
 
-/**
- * Parse Log message
- */
-export interface LogMessage {
-    log_level: string
-    log: string
+export interface LogByDate {
+    date: string
+    logs: string[]
 }
 
 /**

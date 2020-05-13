@@ -15,42 +15,42 @@ import java.util.Map;
 public class LogRecordsFormatter implements IFormatter {
 
   /** Given from {@link pathstoreweb.pathstoreadminpanel.services.logs.GetLogRecords} */
-  private final Map<Integer, LinkedList<Log>> map;
+  private final Map<Integer, Map<String, LinkedList<Log>>> map;
 
   /** @param map {@link #map} */
-  public LogRecordsFormatter(final Map<Integer, LinkedList<Log>> map) {
+  public LogRecordsFormatter(final Map<Integer, Map<String, LinkedList<Log>>> map) {
     this.map = map;
   }
 
   /**
-   * Parses the list into a json array of json objects where node_id is the node id of the given log
-   * file and log is an array of strings from pathstore
+   * Parses the map of maps. The response is a json array of a node object. The node object is
+   * comprised of a node id and a json array of logs per date
    *
-   * @return json array of log data for all nodes
+   * @return json array of parsed data
    */
   @Override
   public ResponseEntity<String> format() {
     JSONArray data = new JSONArray();
 
-    for (Map.Entry<Integer, LinkedList<Log>> entry : this.map.entrySet()) {
-      JSONObject object = new JSONObject();
-      object.put(Constants.LOGS_COLUMNS.NODE_ID, entry.getKey());
+    JSONObject nodeObject = new JSONObject();
+    for (Map.Entry<Integer, Map<String, LinkedList<Log>>> entry : this.map.entrySet()) {
+      nodeObject.put(Constants.LOGS_COLUMNS.NODE_ID, entry.getKey());
 
-      JSONArray array = new JSONArray();
+      JSONArray dates = new JSONArray();
+      for (Map.Entry<String, LinkedList<Log>> innerEntry : entry.getValue().entrySet()) {
+        JSONObject dateObject = new JSONObject();
+        dateObject.put(Constants.LOGS_COLUMNS.DATE, innerEntry.getKey());
 
-      entry
-          .getValue()
-          .forEach(
-              i ->
-                  array.put(
-                      new JSONObject()
-                          .put(Constants.LOGS_COLUMNS.LOG_LEVEL, i.loggerLevel.name())
-                          .put(Constants.LOGS_COLUMNS.LOG, i.log)));
+        JSONArray array = new JSONArray();
+        innerEntry.getValue().forEach(i -> array.put(i.log));
+        dateObject.put(Constants.LOGS_COLUMNS.LOG, array);
 
-      object.put(Constants.LOGS_COLUMNS.LOG, array);
+        dates.put(dateObject);
+      }
 
-      data.put(object);
+      nodeObject.put("dates", dates);
     }
+    data.put(nodeObject);
 
     return new ResponseEntity<>(data.toString(), HttpStatus.OK);
   }

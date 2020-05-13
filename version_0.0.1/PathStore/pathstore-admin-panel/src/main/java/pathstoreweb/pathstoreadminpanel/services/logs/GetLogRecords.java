@@ -7,7 +7,6 @@ import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.common.logger.LoggerLevel;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.logs.formatter.LogRecordsFormatter;
 
@@ -29,27 +28,24 @@ public class GetLogRecords implements IService {
   /**
    * Query all records and parse them into log objects
    *
-   * @return map from node_id -> List of Logs
+   * @return map from node_id -> date -> list of logs
    */
-  private Map<Integer, LinkedList<Log>> getLogs() {
+  private Map<Integer, Map<String, LinkedList<Log>>> getLogs() {
     Session session = PathStoreCluster.getInstance().connect();
 
     Select selectAllLogs =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
 
-    Map<Integer, LinkedList<Log>> map = new HashMap<>();
+    Map<Integer, Map<String, LinkedList<Log>>> map = new HashMap<>();
 
     for (Row row : session.execute(selectAllLogs)) {
       int nodeId = row.getInt(Constants.LOGS_COLUMNS.NODE_ID);
-      map.computeIfAbsent(nodeId, k -> new LinkedList<>());
+      map.computeIfAbsent(nodeId, k -> new HashMap<>());
+      String date = row.getString(Constants.LOGS_COLUMNS.DATE);
+      map.get(nodeId).computeIfAbsent(date, k -> new LinkedList<>());
       map.get(nodeId)
-          .addLast(
-              new Log(
-                  row.getInt(Constants.LOGS_COLUMNS.NODE_ID),
-                  row.getString(Constants.LOGS_COLUMNS.DATE),
-                  row.getInt(Constants.LOGS_COLUMNS.COUNT),
-                  LoggerLevel.valueOf(row.getString(Constants.LOGS_COLUMNS.LOG_LEVEL)),
-                  row.getString(Constants.LOGS_COLUMNS.LOG)));
+          .get(date)
+          .addLast(new Log(nodeId, date, row.getString(Constants.LOGS_COLUMNS.LOG)));
     }
 
     return map;
