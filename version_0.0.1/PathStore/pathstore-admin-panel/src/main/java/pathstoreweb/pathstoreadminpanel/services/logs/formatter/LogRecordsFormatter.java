@@ -32,12 +32,12 @@ public class LogRecordsFormatter implements IFormatter {
   public ResponseEntity<String> format() {
     JSONArray data = new JSONArray();
 
-    JSONObject nodeObject = new JSONObject();
     for (Map.Entry<Integer, Map<String, LinkedList<Log>>> entry : this.map.entrySet()) {
+      JSONObject nodeObject = new JSONObject();
       nodeObject.put(Constants.LOGS_COLUMNS.NODE_ID, entry.getKey());
 
-      JSONArray dates = new JSONArray();
       for (Map.Entry<String, LinkedList<Log>> innerEntry : entry.getValue().entrySet()) {
+        JSONArray dates = new JSONArray();
         JSONObject dateObject = new JSONObject();
         dateObject.put(Constants.LOGS_COLUMNS.DATE, innerEntry.getKey());
 
@@ -46,9 +46,9 @@ public class LogRecordsFormatter implements IFormatter {
         dateObject.put(Constants.LOGS_COLUMNS.LOG, array);
 
         dates.put(dateObject);
+        nodeObject.put("dates", dates);
       }
 
-      nodeObject.put("dates", dates);
       data.put(nodeObject);
     }
 
