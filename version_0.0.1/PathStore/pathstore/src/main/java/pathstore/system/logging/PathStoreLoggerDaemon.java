@@ -89,7 +89,7 @@ public class PathStoreLoggerDaemon extends Thread {
 
   /** @return formats a log file name based on the current date {@link #currentDate} */
   private String formatFileName() {
-    return String.format("/etc/pathstore/log-%s.txt", this.currentDate);
+    return String.format("/etc/pathstore/logs/log-%s.txt", this.currentDate);
   }
 
   /**
@@ -101,8 +101,6 @@ public class PathStoreLoggerDaemon extends Thread {
   private void appendToFile(final List<PathStoreLoggerMessage> newMessages) {
 
     String fileName = this.formatFileName();
-
-    System.out.println(String.format("Writing %d messages to %s", newMessages.size(), fileName));
 
     try (FileWriter fw = new FileWriter(fileName, true);
         BufferedWriter bw = new BufferedWriter(fw);
