@@ -164,7 +164,7 @@ public class ApiV1 {
 
   /** @return list of logs for the user to see for each node */
   @GetMapping(Endpoints.LOGS)
-  public ResponseEntity<String> logs(@RequestBody final GetLogRecordsPayload payload) {
+  public ResponseEntity<String> logs(final GetLogRecordsPayload payload) {
     return new GetLogRecords(payload).response();
   }
 
