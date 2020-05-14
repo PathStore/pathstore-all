@@ -9,8 +9,6 @@ import pathstore.system.deployment.commands.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 
 import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
@@ -102,106 +100,5 @@ public class StartupUTIL {
       throw new CommandError(
           String.format("We where unable to convert %s to its absolute path", relativePath));
     }
-  }
-
-  /**
-   * @param sshUtil used for commands that need to use ssh
-   * @param ip ip of new node
-   * @param nodeID new node's id
-   * @param parentNodeId new node's parent id
-   * @param role role of new node
-   * @param rmiRegistryIP new node's local rmi registry ip
-   * @param rmiRegistryPort new node's local rmi registry port
-   * @param rmiRegistryParentIP new node's parent rmi registry ip
-   * @param rmiRegistryParentPort new node's parent rmi registry port
-   * @param cassandraIP new node's local cassandra instance ip
-   * @param cassandraPort new node's local cassandra instance port
-   * @param cassandraParentIP new node's parent cassandra instance ip
-   * @param cassandraParentPort new nodes' parent cassandra instance port
-   * @param destinationToStore where to store the new node's properties file
-   * @return list of deployment commands to execute
-   */
-  public static List<ICommand> initList(
-      final SSHUtil sshUtil,
-      final String ip,
-      final int nodeID,
-      final int parentNodeId,
-      final Role role,
-      final String rmiRegistryIP,
-      final int rmiRegistryPort,
-      final String rmiRegistryParentIP,
-      final int rmiRegistryParentPort,
-      final String cassandraIP,
-      final int cassandraPort,
-      final String cassandraParentIP,
-      final int cassandraParentPort,
-      final String destinationToStore) {
-
-    List<ICommand> commands = new ArrayList<>();
-
-    // Check for docker access and that docker is online
-    commands.add(new Exec(sshUtil, "docker ps", 0));
-    // Potentially kill old cassandra container
-    commands.add(new Exec(sshUtil, "docker kill cassandra", -1));
-    // Potentially remove old cassandra image
-    commands.add(new Exec(sshUtil, "docker image rm cassandra", -1));
-    // Potentially kill old pathstore container
-    commands.add(new Exec(sshUtil, "docker kill pathstore", -1));
-    // Potentially remove old pathstore image
-    commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
-    // Potentially remove old file associated with install
-    commands.add(new Exec(sshUtil, "rm -rf pathstore-install", -1));
-    // Potentially remove old base image
-    commands.add(new Exec(sshUtil, "docker image rm base", -1));
-    // Create pathstore install dir
-    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install", 0));
-    // Generate pathstore properties file
-    commands.add(
-        new GeneratePropertiesFile(
-            nodeID,
-            ip,
-            parentNodeId,
-            role,
-            rmiRegistryIP,
-            rmiRegistryPort,
-            rmiRegistryParentIP,
-            rmiRegistryParentPort,
-            cassandraIP,
-            cassandraPort,
-            cassandraParentIP,
-            cassandraParentPort,
-            destinationToStore));
-    // Transfer properties file
-    commands.add(
-        new FileTransfer(sshUtil, destinationToStore, "pathstore-install/pathstore.properties"));
-    // Remove properties file
-    commands.add(new RemoveGeneratedPropertiesFile(destinationToStore));
-    // Transfer cassandra image
-    commands.add(
-        new FileTransfer(
-            sshUtil, "/etc/pathstore/cassandra.tar", "pathstore-install/cassandra.tar"));
-    // Load cassandra
-    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/cassandra.tar", 0));
-    // Start cassandra
-    commands.add(
-        new Exec(sshUtil, "docker run --network=host -dit --rm --name cassandra cassandra", 0));
-    // Wait for cassandra to start
-    commands.add(new WaitForCassandra(ip, cassandraPort));
-    // Transfer pathstore image
-    commands.add(
-        new FileTransfer(
-            sshUtil, "/etc/pathstore/pathstore.tar", "pathstore-install/pathstore.tar"));
-    // Load pathstore
-    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/pathstore.tar", 0));
-    // Start pathstore
-    commands.add(
-        new Exec(
-            sshUtil,
-            "docker run --network=host -dit --rm -v ~/pathstore-install:/etc/pathstore --name pathstore pathstore",
-            0));
-    // Wait for pathstore to come online
-    commands.add(new WaitForPathStore(ip, cassandraPort));
-
-    return commands;
   }
 }
