@@ -22,9 +22,9 @@ public final class Constants {
 
   public static final String PROPERTIESFILE = "/etc/pathstore/pathstore.properties";
 
-  public static final String SERVER_DEPLOYMENT_CSV = "pathstore-server-deployment.csv";
-
-  public static final String ROOT_DEPLOYMENT_CSV = "pathstore-root-deployment.csv";
+  /** Where the properties file will be stored locally. */
+  public static final String DESTINATION_TO_STORE =
+      "../docker-files/pathstore/pathstore.properties";
 
   public static final class PROPERTIES_CONSTANTS {
     public static final String ROLE = "Role";
