@@ -4,7 +4,7 @@ import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
 import React, {Component} from "react";
 import {formatServer, webHandler} from "../utilities/Utils";
-import {LogViewer} from "./LogViewer";
+import LogViewer from "./LogViewer";
 
 /**
  * Properties definition for {@link NodeInfoModal}

@@ -84,7 +84,7 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
     /**
      * Denotes whether or not a specific request is still loading (Fixes issue with request stacking)
      */
-    private loading: boolean[] = [false, false, false, false, false];
+    private loading: boolean[] = [false, false, false];
 
     /**
      * Initialize state and empty props
@@ -108,6 +108,9 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
      * seconds
      */
     componentDidMount(): void {
+
+        this.refreshData();
+
         this.queryAll();
 
         this.timer = setInterval(this.queryAll, 2000);
@@ -121,6 +124,17 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
     }
 
     /**
+     * Function that queries data that does not need to be on a timer
+     */
+    refreshData = (): void => {
+        this.genericLoadFunction<Server>('/api/v1/servers', null)
+            .then((response: Server[]) => this.setState({servers: response}));
+
+        this.genericLoadFunction<Application>('/api/v1/applications', null)
+            .then((response: Application[]) => this.setState({applications: response}));
+    };
+
+    /**
      * Call fetch all to get all the responses and load them into the state
      */
     queryAll = (): void => {
@@ -130,30 +144,24 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
                 .then((response: Deployment[]) => this.setState({deployment: response}, () => this.loading[0] = false));
 
         if (!this.loading[1])
-            this.genericLoadFunction<Server>('/api/v1/servers', 1)
-                .then((response: Server[]) => this.setState({servers: response}, () => this.loading[1] = false));
+            this.genericLoadFunction<ApplicationStatus>('/api/v1/application_management', 1)
+                .then((response: ApplicationStatus[]) => this.setState({applicationStatus: response}, () => this.loading[1] = false));
 
         if (!this.loading[2])
-            this.genericLoadFunction<Application>('/api/v1/applications', 2)
-                .then((response: Application[]) => this.setState({applications: response}, () => this.loading[2] = false));
-
-        if (!this.loading[3])
-            this.genericLoadFunction<ApplicationStatus>('/api/v1/application_management', 3)
-                .then((response: ApplicationStatus[]) => this.setState({applicationStatus: response}, () => this.loading[3] = false));
-
-        if (!this.loading[4])
-            this.genericLoadFunction<AvailableLogDates>('/api/v1/available_log_dates', 4)
-                .then((response: AvailableLogDates[]) => this.setState({availableLogDates: response}, () => this.loading[4] = false));
+            this.genericLoadFunction<AvailableLogDates>('/api/v1/available_log_dates', 2)
+                .then((response: AvailableLogDates[]) => this.setState({availableLogDates: response}, () => this.loading[2] = false));
     };
 
     /**
      * This function is used to return an array of parsed object data from the api.
      *
      * @param url url to query
-     * @param index index of loading to set
+     * @param index index of loading to set may be null if not loading all the time
      */
-    genericLoadFunction = <T extends unknown>(url: string, index: number): Promise<T[]> => {
-        this.loading[index] = true;
+    genericLoadFunction = <T extends unknown>(url: string, index: number | null): Promise<T[]> => {
+        if (index !== null)
+            this.loading[index] = true;
+
         return fetch(url)
             .then(response => response.json() as Promise<T[]>);
     };
@@ -162,10 +170,7 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
      * Used by child component to force refresh this data. This is only given to child components who are capable
      * of making state changing operations (i.e effecting our state data within this class)
      */
-    forceRefresh = (): void => {
-        this.componentWillUnmount();
-        this.componentDidMount();
-    };
+    forceRefresh = (): void => this.refreshData();
 
     /**
      * Render all child components with the following ordering policy

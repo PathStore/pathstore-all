@@ -12,12 +12,19 @@ import pathstoreweb.pathstoreadminpanel.services.availablelogdates.formatter.Get
 
 import java.util.*;
 
+/**
+ * This service is used to read the available log dates table to inform the website of which logs
+ * are available to query
+ */
 public class GetAvailableLogDates implements IService {
+
+  /** @return {@link GetAvailableLogDatesFormatter} */
   @Override
   public ResponseEntity<String> response() {
     return new GetAvailableLogDatesFormatter(this.getAvailableLogDates()).format();
   }
 
+  /** @return parsed response from database. The select statement filters based on the payload */
   private Map<Integer, List<String>> getAvailableLogDates() {
 
     Session session = PathStoreCluster.getInstance().connect();
