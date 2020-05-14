@@ -104,8 +104,8 @@ public class PathStoreSlaveDeploymentServer extends Thread {
    * @param ip ip of the server
    * @param username username of the server
    * @param password password of the server
-   * @see StartupUTIL#initList(SSHUtil, String, int, int, Role, String, int, String, int, String,
-   *     int, String, int, String)
+   * @see DeploymentFileParser#parseToICommands(SSHUtil, String, String, int, int, Role, String,
+   *     int, String, int, String, int, String, int)
    */
   private void deploy(
       final DeploymentEntry entry, final String ip, final String username, final String password) {
