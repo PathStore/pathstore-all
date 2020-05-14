@@ -5,15 +5,15 @@ exec,docker kill pathstore,-1
 exec,docker image rm pathstore,-1
 exec,rm -rf pathstore-install,-1
 exec,docker image rm base,-1
-exec,mkdir -p pathstore-install,0
+exec,mkdir -p pathstore-install/pathstore,0
 generate_properties_file,,
 file_transfer,destination_to_store,pathstore-install/pathstore/pathstore.properties
 remove_generated_properties_file,,
-file_transfer,/etc/pathstore/cassandra.tar,pathstore-install/cassandra.tar
-exec,docker load -i pathstore-install/cassandra.tar,0
+file_transfer,/etc/pathstore/cassandra.tar,pathstore-install/pathstore/cassandra.tar
+exec,docker load -i pathstore-install/pathstore/cassandra.tar,0
 exec,docker run --network=host -dit --rm --name cassandra cassandra,0
 wait_for_cassandra,,
-file_transfer,/etc/pathstore/pathstore.tar,pathstore-install/pathstore.tar
-exec,docker load -i pathstore-install/pathstore.tar,0
-exec,docker run --network=host -dit --rm -v ~/pathstore-install:/etc/pathstore --name pathstore pathstore,0
+file_transfer,/etc/pathstore/pathstore.tar,pathstore-install/pathstore/pathstore.tar
+exec,docker load -i pathstore-install/pathstore/pathstore.tar,0
+exec,docker run --network=host -dit --rm -v ~/pathstore-install/pathstore:/etc/pathstore --name pathstore pathstore,0
 wait_for_pathstore,,
