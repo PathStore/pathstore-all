@@ -6,7 +6,6 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
-import pathstore.common.logger.LoggerLevel;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.common.logger.PathStoreLoggerMessage;
@@ -28,10 +27,14 @@ public class PathStoreLoggerDaemon extends Thread {
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStoreLoggerDaemon.class);
 
+  private final Session session;
+
   /** Stores the current date for comparison */
   private String currentDate;
 
   public PathStoreLoggerDaemon() {
+    this.session = PathStoreCluster.getInstance().connect();
+
     this.currentDate = this.getAndSetDate();
 
     // Create logs directory
@@ -49,29 +52,23 @@ public class PathStoreLoggerDaemon extends Thread {
   @Override
   public void run() {
 
-    Session session = PathStoreCluster.getInstance().connect();
-
     while (true) {
       if (PathStoreLoggerFactory.hasNew()) {
         List<PathStoreLoggerMessage> newMessages = PathStoreLoggerFactory.getMergedLog();
 
-        newMessages.stream()
-            // .filter(i -> i.getLoggerLevel().ordinal() >= LoggerLevel.INFO.ordinal()) //temp
-            // removal of filter for testing
-            .forEach(
-                i -> {
-                  Insert insert =
-                      QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
-                  insert
-                      .value(
-                          Constants.LOGS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID)
-                      .value(Constants.LOGS_COLUMNS.DATE, this.getAndSetDate())
-                      .value(Constants.LOGS_COLUMNS.LOG_LEVEL, i.getLoggerLevel().name())
-                      .value(Constants.LOGS_COLUMNS.COUNT, i.getCount())
-                      .value(Constants.LOGS_COLUMNS.LOG, i.getFormattedMessage());
+        newMessages.forEach(
+            i -> {
+              Insert insert =
+                  QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
+              insert
+                  .value(Constants.LOGS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID)
+                  .value(Constants.LOGS_COLUMNS.DATE, this.getAndSetDate())
+                  .value(Constants.LOGS_COLUMNS.LOG_LEVEL, i.getLoggerLevel().name())
+                  .value(Constants.LOGS_COLUMNS.COUNT, i.getCount())
+                  .value(Constants.LOGS_COLUMNS.LOG, i.getFormattedMessage());
 
-                  session.execute(insert);
-                });
+              this.session.execute(insert);
+            });
 
         this.appendToFile(newMessages);
       }
@@ -90,9 +87,30 @@ public class PathStoreLoggerDaemon extends Thread {
   private String getAndSetDate() {
     String date = new SimpleDateFormat(DATE_FORMAT).format(new Date());
 
-    if (!date.equals(this.currentDate)) this.currentDate = date;
+    if (!date.equals(this.currentDate)) this.updateDate(date);
 
     return date;
+  }
+
+  /**
+   * This function updates {@link #currentDate} to the new date (on date change or startup) and
+   * writes a record to {@link Constants#AVAILABLE_LOG_DATES} to inform the website that there is a
+   * new date available for querying
+   *
+   * @param date new current date
+   */
+  private void updateDate(final String date) {
+    this.currentDate = date;
+
+    Insert insertDateChange =
+        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.AVAILABLE_LOG_DATES);
+
+    insertDateChange
+        .value(
+            Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID)
+        .value(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE, date);
+
+    this.session.execute(insertDateChange);
   }
 
   /** @return formats a log file name based on the current date {@link #currentDate} */

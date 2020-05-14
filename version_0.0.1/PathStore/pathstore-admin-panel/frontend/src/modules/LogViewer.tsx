@@ -1,5 +1,5 @@
 import React, {FunctionComponent} from "react";
-import {Log} from "../utilities/ApiDeclarations";
+import {AvailableLogDates, Log} from "../utilities/ApiDeclarations";
 
 /**
  * Properties definition for {@link LogViewer}
@@ -11,35 +11,29 @@ interface LogViewerProps {
     readonly node: number
 
     /**
-     * Optional List of logs for all node from api
+     * List of available dates for each log
      */
-    readonly logs?: Log[]
+    readonly availableLogDates?: AvailableLogDates[]
 }
 
 /**
  * This component is used to display a nodes log to the user in a scrollable text viewer
+ *
+ *  <div className={"logViewer"}>
+ <code id={"log"}>{response}</code>
+ </div>
  *
  * @param props
  * @constructor
  */
 export const LogViewer: FunctionComponent<LogViewerProps> = (props) => {
 
-    if (props.logs === undefined) return null;
-
-    const log = props.logs.filter(i => i.node_id === props.node);
-
-    if (log === undefined || log[0] === undefined) return null;
-
-    let response = "";
-
-    for (let i = 0; i < log[0].dates.length; i++)
-        for (let j = 0; j < log[0].dates[i].log.length; j++)
-            response += log[0].dates[i].log[j] + "\n";
+    if (props.availableLogDates === undefined) return null;
 
 
     return (
         <div className={"logViewer"}>
-            <code id={"log"}>{response}</code>
+            <p>{JSON.stringify(props.availableLogDates)}</p>
         </div>
     );
 };

@@ -1,4 +1,4 @@
-import {ApplicationStatus, Deployment, Log, Server, Update} from "../utilities/ApiDeclarations";
+import {ApplicationStatus, AvailableLogDates, Deployment, Log, Server, Update} from "../utilities/ApiDeclarations";
 import Modal from "react-modal";
 import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
@@ -36,9 +36,9 @@ interface NodeInfoModalProperties {
     readonly servers: Server[]
 
     /**
-     * Optional List of logs for all node from api
+     * List of available dates for each log
      */
-    readonly logs?: Log[]
+    readonly availableLogDates?: AvailableLogDates[]
 
     /**
      * Force refresh props on other components
@@ -178,7 +178,7 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
                         this.props.applicationStatus
                             .filter(i => i.nodeid === this.props.node))}
                 </Table>
-                <LogViewer node={this.props.node} logs={this.props.logs}/>
+                <LogViewer node={this.props.node} availableLogDates={this.props.availableLogDates}/>
                 <button onClick={this.props.callback}>close</button>
             </Modal>
         );

@@ -8,4 +8,5 @@ public class Endpoints {
   public static final String SERVERS = "/servers";
   public static final String DEPLOYMENT = "/deployment";
   public static final String LOGS = "/logs";
+  public static final String AVAILABLE_LOG_DATES = "/available_log_dates";
 }

@@ -86,6 +86,13 @@ public final class Constants {
     public static final String SERVER_UUID = "server_uuid";
   }
 
+  public static final String AVAILABLE_LOG_DATES = "available_log_dates";
+
+  public static final class AVAILABLE_LOG_DATES_COLUMNS {
+    public static final String NODE_ID = "node_id";
+    public static final String DATE = "date";
+  }
+
   public static final String LOGS = "logs";
 
   public static final class LOGS_COLUMNS {

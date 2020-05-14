@@ -37,16 +37,18 @@ export interface ApplicationStatus {
 }
 
 /**
+ * Parse available dates for each node
+ */
+export interface AvailableLogDates {
+    node_id: number
+    date: string[]
+}
+
+/**
  * Parse log response
  */
 export interface Log {
-    node_id: number
-    dates: LogByDate[]
-}
-
-export interface LogByDate {
-    date: string
-    log: string[]
+    logs: string[]
 }
 
 /**

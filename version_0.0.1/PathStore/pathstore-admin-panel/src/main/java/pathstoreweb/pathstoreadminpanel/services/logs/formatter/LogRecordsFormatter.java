@@ -6,52 +6,37 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
-import pathstoreweb.pathstoreadminpanel.services.logs.Log;
 
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.List;
 
 /** This class is used to format a list of logs into a readable json array */
 public class LogRecordsFormatter implements IFormatter {
 
   /** Given from {@link pathstoreweb.pathstoreadminpanel.services.logs.GetLogRecords} */
-  private final Map<Integer, Map<String, LinkedList<Log>>> map;
+  private final List<String> messages;
 
-  /** @param map {@link #map} */
-  public LogRecordsFormatter(final Map<Integer, Map<String, LinkedList<Log>>> map) {
-    this.map = map;
+  /** @param messages {@link #messages} */
+  public LogRecordsFormatter(final List<String> messages) {
+    this.messages = messages;
   }
 
   /**
-   * Parses the map of maps. The response is a json array of a node object. The node object is
-   * comprised of a node id and a json array of logs per date
+   * Parses the list of logs based on the filtering parameters sent by the user into a json object
+   * of logs: string[]
    *
-   * @return json array of parsed data
+   * @return json object of parsed logs
    */
   @Override
   public ResponseEntity<String> format() {
+
+    JSONObject object = new JSONObject();
+
     JSONArray data = new JSONArray();
 
-    for (Map.Entry<Integer, Map<String, LinkedList<Log>>> entry : this.map.entrySet()) {
-      JSONObject nodeObject = new JSONObject();
-      nodeObject.put(Constants.LOGS_COLUMNS.NODE_ID, entry.getKey());
+    messages.forEach(data::put);
 
-      for (Map.Entry<String, LinkedList<Log>> innerEntry : entry.getValue().entrySet()) {
-        JSONArray dates = new JSONArray();
-        JSONObject dateObject = new JSONObject();
-        dateObject.put(Constants.LOGS_COLUMNS.DATE, innerEntry.getKey());
+    object.put(Constants.LOGS, object);
 
-        JSONArray array = new JSONArray();
-        innerEntry.getValue().forEach(i -> array.put(i.log));
-        dateObject.put(Constants.LOGS_COLUMNS.LOG, array);
-
-        dates.put(dateObject);
-        nodeObject.put("dates", dates);
-      }
-
-      data.put(nodeObject);
-    }
-
-    return new ResponseEntity<>(data.toString(), HttpStatus.OK);
+    return new ResponseEntity<>(object.toString(), HttpStatus.OK);
   }
 }

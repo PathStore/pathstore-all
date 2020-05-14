@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Application, ApplicationStatus, Deployment, Log, Server} from "./utilities/ApiDeclarations";
+import {Application, ApplicationStatus, AvailableLogDates, Deployment, Log, Server} from "./utilities/ApiDeclarations";
 import ViewTopology from "./modules/topology/ViewTopology";
 import NodeDeployment from "./modules/nodeDeployment/NodeDeployment";
 import LiveTransitionVisual from "./modules/topology/LiveTransitionVisual";
@@ -32,9 +32,9 @@ interface PathStoreControlPanelState {
     readonly applicationStatus: ApplicationStatus[]
 
     /**
-     * List of logs for all node from api
+     * List of available dates for each log
      */
-    readonly logs: Log[]
+    readonly availableLogDates: AvailableLogDates[]
 }
 
 /**
@@ -99,7 +99,7 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
             servers: [],
             applications: [],
             applicationStatus: [],
-            logs: []
+            availableLogDates: []
         }
     }
 
@@ -142,8 +142,8 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
                 .then((response: ApplicationStatus[]) => this.setState({applicationStatus: response}, () => this.loading[3] = false));
 
         if (!this.loading[4])
-            this.genericLoadFunction<Log>('/api/v1/logs', 4)
-                .then((response: Log[]) => this.setState({logs: response}, () => this.loading[4] = false));
+            this.genericLoadFunction<AvailableLogDates>('/api/v1/available_log_dates', 4)
+                .then((response: AvailableLogDates[]) => this.setState({availableLogDates: response}, () => this.loading[4] = false));
     };
 
     /**
@@ -185,7 +185,7 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
                     <ViewTopology deployment={this.state.deployment}
                                   servers={this.state.servers}
                                   applicationStatus={this.state.applicationStatus}
-                                  logs={this.state.logs}
+                                  availableLogDates={this.state.availableLogDates}
                                   forceRefresh={this.forceRefresh}/>
                 </div>
                 <br/>

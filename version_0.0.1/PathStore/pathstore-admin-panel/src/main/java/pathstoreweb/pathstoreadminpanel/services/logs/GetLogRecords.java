@@ -7,18 +7,26 @@ import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.common.logger.LoggerLevel;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.logs.formatter.LogRecordsFormatter;
+import pathstoreweb.pathstoreadminpanel.services.logs.payload.GetLogRecordsPayload;
 
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
+import java.util.List;
 
 /**
- * This service is used to get all logs from the root node and parse them into a list of {@link Log}
+ * This service is used to get all logs from the root node and parse them into a list of log
+ * messages
  */
 public class GetLogRecords implements IService {
+
+  /** Payload passed by the user */
+  private final GetLogRecordsPayload payload;
+
+  /** @param payload {@link #payload} */
+  public GetLogRecords(final GetLogRecordsPayload payload) {
+    this.payload = payload;
+  }
 
   /** @return {@link LogRecordsFormatter} */
   @Override
@@ -29,29 +37,24 @@ public class GetLogRecords implements IService {
   /**
    * Query all records and parse them into log objects
    *
-   * @return map from node_id -> date -> list of logs
+   * @return list of messages filtered by {@link #payload} properties
    */
-  private Map<Integer, Map<String, LinkedList<Log>>> getLogs() {
+  private List<String> getLogs() {
     Session session = PathStoreCluster.getInstance().connect();
 
-    Select selectAllLogs =
+    Select selectFilteredLogs =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
 
-    selectAllLogs.where(
-        QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, LoggerLevel.INFO.toString()));
+    selectFilteredLogs
+        .where(QueryBuilder.eq(Constants.LOGS_COLUMNS.NODE_ID, payload.node_id))
+        .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.DATE, payload.date))
+        .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, payload.log_level));
 
-    Map<Integer, Map<String, LinkedList<Log>>> map = new HashMap<>();
+    LinkedList<String> messages = new LinkedList<>();
 
-    for (Row row : session.execute(selectAllLogs)) {
-      int nodeId = row.getInt(Constants.LOGS_COLUMNS.NODE_ID);
-      map.computeIfAbsent(nodeId, k -> new HashMap<>());
-      String date = row.getString(Constants.LOGS_COLUMNS.DATE);
-      map.get(nodeId).computeIfAbsent(date, k -> new LinkedList<>());
-      map.get(nodeId)
-          .get(date)
-          .addLast(new Log(nodeId, date, row.getString(Constants.LOGS_COLUMNS.LOG)));
-    }
+    for (Row row : session.execute(selectFilteredLogs))
+      messages.addLast(row.getString(Constants.LOGS_COLUMNS.LOG));
 
-    return map;
+    return messages;
   }
 }
