@@ -7,6 +7,7 @@ import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.common.logger.LoggerLevel;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.logs.formatter.LogRecordsFormatter;
 
@@ -35,6 +36,9 @@ public class GetLogRecords implements IService {
 
     Select selectAllLogs =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
+
+    selectAllLogs.where(
+        QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, LoggerLevel.INFO.toString()));
 
     Map<Integer, Map<String, LinkedList<Log>>> map = new HashMap<>();
 

@@ -56,7 +56,8 @@ public class PathStoreLoggerDaemon extends Thread {
         List<PathStoreLoggerMessage> newMessages = PathStoreLoggerFactory.getMergedLog();
 
         newMessages.stream()
-            .filter(i -> i.getLoggerLevel().ordinal() >= LoggerLevel.INFO.ordinal())
+            // .filter(i -> i.getLoggerLevel().ordinal() >= LoggerLevel.INFO.ordinal()) //temp
+            // removal of filter for testing
             .forEach(
                 i -> {
                   Insert insert =
@@ -65,8 +66,8 @@ public class PathStoreLoggerDaemon extends Thread {
                       .value(
                           Constants.LOGS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID)
                       .value(Constants.LOGS_COLUMNS.DATE, this.getAndSetDate())
-                      .value(Constants.LOGS_COLUMNS.COUNT, i.getCount())
                       .value(Constants.LOGS_COLUMNS.LOG_LEVEL, i.getLoggerLevel().name())
+                      .value(Constants.LOGS_COLUMNS.COUNT, i.getCount())
                       .value(Constants.LOGS_COLUMNS.LOG, i.getFormattedMessage());
 
                   session.execute(insert);
