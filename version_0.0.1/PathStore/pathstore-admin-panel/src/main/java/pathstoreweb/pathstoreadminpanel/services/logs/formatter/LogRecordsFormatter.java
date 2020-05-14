@@ -1,6 +1,5 @@
 package pathstoreweb.pathstoreadminpanel.services.logs.formatter;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,11 +30,7 @@ public class LogRecordsFormatter implements IFormatter {
 
     JSONObject object = new JSONObject();
 
-    JSONArray data = new JSONArray();
-
-    messages.forEach(data::put);
-
-    object.put(Constants.LOGS, object);
+    object.put(Constants.LOGS, messages);
 
     return new ResponseEntity<>(object.toString(), HttpStatus.OK);
   }
