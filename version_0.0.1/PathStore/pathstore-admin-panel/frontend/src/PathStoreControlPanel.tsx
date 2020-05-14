@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Application, ApplicationStatus, AvailableLogDates, Deployment, Log, Server} from "./utilities/ApiDeclarations";
+import {Application, ApplicationStatus, AvailableLogDates, Deployment, Server} from "./utilities/ApiDeclarations";
 import ViewTopology from "./modules/topology/ViewTopology";
 import NodeDeployment from "./modules/nodeDeployment/NodeDeployment";
 import LiveTransitionVisual from "./modules/topology/LiveTransitionVisual";
