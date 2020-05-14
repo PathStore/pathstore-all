@@ -46,6 +46,7 @@ public class PathStoreMasterDeploymentServer extends Thread {
       Select selectAllFromDeployment =
           QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
 
+      // Load all deployment records into the entry set
       for (Row row : clientSession.execute(selectAllFromDeployment))
         entrySet.add(
             new DeploymentEntry(
@@ -56,6 +57,8 @@ public class PathStoreMasterDeploymentServer extends Thread {
                 row.getInt(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR),
                 UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
 
+      // Parse the entry set into two seperate sets, one of all the waiting nodes and one of all the
+      // node id's who are deployed
       this.update(
           this.parseByState(entrySet, DeploymentProcessStatus.WAITING_DEPLOYMENT),
           this.parseByStateToNewNodeID(entrySet, DeploymentProcessStatus.DEPLOYED));

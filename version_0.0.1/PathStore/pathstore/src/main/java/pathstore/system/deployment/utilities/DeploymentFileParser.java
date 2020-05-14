@@ -50,7 +50,7 @@ public class DeploymentFileParser {
 
     /**
      * Denotes the step in deployment where you want to delete the local copy of the properties
-     * file. It will delete the file stored in {@link #destinationToStore}
+     * file. It will delete the file stored in {@link #DESTINATION_TO_STORE_VALUE}
      *
      * @see RemoveGeneratedPropertiesFile
      */
@@ -81,7 +81,8 @@ public class DeploymentFileParser {
   private static final String DESTINATION_TO_STORE = "destination_to_store";
 
   /** Where the properties file will be stored locally. */
-  private static final String destinationToStore = "../docker-files/pathstore/pathstore.properties";
+  private static final String DESTINATION_TO_STORE_VALUE =
+      "../docker-files/pathstore/pathstore.properties";
 
   /** Logger for this class to report any errors that occur during deployment */
   private final PathStoreLogger logger =
@@ -283,7 +284,9 @@ public class DeploymentFileParser {
       final SSHUtil sshUtil, final String relativeLocalPath, final String relativeRemotePath) {
     return new FileTransfer(
         sshUtil,
-        relativeLocalPath.equals(DESTINATION_TO_STORE) ? destinationToStore : relativeLocalPath,
+        relativeLocalPath.equals(DESTINATION_TO_STORE)
+            ? DESTINATION_TO_STORE_VALUE
+            : relativeLocalPath,
         relativeRemotePath);
   }
 
@@ -328,12 +331,14 @@ public class DeploymentFileParser {
         cassandraPort,
         cassandraParentIP,
         cassandraParentPort,
-        DeploymentFileParser.destinationToStore);
+        DeploymentFileParser.DESTINATION_TO_STORE_VALUE);
   }
 
-  /** @return remove generate properties file command based on {@link #destinationToStore} */
+  /**
+   * @return remove generate properties file command based on {@link #DESTINATION_TO_STORE_VALUE}
+   */
   private RemoveGeneratedPropertiesFile parseRemoveGeneratedPropertiesFile() {
-    return new RemoveGeneratedPropertiesFile(DeploymentFileParser.destinationToStore);
+    return new RemoveGeneratedPropertiesFile(DeploymentFileParser.DESTINATION_TO_STORE_VALUE);
   }
 
   /**

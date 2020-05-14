@@ -16,7 +16,6 @@ import pathstore.system.deployment.commands.CommandError;
 import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.utilities.DeploymentFileParser;
 import pathstore.system.deployment.utilities.SSHUtil;
-import pathstore.system.deployment.utilities.StartupUTIL;
 import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
 
 import java.util.UUID;
@@ -58,12 +57,14 @@ public class PathStoreSlaveDeploymentServer extends Thread {
       Select selectAllDeployment =
           QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
 
+      // Query all rows from the deployment table
       for (Row row : session.execute(selectAllDeployment)) {
         int parentNodeId = row.getInt(PARENT_NODE_ID);
 
         DeploymentProcessStatus status =
             DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS));
 
+        // If the record is set to deploying and the parentNodeId is this node, start deployment
         if (parentNodeId == PathStoreProperties.getInstance().NodeID
             && status == DeploymentProcessStatus.DEPLOYING) {
 
@@ -79,13 +80,12 @@ public class PathStoreSlaveDeploymentServer extends Thread {
               QueryBuilder.select().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
           getServer.where(QueryBuilder.eq(SERVER_UUID, entry.serverUUID.toString()));
 
-          for (Row serverRow : session.execute(getServer)) {
+          for (Row serverRow : session.execute(getServer))
             this.deploy(
                 entry,
                 serverRow.getString(IP),
                 serverRow.getString(USERNAME),
                 serverRow.getString(PASSWORD));
-          }
         }
       }
 
@@ -98,10 +98,10 @@ public class PathStoreSlaveDeploymentServer extends Thread {
   }
 
   /**
-   * Deploy a node a new child node.
+   * Deploy a future node as a child to the current node
    *
    * @param entry record that triggered the deployment process
-   * @param ip ip of the server
+   * @param ip ip of the server where the future node is going to be installed on
    * @param username username of the server
    * @param password password of the server
    * @see DeploymentFileParser#parseToICommands(SSHUtil, String, String, int, int, Role, String,
@@ -117,11 +117,16 @@ public class PathStoreSlaveDeploymentServer extends Thread {
 
       logger.debug("Connection established to new node");
 
+      // Start the parsing of the server deployment commands
       DeploymentFileParser commandParser =
-          new DeploymentFileParser("pathstore-server-deployment.csv");
+          new DeploymentFileParser(Constants.SERVER_DEPLOYMENT_CSV);
 
+      // This check ensures that the data is parsable (valid csv file)
       if (commandParser.readData()) {
         try {
+
+          // Get a list of commands based on what information the current node has in the properties
+          // file and what the new node id was written to the deployment table
           for (ICommand command :
               commandParser.parseToICommands(
                   sshUtil,
@@ -138,25 +143,37 @@ public class PathStoreSlaveDeploymentServer extends Thread {
                   cassandraPort,
                   PathStoreProperties.getInstance().ExternalAddress,
                   cassandraPort)) {
+
+            // Inform the user what command is being executed
             logger.info(command.toString());
+
             command.execute();
           }
+
           logger.info("Successfully deployed");
           this.updateState(entry, DeploymentProcessStatus.DEPLOYED);
-        } catch (CommandError commandError) {
+
+        } catch (CommandError commandError) { // there was an error with a given command
+
           logger.error("Deployment failed");
           logger.error(commandError.errorMessage);
           this.updateState(entry, DeploymentProcessStatus.FAILED);
-        } catch (Exception e) {
+
+        } catch (Exception e) { // csv does not represent a valid list of deployment commands
+
           logger.error("The given pathstore deployment csv was not a valid csv");
         }
-      } else {
+
+      } else { // the csv file is invalid
+
         logger.error("The csv file provided is invalid");
         this.updateState(entry, DeploymentProcessStatus.FAILED);
       }
 
       sshUtil.disconnect();
-    } catch (JSchException e) {
+
+    } catch (JSchException e) { // the connection information given is not valid
+
       logger.error("Could not connect to new node");
       this.updateState(entry, DeploymentProcessStatus.FAILED);
     }

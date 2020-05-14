@@ -116,8 +116,7 @@ public class StartUpHandler {
       SSHUtil sshUtil = new SSHUtil(ip, username, password, sshPort);
       System.out.println("Connected");
 
-      DeploymentFileParser commandParser =
-          new DeploymentFileParser("pathstore-deployment-root.csv");
+      DeploymentFileParser commandParser = new DeploymentFileParser(Constants.ROOT_DEPLOYMENT_CSV);
 
       if (commandParser.readData()) {
         try {

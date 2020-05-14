@@ -22,6 +22,10 @@ public final class Constants {
 
   public static final String PROPERTIESFILE = "/etc/pathstore/pathstore.properties";
 
+  public static final String SERVER_DEPLOYMENT_CSV = "pathstore-server-deployment.csv";
+
+  public static final String ROOT_DEPLOYMENT_CSV = "pathstore-root-deployment.csv";
+
   public static final class PROPERTIES_CONSTANTS {
     public static final String ROLE = "Role";
     public static final String EXTERNAL_ADDRESS = "ExternalAddress";
