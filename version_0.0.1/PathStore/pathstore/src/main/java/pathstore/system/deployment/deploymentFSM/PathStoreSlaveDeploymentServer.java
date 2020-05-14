@@ -14,6 +14,7 @@ import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.deployment.commands.CommandError;
 import pathstore.system.deployment.commands.ICommand;
+import pathstore.system.deployment.utilities.DeploymentFileParser;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstore.system.deployment.utilities.StartupUTIL;
 import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
@@ -116,35 +117,45 @@ public class PathStoreSlaveDeploymentServer extends Thread {
 
       logger.debug("Connection established to new node");
 
-      try {
-        for (ICommand command :
-            StartupUTIL.initList(
-                sshUtil,
-                ip,
-                entry.newNodeId,
-                entry.parentNodeId,
-                Role.SERVER,
-                "127.0.0.1",
-                rmiPort,
-                PathStoreProperties.getInstance().ExternalAddress,
-                rmiPort,
-                "127.0.0.1",
-                cassandraPort,
-                PathStoreProperties.getInstance().ExternalAddress,
-                cassandraPort,
-                "../docker-files/pathstore/pathstore.properties")) {
-          logger.info(command.toString());
-          command.execute();
+      DeploymentFileParser commandParser =
+          new DeploymentFileParser("pathstore-server-deployment.csv");
+
+      if (commandParser.readData()) {
+        try {
+          for (ICommand command :
+              commandParser.parseToICommands(
+                  sshUtil,
+                  null,
+                  ip,
+                  entry.newNodeId,
+                  entry.parentNodeId,
+                  Role.SERVER,
+                  "127.0.0.1",
+                  rmiPort,
+                  PathStoreProperties.getInstance().ExternalAddress,
+                  rmiPort,
+                  "127.0.0.1",
+                  cassandraPort,
+                  PathStoreProperties.getInstance().ExternalAddress,
+                  cassandraPort)) {
+            logger.info(command.toString());
+            command.execute();
+          }
+          logger.info("Successfully deployed");
+          this.updateState(entry, DeploymentProcessStatus.DEPLOYED);
+        } catch (CommandError commandError) {
+          logger.error("Deployment failed");
+          logger.error(commandError.errorMessage);
+          this.updateState(entry, DeploymentProcessStatus.FAILED);
+        } catch (Exception e) {
+          logger.error("The given pathstore deployment csv was not a valid csv");
         }
-        logger.info("Successfully deployed");
-        this.updateState(entry, DeploymentProcessStatus.DEPLOYED);
-      } catch (CommandError commandError) {
-        logger.error("Deployment failed");
-        logger.error(commandError.errorMessage);
+      } else {
+        logger.error("The csv file provided is invalid");
         this.updateState(entry, DeploymentProcessStatus.FAILED);
-      } finally {
-        sshUtil.disconnect();
       }
+
+      sshUtil.disconnect();
     } catch (JSchException e) {
       logger.error("Could not connect to new node");
       this.updateState(entry, DeploymentProcessStatus.FAILED);

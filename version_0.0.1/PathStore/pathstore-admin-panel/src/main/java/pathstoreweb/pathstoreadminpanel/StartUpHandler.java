@@ -9,6 +9,7 @@ import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
+import pathstore.system.deployment.utilities.DeploymentFileParser;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstore.system.deployment.utilities.StartupUTIL;
 
@@ -31,8 +32,6 @@ import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
  */
 public class StartUpHandler {
 
-  // TODO: Make these user definable
-  private static final String branch = "pathstore_init_script";
   private static final int sshPort = 22;
   private static final int cassandraPort = 9052;
   private static final int rmiPort = 1099;
@@ -100,8 +99,8 @@ public class StartUpHandler {
 
   /**
    * First get information about the network and then connect to the server. Then run through the
-   * list of commands {@link #initList(SSHUtil, String, String, int, int, Role, String, int, String,
-   * int, String, int, String, int, String)}
+   * list of commands {@link DeploymentFileParser#parseToICommands(SSHUtil, String, String, int,
+   * int, Role, String, int, String, int, String, int, String, int)}
    */
   public void createNewNetwork() {
 
@@ -111,41 +110,51 @@ public class StartUpHandler {
     String ip = this.askQuestionWithSpecificResponses("Host: ", null);
     String username = this.askQuestionWithInvalidResponse("Username: ", new String[] {"root"});
     String password = this.askQuestionWithInvalidResponse("Password: ", null);
+    String branch = this.askQuestionWithInvalidResponse("Branch: ", null);
 
     try {
       SSHUtil sshUtil = new SSHUtil(ip, username, password, sshPort);
       System.out.println("Connected");
 
-      for (ICommand command :
-          this.initList(
-              sshUtil,
-              ip,
-              branch,
-              1,
-              -1,
-              Role.ROOTSERVER,
-              "127.0.0.1",
-              rmiPort,
-              "",
-              rmiPort,
-              "127.0.0.1",
-              cassandraPort,
-              "",
-              cassandraPort,
-              "../docker-files/pathstore/pathstore.properties")) {
+      DeploymentFileParser commandParser =
+          new DeploymentFileParser("pathstore-deployment-root.csv");
+
+      if (commandParser.readData()) {
         try {
-          System.out.println(command);
-          command.execute();
-        } catch (CommandError error) {
-          System.err.println(String.format("[ERROR] %s", error.errorMessage));
-          System.exit(-1);
+          for (ICommand command :
+              commandParser.parseToICommands(
+                  sshUtil,
+                  branch,
+                  ip,
+                  1,
+                  -1,
+                  Role.ROOTSERVER,
+                  "127.0.0.1",
+                  rmiPort,
+                  "",
+                  rmiPort,
+                  "127.0.0.1",
+                  cassandraPort,
+                  "",
+                  cassandraPort)) {
+            try {
+              System.out.println(command);
+              command.execute();
+            } catch (CommandError error) {
+              System.err.println(String.format("[ERROR] %s", error.errorMessage));
+              System.exit(-1);
+            }
+          }
+          this.finalizeRootNodeInstallation(ip, cassandraPort, username, password);
+
+          this.generatePathStorePropertiesFile(ip, cassandraPort, rmiPort);
+        } catch (Exception e) {
+          System.out.println("Could not parse the given root deployment file");
         }
+      } else {
+        System.err.println("The csv passed is invalid");
+        System.exit(-1);
       }
-      
-      this.finalizeRootNodeInstallation(ip, cassandraPort, username, password);
-
-      this.generatePathStorePropertiesFile(ip, cassandraPort, rmiPort);
-
       sshUtil.disconnect();
     } catch (JSchException e) {
       System.out.println("\nYour connection information seems to be incorrect");
@@ -244,141 +253,6 @@ public class StartUpHandler {
           "You cannot respond with the following values: " + Arrays.toString(invalidResponses));
       return this.askQuestionWithInvalidResponse(question, invalidResponses);
     } else return response;
-  }
-
-  /**
-   * @param sshUtil used for commands that need to use ssh
-   * @param ip ip of new node
-   * @param branch branch from github to build from
-   * @param nodeID new node's id
-   * @param parentNodeId new node's parent id
-   * @param role role of new node
-   * @param rmiRegistryIP new node's local rmi registry ip
-   * @param rmiRegistryPort new node's local rmi registry port
-   * @param rmiRegistryParentIP new node's parent rmi registry ip
-   * @param rmiRegistryParentPort new node's parent rmi registry port
-   * @param cassandraIP new node's local cassandra instance ip
-   * @param cassandraPort new node's local cassandra instance port
-   * @param cassandraParentIP new node's parent cassandra instance ip
-   * @param cassandraParentPort new nodes' parent cassandra instance port
-   * @param destinationToStore where to store the new node's properties file
-   * @return list of deployment commands to execute
-   */
-  public List<ICommand> initList(
-      final SSHUtil sshUtil,
-      final String ip,
-      final String branch,
-      final int nodeID,
-      final int parentNodeId,
-      final Role role,
-      final String rmiRegistryIP,
-      final int rmiRegistryPort,
-      final String rmiRegistryParentIP,
-      final int rmiRegistryParentPort,
-      final String cassandraIP,
-      final int cassandraPort,
-      final String cassandraParentIP,
-      final int cassandraParentPort,
-      final String destinationToStore) {
-
-    List<ICommand> commands = new ArrayList<>();
-
-    // Check for docker access and that docker is online
-    commands.add(new Exec(sshUtil, "docker ps", 0));
-    // Potentially kill old cassandra container
-    commands.add(new Exec(sshUtil, "docker kill cassandra", -1));
-    // Potentially remove old cassandra image
-    commands.add(new Exec(sshUtil, "docker image rm cassandra", -1));
-    // Potentially kill old pathstore container
-    commands.add(new Exec(sshUtil, "docker kill pathstore", -1));
-    // Potentially remove old pathstore image
-    commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
-    // Potentially remove old file associated with install
-    commands.add(new Exec(sshUtil, "rm -rf pathstore-install", -1));
-    // Potentially remove old base image
-    commands.add(new Exec(sshUtil, "docker image rm base", -1));
-    // Create pathstore install dir
-    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install", 0));
-    // Create base dir
-    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/base", 0));
-    // Create cassandra dir
-    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/cassandra", 0));
-    // Create pathstore dir
-    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/pathstore", 0));
-    // Generate pathstore properties file
-    commands.add(
-        new GeneratePropertiesFile(
-            nodeID,
-            ip,
-            parentNodeId,
-            role,
-            rmiRegistryIP,
-            rmiRegistryPort,
-            rmiRegistryParentIP,
-            rmiRegistryParentPort,
-            cassandraIP,
-            cassandraPort,
-            cassandraParentIP,
-            cassandraParentPort,
-            destinationToStore));
-    // Transfer properties file
-    commands.add(
-        new FileTransfer(
-            sshUtil, destinationToStore, "pathstore-install/pathstore/pathstore.properties"));
-    // Remove properties file
-    commands.add(new RemoveGeneratedPropertiesFile(destinationToStore));
-    // Transfer deploy key
-    commands.add(
-        new FileTransfer(sshUtil, "../docker-files/deploy_key", "pathstore-install/deploy_key"));
-    // Transfer base docker file
-    commands.add(
-        new FileTransfer(
-            sshUtil, "../docker-files/base/Dockerfile", "pathstore-install/base/Dockerfile"));
-    // Transfer cassandra docker file
-    commands.add(
-        new FileTransfer(
-            sshUtil,
-            "../docker-files/cassandra/Dockerfile",
-            "pathstore-install/cassandra/Dockerfile"));
-    // Transfer pathstore docker file
-    commands.add(
-        new FileTransfer(
-            sshUtil,
-            "../docker-files/pathstore/Dockerfile",
-            "pathstore-install/pathstore/Dockerfile"));
-    // Build base
-    commands.add(
-        new Exec(
-            sshUtil,
-            String.format(
-                "docker build -t base --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\"%s\" pathstore-install/base",
-                branch),
-            0));
-    // Build cassandra
-    commands.add(new Exec(sshUtil, "docker build -t cassandra pathstore-install/cassandra", 0));
-    // Save cassandra to tar file and store in pathstore directory
-    commands.add(
-        new Exec(sshUtil, "docker save -o pathstore-install/pathstore/cassandra.tar cassandra", 0));
-    // Start cassandra
-    commands.add(
-        new Exec(sshUtil, "docker run --network=host -dit --rm --name cassandra cassandra", 0));
-    // Wait for cassandra to start
-    commands.add(new WaitForCassandra(ip, cassandraPort));
-    // Build pathstore
-    commands.add(new Exec(sshUtil, "docker build -t pathstore pathstore-install/pathstore", 0));
-    // Save pathstore to tar file and store in pathstore directory
-    commands.add(
-        new Exec(sshUtil, "docker save -o pathstore-install/pathstore/pathstore.tar pathstore", 0));
-    // Start pathstore
-    commands.add(
-        new Exec(
-            sshUtil,
-            "docker run --network=host -dit --rm -v ~/pathstore-install/pathstore:/etc/pathstore --name pathstore pathstore",
-            0));
-    // Wait for pathstore to come online
-    commands.add(new WaitForPathStore(ip, cassandraPort));
-
-    return commands;
   }
 
   /**

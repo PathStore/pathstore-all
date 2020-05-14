@@ -1,0 +1,27 @@
+exec,docker ps,0
+exec,docker kill cassandra,-1
+exec,docker image rm cassandra,-1
+exec,docker kill pathstore,-1
+exec,docker image rm pathstore,-1
+exec,rm -rf pathstore-install,-1
+exec,docker image rm base,-1
+exec,mkdir -p pathstore-install,0
+exec,mkdir -p pathstore-install/base,0
+exec,mkdir -p pathstore-install/cassandra,0
+exec,mkdir -p pathstore-install/pathstore,0
+generate_properties_file,,
+file_transfer,destination_to_store,pathstore-install/pathstore/pathstore.properties
+remove_generated_properties_file,,
+file_transfer,../docker-files/deploy_key,pathstore-install/deploy_key
+file_transfer,../docker-files/base/Dockerfile,pathstore-install/base/Dockerfile
+file_transfer,../docker-files/cassandra/Dockerfile,pathstore-install/cassandra/Dockerfile
+file_transfer,../docker-files/pathstore/Dockerfile,pathstore-install/pathstore/Dockerfile
+exec,"docker build -t base --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\"%s\" pathstore-install/base",0
+exec,docker build -t cassandra pathstore-install/cassandra,0
+exec,docker save -o pathstore-install/pathstore/cassandra.tar cassandra,0
+exec,docker run --network=host -dit --rm --name cassandra cassandra,0
+wait_for_cassandra,,
+exec,docker build -t pathstore pathstore-install/pathstore,0
+exec,docker save -o pathstore-install/pathstore/pathstore.tar pathstore,0
+exec,docker run --network=host -dit --rm -v ~/pathstore-install/pathstore:/etc/pathstore --name pathstore pathstore,0
+wait_for_pathstore,,
