@@ -55,13 +55,6 @@ public class PathStorePushServer extends Thread {
   public PathStorePushServer() {}
 
   private Insert createInsert(Row row, String keyspace, String tablename, List<Column> columns) {
-    logger.debug(
-        "Create Insert at "
-            + keyspace
-            + ":"
-            + tablename
-            + " "
-            + columns.stream().map(Object::toString).collect(Collectors.joining(", ")));
     Insert insert = QueryBuilder.insertInto(keyspace, tablename);
 
     for (Column column : columns) {
@@ -83,13 +76,6 @@ public class PathStorePushServer extends Thread {
   }
 
   private Delete createDelete(Row row, String keyspace, String tablename, List<Column> columns) {
-    logger.debug(
-        "Create Insert at "
-            + keyspace
-            + ":"
-            + tablename
-            + " "
-            + columns.stream().map(Object::toString).collect(Collectors.joining(", ")));
     Delete delete = QueryBuilder.delete("pathstore_dirty").from(keyspace, tablename);
 
     for (Column column : columns)
