@@ -4,6 +4,7 @@ import {ApplicationStatus, Deployment, Server} from "../../utilities/ApiDeclarat
 import NodeInfoModal from "../NodeInfoModal";
 import {PathStoreTopology} from "../PathStoreTopology";
 import {contains} from "../../utilities/Utils";
+import {Button} from "react-bootstrap";
 
 /**
  * Properties definition for {@link DeployApplicationResponseModal}
@@ -174,7 +175,7 @@ export default class DeployApplicationResponseModal
                                        get_colour={this.getClassName}
                                        get_click={this.handleClick}/>
                 </div>
-                <button onClick={this.props.callback}>close</button>
+                <Button onClick={this.props.callback}>close</Button>
             </Modal>
         );
     }

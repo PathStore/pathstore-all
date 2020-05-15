@@ -1,10 +1,11 @@
-import {ApplicationStatus, AvailableLogDates, Deployment, Log, Server, Update} from "../utilities/ApiDeclarations";
+import {ApplicationStatus, AvailableLogDates, Deployment, Server, Update} from "../utilities/ApiDeclarations";
 import Modal from "react-modal";
-import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
 import React, {Component} from "react";
-import {formatServer, webHandler} from "../utilities/Utils";
+import {webHandler} from "../utilities/Utils";
 import LogViewer from "./LogViewer";
+import {ServerInfo} from "./nodeDeployment/servers/ServerInfo";
+import {ApplicationStatusViewer} from "./ApplicationStatusViewer";
 
 /**
  * Properties definition for {@link NodeInfoModal}
@@ -56,54 +57,6 @@ interface NodeInfoModalProperties {
  * about the node.
  */
 export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
-
-    /**
-     * Formats the data for the application status table which informs the user about the current status of
-     * application installation on this particular node
-     *
-     * @param applicationStatus
-     * @returns {[]}
-     */
-    formatApplicationStatusTable = (applicationStatus: ApplicationStatus[]): {}[] => {
-
-        let response = [];
-
-        response.push(
-            <thead key={0}>
-            <tr>
-                <th>Nodeid</th>
-                <th>Application</th>
-                <th>Status</th>
-                <th>Waiting</th>
-                <th>Job UUID</th>
-            </tr>
-            </thead>
-        );
-
-        let body = [];
-
-        for (let i = 0; i < applicationStatus.length; i++) {
-
-            let currentObject = applicationStatus[i];
-
-            body.push(
-                <tr>
-                    <td>{currentObject.nodeid}</td>
-                    <td>{currentObject.keyspace_name}</td>
-                    <td>{currentObject.process_status}</td>
-                    <td>{currentObject.wait_for}</td>
-                    <td>{currentObject.process_uuid}</td>
-                </tr>)
-        }
-
-        response.push(
-            <tbody key={1}>
-            {body}
-            </tbody>
-        );
-
-        return response;
-    };
 
     /**
      * Returns a button or null iff the node is eligible for re-trying deployment (the node has failed deployment)
@@ -171,15 +124,15 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
             <Modal isOpen={this.props.show}
                    style={{overlay: {zIndex: 1}}}
                    ariaHideApp={false}>
-                {formatServer(this.props.deployment, this.props.servers, this.props.node)}
+                <ServerInfo deployment={this.props.deployment} servers={this.props.servers} node={this.props.node}/>
                 {this.retryButton(this.props.deployment)}
-                <Table>
-                    {this.formatApplicationStatusTable(
-                        this.props.applicationStatus
-                            .filter(i => i.nodeid === this.props.node))}
-                </Table>
+                <br/>
+                <ApplicationStatusViewer
+                    applicationStatus={this.props.applicationStatus.filter(i => i.nodeid === this.props.node)}/>
+                <br/>
                 <LogViewer node={this.props.node} availableLogDates={this.props.availableLogDates}/>
-                <button onClick={this.props.callback}>close</button>
+                <br/>
+                <Button onClick={this.props.callback}>close</Button>
             </Modal>
         );
     }

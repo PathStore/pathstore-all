@@ -1,6 +1,7 @@
 import {Server} from "../../../utilities/ApiDeclarations";
 import React, {FunctionComponent} from "react";
 import Modal from "react-modal";
+import {Button} from "react-bootstrap";
 
 /**
  * Properties definition for {@link ServerCreationResponseModal}
@@ -33,5 +34,5 @@ export const ServerCreationResponseModal: FunctionComponent<ServerCreationRespon
         <p>{props.data !== null ?
             ("Successfully create server with uuid: " + props.data.server_uuid + " and ip: " + props.data.ip) :
             "Error parsing success response"}</p>
-        <button onClick={props.callback}>close</button>
+        <Button onClick={props.callback}>close</Button>
     </Modal>;

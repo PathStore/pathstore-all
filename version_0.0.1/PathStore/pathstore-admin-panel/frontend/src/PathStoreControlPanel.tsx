@@ -200,6 +200,7 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
                                     servers={this.state.servers}
                                     forceRefresh={this.forceRefresh}/>
                 </div>
+                <br/>
                 <div>
                     <div>
                         <h2>Live Installation Viewer</h2>

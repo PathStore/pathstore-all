@@ -2,7 +2,7 @@ import {Deployment, Server} from "../../utilities/ApiDeclarations";
 import React, {FunctionComponent} from "react";
 import {Button} from "react-bootstrap";
 import Modal from "react-modal";
-import {formatServer} from "../../utilities/Utils";
+import {ServerInfo} from "./servers/ServerInfo";
 
 /**
  * Properties definition for {@link HypotheticalInfoModal}
@@ -57,7 +57,7 @@ export const HypotheticalInfoModal: FunctionComponent<HypotheticalInfoModalPrope
     <Modal isOpen={props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
         <p>Info Modal for
             node {props.node} and {props.hypothetical ? "Is hypothetical" : "Is not hypothetical"}</p>
-        {formatServer(props.deployment, props.servers, props.node)}
+        <ServerInfo deployment={props.deployment} servers={props.servers} node={props.node}/>
         {props.hypothetical ? <Button onClick={props.deleteNode}>Delete</Button> : null}
         <div>
             <Button onClick={props.callback}>Close</Button>

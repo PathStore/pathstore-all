@@ -1,6 +1,7 @@
 import {ApplicationCreationSuccess} from "../../utilities/ApiDeclarations";
 import React, {FunctionComponent} from "react";
 import Modal from "react-modal";
+import {Button} from "react-bootstrap";
 
 /**
  * Properties definition for {@link ApplicationCreationResponseModal}
@@ -33,5 +34,5 @@ export const ApplicationCreationResponseModal: FunctionComponent<ApplicationCrea
         <p>{props.data !== null ?
             ("Successfully create application named: " + props.data.keyspace_created) :
             "Error parsing application success response"}</p>
-        <button onClick={props.callback}>close</button>
+        <Button onClick={props.callback}>close</Button>
     </Modal>;

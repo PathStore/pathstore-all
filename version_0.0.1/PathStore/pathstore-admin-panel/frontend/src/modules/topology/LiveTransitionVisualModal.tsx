@@ -4,6 +4,7 @@ import {contains} from "../../utilities/Utils";
 import Modal from "react-modal";
 import {PathStoreTopology} from "../PathStoreTopology";
 import React from "react";
+import {Button} from "react-bootstrap";
 
 /**
  * Properties definition for {@link LiveTransitionVisualModal}
@@ -143,7 +144,7 @@ export default class LiveTransitionVisualModal extends Component<LiveTransitionV
                     <PathStoreTopology deployment={this.props.deployment.filter(i => i.process_status === "DEPLOYED")}
                                        get_colour={this.getClassName}/>
                 </div>
-                <button onClick={this.props.callback}>close</button>
+                <Button onClick={this.props.callback}>close</Button>
             </Modal>
         )
     }

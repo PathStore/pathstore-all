@@ -1,29 +1,3 @@
-import React from "react";
-import {Deployment, Server} from "./ApiDeclarations";
-
-/**
- * Format the server information about the currently selected node
- *
- * @param deployment
- * @param servers
- * @param node
- * @returns {*}
- */
-export function formatServer(deployment: Deployment[], servers: Server[], node: number) {
-
-    const deployObject = deployment.filter(i => i.new_node_id === node);
-
-    const object = servers.filter(i => i.server_uuid === deployObject[0].server_uuid);
-
-    return <div>
-        <p>Server Information</p>
-        <p>UUID: {object[0].server_uuid}</p>
-        <p>IP: {object[0].ip}</p>
-        <p>Username: {object[0].username}</p>
-        <p>Name: {object[0].name}</p>
-    </div>;
-}
-
 /**
  * Simple function to be used on the response of a potentially errorable web request.
  *

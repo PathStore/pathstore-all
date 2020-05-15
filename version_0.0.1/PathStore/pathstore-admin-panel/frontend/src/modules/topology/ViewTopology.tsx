@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {ApplicationStatus, AvailableLogDates, Deployment, Log, Server} from "../../utilities/ApiDeclarations";
+import {ApplicationStatus, AvailableLogDates, Deployment, Server} from "../../utilities/ApiDeclarations";
 import {PathStoreTopology} from "../PathStoreTopology";
 import NodeInfoModal from "../NodeInfoModal";
 

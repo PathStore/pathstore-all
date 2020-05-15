@@ -41,15 +41,11 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 
 import pathstore.common.PathStoreProperties;
-import pathstore.common.Role;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
-import pathstore.util.PathStoreStatus;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 import pathstore.util.SchemaInfo.Table;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 
 /** TODO: Comment */
 public class PathStorePushServer extends Thread {
@@ -181,7 +177,8 @@ public class PathStorePushServer extends Thread {
           }
         }
       }
-    } finally {
+    } catch (Exception e) {
+      this.logger.error(e);
       // local.close();
       // parent.close();
     }
