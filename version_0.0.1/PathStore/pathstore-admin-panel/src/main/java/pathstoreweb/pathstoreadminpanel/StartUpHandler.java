@@ -31,10 +31,6 @@ import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
  */
 public class StartUpHandler {
 
-  private static final int sshPort = 22;
-  private static final int cassandraPort = 9052;
-  private static final int rmiPort = 1099;
-
   /** Where the properties file will be stored locally. */
   private static final String DESTINATION_TO_STORE =
       "../docker-files/pathstore/pathstore.properties";
@@ -115,6 +111,11 @@ public class StartUpHandler {
     String ip = this.askQuestionWithSpecificResponses("Host: ", null);
     String username = this.askQuestionWithInvalidResponse("Username: ", new String[] {"root"});
     String password = this.askQuestionWithInvalidResponse("Password: ", null);
+    int sshPort = this.askQuestionWithInvalidResponseInteger("SSH port: ", null);
+    int cassandraPort =
+        this.askQuestionWithInvalidResponseInteger("Cassandra port (if unsure enter 9052): ", null);
+    int rmiPort =
+        this.askQuestionWithInvalidResponseInteger("RMI port (if unsure enter 1099): ", null);
     String branch = this.askQuestionWithInvalidResponse("Branch: ", null);
 
     try {
@@ -382,6 +383,28 @@ public class StartUpHandler {
           "You cannot respond with the following values: " + Arrays.toString(invalidResponses));
       return this.askQuestionWithInvalidResponse(question, invalidResponses);
     } else return response;
+  }
+
+  /**
+   * Ask a question to the user but get an integer response
+   *
+   * @param question question to ask
+   * @param invalidResponses list of invalid responses
+   * @return integer from user
+   */
+  private int askQuestionWithInvalidResponseInteger(
+      final String question, final String[] invalidResponses) {
+    int response;
+
+    try {
+      response = Integer.parseInt(this.askQuestionWithInvalidResponse(question, invalidResponses));
+    } catch (NumberFormatException e) {
+      System.out.println(
+          "The data you entered is not a number. Please make sure you enter a number");
+      return this.askQuestionWithInvalidResponseInteger(question, invalidResponses);
+    }
+
+    return response;
   }
 
   /**
