@@ -35,6 +35,9 @@ public class StartUpHandler {
   private static final String DESTINATION_TO_STORE =
       "../docker-files/pathstore/pathstore.properties";
 
+  /** Port reference for cassandra */
+  private static final int cassandraPort = 9052;
+
   /** Scanner to get user input */
   private final Scanner scanner;
 
@@ -112,8 +115,6 @@ public class StartUpHandler {
     String username = this.askQuestionWithInvalidResponse("Username: ", new String[] {"root"});
     String password = this.askQuestionWithInvalidResponse("Password: ", null);
     int sshPort = this.askQuestionWithInvalidResponseInteger("SSH port: ", null);
-    int cassandraPort =
-        this.askQuestionWithInvalidResponseInteger("Cassandra port (if unsure enter 9052): ", null);
     int rmiPort =
         this.askQuestionWithInvalidResponseInteger("RMI port (if unsure enter 1099): ", null);
     String branch = this.askQuestionWithInvalidResponse("Branch: ", null);
