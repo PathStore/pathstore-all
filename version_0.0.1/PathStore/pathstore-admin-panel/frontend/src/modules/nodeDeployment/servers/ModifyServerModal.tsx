@@ -156,7 +156,8 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
         event.preventDefault();
 
         let url = "/api/v1/servers"
-            + "?ip=" + this.state.ip
+            + "?serverUUID=" + this.props.server?.server_uuid
+            + "&ip=" + this.state.ip
             + "&username=" + this.state.username
             + "&password=" + this.state.password
             + "&sshPort=" + (this.state.ssh_port === undefined ? 22 : this.state.ssh_port)

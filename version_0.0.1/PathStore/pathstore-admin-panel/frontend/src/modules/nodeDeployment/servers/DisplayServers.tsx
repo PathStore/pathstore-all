@@ -46,6 +46,11 @@ interface DisplayServersState {
  */
 export default class DisplayServers extends Component<DisplayServersProperties, DisplayServersState> {
 
+    /**
+     * Initialize props and state
+     *
+     * @param props
+     */
     constructor(props: DisplayServersProperties) {
         super(props);
 

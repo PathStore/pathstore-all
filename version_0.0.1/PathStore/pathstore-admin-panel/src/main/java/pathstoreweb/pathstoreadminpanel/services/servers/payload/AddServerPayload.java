@@ -11,7 +11,7 @@ import java.util.UUID;
  * This payload is used when a user makes a request to add a server to the {@link
  * pathstore.common.Constants#SERVERS} table
  */
-public final class ServerPayload {
+public final class AddServerPayload {
 
   /** Ip is stored separably to check to see if that ip already exists in the table */
   @ServerUnique(message = "Server with that ip already exists")
@@ -32,7 +32,15 @@ public final class ServerPayload {
           "Could not connect to server, make sure that you have properly inputted the connection information")
   public final Server server;
 
-  public ServerPayload(
+  /**
+   * @param ip {@link #ip}
+   * @param username username to connect with
+   * @param password password to connect with
+   * @param sshPort what port ssh is running
+   * @param rmiPort what port you want rmi to use
+   * @param name {@link #name}
+   */
+  public AddServerPayload(
       final String ip,
       final String username,
       final String password,
@@ -41,7 +49,6 @@ public final class ServerPayload {
       final String name) {
     this.ip = ip;
     this.name = name;
-    this.server =
-        new Server(UUID.randomUUID(), ip, username, password, sshPort, rmiPort, name);
+    this.server = new Server(UUID.randomUUID(), ip, username, password, sshPort, rmiPort, name);
   }
 }

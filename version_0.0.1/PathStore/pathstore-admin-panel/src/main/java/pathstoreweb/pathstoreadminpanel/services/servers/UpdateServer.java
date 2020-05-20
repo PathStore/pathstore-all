@@ -9,16 +9,16 @@ import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IService;
-import pathstoreweb.pathstoreadminpanel.services.servers.payload.ServerPayload;
+import pathstoreweb.pathstoreadminpanel.services.servers.payload.UpdateServerPayload;
 
 /** Simple service to update a server record */
 public class UpdateServer implements IService {
 
   /** Data for the server record */
-  private final ServerPayload payload;
+  private final UpdateServerPayload payload;
 
   /** @param payload {@link #payload} */
-  public UpdateServer(final ServerPayload payload) {
+  public UpdateServer(final UpdateServerPayload payload) {
     this.payload = payload;
   }
 
