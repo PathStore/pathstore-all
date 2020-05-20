@@ -174,6 +174,7 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
                         responseModalData: response,
                         responseModalError: false
                     }, () => {
+                        this.props.forceRefresh();
                         this.props.callback();
                     })
                 ).catch((response: Error[]) => this.setState({
