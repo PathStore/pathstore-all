@@ -123,7 +123,8 @@ export default class DeployApplication extends Component<DeployApplicationProper
 
         fetch(url, {
             method: 'POST'
-        }).then(webHandler)
+        })
+            .then(webHandler)
             .then((response: ApplicationStatus[]) => {
                 // @ts-ignore
                 ReactDOM.findDOMNode(this.messageForm).reset();
@@ -133,13 +134,14 @@ export default class DeployApplication extends Component<DeployApplicationProper
                     responseModalShow: true,
                     responseModalError: false,
                 });
-            }).catch((response: Error[]) =>
-            this.setState({
-                responseModalErrorData: response,
-                responseModalShow: true,
-                responseModalError: true,
             })
-        );
+            .catch((response: Error[]) =>
+                this.setState({
+                    responseModalErrorData: response,
+                    responseModalShow: true,
+                    responseModalError: true,
+                })
+            );
     };
 
     /**

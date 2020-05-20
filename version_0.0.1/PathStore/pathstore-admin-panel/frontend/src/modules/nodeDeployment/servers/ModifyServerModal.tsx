@@ -124,7 +124,6 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
             })
                 .then(webHandler)
                 .then(() => this.setState({
-                        loadingModalShow: false,
                         responseModalError: false
                     }, () => {
                         clearForm();
@@ -133,11 +132,11 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
                     })
                 )
                 .catch((response: Error[]) => this.setState({
-                        loadingModalShow: false,
                         responseModalErrorData: response,
                         responseModalError: true
                     })
-                );
+                )
+                .finally(() => this.setState({loadingModalShow: false}));
         });
     };
 

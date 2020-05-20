@@ -116,27 +116,24 @@ export default class ApplicationCreation extends Component<ApplicationCreationPr
             fetch("/api/v1/applications", {
                 method: 'POST',
                 body: formData
-            }).then(webHandler)
+            })
+                .then(webHandler)
                 .then((response: ApplicationCreationSuccess) => {
-                    this.setState({loadingModalShow: false}, () => {
-                        this.props.forceRefresh();
-                        // @ts-ignore
-                        ReactDOM.findDOMNode(this.messageForm).reset();
-                        this.setState({
-                            responseModalShow: true,
-                            responseModalData: response,
-                            responseModalError: false
-                        });
-                    });
-                }).catch((response: Error[]) => {
-                this.setState({loadingModalShow: false}, () => {
+                    this.props.forceRefresh();
+                    // @ts-ignore
+                    ReactDOM.findDOMNode(this.messageForm).reset();
                     this.setState({
-                        responseModalShow: true,
+                        responseModalData: response,
+                        responseModalError: false
+                    });
+                })
+                .catch((response: Error[]) => {
+                    this.setState({
                         responseModalErrorData: response,
                         responseModalError: true
                     });
-                });
-            })
+                })
+                .finally(() => this.setState({responseModalShow: true, loadingModalShow: false}));
         });
     };
 

@@ -106,23 +106,26 @@ export default class AddServers extends Component<AddServersProperties, AddServe
         this.setState({loadingModalShow: true}, () => {
             fetch(url, {
                 method: 'POST'
-            }).then(webHandler)
+            })
+                .then(webHandler)
                 .then((response: Server) => this.setState({
-                        loadingModalShow: false,
-                        responseModalShow: true,
                         responseModalData: response,
                         responseModalError: false
                     }, () => {
                         clearForm();
                         this.props.callback();
                     })
-                ).catch((response: Error[]) => this.setState({
+                )
+                .catch((response: Error[]) =>
+                    this.setState({
+                        responseModalErrorData: response,
+                        responseModalError: true
+                    })
+                )
+                .finally(() => this.setState({
                     loadingModalShow: false,
-                    responseModalShow: true,
-                    responseModalErrorData: response,
-                    responseModalError: true
-                })
-            );
+                    responseModalShow: true
+                }));
         });
     };
 
