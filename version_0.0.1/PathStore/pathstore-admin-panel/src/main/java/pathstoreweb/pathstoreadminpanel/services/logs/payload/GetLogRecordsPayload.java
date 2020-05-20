@@ -9,7 +9,7 @@ package pathstoreweb.pathstoreadminpanel.services.logs.payload;
  * <p>This payload is used to query a specific set of logs based on the node_id, the date and the
  * specific log level the user wants to see
  */
-public class GetLogRecordsPayload {
+public final class GetLogRecordsPayload {
 
   /** Denotes the node_id requested */
   public final int node_id;

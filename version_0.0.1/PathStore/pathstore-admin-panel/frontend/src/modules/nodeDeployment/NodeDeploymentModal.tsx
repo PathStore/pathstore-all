@@ -7,7 +7,7 @@ import Modal from "react-modal";
 import {HypotheticalInfoModal} from "./HypotheticalInfoModal";
 import NodeDeploymentAdditionForm from "./NodeDeploymentAdditionForm";
 import AddServers from "./servers/AddServers"
-import {DisplayServers} from "./servers/DisplayServers";
+import DisplayServers from "./servers/DisplayServers";
 
 /**
  * Properties definition for {@link NodeDeploymentModal}
@@ -319,7 +319,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
                                             servers={this.props.servers}
                                             addition={this.handleAddition}/>
 
-                <DisplayServers servers={this.props.servers}/>
+                <DisplayServers servers={this.props.servers} forceRefresh={this.props.forceRefresh}/>
 
                 <AddServers servers={this.props.servers}
                             callback={this.props.forceRefresh}/>

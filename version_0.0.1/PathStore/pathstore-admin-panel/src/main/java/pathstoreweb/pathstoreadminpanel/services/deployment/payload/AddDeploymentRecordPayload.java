@@ -5,7 +5,7 @@ import pathstoreweb.pathstoreadminpanel.services.deployment.validator.*;
 import java.util.List;
 
 /** Payload for the add deployment record endpoint. This is used to validate input */
-public class AddDeploymentRecordPayload {
+public final class AddDeploymentRecordPayload {
 
   @EmptyCheck(message = "You did not supply any records, you must supply at least one record")
   @ServerUUIDDuplicates(message = "You have entered duplicate serverUUID's")

@@ -170,7 +170,10 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
      * Used by child component to force refresh this data. This is only given to child components who are capable
      * of making state changing operations (i.e effecting our state data within this class)
      */
-    forceRefresh = (): void => this.refreshData();
+    forceRefresh = (): void => {
+        this.refreshData();
+        this.queryAll();
+    };
 
     /**
      * Render all child components with the following ordering policy
