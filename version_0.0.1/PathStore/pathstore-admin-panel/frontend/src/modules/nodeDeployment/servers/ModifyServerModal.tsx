@@ -5,7 +5,6 @@ import {Error, Server} from "../../../utilities/ApiDeclarations";
 import {webHandler} from "../../../utilities/Utils";
 import {LoadingModal} from "../../LoadingModal";
 import {ErrorResponseModal} from "../../ErrorResponseModal";
-import {ServerCreationResponseModal} from "./ServerCreationResponseModal";
 
 /**
  * Properties definition for {@link ModifyServerModal}
@@ -72,16 +71,6 @@ interface ModifyServerModalState {
     readonly loadingModalShow: boolean
 
     /**
-     * Whether the response modal is show
-     */
-    readonly responseModalShow: boolean
-
-    /**
-     * What server info to give to the response modal
-     */
-    readonly responseModalData: Server | null
-
-    /**
      * Whether to load the error response modal
      */
     readonly responseModalError: boolean
@@ -113,8 +102,6 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
             rmi_port: this.props.server?.rmi_port,
             name: this.props.server?.name,
             loadingModalShow: false,
-            responseModalShow: false,
-            responseModalData: null,
             responseModalError: false,
             responseModalErrorData: []
         }
@@ -170,8 +157,6 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
             }).then(webHandler)
                 .then((response: Server) => this.setState({
                         loadingModalShow: false,
-                        responseModalShow: true,
-                        responseModalData: response,
                         responseModalError: false
                     }, () => {
                         this.props.forceRefresh();
@@ -179,7 +164,6 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
                     })
                 ).catch((response: Error[]) => this.setState({
                     loadingModalShow: false,
-                    responseModalShow: true,
                     responseModalErrorData: response,
                     responseModalError: true
                 })
@@ -190,33 +174,31 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
     /**
      * Callback for modals to close themselves
      */
-    callBack = (): void => this.setState({responseModalShow: false});
+    callBack = (): void => this.setState({responseModalError: false});
 
     /**
-     * Render optional modals (loading and response)
+     * Render optional modals (loading and error)
      *
      * Render the form iff the server object isn't undefined (it shouldn't be unless an internal error occurs)
      */
     render() {
 
-        const loadingModal = this.state.loadingModalShow ? <LoadingModal show={this.state.loadingModalShow}/> : null;
+        const loadingModal =
+            this.state.loadingModalShow ?
+                <LoadingModal show={this.state.loadingModalShow}/>
+                : null;
 
-        const responseModal =
-            this.state.responseModalShow ?
-                this.state.responseModalError ?
-                    <ErrorResponseModal show={this.state.responseModalShow}
-                                        data={this.state.responseModalErrorData}
-                                        callback={this.callBack}/>
-                    :
-                    <ServerCreationResponseModal show={this.state.responseModalShow}
-                                                 data={this.state.responseModalData}
-                                                 callback={this.callBack}/>
+        const errorModal =
+            this.state.responseModalError ?
+                <ErrorResponseModal show={this.state.responseModalError}
+                                    data={this.state.responseModalErrorData}
+                                    callback={this.callBack}/>
                 : null;
 
         return this.props.server !== undefined ?
             <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
                 {loadingModal}
-                {responseModal}
+                {errorModal}
                 <h2>Server Modification Modal</h2>
                 <h3>Delete Modal</h3>
                 <Button onClick={this.delete}>Delete Server</Button>

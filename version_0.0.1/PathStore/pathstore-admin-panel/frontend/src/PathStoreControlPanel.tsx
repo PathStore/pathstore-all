@@ -127,41 +127,52 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
      * Function that queries data that does not need to be on a timer
      */
     refreshData = (): void => {
-        this.genericLoadFunction<Server>('/api/v1/servers', null)
-            .then((response: Server[]) => this.setState({servers: response}));
-
-        this.genericLoadFunction<Application>('/api/v1/applications', null)
-            .then((response: Application[]) => this.setState({applications: response}));
+        this.genericLoadFunctionWithOutWait<Server>('/api/v1/servers', "servers");
+        this.genericLoadFunctionWithOutWait<Application>('/api/v1/applications', "applications");
     };
 
     /**
      * Call fetch all to get all the responses and load them into the state
      */
     queryAll = (): void => {
+        this.genericLoadFunctionWait<Deployment>('/api/v1/deployment', 0, "deployment");
+        this.genericLoadFunctionWait<ApplicationStatus>('/api/v1/application_management', 1, "applicationStatus");
+        this.genericLoadFunctionWait<AvailableLogDates>('/api/v1/available_log_dates', 2, "availableLogDates");
+    };
 
-        if (!this.loading[0])
-            this.genericLoadFunction<Deployment>('/api/v1/deployment', 0)
-                .then((response: Deployment[]) => this.setState({deployment: response}, () => this.loading[0] = false));
 
-        if (!this.loading[1])
-            this.genericLoadFunction<ApplicationStatus>('/api/v1/application_management', 1)
-                .then((response: ApplicationStatus[]) => this.setState({applicationStatus: response}, () => this.loading[1] = false));
+    /**
+     * This function is used to query from a url and store it in the state without the wait condition
+     *
+     * @param url url to query
+     * @param name name to store in state
+     */
+    genericLoadFunctionWithOutWait = <T extends unknown>(url: string, name: string): void => {
+        this.genericLoadFunctionBase<T>(url)
+            .then((response: T[]) => this.setState({[name]: response} as unknown as PathStoreControlPanelState));
+    };
 
-        if (!this.loading[2])
-            this.genericLoadFunction<AvailableLogDates>('/api/v1/available_log_dates', 2)
-                .then((response: AvailableLogDates[]) => this.setState({availableLogDates: response}, () => this.loading[2] = false));
+    /**
+     * This function is used to query from a url and store it in the state with the wait condition
+     *
+     * @param url url to query
+     * @param index index of wait
+     * @param name name to store in state
+     */
+    genericLoadFunctionWait = <T extends unknown>(url: string, index: number, name: string): void => {
+        if (!this.loading[index]) {
+            this.loading[index] = true;
+            this.genericLoadFunctionBase<T>(url)
+                .then((response: T[]) => this.setState({[name]: response} as unknown as PathStoreControlPanelState, () => this.loading[index] = false));
+        }
     };
 
     /**
      * This function is used to return an array of parsed object data from the api.
      *
      * @param url url to query
-     * @param index index of loading to set may be null if not loading all the time
      */
-    genericLoadFunction = <T extends unknown>(url: string, index: number | null): Promise<T[]> => {
-        if (index !== null)
-            this.loading[index] = true;
-
+    genericLoadFunctionBase = <T extends unknown>(url: string): Promise<T[]> => {
         return fetch(url)
             .then(response => response.json() as Promise<T[]>);
     };
