@@ -80,11 +80,6 @@ export default class DisplayServers extends Component<DisplayServersProperties> 
  */
 interface ServerRowProps {
     /**
-     * Key to render with tr statement
-     */
-    readonly key: number
-
-    /**
      * Server object to display and to return on click
      */
     readonly server: Server;
@@ -111,7 +106,7 @@ class ServerRow extends Component<ServerRowProps> {
      */
     render() {
         return (
-            <tr key={this.props.key} onClick={this.handleClick}>
+            <tr onClick={this.handleClick}>
                 <td>{this.props.server.server_uuid}</td>
                 <td>{this.props.server.ip}</td>
                 <td>{this.props.server.username}</td>
