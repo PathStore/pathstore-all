@@ -1,4 +1,4 @@
-import {ApplicationStatus, AvailableLogDates, Deployment, Server, Update} from "../utilities/ApiDeclarations";
+import {ApplicationStatus, AvailableLogDates, Deployment, Server, Update, Error} from "../utilities/ApiDeclarations";
 import Modal from "react-modal";
 import Button from "react-bootstrap/Button";
 import React, {Component} from "react";
@@ -6,6 +6,7 @@ import {webHandler} from "../utilities/Utils";
 import LogViewer from "./LogViewer";
 import {ServerInfo} from "./nodeDeployment/servers/ServerInfo";
 import {ApplicationStatusViewer} from "./ApplicationStatusViewer";
+import {ErrorResponseModal} from "./ErrorResponseModal";
 
 /**
  * Properties definition for {@link NodeInfoModal}
@@ -53,10 +54,39 @@ interface NodeInfoModalProperties {
 }
 
 /**
+ * State definition for {@link NodeInfoModal}
+ */
+interface NodeInfoModalState {
+    /**
+     * Whether to show the error modal or not
+     */
+    readonly errorModalShow: boolean
+
+    /**
+     * What to give the error modal
+     */
+    readonly errorModalData: Error[]
+}
+
+/**
  * This component is used when a user clicks on a node in a pathstore topology to give the user some information
  * about the node.
  */
-export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
+export default class NodeInfoModal extends Component<NodeInfoModalProperties, NodeInfoModalState> {
+
+    /**
+     * Initialize state and props
+     *
+     * @param props
+     */
+    constructor(props: NodeInfoModalProperties) {
+        super(props);
+
+        this.state = {
+            errorModalShow: false,
+            errorModalData: []
+        }
+    }
 
     /**
      * Returns a button or null iff the node is eligible for re-trying deployment (the node has failed deployment)
@@ -89,8 +119,6 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
     };
 
     /**
-     * TODO: Response Modals.
-     *
      * PUT request to api with retryData as the body to inform the root node
      * that this node should be re-tried for deployment
      */
@@ -109,9 +137,14 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
                 this.props.forceRefresh?.();
                 this.props.callback();
             })
-            .catch(response => alert("Error " + JSON.stringify(response)));
+            .catch((response: Error[]) => this.setState({errorModalShow: true, errorModalData: response}));
 
     };
+
+    /**
+     * Callback used to close the error modal
+     */
+    closeModal = () => this.setState({errorModalShow: false, errorModalData: []});
 
     /**
      * Render server information and application status table and optionally the retry button
@@ -120,10 +153,18 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties> {
      */
     render() {
 
+        const errorModal =
+            this.state.errorModalShow ?
+                <ErrorResponseModal show={this.state.errorModalShow}
+                                    data={this.state.errorModalData}
+                                    callback={this.closeModal}/>
+                : null;
+
         return (
             <Modal isOpen={this.props.show}
                    style={{overlay: {zIndex: 1}}}
                    ariaHideApp={false}>
+                {errorModal}
                 <ServerInfo deployment={this.props.deployment} servers={this.props.servers} node={this.props.node}/>
                 {this.retryButton(this.props.deployment)}
                 <br/>

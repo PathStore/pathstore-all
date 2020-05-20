@@ -84,9 +84,7 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
                 this.props.forceRefresh();
                 this.props.callback();
             })
-            .catch(response => {
-                alert(JSON.stringify(response));
-            })
+            .catch((response: Error[]) => this.setState({responseModalError: true, responseModalErrorData: response}));
 
     };
 
@@ -123,8 +121,9 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
         this.setState({loadingModalShow: true}, () => {
             fetch(url, {
                 method: 'PUT'
-            }).then(webHandler)
-                .then((response: Server) => this.setState({
+            })
+                .then(webHandler)
+                .then(() => this.setState({
                         loadingModalShow: false,
                         responseModalError: false
                     }, () => {
@@ -132,12 +131,13 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
                         this.props.forceRefresh();
                         this.props.callback();
                     })
-                ).catch((response: Error[]) => this.setState({
-                    loadingModalShow: false,
-                    responseModalErrorData: response,
-                    responseModalError: true
-                })
-            );
+                )
+                .catch((response: Error[]) => this.setState({
+                        loadingModalShow: false,
+                        responseModalErrorData: response,
+                        responseModalError: true
+                    })
+                );
         });
     };
 

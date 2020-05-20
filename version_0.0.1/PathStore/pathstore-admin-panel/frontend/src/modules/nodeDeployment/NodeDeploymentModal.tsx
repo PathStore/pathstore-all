@@ -1,5 +1,5 @@
 import React, {Component} from "react";
-import {Deployment, Server, Update} from "../../utilities/ApiDeclarations";
+import {Deployment, Error, Server, Update} from "../../utilities/ApiDeclarations";
 import {contains, webHandler} from "../../utilities/Utils";
 import {PathStoreTopology} from "../PathStoreTopology";
 import Button from "react-bootstrap/Button";
@@ -8,6 +8,7 @@ import {HypotheticalInfoModal} from "./HypotheticalInfoModal";
 import NodeDeploymentAdditionForm from "./NodeDeploymentAdditionForm";
 import AddServers from "./servers/AddServers"
 import DisplayServers from "./servers/DisplayServers";
+import {ErrorResponseModal} from "../ErrorResponseModal";
 
 /**
  * Properties definition for {@link NodeDeploymentModal}
@@ -67,6 +68,16 @@ interface NodeDeploymentModalState {
      * What node was clicked
      */
     readonly infoModalNodeNumber: number
+
+    /**
+     * Whether to show the error modal or not
+     */
+    readonly errorModalShow: boolean
+
+    /**
+     * What to give the error modal
+     */
+    readonly errorModalData: Error[]
 }
 
 /**
@@ -87,7 +98,9 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
             updates: [],
             infoModalShow: false,
             infoModalIsHypothetical: false,
-            infoModalNodeNumber: -1
+            infoModalNodeNumber: -1,
+            errorModalShow: false,
+            errorModalData: []
         };
     }
 
@@ -122,9 +135,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
                 this.props.forceRefresh();
                 this.props.callback();
             })
-            .catch(response => {
-                alert("ERROR: " + JSON.stringify(response));
-            });
+            .catch((response: Error[]) => this.setState({errorModalShow: true, errorModalData: response}));
     };
 
     /**
@@ -280,7 +291,9 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
         {
             infoModalShow: false,
             infoModalIsHypothetical: false,
-            infoModalNodeNumber: -1
+            infoModalNodeNumber: -1,
+            errorModalShow: false,
+            errorModalData: []
         }
     );
 
@@ -305,9 +318,17 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
                                        callback={this.handleClose}/>
                 : null;
 
+        const errorModal =
+            this.state.errorModalShow ?
+                <ErrorResponseModal show={this.state.errorModalShow}
+                                    data={this.state.errorModalData}
+                                    callback={this.handleClose}/>
+                : null;
+
         return (
             <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
                 {modal}
+                {errorModal}
                 <div>
                     <PathStoreTopology deployment={this.state.deployment}
                                        get_colour={this.isHypothetical}
