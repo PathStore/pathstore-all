@@ -1,8 +1,9 @@
 import React, {Component} from "react";
-import {AvailableLogDates, Log} from "../utilities/ApiDeclarations";
+import {AvailableLogDates, Error, Log} from "../utilities/ApiDeclarations";
 import {Button, Form} from "react-bootstrap";
 import {webHandler} from "../utilities/Utils";
 import {LoadingModal} from "./LoadingModal";
+import {ErrorResponseModal} from "./ErrorResponseModal";
 
 /**
  * Properties definition for {@link LogViewer}
@@ -32,6 +33,16 @@ interface LogViewerState {
      * Denotes whether or not to show the loading modal
      */
     readonly showLoading: boolean
+
+    /**
+     * Whether to show the error modal or not
+     */
+    readonly errorModalShow: boolean
+
+    /**
+     * What to give the error modal
+     */
+    readonly errorModalData: Error[]
 }
 
 /**
@@ -53,7 +64,9 @@ export default class LogViewer extends Component<LogViewerProps, LogViewerState>
 
         this.state = {
             log: null,
-            showLoading: false
+            showLoading: false,
+            errorModalShow: false,
+            errorModalData: []
         };
     }
 
@@ -87,9 +100,7 @@ export default class LogViewer extends Component<LogViewerProps, LogViewerState>
                 .then((response: Log) => {
                     this.setState({log: response});
                 })
-                .catch(response => {
-                    alert("ERROR: " + JSON.stringify(response));
-                })
+                .catch((response: Error[]) => this.setState({errorModalShow: true, errorModalData: response}))
                 .finally(() => {
                     this.setState({showLoading: false});
                 });
@@ -172,6 +183,11 @@ export default class LogViewer extends Component<LogViewerProps, LogViewerState>
     };
 
     /**
+     * Callback used to close the error modal
+     */
+    closeModal = () => this.setState({errorModalShow: false, errorModalData: []});
+
+    /**
      * Loading modal
      *
      * Form
@@ -180,13 +196,22 @@ export default class LogViewer extends Component<LogViewerProps, LogViewerState>
      */
     render = () => {
 
-        const loadingModal = this.state.showLoading ?
-            <LoadingModal show={this.state.showLoading}/>
-            : null;
+        const loadingModal =
+            this.state.showLoading ?
+                <LoadingModal show={this.state.showLoading}/>
+                : null;
+
+        const errorModal =
+            this.state.errorModalShow ?
+                <ErrorResponseModal show={this.state.errorModalShow}
+                                    data={this.state.errorModalData}
+                                    callback={this.closeModal}/>
+                : null;
 
         return (
             <div>
                 {loadingModal}
+                {errorModal}
                 {this.formatForm()}
                 <br/>
                 {this.formatLog()}
