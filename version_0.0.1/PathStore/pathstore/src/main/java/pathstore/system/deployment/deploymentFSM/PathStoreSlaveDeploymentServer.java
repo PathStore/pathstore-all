@@ -131,11 +131,11 @@ public class PathStoreSlaveDeploymentServer extends Thread {
                 "127.0.0.1",
                 rmiPort,
                 PathStoreProperties.getInstance().ExternalAddress,
-                rmiPort,
+                PathStoreProperties.getInstance().RMIRegistryPort,
                 "127.0.0.1",
                 cassandraPort,
                 PathStoreProperties.getInstance().ExternalAddress,
-                cassandraPort)) {
+                PathStoreProperties.getInstance().CassandraPort)) {
 
           // Inform the user what command is being executed
           logger.info(command.toString());
