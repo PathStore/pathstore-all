@@ -3,7 +3,6 @@ import Modal from "react-modal";
 import {ApplicationStatus, Deployment, Server} from "../../utilities/ApiDeclarations";
 import NodeInfoModal from "../NodeInfoModal";
 import {PathStoreTopology} from "../PathStoreTopology";
-import {contains} from "../../utilities/Utils";
 import {Button} from "react-bootstrap";
 
 /**
@@ -53,12 +52,12 @@ interface DeployApplicationResponseModalState {
     /**
      * List of node id's that just got installed
      */
-    readonly newlyInstalled: number[]
+    readonly newlyInstalled: Set<number>
 
     /**
      * List of node id's that alread had the application installed on
      */
-    readonly previouslyInstalled: number[]
+    readonly previouslyInstalled: Set<number>
 
     /**
      * Whether to show the info modal or not
@@ -90,14 +89,18 @@ export default class DeployApplicationResponseModal
 
         this.state = {
             newlyInstalled:
-                this.props.data
-                    .map(i => i.nodeid),
+                new Set<number>(
+                    this.props.data
+                        .map(i => i.nodeid)
+                ),
 
             previouslyInstalled:
-                this.props.applicationStatus
-                    .filter(i => i.keyspace_name === this.props.applicationName)
-                    .filter(i => i.process_status === "INSTALLED")
-                    .map(i => i.nodeid),
+                new Set<number>(
+                    this.props.applicationStatus
+                        .filter(i => i.keyspace_name === this.props.applicationName)
+                        .filter(i => i.process_status === "INSTALLED")
+                        .map(i => i.nodeid)
+                ),
 
             infoModalShow: false,
             infoModalNode: -1
@@ -115,8 +118,8 @@ export default class DeployApplicationResponseModal
      * @returns {string}
      */
     getClassName = (object: Deployment): string => {
-        if (contains<number>(this.state.newlyInstalled, object.new_node_id)) return 'installation_node';
-        else if (contains<number>(this.state.previouslyInstalled, object.new_node_id)) return 'previous_node';
+        if (this.state.newlyInstalled.has(object.new_node_id)) return 'installation_node';
+        else if (this.state.previouslyInstalled.has(object.new_node_id)) return 'previous_node';
         else return 'not_set_node';
     };
 

@@ -1,6 +1,5 @@
 import {Component} from "react";
 import {ApplicationStatus, Deployment} from "../../utilities/ApiDeclarations";
-import {contains} from "../../utilities/Utils";
 import Modal from "react-modal";
 import {PathStoreTopology} from "../PathStoreTopology";
 import React from "react";
@@ -43,17 +42,17 @@ interface LiveTransitionVisualModalState {
     /**
      * List of node id's who are waiting
      */
-    readonly waiting: number[]
+    readonly waiting: Set<number>
 
     /**
      * List of node id's who are installing
      */
-    readonly installing: number[]
+    readonly installing: Set<number>
 
     /**
      * List of node id's who are installed
      */
-    readonly installed: number[]
+    readonly installed: Set<number>
 }
 
 /**
@@ -69,9 +68,9 @@ export default class LiveTransitionVisualModal extends Component<LiveTransitionV
     constructor(props: LiveTransitionVisualModalProperties) {
         super(props);
         this.state = {
-            waiting: [],
-            installing: [],
-            installed: []
+            waiting: new Set<number>(),
+            installing: new Set<number>(),
+            installed: new Set<number>()
         };
     }
 
@@ -89,20 +88,26 @@ export default class LiveTransitionVisualModal extends Component<LiveTransitionV
     static getDerivedStateFromProps(nextProps: LiveTransitionVisualModalProperties, prevState: LiveTransitionVisualModalState): LiveTransitionVisualModalState {
         return {
             waiting:
-                nextProps.applicationStatus
-                    .filter(i => i.keyspace_name === nextProps.application)
-                    .filter(i => i.process_status === "WAITING_INSTALL")
-                    .map(i => i.nodeid),
+                new Set<number>(
+                    nextProps.applicationStatus
+                        .filter(i => i.keyspace_name === nextProps.application)
+                        .filter(i => i.process_status === "WAITING_INSTALL")
+                        .map(i => i.nodeid)
+                ),
             installing:
-                nextProps.applicationStatus
-                    .filter(i => i.keyspace_name === nextProps.application)
-                    .filter(i => i.process_status === "INSTALLING")
-                    .map(i => i.nodeid),
+                new Set<number>(
+                    nextProps.applicationStatus
+                        .filter(i => i.keyspace_name === nextProps.application)
+                        .filter(i => i.process_status === "INSTALLING")
+                        .map(i => i.nodeid)
+                ),
             installed:
-                nextProps.applicationStatus
-                    .filter(i => i.keyspace_name === nextProps.application)
-                    .filter(i => i.process_status === "INSTALLED")
-                    .map(i => i.nodeid)
+                new Set<number>(
+                    nextProps.applicationStatus
+                        .filter(i => i.keyspace_name === nextProps.application)
+                        .filter(i => i.process_status === "INSTALLED")
+                        .map(i => i.nodeid)
+                )
         }
     }
 
@@ -119,9 +124,9 @@ export default class LiveTransitionVisualModal extends Component<LiveTransitionV
     getClassName = (object: Deployment): string => {
         const name = object.new_node_id;
 
-        if (contains<number>(this.state.installed, name)) return 'installed_node';
-        else if (contains<number>(this.state.installing, name)) return 'installing_node';
-        else if (contains<number>(this.state.waiting, name)) return 'waiting_node';
+        if (this.state.installed.has(name)) return 'installed_node';
+        else if (this.state.installing.has(name)) return 'installing_node';
+        else if (this.state.waiting.has(name)) return 'waiting_node';
         else return 'not_set_node';
     };
 

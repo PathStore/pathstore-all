@@ -1,7 +1,6 @@
 import React, {Component} from "react";
 import ReactDOM from "react-dom";
 import {Deployment, Server, Update} from "../../utilities/ApiDeclarations";
-import {contains} from "../../utilities/Utils";
 import {Button, Form} from "react-bootstrap";
 
 /**
@@ -12,11 +11,6 @@ interface NodeDeploymentAdditionFormProperties {
      * List of deployment nodes from {@link NodeDeploymentModal}
      */
     readonly deployment: Deployment[]
-
-    /**
-     * List of update nodes from {@link NodeDeploymentModal}
-     */
-    readonly updates: Update[]
 
     /**
      * List of server objects from the api
@@ -30,16 +24,66 @@ interface NodeDeploymentAdditionFormProperties {
 }
 
 /**
- * TODO: Error check inputs and display to user
- *
+ * State definition for {@link NodeDeploymentAdditionForm}
+ */
+interface NodeDeploymentAdditionFormState {
+    /**
+     * Set of node id's from deployment
+     */
+    readonly deploymentNodeIdSet: Set<number>
+
+    /**
+     * Set of server uuid's from deployment
+     */
+    readonly deploymentServerUUIDSet: Set<string>
+}
+
+/**
  * This component is a form that allows users to hypothetically add a node to the network
  */
-export default class NodeDeploymentAdditionForm extends Component<NodeDeploymentAdditionFormProperties> {
+export default class NodeDeploymentAdditionForm
+    extends Component<NodeDeploymentAdditionFormProperties, NodeDeploymentAdditionFormState> {
 
     /**
      * Used to clear message form
      */
     private messageForm: any;
+
+    /**
+     * Initializes state and props
+     *
+     * @param props
+     */
+    constructor(props: NodeDeploymentAdditionFormProperties) {
+        super(props);
+
+        this.state = {
+            deploymentNodeIdSet: new Set<number>(),
+            deploymentServerUUIDSet: new Set<string>()
+        }
+    }
+
+    /**
+     * This function will update the state on props change. As we have an internal state of sets of relevant information
+     * from the deployment object list. This is because we don't want to have all the searches be O(n)
+     *
+     * @param nextProps
+     * @param prevState
+     */
+    static getDerivedStateFromProps(nextProps: NodeDeploymentAdditionFormProperties, prevState: NodeDeploymentAdditionFormState) {
+        return {
+            deploymentNodeIdSet:
+                new Set<number>(
+                    nextProps.deployment
+                        .map(i => i.new_node_id)
+                ),
+            deploymentServerUUIDSet:
+                new Set<string>(
+                    nextProps.deployment
+                        .map(i => i.server_uuid)
+                )
+        }
+    }
 
     /**
      * Read all data from form and push that data to the topology array and the updates array. Also clear the form when finished
@@ -96,11 +140,8 @@ export default class NodeDeploymentAdditionForm extends Component<NodeDeployment
      * @param parentId inputted parentNodeId
      * @param nodeId inputted nodeId
      */
-    checkValidityOfInput = (parentId: number, nodeId: number): boolean => {
-        const mapDeployment = this.props.deployment.map(i => i.new_node_id);
-
-        return contains<number>(mapDeployment, parentId) && !contains<number>(mapDeployment, nodeId);
-    };
+    checkValidityOfInput = (parentId: number, nodeId: number): boolean =>
+        this.state.deploymentNodeIdSet.has(parentId) && !this.state.deploymentNodeIdSet.has(nodeId);
 
 
     /**
@@ -116,7 +157,7 @@ export default class NodeDeploymentAdditionForm extends Component<NodeDeployment
         const servers = [];
 
         for (let i = 0; i < this.props.servers.length; i++)
-            if (!contains(this.props.deployment.map(i => i.server_uuid), this.props.servers[i].server_uuid))
+            if (!this.state.deploymentServerUUIDSet.has(this.props.servers[i].server_uuid))
                 servers.push(
                     <option key={i}>{this.props.servers[i].name}</option>
                 );

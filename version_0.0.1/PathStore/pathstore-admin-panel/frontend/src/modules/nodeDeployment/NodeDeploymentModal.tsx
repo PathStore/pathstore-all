@@ -1,6 +1,6 @@
 import React, {Component} from "react";
 import {Deployment, Error, Server, Update} from "../../utilities/ApiDeclarations";
-import {contains, webHandler} from "../../utilities/Utils";
+import {webHandler} from "../../utilities/Utils";
 import {PathStoreTopology} from "../PathStoreTopology";
 import Button from "react-bootstrap/Button";
 import Modal from "react-modal";
@@ -55,6 +55,11 @@ interface NodeDeploymentModalState {
     readonly updates: Update[]
 
     /**
+     * Set of updates node id's
+     */
+    readonly updateNodeIdSet: Set<number>
+
+    /**
      * Whether or not to show the info modal
      */
     readonly infoModalShow: boolean
@@ -96,6 +101,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
         this.state = {
             deployment: props.deployment.slice(),
             updates: [],
+            updateNodeIdSet: new Set<number>(),
             infoModalShow: false,
             infoModalIsHypothetical: false,
             infoModalNodeNumber: -1,
@@ -150,7 +156,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
      * @returns {string}
      */
     isHypothetical = (object: Deployment): string =>
-        contains<number>(this.state.updates.map(i => i.newNodeId), object.new_node_id) ?
+        this.state.updateNodeIdSet.has(object.new_node_id) ?
             'hypothetical'
             : 'not_set_node';
 
@@ -163,7 +169,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
     handleClick = (event: any, node: number): void => this.setState(
         {
             infoModalShow: true,
-            infoModalIsHypothetical: contains<number>(this.state.updates.map(i => i.newNodeId), node),
+            infoModalIsHypothetical: this.state.updateNodeIdSet.has(node),
             infoModalNodeNumber: node
         }
     );
@@ -177,8 +183,13 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
     handleAddition = (topologyRecord: Deployment, updateRecord: Update): void => {
         this.state.deployment.push(topologyRecord);
         this.state.updates.push(updateRecord);
+        this.state.updateNodeIdSet.add(updateRecord.newNodeId);
 
-        this.setState({deployment: this.state.deployment, updates: this.state.updates});
+        this.setState({
+            deployment: this.state.deployment,
+            updates: this.state.updates,
+            updateNodeIdSet: this.state.updateNodeIdSet
+        });
     };
 
     /**
@@ -220,7 +231,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
      * @return updated state
      */
     deleteNodeAndChildren = (deployment: Deployment[], updates: Update[], node_number: number):
-        { deployment: Deployment[], updates: Update[], infoModalNodeNumber: number } => {
+        { deployment: Deployment[], updates: Update[], updateNodeIdSet: Set<number>, infoModalNodeNumber: number } => {
 
         const deploymentMap: Map<number, Deployment[]> = new Map<number, Deployment[]>();
 
@@ -230,13 +241,17 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
                 else deploymentMap.get(deployment[i].parent_node_id)?.push(deployment[i]);
             }
 
-        if (!deploymentMap.has(node_number))
+        if (!deploymentMap.has(node_number)) {
+
+            const newUpdates = updates.filter(i => i.newNodeId !== node_number);
+
             return {
                 deployment: deployment.filter(i => i.new_node_id !== node_number),
-                updates: updates.filter(i => i.newNodeId !== node_number),
+                updates: newUpdates,
+                updateNodeIdSet: new Set<number>(newUpdates.map(i => i.newNodeId)),
                 infoModalNodeNumber: -1
             };
-        else {
+        } else {
 
             const updatesMap: Map<number, Update> = new Map<number, Update>();
 
@@ -256,6 +271,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
             return {
                 deployment: newDeployment,
                 updates: newUpdates,
+                updateNodeIdSet: new Set<number>(newUpdates.map(i => i.newNodeId)),
                 infoModalNodeNumber: -1
             };
         }
@@ -336,7 +352,6 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
                 </div>
 
                 <NodeDeploymentAdditionForm deployment={this.state.deployment}
-                                            updates={this.state.updates}
                                             servers={this.props.servers}
                                             addition={this.handleAddition}/>
 
