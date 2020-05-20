@@ -1,12 +1,17 @@
-import {Server} from "../../../utilities/ApiDeclarations";
+import {Deployment, Server} from "../../../utilities/ApiDeclarations";
 import React, {Component} from "react";
 import {Table} from "react-bootstrap";
-import {webHandler} from "../../../utilities/Utils";
+import ModifyServerModal from "./ModifyServerModal";
 
 /**
  * Properties for {@link DisplayServers}
  */
 interface DisplayServersProperties {
+    /**
+     * List of deploy objects from api
+     */
+    readonly deployment: Deployment[]
+
     /**
      * List of server objects from api
      */
@@ -19,30 +24,53 @@ interface DisplayServersProperties {
 }
 
 /**
+ * State definition for {@link DisplayServers}
+ */
+interface DisplayServersState {
+    /**
+     * Whether to show the modal or not
+     */
+    readonly modifyServerModalShow: boolean
+
+    /**
+     * Server info to send to modal
+     */
+    readonly modifyServerModalData: Server | undefined
+}
+
+/**
  * This component is used to render a table to display all created servers
  *
  * @param props
  * @constructor
  */
-export default class DisplayServers extends Component<DisplayServersProperties> {
+export default class DisplayServers extends Component<DisplayServersProperties, DisplayServersState> {
+
+    constructor(props: DisplayServersProperties) {
+        super(props);
+
+        this.state = {
+            modifyServerModalShow: false,
+            modifyServerModalData: undefined
+        }
+    }
 
     /**
+     * TODO: Check to ensure the server is editable
+     *
      * Delete object using the api. Then force refresh the data so the server is removed on the client side
      *
      * @param server
      */
     handleClick = (server: Server): void => {
-        fetch('/api/v1/servers?serverUUID=' + server.server_uuid, {
-            method: 'DELETE'
-        })
-            .then(webHandler)
-            .then(() => {
-                this.props.forceRefresh();
-            })
-            .catch(response => {
-                alert(JSON.stringify(response));
-            })
+        if (!new Set<string>(this.props.deployment.map(i => i.server_uuid)).has(server.server_uuid))
+            this.setState({modifyServerModalShow: true, modifyServerModalData: server});
     };
+
+    /**
+     * Callback function for modal to close itself
+     */
+    modalCallback = () => this.setState({modifyServerModalShow: false, modifyServerModalData: undefined});
 
     /**
      * Render table
@@ -55,22 +83,35 @@ export default class DisplayServers extends Component<DisplayServersProperties> 
                 <ServerRow key={i} server={this.props.servers[i]} handleClick={this.handleClick}/>
             );
 
+        const modal =
+            this.state.modifyServerModalShow ?
+                <ModifyServerModal show={this.state.modifyServerModalShow}
+                                   callback={this.modalCallback}
+                                   server={this.state.modifyServerModalData}
+                                   forceRefresh={this.props.forceRefresh}/>
+                :
+                null;
+
         return (
-            <Table>
-                <thead>
-                <tr>
-                    <th>Server UUID</th>
-                    <th>IP</th>
-                    <th>Username</th>
-                    <th>SSH Port</th>
-                    <th>RMI Port</th>
-                    <th>Server Name</th>
-                </tr>
-                </thead>
-                <tbody>
-                {tbody}
-                </tbody>
-            </Table>
+            <div>
+                {modal}
+                <Table>
+                    <thead>
+                    <tr>
+                        <th>Server UUID</th>
+                        <th>IP</th>
+                        <th>Username</th>
+                        <th>SSH Port</th>
+                        <th>RMI Port</th>
+                        <th>Server Name</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {tbody}
+                    </tbody>
+                </Table>
+                <p>Click on a free server record to modify it</p>
+            </div>
         );
     }
 };

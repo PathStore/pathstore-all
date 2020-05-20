@@ -8,7 +8,7 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.servers.formatter.AddServerFormatter;
-import pathstoreweb.pathstoreadminpanel.services.servers.payload.AddServerPayload;
+import pathstoreweb.pathstoreadminpanel.services.servers.payload.ServerPayload;
 
 /**
  * This service is used to insert a record in the database to denote the creation of a new server
@@ -18,14 +18,14 @@ public class AddServer implements IService {
   /**
    * Valid payload
    *
-   * @see AddServerPayload
+   * @see ServerPayload
    * @see pathstoreweb.pathstoreadminpanel.services.servers.validator.ServerConnectionTest
    * @see pathstoreweb.pathstoreadminpanel.services.servers.validator.ServerUnique
    */
-  private final AddServerPayload payload;
+  private final ServerPayload payload;
 
   /** @param payload {@link #payload} */
-  public AddServer(final AddServerPayload payload) {
+  public AddServer(final ServerPayload payload) {
     this.payload = payload;
   }
 

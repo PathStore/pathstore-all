@@ -176,11 +176,11 @@ export default class AddServers extends Component<AddServersProperties, AddServe
                         <Form.Control type="password" placeholder="password for login"/>
                     </Form.Group>
                     <Form.Group controlId="ssh_port">
-                        <Form.Label>Password</Form.Label>
+                        <Form.Label>SSH Port</Form.Label>
                         <Form.Control type="number" placeholder="default is 22"/>
                     </Form.Group>
                     <Form.Group controlId="rmi_port">
-                        <Form.Label>Password</Form.Label>
+                        <Form.Label>RMI Port</Form.Label>
                         <Form.Control type="number" placeholder="default is 1099"/>
                     </Form.Group>
                     <Form.Group controlId="name">

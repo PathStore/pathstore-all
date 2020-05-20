@@ -319,7 +319,9 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
                                             servers={this.props.servers}
                                             addition={this.handleAddition}/>
 
-                <DisplayServers servers={this.props.servers} forceRefresh={this.props.forceRefresh}/>
+                <DisplayServers deployment={this.props.deployment}
+                                servers={this.props.servers}
+                                forceRefresh={this.props.forceRefresh}/>
 
                 <AddServers servers={this.props.servers}
                             callback={this.props.forceRefresh}/>
