@@ -1,12 +1,11 @@
 import {Component} from "react";
-import ReactDOM from "react-dom";
 import {Server, Error} from "../../../utilities/ApiDeclarations";
 import {webHandler} from "../../../utilities/Utils";
-import {Button, Form} from "react-bootstrap";
 import React from "react";
 import {LoadingModal} from "../../LoadingModal";
 import {ErrorResponseModal} from "../../ErrorResponseModal";
 import {ServerCreationResponseModal} from "./ServerCreationResponseModal";
+import ServerForm from "./ServerForm";
 
 /**
  * Properties definition for {@link AddServers}
@@ -59,11 +58,6 @@ interface AddServersState {
 export default class AddServers extends Component<AddServersProperties, AddServersState> {
 
     /**
-     * Used to clear message form
-     */
-    private messageForm: any;
-
-    /**
      * Initializes props and state
      *
      * @param props
@@ -83,24 +77,30 @@ export default class AddServers extends Component<AddServersProperties, AddServe
     /**
      * Load all data from form and make the api call.
      *
-     * @param event
+     * @param ip
+     * @param username
+     * @param password
+     * @param ssh_port
+     * @param rmi_port
+     * @param name
+     * @param clearForm
      */
-    onFormSubmit = (event: any): void => {
-        event.preventDefault();
-
-        const ip = event.target.elements.ip.value.trim();
-        const username = event.target.elements.username.value.trim();
-        const password = event.target.elements.password.value.trim();
-        const ssh_port = event.target.elements.ssh_port.value.trim();
-        const rmi_port = event.target.elements.rmi_port.value.trim();
-        const name = event.target.elements.name.value.trim();
+    onFormSubmit = (
+        ip: string | undefined,
+        username: string | undefined,
+        password: string | undefined,
+        ssh_port: number | undefined,
+        rmi_port: number | undefined,
+        name: string | undefined,
+        clearForm: () => void
+    ): void => {
 
         let url = "/api/v1/servers"
             + "?ip=" + ip
             + "&username=" + username
             + "&password=" + password
-            + "&sshPort=" + (ssh_port === "" ? 22 : ssh_port)
-            + "&rmiPort=" + (rmi_port === "" ? 1099 : rmi_port)
+            + "&sshPort=" + (ssh_port === undefined ? 22 : ssh_port)
+            + "&rmiPort=" + (rmi_port === undefined ? 1099 : rmi_port)
             + "&name=" + name;
 
         this.setState({loadingModalShow: true}, () => {
@@ -113,8 +113,8 @@ export default class AddServers extends Component<AddServersProperties, AddServe
                         responseModalData: response,
                         responseModalError: false
                     }, () => {
-                        // @ts-ignore
-                        ReactDOM.findDOMNode(this.messageForm).reset();
+                        alert("Clear form");
+                        clearForm();
                         this.props.callback();
                     })
                 ).catch((response: Error[]) => this.setState({
@@ -162,35 +162,7 @@ export default class AddServers extends Component<AddServersProperties, AddServe
                 {loadingModal}
                 {responseModal}
                 <h3>Create Server</h3>
-                <Form onSubmit={this.onFormSubmit} ref={(form: any) => this.messageForm = form}>
-                    <Form.Group controlId="ip">
-                        <Form.Label>IP Address</Form.Label>
-                        <Form.Control type="text" placeholder="ip address of server"/>
-                    </Form.Group>
-                    <Form.Group controlId="username">
-                        <Form.Label>Username</Form.Label>
-                        <Form.Control type="text" placeholder="username for login"/>
-                    </Form.Group>
-                    <Form.Group controlId="password">
-                        <Form.Label>Password</Form.Label>
-                        <Form.Control type="password" placeholder="password for login"/>
-                    </Form.Group>
-                    <Form.Group controlId="ssh_port">
-                        <Form.Label>SSH Port</Form.Label>
-                        <Form.Control type="number" placeholder="default is 22"/>
-                    </Form.Group>
-                    <Form.Group controlId="rmi_port">
-                        <Form.Label>RMI Port</Form.Label>
-                        <Form.Control type="number" placeholder="default is 1099"/>
-                    </Form.Group>
-                    <Form.Group controlId="name">
-                        <Form.Label>Server Name</Form.Label>
-                        <Form.Control type="text" placeholder="Name to identify server (This is only to aid you)"/>
-                    </Form.Group>
-                    <Button variant="primary" type="submit">
-                        Submit
-                    </Button>
-                </Form>
+                <ServerForm onFormSubmitCallback={this.onFormSubmit}/>
             </div>
         )
     }

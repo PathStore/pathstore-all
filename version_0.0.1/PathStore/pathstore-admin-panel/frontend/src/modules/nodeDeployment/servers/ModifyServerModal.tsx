@@ -1,10 +1,11 @@
 import React, {Component} from "react";
 import Modal from "react-modal";
-import {Button, Form} from "react-bootstrap";
+import {Button} from "react-bootstrap";
 import {Error, Server} from "../../../utilities/ApiDeclarations";
 import {webHandler} from "../../../utilities/Utils";
 import {LoadingModal} from "../../LoadingModal";
 import {ErrorResponseModal} from "../../ErrorResponseModal";
+import ServerForm from "./ServerForm";
 
 /**
  * Properties definition for {@link ModifyServerModal}
@@ -36,36 +37,6 @@ interface ModifyServerModalProperties {
  */
 interface ModifyServerModalState {
     /**
-     * Ip of server
-     */
-    readonly ip: string | undefined
-
-    /**
-     * Username for server
-     */
-    readonly username: string | undefined
-
-    /**
-     * Passed for server (Must be re-entered on modification)
-     */
-    readonly password: string | undefined
-
-    /**
-     * ssh port for server
-     */
-    readonly ssh_port: number | undefined
-
-    /**
-     * Rmi port for server
-     */
-    readonly rmi_port: number | undefined
-
-    /**
-     * Name of server
-     */
-    readonly name: string | undefined
-
-    /**
      * Whether the loading modal is shown
      */
     readonly loadingModalShow: boolean
@@ -95,12 +66,6 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
         super(props);
 
         this.state = {
-            ip: this.props.server?.ip,
-            username: this.props.server?.username,
-            password: "",
-            ssh_port: this.props.server?.ssh_port,
-            rmi_port: this.props.server?.rmi_port,
-            name: this.props.server?.name,
             loadingModalShow: false,
             responseModalError: false,
             responseModalErrorData: []
@@ -125,31 +90,35 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
 
     };
 
-
-    /**
-     * Generic on change function to update state information
-     *
-     * @param event event from control form
-     */
-    onChange = (event: any): void =>
-        this.setState({[event.target.name]: event.target.value} as ModifyServerModalState);
-
     /**
      * Submit the new information to the server for submission
      *
-     * @param event
+     * @param ip
+     * @param username
+     * @param password
+     * @param ssh_port
+     * @param rmi_port
+     * @param name
+     * @param clearForm
      */
-    onFormSubmit = (event: any): void => {
-        event.preventDefault();
+    onFormSubmit = (
+        ip: string | undefined,
+        username: string | undefined,
+        password: string | undefined,
+        ssh_port: number | undefined,
+        rmi_port: number | undefined,
+        name: string | undefined,
+        clearForm: () => void
+    ): void => {
 
         let url = "/api/v1/servers"
             + "?serverUUID=" + this.props.server?.server_uuid
-            + "&ip=" + this.state.ip
-            + "&username=" + this.state.username
-            + "&password=" + this.state.password
-            + "&sshPort=" + (this.state.ssh_port === undefined ? 22 : this.state.ssh_port)
-            + "&rmiPort=" + (this.state.rmi_port === undefined ? 1099 : this.state.rmi_port)
-            + "&name=" + this.state.name;
+            + "&ip=" + ip
+            + "&username=" + username
+            + "&password=" + password
+            + "&sshPort=" + (ssh_port === undefined ? 22 : ssh_port)
+            + "&rmiPort=" + (rmi_port === undefined ? 1099 : rmi_port)
+            + "&name=" + name;
 
         this.setState({loadingModalShow: true}, () => {
             fetch(url, {
@@ -159,6 +128,7 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
                         loadingModalShow: false,
                         responseModalError: false
                     }, () => {
+                        clearForm();
                         this.props.forceRefresh();
                         this.props.callback();
                     })
@@ -204,39 +174,7 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
                 <Button onClick={this.delete}>Delete Server</Button>
                 <br/>
                 <h3>Update Modal</h3>
-                <Form onSubmit={this.onFormSubmit}>
-                    <Form.Group controlId="ip">
-                        <Form.Label>IP Address</Form.Label>
-                        <Form.Control type="text" name="ip" onChange={this.onChange} value={this.state.ip}/>
-                    </Form.Group>
-                    <Form.Group controlId="username">
-                        <Form.Label>Username</Form.Label>
-                        <Form.Control type="text" name="username" onChange={this.onChange}
-                                      value={this.state.username}/>
-                    </Form.Group>
-                    <Form.Group controlId="password">
-                        <Form.Label>Password</Form.Label>
-                        <Form.Control type="password" name="password" onChange={this.onChange}
-                                      value={this.state.password}/>
-                    </Form.Group>
-                    <Form.Group controlId="ssh_port">
-                        <Form.Label>SSH Port</Form.Label>
-                        <Form.Control type="number" name="ssh_port" onChange={this.onChange}
-                                      value={this.state.ssh_port}/>
-                    </Form.Group>
-                    <Form.Group controlId="rmi_port">
-                        <Form.Label>RMI Port</Form.Label>
-                        <Form.Control type="number" name="rmi_port" onChange={this.onChange}
-                                      value={this.state.rmi_port}/>
-                    </Form.Group>
-                    <Form.Group controlId="name">
-                        <Form.Label>Server Name</Form.Label>
-                        <Form.Control type="text" name="name" onChange={this.onChange} value={this.state.name}/>
-                    </Form.Group>
-                    <Button variant="primary" type="submit">
-                        Submit
-                    </Button>
-                </Form>
+                <ServerForm onFormSubmitCallback={this.onFormSubmit} server={this.props.server}/>
                 <br/>
                 <Button onClick={this.props.callback}>close</Button>
             </Modal>
