@@ -45,7 +45,7 @@ public @interface ServerConnectionTest {
         final Server server, final ConstraintValidatorContext constraintValidatorContext) {
 
       try {
-        new SSHUtil(server.ip, server.username, server.password, 22);
+        new SSHUtil(server.ip, server.username, server.password, server.sshPort).disconnect();
       } catch (JSchException e) {
         return false;
       }

@@ -144,7 +144,7 @@ public class StartUpHandler {
           System.out.println(command);
           command.execute();
         }
-        this.finalizeRootNodeInstallation(ip, cassandraPort, username, password);
+        this.finalizeRootNodeInstallation(ip, cassandraPort, username, password, sshPort, rmiPort);
 
         this.generatePathStorePropertiesFile(ip, cassandraPort, rmiPort);
       } catch (CommandError error) {
@@ -416,9 +416,16 @@ public class StartUpHandler {
    * @param cassandraPort cassandra port
    * @param username username to connect to root node
    * @param password password for root node
+   * @param sshPort ssh port for connection
+   * @param rmiPort rmi port for pathstore rmi server
    */
   private void finalizeRootNodeInstallation(
-      final String ip, final int cassandraPort, final String username, final String password) {
+      final String ip,
+      final int cassandraPort,
+      final String username,
+      final String password,
+      final int sshPort,
+      final int rmiPort) {
 
     System.out.println("Writing server record to root's table");
 
@@ -436,6 +443,8 @@ public class StartUpHandler {
             .value(IP, ip)
             .value(USERNAME, username)
             .value(PASSWORD, password)
+            .value(SSH_PORT, sshPort)
+            .value(RMI_PORT, rmiPort)
             .value(NAME, "Root Node");
 
     session.execute(insert);

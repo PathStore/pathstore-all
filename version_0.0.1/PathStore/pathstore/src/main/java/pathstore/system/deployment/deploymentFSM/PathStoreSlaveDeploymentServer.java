@@ -40,8 +40,8 @@ public class PathStoreSlaveDeploymentServer extends Thread {
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStoreSlaveSchemaServer.class);
 
+  /** Cassandra port which is statically declared (temporary) */
   private static final int cassandraPort = 9052;
-  private static final int rmiPort = 1099;
 
   /**
    * Iterate over all deployment records. Find a record that has the parent node id as the current
@@ -85,14 +85,16 @@ public class PathStoreSlaveDeploymentServer extends Thread {
                 entry,
                 serverRow.getString(IP),
                 serverRow.getString(USERNAME),
-                serverRow.getString(PASSWORD));
+                serverRow.getString(PASSWORD),
+                serverRow.getInt(SSH_PORT),
+                serverRow.getInt(RMI_PORT));
         }
       }
 
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        logger.error(e);
       }
     }
   }
@@ -104,16 +106,23 @@ public class PathStoreSlaveDeploymentServer extends Thread {
    * @param ip ip of the server where the future node is going to be installed on
    * @param username username of the server
    * @param password password of the server
+   * @param sshPort ssh port for connection
+   * @param rmiPort rmi port for rmi server
    * @see StartupUTIL#initList(SSHUtil, String, int, int, Role, String, int, String, int, String,
    *     int, String, int)
    */
   private void deploy(
-      final DeploymentEntry entry, final String ip, final String username, final String password) {
+      final DeploymentEntry entry,
+      final String ip,
+      final String username,
+      final String password,
+      final int sshPort,
+      final int rmiPort) {
 
     logger.info(String.format("Deploying %d from node %d", entry.newNodeId, entry.parentNodeId));
 
     try {
-      SSHUtil sshUtil = new SSHUtil(ip, username, password, 22);
+      SSHUtil sshUtil = new SSHUtil(ip, username, password, sshPort);
 
       logger.debug("Connection established to new node");
 

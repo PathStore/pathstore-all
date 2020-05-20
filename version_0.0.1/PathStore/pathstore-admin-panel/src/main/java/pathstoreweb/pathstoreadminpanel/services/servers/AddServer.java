@@ -52,6 +52,8 @@ public class AddServer implements IService {
             .value(Constants.SERVERS_COLUMNS.IP, this.payload.server.ip)
             .value(Constants.SERVERS_COLUMNS.USERNAME, this.payload.server.username)
             .value(Constants.SERVERS_COLUMNS.PASSWORD, this.payload.server.password)
+            .value(Constants.SERVERS_COLUMNS.SSH_PORT, this.payload.server.sshPort)
+            .value(Constants.SERVERS_COLUMNS.RMI_PORT, this.payload.server.rmiPort)
             .value(Constants.SERVERS_COLUMNS.NAME, this.payload.server.name);
 
     session.execute(insert);

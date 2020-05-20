@@ -30,10 +30,12 @@ public class GetServersFormatter implements IFormatter {
 
     for (Server server : this.listOfServers) {
       JSONObject object = new JSONObject();
+
       object.put(Constants.SERVERS_COLUMNS.SERVER_UUID, server.serverUUID.toString());
       object.put(Constants.SERVERS_COLUMNS.IP, server.ip);
       object.put(Constants.SERVERS_COLUMNS.USERNAME, server.username);
-      object.put(Constants.SERVERS_COLUMNS.PASSWORD, server.password);
+      object.put(Constants.SERVERS_COLUMNS.SSH_PORT, server.sshPort);
+      object.put(Constants.SERVERS_COLUMNS.RMI_PORT, server.rmiPort);
       object.put(Constants.SERVERS_COLUMNS.NAME, server.name);
 
       jsonArray.put(object);

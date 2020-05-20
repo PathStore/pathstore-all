@@ -15,6 +15,8 @@ export interface Server {
     server_uuid: string
     ip: string
     username: string
+    ssh_port: number
+    rmi_port: number
     name: string
 }
 

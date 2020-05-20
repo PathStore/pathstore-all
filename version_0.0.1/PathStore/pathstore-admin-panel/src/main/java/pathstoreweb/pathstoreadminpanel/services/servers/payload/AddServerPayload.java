@@ -33,9 +33,15 @@ public final class AddServerPayload {
   public final Server server;
 
   public AddServerPayload(
-      final String ip, final String username, final String password, final String name) {
+      final String ip,
+      final String username,
+      final String password,
+      final int sshPort,
+      final int rmiPort,
+      final String name) {
     this.ip = ip;
     this.name = name;
-    this.server = new Server(UUID.randomUUID(), ip, username, password, name);
+    this.server =
+        new Server(UUID.randomUUID(), ip, username, password, sshPort, rmiPort, name);
   }
 }

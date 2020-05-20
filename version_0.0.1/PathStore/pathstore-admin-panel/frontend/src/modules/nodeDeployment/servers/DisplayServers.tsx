@@ -26,6 +26,9 @@ export const DisplayServers: FunctionComponent<DisplayServersProperties> = (prop
             <tr key={i}>
                 <td>{props.servers[i].server_uuid}</td>
                 <td>{props.servers[i].ip}</td>
+                <td>{props.servers[i].username}</td>
+                <td>{props.servers[i].ssh_port}</td>
+                <td>{props.servers[i].rmi_port}</td>
                 <td>{props.servers[i].name}</td>
             </tr>
         );
@@ -36,6 +39,9 @@ export const DisplayServers: FunctionComponent<DisplayServersProperties> = (prop
             <tr>
                 <th>Server UUID</th>
                 <th>IP</th>
+                <th>Username</th>
+                <th>SSH Port</th>
+                <th>RMI Port</th>
                 <th>Server Name</th>
             </tr>
             </thead>

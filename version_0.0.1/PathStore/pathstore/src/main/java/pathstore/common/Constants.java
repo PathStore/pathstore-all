@@ -73,6 +73,8 @@ public final class Constants {
     public static final String IP = "ip";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
+    public static final String SSH_PORT = "ssh_port";
+    public static final String RMI_PORT = "rmi_port";
     public static final String NAME = "name";
   }
 
