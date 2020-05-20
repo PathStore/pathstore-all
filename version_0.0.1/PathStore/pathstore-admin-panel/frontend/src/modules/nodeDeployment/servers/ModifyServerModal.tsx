@@ -166,7 +166,7 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
 
         this.setState({loadingModalShow: true}, () => {
             fetch(url, {
-                method: 'POST'
+                method: 'PUT'
             }).then(webHandler)
                 .then((response: Server) => this.setState({
                         loadingModalShow: false,
@@ -191,6 +191,11 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
      */
     callBack = (): void => this.setState({responseModalShow: false});
 
+    /**
+     * Render optional modals (loading and response)
+     *
+     * Render the form iff the server object isn't undefined (it shouldn't be unless an internal error occurs)
+     */
     render() {
 
         const loadingModal = this.state.loadingModalShow ? <LoadingModal show={this.state.loadingModalShow}/> : null;
