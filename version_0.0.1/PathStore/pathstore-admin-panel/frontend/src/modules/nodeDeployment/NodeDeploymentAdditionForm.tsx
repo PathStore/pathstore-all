@@ -121,7 +121,7 @@ export default class NodeDeploymentAdditionForm extends Component<NodeDeployment
                     <option key={i}>{this.props.servers[i].name}</option>
                 );
 
-        const form = servers.length > 0 ?
+        return servers.length > 0 ?
             <Form onSubmit={this.onFormSubmit} ref={(form: any) => this.messageForm = form}>
                 <Form.Group controlId="parentId">
                     <Form.Label>Parent Node Id</Form.Label>
@@ -145,12 +145,7 @@ export default class NodeDeploymentAdditionForm extends Component<NodeDeployment
                 <Button variant="primary" type="submit">
                     Submit
                 </Button>
-            </Form> : <p>There are no free servers available, you need to add a server to add a node to the network</p>;
-
-        return (
-            <div>
-                {form}
-            </div>
-        );
+            </Form>
+            : <p>There are no free servers available, you need to add a server to add a node to the network</p>;
     }
 }
