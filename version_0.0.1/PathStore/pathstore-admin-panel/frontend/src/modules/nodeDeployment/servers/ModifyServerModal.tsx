@@ -91,15 +91,15 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
     };
 
     /**
-     * Submit the new information to the server for submission
+     * Load all data from form and make the api call.
      *
-     * @param ip
-     * @param username
-     * @param password
-     * @param ssh_port
-     * @param rmi_port
-     * @param name
-     * @param clearForm
+     * @param ip ip of server
+     * @param username username of server to connect
+     * @param password password of server to connect
+     * @param ssh_port ssh port to connect on
+     * @param rmi_port rmi port to host rmi server
+     * @param name human readable name of server
+     * @param clearForm ability to clear form
      */
     onFormSubmit = (
         ip: string | undefined,
