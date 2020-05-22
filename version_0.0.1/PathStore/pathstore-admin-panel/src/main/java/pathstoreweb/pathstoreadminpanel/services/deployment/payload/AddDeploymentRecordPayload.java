@@ -123,6 +123,7 @@ public final class AddDeploymentRecordPayload extends ValidatedPayload {
                     || nodeIdSet.contains(parentNodeId)))) errors[4] = PARENT_ID_NOT_VALID;
 
     // (7)
+    System.out.println(nodeIdSet + " " + parentNodeIdSet);
     if (!Collections.disjoint(nodeIdSet, parentNodeIdSet)) errors[5] = NODE_ID_EQUALS_PARENT_ID;
 
     // (8)
