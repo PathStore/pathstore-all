@@ -39,9 +39,9 @@ public final class AddApplicationPayload extends ValidatedPayload {
     this.applicationName = application_name;
   }
 
-  /** @param application_schema passed by the spring http request handler */
-  public void setApplicationSchema(final MultipartFile application_schema) {
-    this.applicationSchema = application_schema;
+  /** @param applicationSchema passed by the spring http request handler */
+  public void setApplicationSchema(final MultipartFile applicationSchema) {
+    this.applicationSchema = applicationSchema;
   }
 
   /** @return retrieve the application schema */

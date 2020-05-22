@@ -110,7 +110,7 @@ export default class ApplicationCreation extends Component<ApplicationCreationPr
         formData.append("application_name", applicationName);
 
         if (this.state.file != null)
-            formData.append("application_schema", this.state.file);
+            formData.append("applicationSchema", this.state.file);
 
         this.setState({loadingModalShow: true}, () => {
             fetch("/api/v1/applications", {
