@@ -64,9 +64,8 @@ public final class AddApplicationPayload extends ValidatedPayload {
   protected String[] calculateErrors() {
 
     // (1)
-    if (this.bulkNullCheck(this.applicationName, this.applicationSchema)) {
+    if (this.bulkNullCheck(this.applicationName, this.applicationSchema))
       return new String[] {WRONG_SUBMISSION_FORMAT};
-    }
 
     String[] errors = {IMPROPER_APPLICATION_NAME_FORM, null};
 

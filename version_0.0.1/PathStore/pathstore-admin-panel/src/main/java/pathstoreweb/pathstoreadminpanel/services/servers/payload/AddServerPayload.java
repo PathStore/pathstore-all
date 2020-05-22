@@ -65,9 +65,7 @@ public final class AddServerPayload extends ValidatedPayload {
         this.server.password,
         this.server.sshPort,
         this.server.rmiPort,
-        this.server.name)) {
-      return new String[] {WRONG_SUBMISSION_FORMAT};
-    }
+        this.server.name)) return new String[] {WRONG_SUBMISSION_FORMAT};
 
     String[] errors = {null, null, null};
 
