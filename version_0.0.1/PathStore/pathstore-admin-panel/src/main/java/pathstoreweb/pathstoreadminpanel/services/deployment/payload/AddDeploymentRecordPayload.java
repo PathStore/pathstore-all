@@ -8,6 +8,7 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -122,8 +123,7 @@ public final class AddDeploymentRecordPayload extends ValidatedPayload {
                     || nodeIdSet.contains(parentNodeId)))) errors[4] = PARENT_ID_NOT_VALID;
 
     // (7)
-    if (nodeIdSet.stream().anyMatch(parentNodeIdSet::contains))
-      errors[5] = NODE_ID_EQUALS_PARENT_ID;
+    if (!Collections.disjoint(nodeIdSet, parentNodeIdSet)) errors[5] = NODE_ID_EQUALS_PARENT_ID;
 
     // (8)
     Select serverSelect =
