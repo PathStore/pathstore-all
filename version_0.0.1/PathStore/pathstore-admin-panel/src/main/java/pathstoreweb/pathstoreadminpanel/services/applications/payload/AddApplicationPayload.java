@@ -58,8 +58,6 @@ public final class AddApplicationPayload extends ValidatedPayload {
    *
    * <p>(3): Application name is not already used
    *
-   * <p>(4): Application schema is present
-   *
    * @return all null iff the validity test has passed
    */
   @Override
@@ -70,9 +68,7 @@ public final class AddApplicationPayload extends ValidatedPayload {
       return new String[] {WRONG_SUBMISSION_FORMAT};
     }
 
-    String[] errors = {
-      IMPROPER_APPLICATION_NAME_FORM, APPLICATION_NAME_NOT_UNIQUE, APPLICATION_SCHEMA_NOT_PASSED
-    };
+    String[] errors = {IMPROPER_APPLICATION_NAME_FORM, null};
 
     Session session = PathStoreCluster.getInstance().connect();
 
@@ -85,10 +81,7 @@ public final class AddApplicationPayload extends ValidatedPayload {
     selectApplicationName.where(
         QueryBuilder.eq(Constants.APPS_COLUMNS.KEYSPACE_NAME, this.applicationName));
 
-    for (Row row : session.execute(selectApplicationName)) errors[1] = null;
-
-    // (4)
-    if (this.applicationSchema != null) errors[2] = null;
+    for (Row row : session.execute(selectApplicationName)) errors[1] = APPLICATION_NAME_NOT_UNIQUE;
 
     return errors;
   }

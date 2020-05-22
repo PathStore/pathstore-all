@@ -29,8 +29,6 @@ public final class ErrorConstants {
         "Your application name must start with pathstore_";
     public static final String APPLICATION_NAME_NOT_UNIQUE =
         "The application name you passed is already used";
-    public static final String APPLICATION_SCHEMA_NOT_PASSED =
-        "You must pass a valid cql file to create an application";
   }
 
   /**
@@ -103,9 +101,10 @@ public final class ErrorConstants {
     public static final String INVALID_FAILED_ENTRY = "You must enter a valid failed entry";
   }
 
-    /**
-     * Validity errors for {@link pathstoreweb.pathstoreadminpanel.services.logs.payload.GetLogRecordsPayload}
-     */
+  /**
+   * Validity errors for {@link
+   * pathstoreweb.pathstoreadminpanel.services.logs.payload.GetLogRecordsPayload}
+   */
   public static final class GET_LOG_RECORDS_PAYLOAD {
     public static final String WRONG_SUBMISSION_FORMAT =
         "You must submit the following fields: node_id, date, log_level";
