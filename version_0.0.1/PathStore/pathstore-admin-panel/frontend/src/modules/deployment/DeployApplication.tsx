@@ -114,12 +114,12 @@ export default class DeployApplication extends Component<DeployApplicationProper
 
         for (let i = 0; i < nodes.length; i++) {
             if (i === 0)
-                url += "node=" + nodes[i];
+                url += "nodes=" + nodes[i];
             else
-                url += "&node=" + nodes[i];
+                url += "&nodes=" + nodes[i];
         }
 
-        url += "&applicationName=" + application;
+        url += "&application_name=" + application;
 
         fetch(url, {
             method: 'POST'

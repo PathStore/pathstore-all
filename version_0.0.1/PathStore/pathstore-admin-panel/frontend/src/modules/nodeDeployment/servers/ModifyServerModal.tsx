@@ -76,7 +76,7 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
      * Requests the given node gets deleted
      */
     delete = (): void => {
-        fetch('/api/v1/servers?serverUUID=' + this.props.server?.server_uuid, {
+        fetch('/api/v1/servers?server_uuid=' + this.props.server?.server_uuid, {
             method: 'DELETE'
         })
             .then(webHandler)
@@ -110,12 +110,12 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
     ): void => {
 
         let url = "/api/v1/servers"
-            + "?serverUUID=" + this.props.server?.server_uuid
+            + "?server_uuid=" + this.props.server?.server_uuid
             + "&ip=" + ip
             + "&username=" + username
             + "&password=" + password
-            + "&sshPort=" + (ssh_port === undefined ? 22 : ssh_port)
-            + "&rmiPort=" + (rmi_port === undefined ? 1099 : rmi_port)
+            + "&ssh_port=" + (ssh_port === undefined ? 22 : ssh_port)
+            + "&rmi_port=" + (rmi_port === undefined ? 1099 : rmi_port)
             + "&name=" + name;
 
         this.setState({loadingModalShow: true}, () => {

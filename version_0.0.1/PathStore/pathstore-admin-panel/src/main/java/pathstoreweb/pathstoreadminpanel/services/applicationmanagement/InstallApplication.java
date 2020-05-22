@@ -17,12 +17,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.UpdateApplicationStatePayload;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.ModifyApplicationStatePayload;
 
 /**
  * This class is used for deploy an application from the root node to a set of nodes in {@link
- * UpdateApplicationStatePayload#node} with application {@link
- * UpdateApplicationStatePayload#applicationName}
+ * ModifyApplicationStatePayload#nodes} with application {@link
+ * ModifyApplicationStatePayload#applicationName}
  *
  * @see UpdateApplicationStateFormatter
  * @see Constants#NODE_SCHEMAS
@@ -30,8 +30,8 @@ import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.U
  */
 public class InstallApplication implements IService {
 
-  /** @see UpdateApplicationStatePayload */
-  private final UpdateApplicationStatePayload updateApplicationStatePayload;
+  /** @see ModifyApplicationStatePayload */
+  private final ModifyApplicationStatePayload modifyApplicationStatePayload;
 
   /** Session to {@link PathStoreCluster} */
   private final Session session;
@@ -43,9 +43,9 @@ public class InstallApplication implements IService {
   /** This is used to set an error message if a conflict has occurred */
   private String conflictMessage = null;
 
-  /** @param updateApplicationStatePayload {@link #updateApplicationStatePayload} */
-  public InstallApplication(final UpdateApplicationStatePayload updateApplicationStatePayload) {
-    this.updateApplicationStatePayload = updateApplicationStatePayload;
+  /** @param modifyApplicationStatePayload {@link #modifyApplicationStatePayload} */
+  public InstallApplication(final ModifyApplicationStatePayload modifyApplicationStatePayload) {
+    this.modifyApplicationStatePayload = modifyApplicationStatePayload;
     this.session = PathStoreCluster.getInstance().connect();
   }
 
@@ -60,7 +60,7 @@ public class InstallApplication implements IService {
         this.getCurrentState(
             this.getChildToParentMap(),
             ApplicationUtil.getPreviousState(
-                this.session, this.updateApplicationStatePayload.applicationName));
+                this.session, this.modifyApplicationStatePayload.applicationName));
 
     return ApplicationUtil.handleResponse(
         this.session, currentState, this.conflictMessage, noRecordsWrittenResponse);
@@ -104,7 +104,7 @@ public class InstallApplication implements IService {
 
     UUID processUUID = UUID.randomUUID();
 
-    for (int currentNode : this.updateApplicationStatePayload.node)
+    for (int currentNode : this.modifyApplicationStatePayload.nodes)
       if (this.currentStateHelper(
           currentNode, processUUID, childToParent, previousState, currentState)) {
 
@@ -132,7 +132,7 @@ public class InstallApplication implements IService {
    * <p>If a node has a waiting_remove or removing we need to wait for that process job to finish,
    * Thus this job will fail and you can try again once the previous conflicting job has finished
    *
-   * @param currentNode current node to check from {@link UpdateApplicationStatePayload#node}
+   * @param currentNode current node to check from {@link ModifyApplicationStatePayload#nodes}
    * @param processUUID our processUUID for the current job
    * @param childToParent {@link #getChildToParentMap()}
    * @param previousState {@link ApplicationUtil#getPreviousState(Session, String)}
@@ -171,7 +171,7 @@ public class InstallApplication implements IService {
           processingNode,
           new ApplicationEntry(
               processingNode,
-              this.updateApplicationStatePayload.applicationName,
+              this.modifyApplicationStatePayload.applicationName,
               ProccessStatus.WAITING_INSTALL,
               processUUID,
               Collections.singletonList(childToParent.get(processingNode))));

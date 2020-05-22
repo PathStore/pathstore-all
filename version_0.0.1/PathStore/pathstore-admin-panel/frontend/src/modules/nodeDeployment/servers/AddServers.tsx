@@ -99,8 +99,8 @@ export default class AddServers extends Component<AddServersProperties, AddServe
             + "?ip=" + ip
             + "&username=" + username
             + "&password=" + password
-            + "&sshPort=" + (ssh_port === undefined ? 22 : ssh_port)
-            + "&rmiPort=" + (rmi_port === undefined ? 1099 : rmi_port)
+            + "&ssh_port=" + (ssh_port === undefined ? 22 : ssh_port)
+            + "&rmi_port=" + (rmi_port === undefined ? 1099 : rmi_port)
             + "&name=" + name;
 
         this.setState({loadingModalShow: true}, () => {

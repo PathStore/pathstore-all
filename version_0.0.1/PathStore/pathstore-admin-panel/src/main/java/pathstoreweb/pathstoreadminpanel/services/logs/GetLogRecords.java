@@ -46,9 +46,9 @@ public class GetLogRecords implements IService {
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
 
     selectFilteredLogs
-        .where(QueryBuilder.eq(Constants.LOGS_COLUMNS.NODE_ID, payload.node_id))
+        .where(QueryBuilder.eq(Constants.LOGS_COLUMNS.NODE_ID, payload.nodeId))
         .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.DATE, payload.date))
-        .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, payload.log_level));
+        .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, payload.logLevel));
 
     LinkedList<String> messages = new LinkedList<>();
 

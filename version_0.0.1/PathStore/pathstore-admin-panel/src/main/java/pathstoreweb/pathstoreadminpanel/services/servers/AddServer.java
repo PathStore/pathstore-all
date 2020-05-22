@@ -19,8 +19,6 @@ public class AddServer implements IService {
    * Valid payload
    *
    * @see AddServerPayload
-   * @see pathstoreweb.pathstoreadminpanel.services.servers.validator.ServerConnectionTest
-   * @see pathstoreweb.pathstoreadminpanel.services.servers.validator.ServerUnique
    */
   private final AddServerPayload payload;
 
@@ -38,7 +36,7 @@ public class AddServer implements IService {
   public ResponseEntity<String> response() {
     this.writeServerRecord();
 
-    return new AddServerFormatter(this.payload.server.serverUUID, this.payload.ip).format();
+    return new AddServerFormatter(this.payload.server.serverUUID, this.payload.server.ip).format();
   }
 
   /** Write insert up to the table */
