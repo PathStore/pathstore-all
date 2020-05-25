@@ -59,7 +59,7 @@ public final class Constants {
   public static final String NODE_SCHEMAS = "node_schemas";
 
   public static final class NODE_SCHEMAS_COLUMNS {
-    public static final String NODE_ID = "nodeid";
+    public static final String NODE_ID = "node_id";
     public static final String KEYSPACE_NAME = "keyspace_name";
     public static final String PROCESS_STATUS = "process_status";
     public static final String WAIT_FOR = "wait_for";
@@ -108,7 +108,6 @@ public final class Constants {
   public static final String APPS = "apps";
 
   public static final class APPS_COLUMNS {
-    public static final String APP_ID = "app_id";
     public static final String AUGMENTED_SCHEMA = "augmented_schema";
     public static final String KEYSPACE_NAME = "keyspace_name";
   }

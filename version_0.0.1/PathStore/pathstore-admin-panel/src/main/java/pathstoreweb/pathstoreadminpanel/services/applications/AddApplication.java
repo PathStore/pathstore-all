@@ -74,19 +74,12 @@ public class AddApplication implements IService {
   @Override
   public ResponseEntity<String> response() {
     try {
-      this.loadSchemas(getMaxAppId(), this.getUserPassSchema());
+      this.loadSchemas(this.getUserPassSchema());
     } catch (Exception e) {
       return new RuntimeErrorFormatter("Schema that was passed is invalid").format();
     }
 
     return new AddApplicationFormatter(this.addApplicationPayload.applicationName).format();
-  }
-
-  /** @return map appid in current table */
-  private int getMaxAppId() {
-    ResultSet set =
-        this.session.execute("select max(appid) from pathstore_applications.apps limit 1");
-    return set != null ? set.one().getInt("system.max(" + "appid" + ")") + 1 : 0;
   }
 
   /**
@@ -100,11 +93,9 @@ public class AddApplication implements IService {
    * original schema and the augmented schema are placed into the pathstore_applications.apps table
    * for reading by the children nodes as this utility should only ever be run on the ROOTSERVER
    *
-   * @param appIdStart app id to start. If command was init this is 0
    * @param schema schema read from multipart file
    */
-  private void loadSchemas(final int appIdStart, final String schema) throws Exception {
-    int appId = appIdStart;
+  private void loadSchemas(final String schema) throws Exception {
 
     try {
       PathStoreSchemaLoaderUtils.parseSchema(schema).forEach(this.session::execute);
@@ -121,7 +112,6 @@ public class AddApplication implements IService {
       createViewTable(table);
 
       insertApplicationSchema(
-          appId++,
           this.addApplicationPayload.applicationName,
           PathStorePriviledgedCluster.getInstance()
               .getMetadata()
@@ -313,16 +303,12 @@ public class AddApplication implements IService {
   }
 
   /**
-   * @param appId application Id. Must be greater then 1 as 0 is reserved for the
-   *     pathstore_application schema
    * @param keyspace name of schema. This is used for version control. I.e $appName-0.0.1
    * @param augmentedSchema schema after pathstore augmentation
    */
-  private void insertApplicationSchema(
-      final int appId, final String keyspace, final String augmentedSchema) {
+  private void insertApplicationSchema(final String keyspace, final String augmentedSchema) {
     Insert insert = QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);
 
-    insert.value("appid", appId);
     insert.value(Constants.APPS_COLUMNS.KEYSPACE_NAME, keyspace);
     insert.value(Constants.APPS_COLUMNS.AUGMENTED_SCHEMA, augmentedSchema);
 

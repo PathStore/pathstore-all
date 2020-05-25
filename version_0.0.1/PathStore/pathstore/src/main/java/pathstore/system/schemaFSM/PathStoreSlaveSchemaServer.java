@@ -13,6 +13,10 @@ import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.PathStorePriviledgedCluster;
 import pathstore.util.SchemaInfo;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 /**
  * This class is the slave schema loader.
  *
@@ -27,58 +31,63 @@ public class PathStoreSlaveSchemaServer extends Thread {
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStoreSlaveSchemaServer.class);
 
+  /** Session used to interact with pathstore */
+  private final Session session = PathStoreCluster.getInstance().connect();
+
+  /** Node id so you don't need to query the properties file every run */
+  private final int nodeId = PathStoreProperties.getInstance().NodeID;
+
   /**
-   * Selects all rows related to the nodeid specified in {@link PathStoreProperties#NodeID}
+   * This denotes the daemons sub process thread pool.
    *
-   * <p>Then if the process_status is INSTALLING we install the application specified
+   * <p>A cached thread pool is used to kill threads once they're no longer needed instead of
+   * keeping idle threads waiting for tasks that may never come
+   */
+  private final ExecutorService threadPool = Executors.newCachedThreadPool();
+
+  /**
+   * This daemon is used to install an application on the local machine. The steps it takes are as
+   * follows:
    *
-   * <p>If the process_Status is REMOVING we remove the application specified
+   * <p>(1): Query the node_schemas table and with the conditions that the partition key is
+   * (node_id: current_node_id, process_status: {INSTALLING, REMOVING})
+   *
+   * <p>(2): On retrieval of the information forall records write an update to the table
+   * transitioning each statue to PROCESSING_INSTALLING and PROCESSING_REMOVING respectively
+   *
+   * <p>(3): After the update is complete start a sub process to actually perform each install /
+   * removal concurrently
    */
   @Override
   public void run() {
     while (true) {
       logger.debug("Slave Schema check");
-      Session session = PathStoreCluster.getInstance().connect();
-      Select current_processes_select_all =
-          QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);
 
-      for (Row current_process_row : session.execute(current_processes_select_all)) {
-        String keyspace_name = current_process_row.getString(Constants.APPS_COLUMNS.KEYSPACE_NAME);
+      // (1)
+      Select deploymentRecordQuery =
+          QueryBuilder.select(
+                  Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME,
+                  Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)
+              .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
-        String augmentedSchema =
-            current_process_row.getString(Constants.APPS_COLUMNS.AUGMENTED_SCHEMA);
+      deploymentRecordQuery
+          .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, this.nodeId))
+          .and(
+              QueryBuilder.in(
+                  Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
+                  ProccessStatus.INSTALLED.toString(),
+                  ProccessStatus.REMOVING.toString()));
 
-        Select node_schemas_specific_select =
-            QueryBuilder.select()
-                .all()
-                .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-        node_schemas_specific_select
-            .where(
-                QueryBuilder.eq(
-                    Constants.NODE_SCHEMAS_COLUMNS.NODE_ID,
-                    PathStoreProperties.getInstance().NodeID))
-            .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace_name));
+      for (Row row : this.session.execute(deploymentRecordQuery)) {
+        ProccessStatus currentStatus =
+            ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
+        String keyspaceName = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
 
-        for (Row node_schemas_select : session.execute(node_schemas_specific_select)) {
-          ProccessStatus current_process_status =
-              ProccessStatus.valueOf(
-                  node_schemas_select.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
-          switch (current_process_status) {
-            case INSTALLING:
-              this.install_application(
-                  session,
-                  node_schemas_select.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
-                  augmentedSchema,
-                  node_schemas_select.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID));
-              break;
-            case REMOVING:
-              this.remove_application(
-                  session,
-                  node_schemas_select.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
-                  node_schemas_select.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID));
-              break;
-          }
-        }
+        // (2)
+        this.transitionRow(currentStatus, keyspaceName);
+
+        // (3)
+        this.spawnSubProcess(currentStatus, keyspaceName);
       }
 
       try {
@@ -90,17 +99,91 @@ public class PathStoreSlaveSchemaServer extends Thread {
   }
 
   /**
+   * This function transforms an Installing row to a Processing_Installing row and a Removing row to
+   * a Processing_Removing row
+   *
+   * @param processStatus what is the status of the row
+   * @param keyspace what is the keyspace (used to identify primary key)
+   */
+  private void transitionRow(final ProccessStatus processStatus, final String keyspace) {
+    Update transitionState =
+        QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+    transitionState
+        .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, this.nodeId))
+        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace))
+        .with(
+            QueryBuilder.set(
+                Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
+                processStatus == ProccessStatus.INSTALLING
+                    ? ProccessStatus.PROCESSING_INSTALLING.toString()
+                    : ProccessStatus.PROCESSING_REMOVING.toString()));
+
+    this.session.execute(transitionState);
+  }
+
+  /**
+   * Simple function that will start a sub process for each row that needs an operation performed on
+   *
+   * @param proccessStatus what is the current status (Installing or Removing since we never require
+   *     after update)
+   * @param keyspace what keyspace to perform the given operation on
+   */
+  private void spawnSubProcess(final ProccessStatus proccessStatus, final String keyspace) {
+
+    this.threadPool.submit(
+        () -> {
+          switch (proccessStatus) {
+            case INSTALLING:
+              logger.info(
+                  String.format(
+                      "Spawned sub thread to install %s on node %d", keyspace, this.nodeId));
+
+              String augmentedKeyspace = this.getAugmentedKeyspace(keyspace);
+
+              if (augmentedKeyspace == null) {
+                logger.error("No augmented keyspace for: " + keyspace);
+                return;
+              }
+
+              this.install_application(keyspace, augmentedKeyspace);
+
+              break;
+            case REMOVING:
+              logger.info(
+                  String.format(
+                      "Spawned sub thread to remove %s on node %d", keyspace, this.nodeId));
+
+              this.remove_application(keyspace);
+              break;
+          }
+        });
+  }
+
+  /**
+   * This function will return the augmented keyspace given the name of the keyspace
+   *
+   * @param keyspace keyspace to query
+   * @return augmented keyspace if present else null
+   */
+  private String getAugmentedKeyspace(final String keyspace) {
+    Select augmentedKeyspaceSelect =
+        QueryBuilder.select(Constants.APPS_COLUMNS.AUGMENTED_SCHEMA)
+            .from(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);
+    augmentedKeyspaceSelect.where(QueryBuilder.eq(Constants.APPS_COLUMNS.KEYSPACE_NAME, keyspace));
+
+    for (Row row : session.execute(augmentedKeyspaceSelect))
+      return row.getString(Constants.APPS_COLUMNS.AUGMENTED_SCHEMA);
+
+    return null;
+  }
+
+  /**
    * Install an application first it queries the augmented schema from the apps table. If it exists
    * then we update the node_schemas table with that we have installed the application
    *
-   * @param session {@link PathStoreCluster#connect()}
    * @param keyspace application to install
    */
-  private void install_application(
-      final Session session,
-      final String keyspace,
-      final String augmentedSchema,
-      final String process_uuid) {
+  private void install_application(final String keyspace, final String augmentedSchema) {
     // Query application, if not exist then just continue and wait for it to exist
     logger.info("Loading application: " + keyspace);
 
@@ -111,17 +194,14 @@ public class PathStoreSlaveSchemaServer extends Thread {
 
     Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
     update
-        .where(
-            QueryBuilder.eq(
-                Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID))
+        .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, this.nodeId))
         .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace))
-        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, process_uuid))
         .with(
             QueryBuilder.set(
                 Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
                 ProccessStatus.INSTALLED.toString()));
 
-    session.execute(update);
+    this.session.execute(update);
 
     logger.info("Application loaded " + keyspace);
   }
@@ -129,11 +209,9 @@ public class PathStoreSlaveSchemaServer extends Thread {
   /**
    * Drops the keyspace if it exists then it updates node_schema that said keyspace is removed
    *
-   * @param session {@link PathStoreCluster#connect()}
    * @param keyspace application to remove
    */
-  private void remove_application(
-      final Session session, final String keyspace, final String process_uuid) {
+  private void remove_application(final String keyspace) {
     logger.info("Removing application " + keyspace);
     SchemaInfo.getInstance().removeKeyspace(keyspace);
     PathStorePriviledgedCluster.getInstance()
@@ -142,16 +220,14 @@ public class PathStoreSlaveSchemaServer extends Thread {
 
     Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
     update
-        .where(
-            QueryBuilder.eq(
-                Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID))
+        .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, this.nodeId))
         .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace))
-        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, process_uuid))
         .with(
             QueryBuilder.set(
                 Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, ProccessStatus.REMOVED.toString()));
-    session.execute(update);
 
-      logger.info("Application removed " + keyspace);
+    this.session.execute(update);
+
+    logger.info("Application removed " + keyspace);
   }
 }
