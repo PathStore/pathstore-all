@@ -103,9 +103,6 @@ public class PathStoreSlaveSchemaServer extends Thread {
    * @param keyspace what is the keyspace (used to identify primary key)
    */
   private void transitionRow(final ProccessStatus processStatus, final String keyspace) {
-    logger.info(
-        String.format(
-            "Transitioning installing state for node %d on keyspace %s", this.nodeId, keyspace));
 
     Update transitionState =
         QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
@@ -184,8 +181,6 @@ public class PathStoreSlaveSchemaServer extends Thread {
    * @param keyspace application to install
    */
   private void install_application(final String keyspace, final String augmentedSchema) {
-    // Query application, if not exist then just continue and wait for it to exist
-    logger.info("Loading application: " + keyspace);
 
     PathStoreSchemaLoaderUtils.parseSchema(augmentedSchema)
         .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
@@ -212,7 +207,6 @@ public class PathStoreSlaveSchemaServer extends Thread {
    * @param keyspace application to remove
    */
   private void remove_application(final String keyspace) {
-    logger.info("Removing application " + keyspace);
     SchemaInfo.getInstance().removeKeyspace(keyspace);
     PathStorePriviledgedCluster.getInstance()
         .connect()

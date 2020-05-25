@@ -31,11 +31,10 @@ export interface Application {
  * Parse response from application management
  */
 export interface ApplicationStatus {
-    nodeid: number
+    node_id: number
     keyspace_name: string
     process_status: string
     wait_for: number[]
-    process_uuid: string
 }
 
 /**

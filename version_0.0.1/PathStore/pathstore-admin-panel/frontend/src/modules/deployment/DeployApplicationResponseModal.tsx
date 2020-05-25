@@ -91,7 +91,7 @@ export default class DeployApplicationResponseModal
             newlyInstalled:
                 new Set<number>(
                     this.props.data
-                        .map(i => i.nodeid)
+                        .map(i => i.node_id)
                 ),
 
             previouslyInstalled:
@@ -99,7 +99,7 @@ export default class DeployApplicationResponseModal
                     this.props.applicationStatus
                         .filter(i => i.keyspace_name === this.props.applicationName)
                         .filter(i => i.process_status === "INSTALLED")
-                        .map(i => i.nodeid)
+                        .map(i => i.node_id)
                 ),
 
             infoModalShow: false,

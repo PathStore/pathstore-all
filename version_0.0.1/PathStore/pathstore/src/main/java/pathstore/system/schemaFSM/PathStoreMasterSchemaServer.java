@@ -98,8 +98,6 @@ public class PathStoreMasterSchemaServer extends Thread {
   private void transitionIfApplicable(
       final Set<NodeSchemaEntry> waiting, final Set<Integer> finished) {
 
-    logger.debug(String.format("Waiting set: %s, finished set %s", waiting, finished));
-
     waiting.stream()
         .filter(
             i -> i.waitFor.equals(Collections.singletonList(-1)) || finished.containsAll(i.waitFor))

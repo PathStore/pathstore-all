@@ -41,12 +41,12 @@ export const ApplicationStatusViewer: FunctionComponent<ApplicationStatusViewerP
 
         body.push(
             <tr>
-                <td>{currentObject.nodeid}</td>
+                <td>{currentObject.node_id}</td>
                 <td>{currentObject.keyspace_name}</td>
                 <td>{currentObject.process_status}</td>
                 <td>{currentObject.wait_for}</td>
-                <td>{currentObject.process_uuid}</td>
-            </tr>)
+            </tr>
+        );
     }
 
     return (
@@ -59,11 +59,10 @@ export const ApplicationStatusViewer: FunctionComponent<ApplicationStatusViewerP
                     <th>Application</th>
                     <th>Status</th>
                     <th>Waiting</th>
-                    <th>Job UUID</th>
                 </tr>
                 </thead>
                 <tbody>
-                    {body}
+                {body}
                 </tbody>
             </Table>
         </div>

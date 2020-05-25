@@ -61,7 +61,7 @@ interface LiveTransitionVisualModalState {
 export default class LiveTransitionVisualModal extends Component<LiveTransitionVisualModalProperties, LiveTransitionVisualModalState> {
 
     /**
-     * Initalize props and state
+     * Initialize props and state
      *
      * @param props
      */
@@ -92,21 +92,21 @@ export default class LiveTransitionVisualModal extends Component<LiveTransitionV
                     nextProps.applicationStatus
                         .filter(i => i.keyspace_name === nextProps.application)
                         .filter(i => i.process_status === "WAITING_INSTALL")
-                        .map(i => i.nodeid)
+                        .map(i => i.node_id)
                 ),
             installing:
                 new Set<number>(
                     nextProps.applicationStatus
                         .filter(i => i.keyspace_name === nextProps.application)
-                        .filter(i => i.process_status === "INSTALLING")
-                        .map(i => i.nodeid)
+                        .filter(i => i.process_status === "INSTALLING" || i.process_status === "PROCESSING_INSTALLING")
+                        .map(i => i.node_id)
                 ),
             installed:
                 new Set<number>(
                     nextProps.applicationStatus
                         .filter(i => i.keyspace_name === nextProps.application)
                         .filter(i => i.process_status === "INSTALLED")
-                        .map(i => i.nodeid)
+                        .map(i => i.node_id)
                 )
         }
     }

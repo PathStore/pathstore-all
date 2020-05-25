@@ -169,7 +169,7 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
                 {this.retryButton(this.props.deployment)}
                 <br/>
                 <ApplicationStatusViewer
-                    applicationStatus={this.props.applicationStatus.filter(i => i.nodeid === this.props.node)}/>
+                    applicationStatus={this.props.applicationStatus.filter(i => i.node_id === this.props.node)}/>
                 <br/>
                 <LogViewer node={this.props.node} availableLogDates={this.props.availableLogDates}/>
                 <br/>
