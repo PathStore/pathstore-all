@@ -50,7 +50,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
    * follows:
    *
    * <p>(1): Query the node_schemas table and with the conditions that the partition key is
-   * (node_id: current_node_id, process_status: {INSTALLING, REMOVING})
+   * (node_id: current_node_id)
    *
    * <p>(2): On retrieval of the information forall records write an update to the table
    * transitioning each statue to PROCESSING_INSTALLING and PROCESSING_REMOVING respectively
@@ -70,17 +70,15 @@ public class PathStoreSlaveSchemaServer extends Thread {
                   Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)
               .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
-      deploymentRecordQuery
-          .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, this.nodeId))
-          .and(
-              QueryBuilder.in(
-                  Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
-                  ProccessStatus.INSTALLED.toString(),
-                  ProccessStatus.REMOVING.toString()));
+      deploymentRecordQuery.where(
+          QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, this.nodeId));
 
       for (Row row : this.session.execute(deploymentRecordQuery)) {
         ProccessStatus currentStatus =
             ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
+
+        if (currentStatus != ProccessStatus.INSTALLING) continue;
+
         String keyspaceName = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
 
         // (2)

@@ -58,8 +58,8 @@ public class GetApplicationState implements IService {
               row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID),
               row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
               ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)),
-              UUID.fromString(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID)),
-              (List<Integer>) row.getObject(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
+              UUID.randomUUID(),
+              row.getList(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, Integer.class)));
 
     return entries;
   }
