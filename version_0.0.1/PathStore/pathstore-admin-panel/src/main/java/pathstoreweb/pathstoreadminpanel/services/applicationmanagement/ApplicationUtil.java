@@ -81,8 +81,6 @@ class ApplicationUtil {
           .value(
               Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
               applicationEntry.proccess_status.toString())
-          .value(
-              Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, applicationEntry.process_uuid.toString())
           .value(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, applicationEntry.waiting_for);
 
       session.execute(insert);

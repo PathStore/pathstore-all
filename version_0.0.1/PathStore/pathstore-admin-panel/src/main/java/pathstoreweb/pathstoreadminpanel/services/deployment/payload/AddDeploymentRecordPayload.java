@@ -8,7 +8,6 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
