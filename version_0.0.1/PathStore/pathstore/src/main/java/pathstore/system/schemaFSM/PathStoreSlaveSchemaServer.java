@@ -168,8 +168,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
    */
   private String getAugmentedKeyspace(final String keyspace) {
     Select augmentedKeyspaceSelect =
-        QueryBuilder.select(Constants.APPS_COLUMNS.AUGMENTED_SCHEMA)
-            .from(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);
+        QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);
     augmentedKeyspaceSelect.where(QueryBuilder.eq(Constants.APPS_COLUMNS.KEYSPACE_NAME, keyspace));
 
     for (Row row : session.execute(augmentedKeyspaceSelect))
