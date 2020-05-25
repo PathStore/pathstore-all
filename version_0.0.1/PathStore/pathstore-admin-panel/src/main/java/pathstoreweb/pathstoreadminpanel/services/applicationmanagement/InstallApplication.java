@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
-import pathstore.system.schemaFSM.ApplicationEntry;
+import pathstore.system.schemaFSM.NodeSchemaEntry;
 import pathstore.system.schemaFSM.ProccessStatus;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.UpdateApplicationStateFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
@@ -16,7 +16,6 @@ import pathstoreweb.pathstoreadminpanel.services.IService;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.ModifyApplicationStatePayload;
 
 /**
@@ -56,7 +55,7 @@ public class InstallApplication implements IService {
   @Override
   public ResponseEntity<String> response() {
 
-    Map<Integer, ApplicationEntry> currentState =
+    Map<Integer, NodeSchemaEntry> currentState =
         this.getCurrentState(
             this.getChildToParentMap(),
             ApplicationUtil.getPreviousState(
@@ -96,22 +95,17 @@ public class InstallApplication implements IService {
    * @param previousState {@link ApplicationUtil#getPreviousState(Session, String)}
    * @return map of records to be written to table
    */
-  private Map<Integer, ApplicationEntry> getCurrentState(
+  private Map<Integer, NodeSchemaEntry> getCurrentState(
       final Map<Integer, Integer> childToParent,
-      final Map<Integer, ApplicationEntry> previousState) {
+      final Map<Integer, NodeSchemaEntry> previousState) {
 
-    Map<Integer, ApplicationEntry> currentState = new HashMap<>();
-
-    UUID processUUID = UUID.randomUUID();
+    Map<Integer, NodeSchemaEntry> currentState = new HashMap<>();
 
     for (int currentNode : this.modifyApplicationStatePayload.nodes)
-      if (this.currentStateHelper(
-          currentNode, processUUID, childToParent, previousState, currentState)) {
+      if (this.currentStateHelper(currentNode, childToParent, previousState, currentState)) {
 
         this.conflictMessage =
-            String.format(
-                "There is a conflicting process uninstalling with the Process UUID is %s and we detected this conflict on Node: %d",
-                processUUID, currentNode);
+            String.format("Conflict Detected this conflict on Node: %d", currentNode);
         return null;
       }
 
@@ -133,7 +127,6 @@ public class InstallApplication implements IService {
    * Thus this job will fail and you can try again once the previous conflicting job has finished
    *
    * @param currentNode current node to check from {@link ModifyApplicationStatePayload#nodes}
-   * @param processUUID our processUUID for the current job
    * @param childToParent {@link #getChildToParentMap()}
    * @param previousState {@link ApplicationUtil#getPreviousState(Session, String)}
    * @param currentState from {@link #getCurrentState(Map, Map)} used for multiple sub jobs
@@ -141,17 +134,16 @@ public class InstallApplication implements IService {
    */
   private boolean currentStateHelper(
       final int currentNode,
-      final UUID processUUID,
       final Map<Integer, Integer> childToParent,
-      final Map<Integer, ApplicationEntry> previousState,
-      final Map<Integer, ApplicationEntry> currentState) {
+      final Map<Integer, NodeSchemaEntry> previousState,
+      final Map<Integer, NodeSchemaEntry> currentState) {
 
     for (int processingNode = currentNode;
         processingNode != -1 && !currentState.containsKey(processingNode);
         processingNode = childToParent.get(processingNode)) {
 
       if (previousState.containsKey(processingNode)) {
-        switch (previousState.get(processingNode).proccess_status) {
+        switch (previousState.get(processingNode).status) {
             // keep going up the tree.
           case REMOVED:
             break;
@@ -169,11 +161,10 @@ public class InstallApplication implements IService {
       }
       currentState.put(
           processingNode,
-          new ApplicationEntry(
+          new NodeSchemaEntry(
               processingNode,
               this.modifyApplicationStatePayload.applicationName,
               ProccessStatus.WAITING_INSTALL,
-              processUUID,
               Collections.singletonList(childToParent.get(processingNode))));
     }
 

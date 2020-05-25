@@ -5,7 +5,7 @@ import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import pathstore.common.Constants;
-import pathstore.system.schemaFSM.ApplicationEntry;
+import pathstore.system.schemaFSM.NodeSchemaEntry;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.GetApplicationState;
 
@@ -19,10 +19,10 @@ import java.util.List;
 public class GetApplicationStateFormatter implements IFormatter {
 
   /** List of Application Entries */
-  private final List<ApplicationEntry> entryList;
+  private final List<NodeSchemaEntry> entryList;
 
   /** @param entryList generated from {@link GetApplicationState} */
-  public GetApplicationStateFormatter(final List<ApplicationEntry> entryList) {
+  public GetApplicationStateFormatter(final List<NodeSchemaEntry> entryList) {
     this.entryList = entryList;
   }
 
@@ -35,15 +35,14 @@ public class GetApplicationStateFormatter implements IFormatter {
   public ResponseEntity<String> format() {
     JSONArray array = new JSONArray();
 
-    for (ApplicationEntry entry : this.entryList) {
+    for (NodeSchemaEntry entry : this.entryList) {
       JSONObject object = new JSONObject();
 
       object
-          .put(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.node_id)
-          .put(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, entry.keyspace_name)
-          .put(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, entry.proccess_status.toString())
-          .put(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, entry.process_uuid.toString())
-          .put(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, entry.waiting_for);
+          .put(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.nodeId)
+          .put(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, entry.keyspaceName)
+          .put(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, entry.status.toString())
+          .put(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, entry.waitFor);
 
       array.put(object);
     }

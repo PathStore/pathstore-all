@@ -7,14 +7,13 @@ import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.system.schemaFSM.ApplicationEntry;
+import pathstore.system.schemaFSM.NodeSchemaEntry;
 import pathstore.system.schemaFSM.ProccessStatus;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.GetApplicationStateFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * TODO: Maybe only include states that aren't current at the {@link ProccessStatus#REMOVED} state
@@ -44,21 +43,20 @@ public class GetApplicationState implements IService {
    * @see ApplicationEntry
    */
   @SuppressWarnings("ALL")
-  private List<ApplicationEntry> getApplicationStates() {
+  private List<NodeSchemaEntry> getApplicationStates() {
     Session session = PathStoreCluster.getInstance().connect();
 
     Select queryAllNodeSchemas =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
-    LinkedList<ApplicationEntry> entries = new LinkedList<>();
+    LinkedList<NodeSchemaEntry> entries = new LinkedList<>();
 
     for (Row row : session.execute(queryAllNodeSchemas))
       entries.addFirst(
-          new ApplicationEntry(
+          new NodeSchemaEntry(
               row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID),
               row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
               ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)),
-              UUID.randomUUID(),
               row.getList(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, Integer.class)));
 
     return entries;

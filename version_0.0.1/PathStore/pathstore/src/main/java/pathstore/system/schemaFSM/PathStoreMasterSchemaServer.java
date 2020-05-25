@@ -28,40 +28,6 @@ import java.util.Set;
  */
 public class PathStoreMasterSchemaServer extends Thread {
 
-  /** TODO: Comment */
-  private static final class NodeSchemasEntry {
-    public final int nodeId;
-    public final String keyspaceName;
-    public final ProccessStatus status;
-    public final List<Integer> waitFor;
-
-    private NodeSchemasEntry(
-        final int nodeId,
-        final String keyspaceName,
-        final ProccessStatus status,
-        final List<Integer> waitFor) {
-      this.nodeId = nodeId;
-      this.keyspaceName = keyspaceName;
-      this.status = status;
-      this.waitFor = waitFor;
-    }
-
-    @Override
-    public String toString() {
-      return "NodeSchemasEntry{"
-          + "nodeId="
-          + nodeId
-          + ", keyspaceName='"
-          + keyspaceName
-          + '\''
-          + ", status="
-          + status
-          + ", waitFor="
-          + waitFor
-          + '}';
-    }
-  }
-
   /** Logger */
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStoreMasterSchemaServer.class);
@@ -93,7 +59,7 @@ public class PathStoreMasterSchemaServer extends Thread {
               .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
       Set<Integer> finished = new HashSet<>();
-      Set<NodeSchemasEntry> waiting = new HashSet<>();
+      Set<NodeSchemaEntry> waiting = new HashSet<>();
 
       for (Row row : this.session.execute(selectAllNodeSchemaRecords)) {
         ProccessStatus status =
@@ -107,7 +73,7 @@ public class PathStoreMasterSchemaServer extends Thread {
           List<Integer> waitFor =
               row.getList(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, Integer.class);
 
-          waiting.add(new NodeSchemasEntry(nodeId, keyspaceName, status, waitFor));
+          waiting.add(new NodeSchemaEntry(nodeId, keyspaceName, status, waitFor));
         }
       }
 
@@ -130,7 +96,7 @@ public class PathStoreMasterSchemaServer extends Thread {
    * @param finished finished id set
    */
   private void transitionIfApplicable(
-      final Set<NodeSchemasEntry> waiting, final Set<Integer> finished) {
+      final Set<NodeSchemaEntry> waiting, final Set<Integer> finished) {
 
     logger.debug(String.format("Waiting set: %s, finished set %s", waiting, finished));
 
@@ -145,11 +111,11 @@ public class PathStoreMasterSchemaServer extends Thread {
    *
    * @param entry entry to transition
    */
-  private void transition(final NodeSchemasEntry entry) {
+  private void transition(final NodeSchemaEntry entry) {
 
     logger.info(
         String.format(
-            "Transition node %d to %s for keyspace %s",
+            "Installing node %d to %s for keyspace %s",
             entry.nodeId, ProccessStatus.INSTALLING, entry.keyspaceName));
 
     Update transitionUpdate =

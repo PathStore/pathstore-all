@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
-import pathstore.system.schemaFSM.ApplicationEntry;
+import pathstore.system.schemaFSM.NodeSchemaEntry;
 import pathstore.system.schemaFSM.ProccessStatus;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
@@ -52,7 +52,7 @@ public class UnInstallApplication implements IService {
    */
   @Override
   public ResponseEntity<String> response() {
-    Map<Integer, ApplicationEntry> currentState =
+    Map<Integer, NodeSchemaEntry> currentState =
         this.getCurrentState(
             this.getParentToChildMap(),
             ApplicationUtil.getPreviousState(
@@ -90,21 +90,17 @@ public class UnInstallApplication implements IService {
    * @param previousState {@link ApplicationUtil#getPreviousState(Session, String)}
    * @return map of entries to add. Null if there is a conflict
    */
-  private Map<Integer, ApplicationEntry> getCurrentState(
+  private Map<Integer, NodeSchemaEntry> getCurrentState(
       final Map<Integer, Set<Integer>> parentToChild,
-      final Map<Integer, ApplicationEntry> previousState) {
+      final Map<Integer, NodeSchemaEntry> previousState) {
 
-    Map<Integer, ApplicationEntry> entryMap = new HashMap<>();
-
-    UUID processUUID = UUID.randomUUID();
+    Map<Integer, NodeSchemaEntry> entryMap = new HashMap<>();
 
     for (int currentNode : this.modifyApplicationStatePayload.nodes)
-      if (this.currentStateHelper(currentNode, processUUID, parentToChild, previousState, entryMap)
+      if (this.currentStateHelper(currentNode, parentToChild, previousState, entryMap)
           == HelperResponse.CONFLICT) {
         this.conflictMessage =
-            String.format(
-                "There is a conflicting process installing with the Process UUID is %s and we detected this conflict on Node: %d",
-                processUUID, currentNode);
+            String.format("Conflict detected this conflict on Node: %d", currentNode);
         return null;
       }
 
@@ -149,7 +145,6 @@ public class UnInstallApplication implements IService {
    * are no children with that process_installed
    *
    * @param currentNode current node to check
-   * @param processUUID current processUUID for this job
    * @param parentToChild {@link #getParentToChildMap()}
    * @param previousState {@link ApplicationUtil#getPreviousState(Session, String)}
    * @param currentState passed from {@link #getCurrentState(Map, Map)} to keep track of all sub
@@ -158,12 +153,11 @@ public class UnInstallApplication implements IService {
    */
   private HelperResponse currentStateHelper(
       final int currentNode,
-      final UUID processUUID,
       final Map<Integer, Set<Integer>> parentToChild,
-      final Map<Integer, ApplicationEntry> previousState,
-      final Map<Integer, ApplicationEntry> currentState) {
+      final Map<Integer, NodeSchemaEntry> previousState,
+      final Map<Integer, NodeSchemaEntry> currentState) {
 
-    ApplicationEntry newEntry;
+    NodeSchemaEntry newEntry;
 
     if (parentToChild.containsKey(currentNode)) { // has children
 
@@ -171,8 +165,7 @@ public class UnInstallApplication implements IService {
       Set<Integer> toRemove = new HashSet<>();
 
       for (int childNode : children) {
-        switch (this.currentStateHelper(
-            childNode, processUUID, parentToChild, previousState, currentState)) {
+        switch (this.currentStateHelper(childNode, parentToChild, previousState, currentState)) {
           case CONFLICT:
             return HelperResponse.CONFLICT;
           case ALREADY_ADDED:
@@ -183,23 +176,21 @@ public class UnInstallApplication implements IService {
       children.removeAll(toRemove);
 
       newEntry =
-          new ApplicationEntry(
+          new NodeSchemaEntry(
               currentNode,
               this.modifyApplicationStatePayload.applicationName,
               ProccessStatus.WAITING_REMOVE,
-              processUUID,
               children.size() > 0 ? new LinkedList<>(children) : Collections.singletonList(-1));
     } else
       newEntry =
-          new ApplicationEntry(
+          new NodeSchemaEntry(
               currentNode,
               this.modifyApplicationStatePayload.applicationName,
               ProccessStatus.WAITING_REMOVE,
-              processUUID,
               Collections.singletonList(-1));
 
     if (previousState.containsKey(currentNode))
-      switch (previousState.get(currentNode).proccess_status) {
+      switch (previousState.get(currentNode).status) {
         case INSTALLED:
           currentState.put(currentNode, newEntry);
           return HelperResponse.ADDED;

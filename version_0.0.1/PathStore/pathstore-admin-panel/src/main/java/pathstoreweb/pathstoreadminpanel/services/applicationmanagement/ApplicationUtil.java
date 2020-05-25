@@ -9,11 +9,9 @@ import org.springframework.http.ResponseEntity;
 import pathstore.common.Constants;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-import pathstore.system.schemaFSM.ApplicationEntry;
+import pathstore.system.schemaFSM.NodeSchemaEntry;
 import pathstore.system.schemaFSM.ProccessStatus;
 import pathstoreweb.pathstoreadminpanel.services.RuntimeErrorFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.UpdateApplicationStateFormatter;
@@ -30,10 +28,9 @@ class ApplicationUtil {
    *
    * @return map of nodeid to application entire if app is keyspace
    */
-  @SuppressWarnings("ALL")
-  public static Map<Integer, ApplicationEntry> getPreviousState(
+  public static Map<Integer, NodeSchemaEntry> getPreviousState(
       final Session session, final String keyspace) {
-    Map<Integer, ApplicationEntry> previousState = new HashMap<>();
+    Map<Integer, NodeSchemaEntry> previousState = new HashMap<>();
 
     Select query_node_schema =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
@@ -46,13 +43,12 @@ class ApplicationUtil {
 
         previousState.put(
             nodeId,
-            new ApplicationEntry(
+            new NodeSchemaEntry(
                 nodeId,
                 rowKeyspace,
                 ProccessStatus.valueOf(
                     row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)),
-                UUID.fromString(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID)),
-                (List<Integer>) row.getObject(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
+                row.getList(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, Integer.class)));
       }
     }
 
@@ -68,20 +64,18 @@ class ApplicationUtil {
    *     UnInstallApplication}
    */
   private static void insertRequestToDb(
-      final Session session, final Map<Integer, ApplicationEntry> currentState) {
-    for (Map.Entry<Integer, ApplicationEntry> current_entry : currentState.entrySet()) {
-      ApplicationEntry applicationEntry = current_entry.getValue();
+      final Session session, final Map<Integer, NodeSchemaEntry> currentState) {
+    for (Map.Entry<Integer, NodeSchemaEntry> current_entry : currentState.entrySet()) {
+      NodeSchemaEntry applicationEntry = current_entry.getValue();
 
       Insert insert =
           QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
       insert
-          .value(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, applicationEntry.node_id)
-          .value(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, applicationEntry.keyspace_name)
-          .value(
-              Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
-              applicationEntry.proccess_status.toString())
-          .value(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, applicationEntry.waiting_for);
+          .value(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, applicationEntry.nodeId)
+          .value(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, applicationEntry.keyspaceName)
+          .value(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, applicationEntry.status.toString())
+          .value(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, applicationEntry.waitFor);
 
       session.execute(insert);
     }
@@ -89,7 +83,8 @@ class ApplicationUtil {
 
   /**
    * This function handles the response for each class. If success it calls {@link
-   * UpdateApplicationStateFormatter} otherwise it passes an error message to {@link RuntimeErrorFormatter}
+   * UpdateApplicationStateFormatter} otherwise it passes an error message to {@link
+   * RuntimeErrorFormatter}
    *
    * @param session db session to root cassandra
    * @param currentState records generated to write to db
@@ -99,7 +94,7 @@ class ApplicationUtil {
    */
   static ResponseEntity<String> handleResponse(
       final Session session,
-      final Map<Integer, ApplicationEntry> currentState,
+      final Map<Integer, NodeSchemaEntry> currentState,
       final String conflictMessage,
       final String noWrittenEntriesErrorMessage) {
     if (currentState != null && currentState.size() > 0) {
