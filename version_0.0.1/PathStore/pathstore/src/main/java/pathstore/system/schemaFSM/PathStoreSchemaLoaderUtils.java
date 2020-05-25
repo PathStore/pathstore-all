@@ -307,7 +307,7 @@ public class PathStoreSchemaLoaderUtils {
             + "CREATE INDEX node_schemas_pathstore_deleted_idx ON pathstore_applications.node_schemas (pathstore_deleted);\n"
             + "CREATE INDEX node_schemas_pathstore_dirty_idx ON pathstore_applications.node_schemas (pathstore_dirty);\n"
             + "CREATE INDEX node_schemas_pathstore_insert_sid_idx ON pathstore_applications.node_schemas (pathstore_insert_sid);\n"
-            + "CREATE INDEX node_schemas_nodeid_idx ON pathstore_applications.node_schemas (nodeid);\n"
+            + "CREATE INDEX node_schemas_node_id_idx ON pathstore_applications.node_schemas (node_id);\n"
             + "CREATE INDEX node_schemas_process_uuid_idx ON pathstore_applications.node_schemas (process_uuid);\n"
             + "\n"
             + "CREATE TABLE pathstore_applications.view_apps (\n"
