@@ -65,9 +65,8 @@ public class PathStoreSlaveSchemaServer extends Thread {
 
       // (1)
       Select deploymentRecordQuery =
-          QueryBuilder.select(
-                  Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME,
-                  Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)
+          QueryBuilder.select()
+              .all()
               .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
       deploymentRecordQuery.where(
