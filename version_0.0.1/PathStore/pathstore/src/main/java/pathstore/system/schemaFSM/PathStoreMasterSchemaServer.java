@@ -2,13 +2,18 @@ package pathstore.system.schemaFSM;
 
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.*;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Select;
+import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * This is the master schema server which will only run on the ROOTSERVER
@@ -23,91 +28,91 @@ import java.util.*;
  */
 public class PathStoreMasterSchemaServer extends Thread {
 
+  /** TODO: Comment */
+  private static final class NodeSchemasEntry {
+    public final int nodeId;
+    public final String keyspaceName;
+    public final ProccessStatus status;
+    public final List<Integer> waitFor;
+
+    private NodeSchemasEntry(
+        final int nodeId,
+        final String keyspaceName,
+        final ProccessStatus status,
+        final List<Integer> waitFor) {
+      this.nodeId = nodeId;
+      this.keyspaceName = keyspaceName;
+      this.status = status;
+      this.waitFor = waitFor;
+    }
+
+    @Override
+    public String toString() {
+      return "NodeSchemasEntry{"
+          + "nodeId="
+          + nodeId
+          + ", keyspaceName='"
+          + keyspaceName
+          + '\''
+          + ", status="
+          + status
+          + ", waitFor="
+          + waitFor
+          + '}';
+    }
+  }
+
   /** Logger */
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStoreMasterSchemaServer.class);
 
+  /** Session used to interact with pathstore */
+  private final Session session = PathStoreCluster.getInstance().connect();
+
   /**
-   * First sort all rows into groups based on their process id's
+   * TODO: Removal
    *
-   * <p>Then call {@link #update(ProccessStatus, ProccessStatus, ProccessStatus, Set)} on all groups
-   * that remain to either update the next node(s) in the chain or do nothing
+   * <p>This daemon will transition rows that are WAITING_INSTALL to INSTALLING. The steps are:
+   *
+   * <p>(1): Query all rows from the Node Schemas table and filter them into sets of Installed,
+   * Installing and Waiting
+   *
+   * <p>(2): Iterate over all waiting entries and transition them to installing iff they're who
+   * they're waiting for are in the finished entry set
    */
   @Override
-  @SuppressWarnings("ALL")
   public void run() {
     while (true) {
 
       logger.debug("Checking Master");
 
-      Session client_session = PathStoreCluster.getInstance().connect();
-
-      Map<UUID, ProccessStatus> proccessStatusMap = new HashMap<>();
-
-      Map<UUID, String> keyspaceMap = new HashMap<>();
-
-      Map<UUID, Set<ApplicationEntry>> processIdToApplicationSet = new HashMap<>();
-
-      Select query_all_node_schema =
+      // (1)
+      Select selectAllNodeSchemaRecords =
           QueryBuilder.select()
               .all()
               .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
-      // Query all application rows
-      for (Row row : client_session.execute(query_all_node_schema)) {
-        final UUID processUUID =
-            UUID.fromString(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID));
+      Set<Integer> finished = new HashSet<>();
+      Set<NodeSchemasEntry> waiting = new HashSet<>();
 
-        final ProccessStatus currentProcessStatus =
+      for (Row row : this.session.execute(selectAllNodeSchemaRecords)) {
+        ProccessStatus status =
             ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
+        int nodeId = row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID);
 
-        proccessStatusMap.computeIfAbsent(processUUID, k -> currentProcessStatus);
-
-        final String keyspace = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
-
-        keyspaceMap.computeIfAbsent(processUUID, k -> keyspace);
-
-        processIdToApplicationSet.computeIfAbsent(processUUID, k -> new HashSet<>());
-        processIdToApplicationSet
-            .get(processUUID)
-            .add(
-                new ApplicationEntry(
-                    row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID),
-                    keyspace,
-                    currentProcessStatus,
-                    processUUID,
-                    (List<Integer>) row.getObject(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR)));
-      }
-
-      for (UUID processUUID : processIdToApplicationSet.keySet()) {
-
-        final String keyspace = keyspaceMap.get(processUUID);
-
-        final Set<ApplicationEntry> applicationEntries = processIdToApplicationSet.get(processUUID);
-
-        switch (proccessStatusMap.get(processUUID)) {
-          case WAITING_INSTALL:
-          case INSTALLING:
-          case INSTALLED:
-            this.update(
-                keyspace,
-                ProccessStatus.INSTALLED,
-                ProccessStatus.INSTALLING,
-                ProccessStatus.WAITING_INSTALL,
-                applicationEntries);
-            break;
-          case WAITING_REMOVE:
-          case REMOVING:
-          case REMOVED:
-            this.update(
-                keyspace,
-                ProccessStatus.REMOVED,
-                ProccessStatus.REMOVING,
-                ProccessStatus.WAITING_REMOVE,
-                applicationEntries);
-            break;
+        if (status == ProccessStatus.INSTALLED) {
+          finished.add(nodeId);
+          continue;
         }
+
+        String keyspaceName = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
+        List<Integer> waitFor = row.getList(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, Integer.class);
+
+        waiting.add(new NodeSchemasEntry(nodeId, keyspaceName, status, waitFor));
       }
+
+      // (2)
+      this.transitionIfApplicable(waiting, finished);
 
       try {
         Thread.sleep(5000);
@@ -118,103 +123,45 @@ public class PathStoreMasterSchemaServer extends Thread {
   }
 
   /**
-   * This function updates all entries that were waiting for something to occur, once that task has
-   * finished we change their processing state for the slave loader to install or remove an
-   * application
+   * Simple function that takes a set of waiting entries and confirms their pre-conditions. If they
+   * hold then we can transition them to the next state
    *
-   * @param finished finished state either {@link ProccessStatus#INSTALLED} or {@link
-   *     ProccessStatus#REMOVED}
-   * @param processing processing state either {@link ProccessStatus#INSTALLING} or {@link
-   *     ProccessStatus#REMOVING}
-   * @param waiting waiting state either {@link ProccessStatus#WAITING_INSTALL} or {@link
-   *     ProccessStatus#WAITING_REMOVE}
-   * @param entries list of all entries based on processUUID
+   * @param waiting waiting entry set
+   * @param finished finished id set
    */
-  private void update(
-      final String keyspace,
-      final ProccessStatus finished,
-      final ProccessStatus processing,
-      final ProccessStatus waiting,
-      final Set<ApplicationEntry> entries) {
+  private void transitionIfApplicable(
+      final Set<NodeSchemasEntry> waiting, final Set<Integer> finished) {
 
-    Set<Integer> finishedIds = this.getPreviousState(keyspace, finished);
-    Set<ApplicationEntry> waitingEntries = new HashSet<>();
+    logger.debug(String.format("Waiting set: %s, finished set %s", waiting, finished));
 
-    for (ApplicationEntry entry : entries) {
-      ProccessStatus currentStatus = entry.proccess_status;
-
-      if (currentStatus == finished) finishedIds.add(entry.node_id);
-      else if (currentStatus == waiting) waitingEntries.add(entry);
-    }
-
-    for (ApplicationEntry entry : waitingEntries)
-      if (finishedIds.containsAll(entry.waiting_for)
-          || (entry.waiting_for.size() == 1 && entry.waiting_for.get(0) == -1))
-        this.update_application_status(
-            entry.node_id, entry.keyspace_name, processing, entry.process_uuid);
+    waiting.stream()
+        .filter(
+            i -> i.waitFor.equals(Collections.singletonList(-1)) || finished.containsAll(i.waitFor))
+        .forEach(this::transition);
   }
 
   /**
-   * Queries the previous state of the entire topology for the given keyspace. This is done to avoid
-   * duplicate records being produced. See readme for additional info.
+   * This function takes an entry as input and updates the process status to INSTALLING
    *
-   * @return map of nodeid to application entire if app is keyspace
+   * @param entry entry to transition
    */
-  @SuppressWarnings("ALL")
-  public Set<Integer> getPreviousState(final String keyspace, final ProccessStatus finished) {
-
-    Session session = PathStoreCluster.getInstance().connect();
-
-    Set<Integer> previousState = new HashSet<>();
-
-    Select query_node_schema =
-        QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-
-    for (Row row : session.execute(query_node_schema)) {
-      final String rowKeyspace = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
-
-      final ProccessStatus proccessStatus =
-          ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
-
-      if (rowKeyspace.equals(keyspace) && proccessStatus == finished)
-        previousState.add(row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID));
-    }
-
-    return previousState;
-  }
-
-  /**
-   * Updates a row in the node_schemas table with the new processing status to trigger the slave
-   * schema loader to perform some action
-   *
-   * @param nodeid nodeid to update
-   * @param keyspaceName application that you want to update
-   * @param status status to set either {@link ProccessStatus#INSTALLED} or {@link
-   *     ProccessStatus#REMOVING}
-   */
-  private void update_application_status(
-      final int nodeid,
-      final String keyspaceName,
-      final ProccessStatus status,
-      final UUID processUuid) {
+  private void transition(final NodeSchemasEntry entry) {
 
     logger.info(
-        (status == ProccessStatus.INSTALLING ? "Installing application " : "Removing application ")
-            + keyspaceName
-            + " on node "
-            + nodeid
-            + " which is part of the process group: "
-            + processUuid);
+        String.format(
+            "Transition node %d to %s for keyspace %s",
+            entry.nodeId, ProccessStatus.INSTALLING, entry.keyspaceName));
 
-    Session client_session = PathStoreCluster.getInstance().connect();
+    Update transitionUpdate =
+        QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+    transitionUpdate
+        .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.nodeId))
+        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, entry.keyspaceName))
+        .with(
+            QueryBuilder.set(
+                Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
+                ProccessStatus.INSTALLING.toString()));
 
-    Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-    update
-        .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, nodeid))
-        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspaceName))
-        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_UUID, processUuid.toString()))
-        .with(QueryBuilder.set(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, status.toString()));
-
-    client_session.execute(update);
+    this.session.execute(transitionUpdate);
   }
 }

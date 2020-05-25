@@ -63,7 +63,6 @@ public final class Constants {
     public static final String KEYSPACE_NAME = "keyspace_name";
     public static final String PROCESS_STATUS = "process_status";
     public static final String WAIT_FOR = "wait_for";
-    public static final String PROCESS_UUID = "process_uuid";
   }
 
   public static final String SERVERS = "servers";
