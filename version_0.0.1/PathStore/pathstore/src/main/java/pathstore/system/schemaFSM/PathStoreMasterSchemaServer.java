@@ -100,15 +100,15 @@ public class PathStoreMasterSchemaServer extends Thread {
             ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
         int nodeId = row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID);
 
-        if (status == ProccessStatus.INSTALLED) {
-          finished.add(nodeId);
-          continue;
+        if (status == ProccessStatus.INSTALLED) finished.add(nodeId);
+        else if (status == ProccessStatus.WAITING_INSTALL) {
+
+          String keyspaceName = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
+          List<Integer> waitFor =
+              row.getList(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, Integer.class);
+
+          waiting.add(new NodeSchemasEntry(nodeId, keyspaceName, status, waitFor));
         }
-
-        String keyspaceName = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
-        List<Integer> waitFor = row.getList(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, Integer.class);
-
-        waiting.add(new NodeSchemasEntry(nodeId, keyspaceName, status, waitFor));
       }
 
       // (2)

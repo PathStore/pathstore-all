@@ -104,6 +104,10 @@ public class PathStoreSlaveSchemaServer extends Thread {
    * @param keyspace what is the keyspace (used to identify primary key)
    */
   private void transitionRow(final ProccessStatus processStatus, final String keyspace) {
+    logger.info(
+        String.format(
+            "Transitioning installing state for node %d on keyspace %s", this.nodeId, keyspace));
+
     Update transitionState =
         QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
     transitionState
