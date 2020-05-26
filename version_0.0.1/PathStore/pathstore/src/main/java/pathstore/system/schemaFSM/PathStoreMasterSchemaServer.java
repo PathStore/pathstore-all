@@ -10,10 +10,7 @@ import pathstore.common.Constants;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This is the master schema server which will only run on the ROOTSERVER
@@ -58,22 +55,25 @@ public class PathStoreMasterSchemaServer extends Thread {
               .all()
               .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
-      Set<Integer> finished = new HashSet<>();
-      Set<NodeSchemaEntry> waiting = new HashSet<>();
+      Map<String, Set<Integer>> finished = new HashMap();
+      Map<String, Set<NodeSchemaEntry>> waiting = new HashMap<>();
 
       for (Row row : this.session.execute(selectAllNodeSchemaRecords)) {
         ProccessStatus status =
             ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
         int nodeId = row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID);
 
-        if (status == ProccessStatus.INSTALLED) finished.add(nodeId);
-        else if (status == ProccessStatus.WAITING_INSTALL) {
+        String keyspaceName = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
 
-          String keyspaceName = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
+        if (status == ProccessStatus.INSTALLED) {
+          finished.computeIfAbsent(keyspaceName, k -> new HashSet<>());
+          finished.get(keyspaceName).add(nodeId);
+        } else if (status == ProccessStatus.WAITING_INSTALL) {
           List<Integer> waitFor =
               row.getList(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, Integer.class);
 
-          waiting.add(new NodeSchemaEntry(nodeId, keyspaceName, status, waitFor));
+          waiting.computeIfAbsent(keyspaceName, k -> new HashSet<>());
+          waiting.get(keyspaceName).add(new NodeSchemaEntry(nodeId, keyspaceName, status, waitFor));
         }
       }
 
@@ -92,16 +92,20 @@ public class PathStoreMasterSchemaServer extends Thread {
    * Simple function that takes a set of waiting entries and confirms their pre-conditions. If they
    * hold then we can transition them to the next state
    *
-   * @param waiting waiting entry set
-   * @param finished finished id set
+   * @param waiting waiting entry set per keyspace
+   * @param finished finished id set per keyspace
    */
   private void transitionIfApplicable(
-      final Set<NodeSchemaEntry> waiting, final Set<Integer> finished) {
+      final Map<String, Set<NodeSchemaEntry>> waiting, final Map<String, Set<Integer>> finished) {
 
-    waiting.stream()
-        .filter(
-            i -> i.waitFor.equals(Collections.singletonList(-1)) || finished.containsAll(i.waitFor))
-        .forEach(this::transition);
+    waiting.forEach(
+        (k, v) ->
+            v.stream()
+                .filter(
+                    i ->
+                        i.waitFor.equals(Collections.singletonList(-1))
+                            || finished.get(k).containsAll(i.waitFor))
+                .forEach(this::transition));
   }
 
   /**
