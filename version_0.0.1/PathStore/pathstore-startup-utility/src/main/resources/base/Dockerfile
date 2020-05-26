@@ -16,3 +16,15 @@ touch /root/.ssh/known_hosts && \
 ssh-keyscan github.com >> /root/.ssh/known_hosts && \
 git clone --depth 1 --single-branch --branch $branch git@github.com:delara/cloudpath.git && \
 mkdir -p /etc/pathstore
+
+# set workdir to pathstore
+WORKDIR /cloudpath/version_0.0.1/PathStore/pathstore
+
+# resolve pathstore dependencies
+RUN mvn dependency:resolve
+
+# set workdir to website
+WORKDIR /cloudpath/version_0.0.1/PathStore/pathstore-admin-panel
+
+# resolve website dependencies
+RUN mvn dependency:resolve

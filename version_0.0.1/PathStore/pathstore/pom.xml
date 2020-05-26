@@ -9,6 +9,12 @@
     <name>PathStore</name>
     <description>Hierarchical data store</description>
 
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <java.version>8</java.version>
+    </properties>
+
     <repositories>
         <repository>
             <id>librepo</id>
@@ -60,18 +66,6 @@
             <groupId>net.sf.jopt-simple</groupId>
             <artifactId>jopt-simple</artifactId>
             <version>4.5</version>
-        </dependency>
-
-
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>16.0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-handler</artifactId>
-            <version>4.0.37.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
@@ -221,155 +215,6 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.5.1</version>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.0.0</version>
-                <executions>
-                    <execution>
-                        <id>build-first</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pathstore.system.PathStoreServerImpl</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>pathstore_server</finalName>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-second</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pathstore.util.ApplicationSchema</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>pathstore_schema</finalName>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-third</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pathstore.test.MobisysTest1</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>pathstore_mobisysTest1</finalName>
-                        </configuration>
-                    </execution>
-
-
-                    <execution>
-                        <id>build-fourth</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pathstore.test.MobisysNative</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>pathstore_mobisysNative</finalName>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>build-fifth</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pathstore.test.RobbusTest</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>pathstore_RobbusTest</finalName>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-sixth</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pathstore.test.CLIDemo</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>pathstore_clidemo</finalName>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-eighth</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pathstore.util.ResetNode</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>pathstore_reset</finalName>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-ninth</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>pathstore.test.QueryResponseTimeTest</mainClass>
-                                </transformer>
-                            </transformers>
-                            <finalName>pathstore_response_test</finalName>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
