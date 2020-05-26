@@ -15,5 +15,4 @@ chmod 400 /root/.ssh/id_rsa && \
 touch /root/.ssh/known_hosts && \
 ssh-keyscan github.com >> /root/.ssh/known_hosts && \
 git clone --depth 1 --single-branch --branch $branch git@github.com:delara/cloudpath.git && \
-rm -rf /root/.ssh && \
 mkdir -p /etc/pathstore
