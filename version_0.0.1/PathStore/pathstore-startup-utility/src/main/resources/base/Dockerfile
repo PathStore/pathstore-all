@@ -21,10 +21,10 @@ mkdir -p /etc/pathstore
 WORKDIR /cloudpath/version_0.0.1/PathStore/pathstore
 
 # resolve pathstore dependencies
-RUN mvn dependency:resolve
+RUN mvn dependency:go-offline -B
 
 # set workdir to website
 WORKDIR /cloudpath/version_0.0.1/PathStore/pathstore-admin-panel
 
 # resolve website dependencies
-RUN mvn dependency:resolve
+RUN mvn dependency:go-offline -B
