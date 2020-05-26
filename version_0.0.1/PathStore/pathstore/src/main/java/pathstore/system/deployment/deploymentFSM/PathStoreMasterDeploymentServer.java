@@ -54,9 +54,7 @@ public class PathStoreMasterDeploymentServer extends Thread {
 
       // (1)
       Select selectAllDeploymentRecords =
-          QueryBuilder.select()
-              .all()
-              .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+          QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
 
       Set<Integer> finished = new HashSet<>();
       Set<DeploymentEntry> waiting = new HashSet<>();
