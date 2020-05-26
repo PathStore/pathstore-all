@@ -61,7 +61,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
   @Override
   public void run() {
     while (true) {
-      logger.debug("Slave Schema check");
+      //logger.debug("Slave Schema check");
 
       // (1)
       Select deploymentRecordQuery =
