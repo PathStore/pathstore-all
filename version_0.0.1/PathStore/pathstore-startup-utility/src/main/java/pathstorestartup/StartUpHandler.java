@@ -331,7 +331,7 @@ public class StartUpHandler {
     // Build wesbite
     commands.add(
         new Exec(
-            sshUtil, "docker build -t pathstore-admin-panel pathstore-install/pathstore-admin-panel/pathstore", 0));
+            sshUtil, "docker build -t pathstore-admin-panel ~/pathstore-install/pathstore-admin-panel", 0));
     // Start website
     commands.add(
         new Exec(
