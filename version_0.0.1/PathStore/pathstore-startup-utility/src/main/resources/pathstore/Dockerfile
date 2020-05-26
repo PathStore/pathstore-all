@@ -1,4 +1,4 @@
-FROM base 
+FROM pull
 
 # set workdir
 WORKDIR /cloudpath/version_0.0.1/PathStore/pathstore

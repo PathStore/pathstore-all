@@ -17,18 +17,3 @@ ssh-keyscan github.com >> /root/.ssh/known_hosts && \
 git clone --depth 1 --single-branch --branch $branch git@github.com:delara/cloudpath.git && \
 rm -rf /root/.ssh && \
 mkdir -p /etc/pathstore
-
-# set workdir to pathstore
-WORKDIR /cloudpath/version_0.0.1/PathStore/pathstore
-
-# package pathstore jar
-RUN mvn package
-
-# set workdir to website
-WORKDIR /cloudpath/version_0.0.1/PathStore/pathstore-admin-panel
-
-# package website
-RUN mvn package
-
-# Reset workdir after build.
-WORKDIR /

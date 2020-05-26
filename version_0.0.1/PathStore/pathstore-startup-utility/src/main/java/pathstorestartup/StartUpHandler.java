@@ -206,12 +206,14 @@ public class StartUpHandler {
     commands.add(new Exec(sshUtil, "docker image rm pathstore-admin-panel", -1));
     // Potentially remove old file associated with install
     commands.add(new Exec(sshUtil, "rm -rf pathstore-install", -1));
-    // Potentially remove old base image
-    commands.add(new Exec(sshUtil, "docker image rm base", -1));
+    // Potentially remove old pull image
+    commands.add(new Exec(sshUtil, "docker image rm pull", -1));
     // Create pathstore install dir
     commands.add(new Exec(sshUtil, "mkdir -p pathstore-install", 0));
     // Create base dir
     commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/base", 0));
+    // Create pull dir
+    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/pull", 0));
     // Create cassandra dir
     commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/cassandra", 0));
     // Create pathstore dir
@@ -261,6 +263,10 @@ public class StartUpHandler {
     commands.add(
         new FileTransfer(
             sshUtil, STARTING_DIR + "base/Dockerfile", "pathstore-install/base/Dockerfile"));
+    // Transfer pull docker file
+    commands.add(
+        new FileTransfer(
+            sshUtil, STARTING_DIR + "pull/Dockerfile", "pathstore-install/pull/Dockerfile"));
     // Transfer cassandra docker file
     commands.add(
         new FileTransfer(
@@ -287,6 +293,8 @@ public class StartUpHandler {
                 "docker build -t base --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\"%s\" pathstore-install/base",
                 branch),
             0));
+    // Build pull
+    commands.add(new Exec(sshUtil, "docker build -t pull pathstore-install/pull", 0));
     // Build cassandra
     commands.add(new Exec(sshUtil, "docker build -t cassandra pathstore-install/cassandra", 0));
     // Save cassandra to tar file and store in pathstore directory
@@ -313,7 +321,9 @@ public class StartUpHandler {
     // Build wesbite
     commands.add(
         new Exec(
-            sshUtil, "docker build -t pathstore-admin-panel ~/pathstore-install/pathstore-admin-panel", 0));
+            sshUtil,
+            "docker build -t pathstore-admin-panel ~/pathstore-install/pathstore-admin-panel",
+            0));
     // Start website
     commands.add(
         new Exec(
