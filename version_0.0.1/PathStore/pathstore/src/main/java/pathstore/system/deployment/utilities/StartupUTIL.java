@@ -23,8 +23,7 @@ public class StartupUTIL {
       System.getProperty("user.dir") + "/src/main/resources/";
 
   /** Where the properties file will be stored locally. */
-  public static final String DESTINATION_TO_STORE =
-      STARTING_DIR + "pathstore/pathstore.properties";
+  public static final String DESTINATION_TO_STORE = STARTING_DIR + "pathstore.properties";
 
   /**
    * Used to create a cluster connection with an ip and port
@@ -179,8 +178,7 @@ public class StartupUTIL {
             DESTINATION_TO_STORE));
     // Transfer properties file
     commands.add(
-        new FileTransfer(
-            sshUtil, DESTINATION_TO_STORE, "pathstore-install/pathstore.properties"));
+        new FileTransfer(sshUtil, DESTINATION_TO_STORE, "pathstore-install/pathstore.properties"));
     // Remove properties file
     commands.add(new RemoveGeneratedPropertiesFile(DESTINATION_TO_STORE));
     // Transfer cassandra image
