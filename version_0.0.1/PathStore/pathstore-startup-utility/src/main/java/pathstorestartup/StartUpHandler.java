@@ -218,6 +218,10 @@ public class StartUpHandler {
     commands.add(new Exec(sshUtil, "docker kill pathstore", -1));
     // Potentially remove old pathstore image
     commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
+    // Potentially kill old pathstore container
+    commands.add(new Exec(sshUtil, "docker kill pathstore-admin-panel", -1));
+    // Potentially remove old pathstore image
+    commands.add(new Exec(sshUtil, "docker image rm pathstore-admin-panel", -1));
     // Potentially remove old file associated with install
     commands.add(new Exec(sshUtil, "rm -rf pathstore-install", -1));
     // Potentially remove old base image
@@ -327,7 +331,7 @@ public class StartUpHandler {
     // Build wesbite
     commands.add(
         new Exec(
-            sshUtil, "docker build -t pathstore-admin-panel pathstore-admin-panel/pathstore", 0));
+            sshUtil, "docker build -t pathstore-admin-panel pathstore-install/pathstore-admin-panel/pathstore", 0));
     // Start website
     commands.add(
         new Exec(
