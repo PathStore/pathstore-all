@@ -10,8 +10,9 @@ import pathstore.common.Constants;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * TODO; Handle removal of nodes
@@ -31,87 +32,61 @@ public class PathStoreMasterDeploymentServer extends Thread {
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStoreMasterDeploymentServer.class);
 
-  /** Gather all deployment records into a set of ananlysis */
+  /** Session used to interact with pathstore */
+  private final Session session = PathStoreCluster.getInstance().connect();
+
+  /**
+   * TODO: Removal
+   *
+   * <p>This daemon will transition rows that are WAITING_DEPLOYMENT to DEPLOYING. The steps are:
+   *
+   * <p>(1): Query all records from the deployment table and store them into a set of node_id's
+   * denoted as finished and a set of DeploymentEntry for the waiting records
+   *
+   * <p>(2): Iterate over all waiting records and if the node they're waiting for has finished
+   * transition that node
+   */
   @Override
-  @SuppressWarnings("ALL")
   public void run() {
     while (true) {
 
       logger.debug("Deployment run");
 
-      Session clientSession = PathStoreCluster.getInstance().connect();
+      // (1)
+      Select selectAllDeploymentRecords =
+          QueryBuilder.select()
+              .all()
+              .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
-      Set<DeploymentEntry> entrySet = new HashSet<>();
+      Set<Integer> finished = new HashSet<>();
+      Set<DeploymentEntry> waiting = new HashSet<>();
 
-      Select selectAllFromDeployment =
-          QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
+      for (Row row : this.session.execute(selectAllDeploymentRecords)) {
+        DeploymentProcessStatus status =
+            DeploymentProcessStatus.valueOf(
+                row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS));
+        int newNodeId = row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID);
 
-      // Load all deployment records into the entry set
-      for (Row row : clientSession.execute(selectAllFromDeployment))
-        entrySet.add(
-            new DeploymentEntry(
-                row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID),
-                row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
-                DeploymentProcessStatus.valueOf(
-                    row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS)),
-                row.getInt(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR),
-                UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
+        if (status == DeploymentProcessStatus.DEPLOYED) finished.add(newNodeId);
+        else if (status == DeploymentProcessStatus.WAITING_DEPLOYMENT)
+          waiting.add(
+              new DeploymentEntry(
+                  newNodeId,
+                  row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
+                  status,
+                  row.getInt(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR),
+                  UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
+      }
 
-      // Parse the entry set into two seperate sets, one of all the waiting nodes and one of all the
-      // node id's who are deployed
-      this.update(
-          this.parseByState(entrySet, DeploymentProcessStatus.WAITING_DEPLOYMENT),
-          this.parseByStateToNewNodeID(entrySet, DeploymentProcessStatus.DEPLOYED));
+      // (2)
+      waiting.stream().filter(i -> finished.contains(i.waitFor)).forEach(this::transition);
 
       try {
         Thread.sleep(5000);
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        logger.error(e);
       }
     }
-  }
-
-  /**
-   * Produces a set of entries based on a certain status
-   *
-   * @param entries entries to filter
-   * @param state how to filter them
-   * @return set of entries that hold the filter state
-   */
-  private Set<DeploymentEntry> parseByState(
-      final Set<DeploymentEntry> entries, final DeploymentProcessStatus state) {
-    return entries.stream()
-        .filter(i -> i.deploymentProcessStatus == state)
-        .collect(Collectors.toSet());
-  }
-
-  /**
-   * Produces a set of node id's based on a deployment state
-   *
-   * @param entries entries to filter
-   * @param state how to filter them
-   * @return set of node id's that are at a certain state
-   */
-  private Set<Integer> parseByStateToNewNodeID(
-      final Set<DeploymentEntry> entries, final DeploymentProcessStatus state) {
-    return entries.stream()
-        .filter(i -> i.deploymentProcessStatus == state)
-        .map(i -> i.newNodeId)
-        .collect(Collectors.toSet());
-  }
-
-  /**
-   * Logic to transition nodes
-   *
-   * <p>If an entry is waiting for -1 or the entry that its waiting for is finished transition the
-   * given node to deploying
-   *
-   * @param waiting set of waiting nodes
-   * @param deployed set of id's that are finished
-   */
-  private void update(final Set<DeploymentEntry> waiting, final Set<Integer> deployed) {
-    for (DeploymentEntry entry : waiting)
-      if (entry.waitFor == -1 || deployed.contains(entry.waitFor)) this.transition(entry);
   }
 
   /**
@@ -120,7 +95,6 @@ public class PathStoreMasterDeploymentServer extends Thread {
    * @param entry entry to transition
    */
   private void transition(final DeploymentEntry entry) {
-    Session clientSession = PathStoreCluster.getInstance().connect();
 
     logger.info(
         String.format(
@@ -136,6 +110,6 @@ public class PathStoreMasterDeploymentServer extends Thread {
                 Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS,
                 DeploymentProcessStatus.DEPLOYING.toString()));
 
-    clientSession.execute(update);
+    this.session.execute(update);
   }
 }

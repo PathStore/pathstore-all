@@ -55,7 +55,7 @@ public class PathStoreMasterSchemaServer extends Thread {
               .all()
               .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
-      Map<String, Set<Integer>> finished = new HashMap();
+      Map<String, Set<Integer>> finished = new HashMap<>();
       Map<String, Set<NodeSchemaEntry>> waiting = new HashMap<>();
 
       for (Row row : this.session.execute(selectAllNodeSchemaRecords)) {

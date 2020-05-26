@@ -19,6 +19,8 @@ import pathstore.system.deployment.utilities.StartupUTIL;
 import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
 
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.SERVER_UUID;
@@ -43,52 +45,68 @@ public class PathStoreSlaveDeploymentServer extends Thread {
   /** Cassandra port which is statically declared (temporary) */
   private static final int cassandraPort = 9052;
 
+  /** Session used to interact with pathstore */
+  private final Session session = PathStoreCluster.getInstance().connect();
+
+  /** Node id so you don't need to query the properties file every run */
+  private final int nodeId = PathStoreProperties.getInstance().NodeID;
+
   /**
-   * Iterate over all deployment records. Find a record that has the parent node id as the current
-   * node. If the state of that node is deploying then start the deployment process
+   * This denotes the daemons sub process thread pool.
+   *
+   * <p>A cached thread pool is used to kill threads once they're no longer needed instead of
+   * keeping idle threads waiting for tasks that may never come
+   */
+  private final ExecutorService threadPool = Executors.newCachedThreadPool();
+
+  /**
+   * The daemon is used to deploy new children nodes for a given node. The steps to install a new
+   * child node are as follows:
+   *
+   * <p>(1): Query the deployment records with the parent node id of the current node
+   *
+   * <p>(2): For all records retrieved that are of DEPLOYING status query their respective
+   * server_uuid's and transition their row to PROCESSING_DEPLOYING
+   *
+   * <p>(3): After their server information is retrieved queue them for deployment
    */
   @Override
   public void run() {
     while (true) {
       logger.debug("Slave Schema run");
 
-      Session session = PathStoreCluster.getInstance().connect();
-
+      // (1)
       Select selectAllDeployment =
           QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
+      selectAllDeployment.where(QueryBuilder.eq(PARENT_NODE_ID, this.nodeId));
 
       // Query all rows from the deployment table
-      for (Row row : session.execute(selectAllDeployment)) {
-        int parentNodeId = row.getInt(PARENT_NODE_ID);
-
-        DeploymentProcessStatus status =
+      for (Row row : this.session.execute(selectAllDeployment)) {
+        DeploymentProcessStatus currentStatus =
             DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS));
 
-        // If the record is set to deploying and the parentNodeId is this node, start deployment
-        if (parentNodeId == PathStoreProperties.getInstance().NodeID
-            && status == DeploymentProcessStatus.DEPLOYING) {
+        if (currentStatus != DeploymentProcessStatus.DEPLOYING) continue;
 
-          DeploymentEntry entry =
+        String serverUUID = row.getString(SERVER_UUID);
+
+        Select queryServer =
+            QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
+        queryServer.where(QueryBuilder.eq(SERVER_UUID, serverUUID));
+
+        // (2) && (3)
+        for (Row serverRow : this.session.execute(queryServer))
+          this.spawnSubProcess(
               new DeploymentEntry(
                   row.getInt(NEW_NODE_ID),
-                  parentNodeId,
-                  DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS)),
+                  this.nodeId,
+                  currentStatus,
                   row.getInt(WAIT_FOR),
-                  UUID.fromString(row.getString(SERVER_UUID)));
-
-          Select getServer =
-              QueryBuilder.select().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
-          getServer.where(QueryBuilder.eq(SERVER_UUID, entry.serverUUID.toString()));
-
-          for (Row serverRow : session.execute(getServer))
-            this.deploy(
-                entry,
-                serverRow.getString(IP),
-                serverRow.getString(USERNAME),
-                serverRow.getString(PASSWORD),
-                serverRow.getInt(SSH_PORT),
-                serverRow.getInt(RMI_PORT));
-        }
+                  UUID.fromString(serverUUID)),
+              serverRow.getString(IP),
+              serverRow.getString(USERNAME),
+              serverRow.getString(PASSWORD),
+              serverRow.getInt(SSH_PORT),
+              serverRow.getInt(RMI_PORT));
       }
 
       try {
@@ -97,6 +115,34 @@ public class PathStoreSlaveDeploymentServer extends Thread {
         logger.error(e);
       }
     }
+  }
+
+  /**
+   * TODO: Node removal
+   *
+   * <p>This function will transition the row start to processing_deploying to denote that the node
+   * is currently being handled. It will then start the deployment process on a seperate thread
+   *
+   * @param entry entry to use
+   * @param ip ip of server
+   * @param username username of server
+   * @param password password of server
+   * @param sshPort ssh port of server
+   * @param rmiPort rmi port for server pathstore instance
+   */
+  private void spawnSubProcess(
+      final DeploymentEntry entry,
+      final String ip,
+      final String username,
+      final String password,
+      final int sshPort,
+      final int rmiPort) {
+
+    // (2)
+    this.updateState(entry, DeploymentProcessStatus.PROCESSING_DEPLOYING);
+
+    // (3)
+    this.threadPool.submit(() -> deploy(entry, ip, username, password, sshPort, rmiPort));
   }
 
   /**
