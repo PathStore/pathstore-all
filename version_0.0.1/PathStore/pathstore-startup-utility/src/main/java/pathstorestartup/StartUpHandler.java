@@ -194,16 +194,16 @@ public class StartUpHandler {
     commands.add(new Exec(sshUtil, "docker ps", 0));
     // Potentially kill old cassandra container
     commands.add(new Exec(sshUtil, "docker kill cassandra", -1));
-    // Potentially remove old cassandra image
-    commands.add(new Exec(sshUtil, "docker image rm cassandra", -1));
+    // Potentially remove old cassandra image TODO (1)
+    //commands.add(new Exec(sshUtil, "docker image rm cassandra", -1));
     // Potentially kill old pathstore container
     commands.add(new Exec(sshUtil, "docker kill pathstore", -1));
-    // Potentially remove old pathstore image
-    commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
+    // Potentially remove old pathstore image TODO (2)
+    //commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
     // Potentially kill old pathstore container
     commands.add(new Exec(sshUtil, "docker kill pathstore-admin-panel", -1));
-    // Potentially remove old pathstore image
-    commands.add(new Exec(sshUtil, "docker image rm pathstore-admin-panel", -1));
+    // Potentially remove old pathstore image TODO (3)
+    //commands.add(new Exec(sshUtil, "docker image rm pathstore-admin-panel", -1));
     // Potentially remove old file associated with install
     commands.add(new Exec(sshUtil, "rm -rf pathstore-install", -1));
     // Potentially remove old pull image
