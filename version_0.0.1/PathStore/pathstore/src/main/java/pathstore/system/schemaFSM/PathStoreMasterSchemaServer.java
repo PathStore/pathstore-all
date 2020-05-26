@@ -104,7 +104,7 @@ public class PathStoreMasterSchemaServer extends Thread {
                 .filter(
                     i ->
                         i.waitFor.equals(Collections.singletonList(-1))
-                            || finished.get(k).containsAll(i.waitFor))
+                            || (finished.get(k) != null && finished.get(k).containsAll(i.waitFor)))
                 .forEach(this::transition));
   }
 
