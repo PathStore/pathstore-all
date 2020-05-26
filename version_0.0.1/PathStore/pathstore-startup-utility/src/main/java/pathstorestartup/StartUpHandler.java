@@ -1,31 +1,13 @@
 package pathstorestartup;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.Insert;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.jcraft.jsch.JSchException;
-import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
-import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
 import pathstore.system.deployment.utilities.SSHUtil;
-import pathstore.system.deployment.utilities.StartupUTIL;
 import pathstorestartup.commands.CreateWebsitePropertiesFile;
 import pathstorestartup.commands.FinalizeRootInstallation;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.*;
-
-import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
-import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.WAIT_FOR;
-import static pathstore.common.Constants.PATHSTORE_COLUMNS.*;
-import static pathstore.common.Constants.PATHSTORE_COLUMNS.PATHSTORE_DIRTY;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
-import static pathstore.common.Constants.SERVERS_COLUMNS.*;
-import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
 
 /**
  * This class is used to handle the startup sequence and allows a user to deploy the root node for

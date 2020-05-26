@@ -22,10 +22,6 @@ public final class Constants {
 
   public static final String PROPERTIESFILE = "/etc/pathstore/pathstore.properties";
 
-  /** Where the properties file will be stored locally. */
-  public static final String DESTINATION_TO_STORE =
-      "../docker-files/pathstore/pathstore.properties";
-
   public static final class PROPERTIES_CONSTANTS {
     public static final String ROLE = "Role";
     public static final String EXTERNAL_ADDRESS = "ExternalAddress";

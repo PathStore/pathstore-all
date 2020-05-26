@@ -18,6 +18,14 @@ import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
 /** Things related to cassandra for startup that can't rely on pathstore properties file */
 public class StartupUTIL {
 
+  /** Denotes the dir where all installation related files are stored */
+  private static final String STARTING_DIR =
+      System.getProperty("user.dir") + "/src/main/resources/";
+
+  /** Where the properties file will be stored locally. */
+  public static final String DESTINATION_TO_STORE =
+      STARTING_DIR + "pathstore/pathstore.properties";
+
   /**
    * Used to create a cluster connection with an ip and port
    *
@@ -168,13 +176,13 @@ public class StartupUTIL {
             cassandraPort,
             cassandraParentIP,
             cassandraParentPort,
-            Constants.DESTINATION_TO_STORE));
+            DESTINATION_TO_STORE));
     // Transfer properties file
     commands.add(
         new FileTransfer(
-            sshUtil, Constants.DESTINATION_TO_STORE, "pathstore-install/pathstore.properties"));
+            sshUtil, DESTINATION_TO_STORE, "pathstore-install/pathstore.properties"));
     // Remove properties file
-    commands.add(new RemoveGeneratedPropertiesFile(Constants.DESTINATION_TO_STORE));
+    commands.add(new RemoveGeneratedPropertiesFile(DESTINATION_TO_STORE));
     // Transfer cassandra image
     commands.add(
         new FileTransfer(
