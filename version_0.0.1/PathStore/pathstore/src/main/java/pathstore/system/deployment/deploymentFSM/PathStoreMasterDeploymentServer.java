@@ -76,6 +76,8 @@ public class PathStoreMasterDeploymentServer extends Thread {
                   UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
       }
 
+      System.out.println(finished + " " + waiting);
+
       // (2)
       waiting.stream().filter(i -> finished.contains(i.waitFor)).forEach(this::transition);
 
