@@ -68,9 +68,9 @@ public final class GetLogRecordsPayload extends ValidatedPayload {
     // (2)
     Select deploymentSelect =
         QueryBuilder.select().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
-    deploymentSelect.where(QueryBuilder.eq(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID, this.nodeId));
 
-    for (Row row : session.execute(deploymentSelect)) errors[0] = null;
+    for (Row row : session.execute(deploymentSelect))
+      if (row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID) == this.nodeId) errors[0] = null;
 
     // (3)
     Select availableDatesSelect =
