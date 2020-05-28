@@ -300,16 +300,28 @@ public class PathStoreSlaveDeploymentServer extends Thread {
       availableLogDatesDelete.where(
           QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId));
 
-      //this.session.execute(availableLogDatesDelete);
+      // this.session.execute(availableLogDatesDelete);
 
       this.logger.info(String.format("Deleting node schema records for node %d", entry.newNodeId));
 
-      Delete nodeSchemaDelete =
-          QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-      nodeSchemaDelete.where(
-          QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.newNodeId));
+      Select nodeSchemas =
+          QueryBuilder.select()
+              .all()
+              .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+      nodeSchemas.where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.newNodeId));
 
-      //this.session.execute(nodeSchemaDelete);
+      for (Row row : this.session.execute(nodeSchemas)) {
+        Delete nodeSchemaDelete =
+            QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+        nodeSchemaDelete
+            .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.newNodeId))
+            .and(
+                QueryBuilder.eq(
+                    Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME,
+                    row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME)));
+
+        this.session.execute(nodeSchemaDelete);
+      }
 
       this.logger.info(String.format("Deleting deployment record for node %d", entry.newNodeId));
 
