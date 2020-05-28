@@ -263,7 +263,8 @@ public class PathStoreSlaveDeploymentServer extends Thread {
 
       sshUtil.disconnect();
 
-      this.logger.info(String.format("Deleting logs for node %d", entry.newNodeId));
+      this.logger.info(
+          String.format("Deleting Available log dates and logs for node %d", entry.newNodeId));
 
       Select getAvailableLogDates =
           QueryBuilder.select()
@@ -272,35 +273,43 @@ public class PathStoreSlaveDeploymentServer extends Thread {
       getAvailableLogDates.where(
           QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId));
 
-      for (Row row : this.session.execute(getAvailableLogDates)) {
+      for (Row availableLogDateRow : this.session.execute(getAvailableLogDates)) {
+
+        // Delete date record for available dates
+        Delete availableLogDatesDelete =
+            QueryBuilder.delete()
+                .from(Constants.PATHSTORE_APPLICATIONS, Constants.AVAILABLE_LOG_DATES);
+
+        String date = availableLogDateRow.getString(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE);
+
+        availableLogDatesDelete
+            .where(QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId))
+            .and(QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE, date));
+
+        this.session.execute(availableLogDatesDelete);
+
+        // For all log levels delete all logs with the given date above
         for (LoggerLevel level : LoggerLevel.values()) {
-
-          String date = row.getString(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE);
-
-          logger.debug(
-              String.format(
-                  "Deleting logs with params %d %s %s", entry.newNodeId, date, level.toString()));
-
-          Delete logDeleteByDateAndLevel =
-              QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
-          logDeleteByDateAndLevel
+          Select getLogs =
+              QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
+          getLogs
               .where(QueryBuilder.eq(Constants.LOGS_COLUMNS.NODE_ID, entry.newNodeId))
               .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.DATE, date))
               .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, level.toString()));
 
-          // this.session.execute(logDeleteByDateAndLevel);
+          for (Row logRow : this.session.execute(getLogs)) {
+            Delete logDelete =
+                QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
+            logDelete
+                .where(QueryBuilder.eq(Constants.LOGS_COLUMNS.NODE_ID, entry.newNodeId))
+                .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.DATE, date))
+                .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, level.toString()))
+                .and(
+                    QueryBuilder.eq(
+                        Constants.LOGS_COLUMNS.COUNT, logRow.getInt(Constants.LOGS_COLUMNS.COUNT)));
+          }
         }
       }
-
-      this.logger.info(String.format("Deleting Available log dates for node %d", entry.newNodeId));
-
-      Delete availableLogDatesDelete =
-          QueryBuilder.delete()
-              .from(Constants.PATHSTORE_APPLICATIONS, Constants.AVAILABLE_LOG_DATES);
-      availableLogDatesDelete.where(
-          QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId));
-
-      // this.session.execute(availableLogDatesDelete);
 
       this.logger.info(String.format("Deleting node schema records for node %d", entry.newNodeId));
 
