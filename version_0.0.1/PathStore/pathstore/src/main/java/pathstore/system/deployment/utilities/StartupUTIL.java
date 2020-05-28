@@ -228,7 +228,7 @@ public class StartupUTIL {
     // Potentially remove old cassandra image
     commands.add(new Exec(sshUtil, "docker image rm cassandra", 0));
     // Potentially remove old file associated with install
-    commands.add(new Exec(sshUtil, "rm -rf pathstore-install", 0));
+    commands.add(new Exec(sshUtil, "rm -rf pathstore-install", -1));
 
     return commands;
   }
