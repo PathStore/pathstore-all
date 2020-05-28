@@ -261,6 +261,8 @@ public class PathStoreSlaveDeploymentServer extends Thread {
         command.execute();
       }
 
+      sshUtil.disconnect();
+
       this.logger.info(String.format("Deleting logs for node %d", entry.newNodeId));
 
       Select getAvailableLogDates =
@@ -298,7 +300,7 @@ public class PathStoreSlaveDeploymentServer extends Thread {
       availableLogDatesDelete.where(
           QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId));
 
-      this.session.execute(availableLogDatesDelete);
+      //this.session.execute(availableLogDatesDelete);
 
       this.logger.info(String.format("Deleting node schema records for node %d", entry.newNodeId));
 
