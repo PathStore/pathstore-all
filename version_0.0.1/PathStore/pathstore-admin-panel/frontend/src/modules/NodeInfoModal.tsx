@@ -113,7 +113,7 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
     deleteButton = (deployment: Deployment[]): {} | null => {
         const deployObject = deployment.filter(i => i.new_node_id === this.props.node);
 
-        if (deployObject[0].process_status === "DEPLOYED")
+        if (deployObject[0].process_status === "DEPLOYED" && deployObject[0].parent_node_id !== -1)
             return <Button onClick={this.deleteOnClick}>Delete</Button>;
         else return null;
     };

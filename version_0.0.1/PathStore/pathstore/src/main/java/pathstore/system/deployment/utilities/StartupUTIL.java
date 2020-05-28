@@ -127,7 +127,7 @@ public class StartupUTIL {
    * @param cassandraParentPort new nodes' parent cassandra instance port
    * @return list of deployment commands to execute
    */
-  public static List<ICommand> initList(
+  public static List<ICommand> initDeploymentList(
       final SSHUtil sshUtil,
       final String ip,
       final int nodeID,
@@ -156,8 +156,6 @@ public class StartupUTIL {
     commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
     // Potentially remove old file associated with install
     commands.add(new Exec(sshUtil, "rm -rf pathstore-install", -1));
-    // Potentially remove old base image
-    commands.add(new Exec(sshUtil, "docker image rm base", -1));
     // Create pathstore install dir
     commands.add(new Exec(sshUtil, "mkdir -p pathstore-install", 0));
     // Generate pathstore properties file
@@ -206,6 +204,31 @@ public class StartupUTIL {
             0));
     // Wait for pathstore to come online
     commands.add(new WaitForPathStore(ip, cassandraPort));
+
+    return commands;
+  }
+
+  /**
+   * This function generate the list of commands to remove a node
+   *
+   * @param sshUtil how to connect
+   * @return list of removal commands
+   */
+  public static List<ICommand> initUnDeploymentList(final SSHUtil sshUtil) {
+    List<ICommand> commands = new ArrayList<>();
+
+    // Check for docker access and that docker is online
+    commands.add(new Exec(sshUtil, "docker ps", 0));
+    // Potentially kill old pathstore container
+    commands.add(new Exec(sshUtil, "docker kill pathstore", 0));
+    // Potentially remove old pathstore image
+    commands.add(new Exec(sshUtil, "docker image rm pathstore", 0));
+    // Potentially kill old cassandra container
+    commands.add(new Exec(sshUtil, "docker kill cassandra", 0));
+    // Potentially remove old cassandra image
+    commands.add(new Exec(sshUtil, "docker image rm cassandra", 0));
+    // Potentially remove old file associated with install
+    commands.add(new Exec(sshUtil, "rm -rf pathstore-install", 0));
 
     return commands;
   }

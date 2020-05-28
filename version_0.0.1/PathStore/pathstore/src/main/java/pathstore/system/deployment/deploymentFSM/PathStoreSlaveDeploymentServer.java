@@ -10,6 +10,7 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.Role;
+import pathstore.common.logger.LoggerLevel;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.deployment.commands.CommandError;
@@ -73,7 +74,7 @@ public class PathStoreSlaveDeploymentServer extends Thread {
   @Override
   public void run() {
     while (true) {
-      logger.debug("Slave Schema run");
+      this.logger.debug("Slave Schema run");
 
       // (1)
       Select selectAllDeployment =
@@ -113,7 +114,7 @@ public class PathStoreSlaveDeploymentServer extends Thread {
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
-        logger.error(e);
+        this.logger.error(e);
       }
     }
   }
@@ -165,8 +166,8 @@ public class PathStoreSlaveDeploymentServer extends Thread {
    * @param password password of the server
    * @param sshPort ssh port for connection
    * @param rmiPort rmi port for rmi server
-   * @see StartupUTIL#initList(SSHUtil, String, int, int, Role, String, int, String, int, String,
-   *     int, String, int)
+   * @see StartupUTIL#initDeploymentList(SSHUtil, String, int, int, Role, String, int, String, int,
+   *     String, int, String, int)
    */
   private void deploy(
       final DeploymentEntry entry,
@@ -176,19 +177,20 @@ public class PathStoreSlaveDeploymentServer extends Thread {
       final int sshPort,
       final int rmiPort) {
 
-    logger.info(String.format("Deploying %d from node %d", entry.newNodeId, entry.parentNodeId));
+    this.logger.info(
+        String.format("Deploying %d from node %d", entry.newNodeId, entry.parentNodeId));
 
     try {
       SSHUtil sshUtil = new SSHUtil(ip, username, password, sshPort);
 
-      logger.debug("Connection established to new node");
+      this.logger.debug("Connection established to new node");
 
       try {
 
         // Get a list of commands based on what information the current node has in the properties
         // file and what the new node id was written to the deployment table
         for (ICommand command :
-            StartupUTIL.initList(
+            StartupUTIL.initDeploymentList(
                 sshUtil,
                 ip,
                 entry.newNodeId,
@@ -204,18 +206,18 @@ public class PathStoreSlaveDeploymentServer extends Thread {
                 PathStoreProperties.getInstance().CassandraPort)) {
 
           // Inform the user what command is being executed
-          logger.info(command.toString());
+          this.logger.info(command.toString());
 
           command.execute();
         }
 
-        logger.info("Successfully deployed");
+        this.logger.info("Successfully deployed");
         PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.DEPLOYED);
 
       } catch (CommandError commandError) { // there was an error with a given command
 
-        logger.error("Deployment failed");
-        logger.error(commandError.errorMessage);
+        this.logger.error("Deployment failed");
+        this.logger.error(commandError.errorMessage);
         PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.FAILED);
 
       } finally {
@@ -224,13 +226,19 @@ public class PathStoreSlaveDeploymentServer extends Thread {
 
     } catch (JSchException e) { // the connection information given is not valid
 
-      logger.error("Could not connect to new node");
+      this.logger.error("Could not connect to new node");
       PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.FAILED);
     }
   }
 
   /**
    * This function removes a child node. It will also clear out all original finals
+   *
+   * <p>Steps:
+   *
+   * <p>Un-deploys node then removes:
+   *
+   * <p>Deployment record, available log dates, logs, App records
    *
    * @param entry entry to delete
    * @param ip ip to connect to
@@ -245,14 +253,74 @@ public class PathStoreSlaveDeploymentServer extends Thread {
       final String password,
       final int sshPort) {
 
-    // TODO: Actually stop the processes and cleanup
+    try {
+      SSHUtil sshUtil = new SSHUtil(ip, username, password, sshPort);
 
-    Delete delete =
-        QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
-    delete
-        .where(QueryBuilder.eq(PARENT_NODE_ID, entry.parentNodeId))
-        .and(QueryBuilder.eq(NEW_NODE_ID, entry.newNodeId));
+      this.logger.debug(String.format("Connection establish to %d", entry.newNodeId));
 
-    this.session.execute(delete);
+      for (ICommand command : StartupUTIL.initUnDeploymentList(sshUtil)) {
+        this.logger.info(command.toString());
+        command.execute();
+      }
+
+      this.logger.info(String.format("Deleting deployment record for node %d", entry.newNodeId));
+
+      Delete deploymentDelete =
+          QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
+      deploymentDelete
+          .where(QueryBuilder.eq(PARENT_NODE_ID, entry.parentNodeId))
+          .and(QueryBuilder.eq(NEW_NODE_ID, entry.newNodeId));
+
+      this.session.execute(deploymentDelete);
+
+      this.logger.info(String.format("Deleting logs for node %d", entry.newNodeId));
+
+      Select getAvailableLogDates =
+          QueryBuilder.select()
+              .all()
+              .from(Constants.PATHSTORE_APPLICATIONS, Constants.AVAILABLE_LOG_DATES);
+      getAvailableLogDates.where(
+          QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId));
+
+      for (Row row : this.session.execute(getAvailableLogDates)) {
+        for (LoggerLevel level : LoggerLevel.values()) {
+          Delete logDeleteByDateAndLevel =
+              QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
+          logDeleteByDateAndLevel
+              .where(QueryBuilder.eq(Constants.LOGS_COLUMNS.NODE_ID, entry.newNodeId))
+              .and(
+                  QueryBuilder.eq(
+                      Constants.LOGS_COLUMNS.DATE,
+                      row.getString(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE)))
+              .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, level.toString()));
+
+          this.session.execute(logDeleteByDateAndLevel);
+        }
+      }
+
+      this.logger.info(String.format("Deleting Available log dates for node %d", entry.newNodeId));
+
+      Delete availableLogDatesDelete =
+          QueryBuilder.delete()
+              .from(Constants.PATHSTORE_APPLICATIONS, Constants.AVAILABLE_LOG_DATES);
+      availableLogDatesDelete.where(
+          QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId));
+
+      this.session.execute(availableLogDatesDelete);
+
+      this.logger.info(String.format("Deleting node schema records for node %d", entry.newNodeId));
+
+      Delete nodeSchemaDelete =
+          QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+      nodeSchemaDelete.where(
+          QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.newNodeId));
+
+      this.session.execute(nodeSchemaDelete);
+    } catch (JSchException e) {
+      this.logger.error(
+          String.format("Could not connect to node %d to un-deploy it", entry.newNodeId));
+    } catch (CommandError commandError) {
+      this.logger.error(commandError.errorMessage);
+    }
   }
 }
