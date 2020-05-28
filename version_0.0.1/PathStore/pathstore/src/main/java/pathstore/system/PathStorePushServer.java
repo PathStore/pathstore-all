@@ -125,7 +125,7 @@ public class PathStorePushServer extends Thread {
 
             if (str_insert.length() > PathStoreProperties.getInstance().MaxBatchSize
                 || str_delete.length() > PathStoreProperties.getInstance().MaxBatchSize) {
-              logger.debug("Executing parent insert and local delete");
+              //logger.debug("Executing parent insert and local delete");
               parent.execute(insert);
               local.execute(delete);
             } else {
@@ -133,7 +133,7 @@ public class PathStorePushServer extends Thread {
                       > PathStoreProperties.getInstance().MaxBatchSize
                   || deleteBatchSize + str_delete.length()
                       > PathStoreProperties.getInstance().MaxBatchSize) {
-                logger.debug("Executing parent insert and local delete");
+                //logger.debug("Executing parent insert and local delete");
                 parent.execute(insertBatch);
                 local.execute(deleteBatch);
 

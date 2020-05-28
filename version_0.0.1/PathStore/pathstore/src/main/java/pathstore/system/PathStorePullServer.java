@@ -70,7 +70,7 @@ public class PathStorePullServer extends Thread {
     logger.info("Pull Server spawned");
     while (true) {
       try {
-        logger.debug("Pull server ran");
+       // logger.debug("Pull server ran");
         pull();
         this.wait(PathStoreProperties.getInstance().PullSleep);
       } catch (Exception e) {
