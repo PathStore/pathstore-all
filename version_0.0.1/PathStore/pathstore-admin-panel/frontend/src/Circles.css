@@ -79,6 +79,14 @@ span {
     fill: green;
 }
 
+.waiting_removal_node {
+    fill: lightcoral;
+}
+
+.removing_node {
+    fill: orange;
+}
+
 .hypothetical {
     fill: blue;
 }

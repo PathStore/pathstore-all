@@ -2,9 +2,9 @@ package pathstore.system.deployment.deploymentFSM;
 
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import com.datastax.driver.core.querybuilder.Update;
 import com.jcraft.jsch.JSchException;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
@@ -85,7 +85,8 @@ public class PathStoreSlaveDeploymentServer extends Thread {
         DeploymentProcessStatus currentStatus =
             DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS));
 
-        if (currentStatus != DeploymentProcessStatus.DEPLOYING) continue;
+        if (currentStatus != DeploymentProcessStatus.DEPLOYING
+            && currentStatus != DeploymentProcessStatus.REMOVING) continue;
 
         String serverUUID = row.getString(SERVER_UUID);
 
@@ -118,10 +119,8 @@ public class PathStoreSlaveDeploymentServer extends Thread {
   }
 
   /**
-   * TODO: Node removal
-   *
-   * <p>This function will transition the row start to processing_deploying to denote that the node
-   * is currently being handled. It will then start the deployment process on a seperate thread
+   * This function will transition the row start to processing_deploying to denote that the node is
+   * currently being handled. It will then start the deployment process on a seperate thread
    *
    * @param entry entry to use
    * @param ip ip of server
@@ -138,11 +137,23 @@ public class PathStoreSlaveDeploymentServer extends Thread {
       final int sshPort,
       final int rmiPort) {
 
+    // Determine how to update and what function to execute based on the status
+    DeploymentProcessStatus newStatus;
+    Runnable r;
+
+    if (entry.deploymentProcessStatus == DeploymentProcessStatus.DEPLOYING) {
+      newStatus = DeploymentProcessStatus.PROCESSING_DEPLOYING;
+      r = () -> deploy(entry, ip, username, password, sshPort, rmiPort);
+    } else {
+      newStatus = DeploymentProcessStatus.PROCESSING_REMOVING;
+      r = () -> remove(entry, ip, username, password, sshPort);
+    }
+
     // (2)
-    this.updateState(entry, DeploymentProcessStatus.PROCESSING_DEPLOYING);
+    PathStoreDeploymentUtils.updateState(entry, newStatus);
 
     // (3)
-    this.threadPool.submit(() -> deploy(entry, ip, username, password, sshPort, rmiPort));
+    this.threadPool.submit(r);
   }
 
   /**
@@ -199,13 +210,13 @@ public class PathStoreSlaveDeploymentServer extends Thread {
         }
 
         logger.info("Successfully deployed");
-        this.updateState(entry, DeploymentProcessStatus.DEPLOYED);
+        PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.DEPLOYED);
 
       } catch (CommandError commandError) { // there was an error with a given command
 
         logger.error("Deployment failed");
         logger.error(commandError.errorMessage);
-        this.updateState(entry, DeploymentProcessStatus.FAILED);
+        PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.FAILED);
 
       } finally {
         sshUtil.disconnect();
@@ -214,26 +225,34 @@ public class PathStoreSlaveDeploymentServer extends Thread {
     } catch (JSchException e) { // the connection information given is not valid
 
       logger.error("Could not connect to new node");
-      this.updateState(entry, DeploymentProcessStatus.FAILED);
+      PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.FAILED);
     }
   }
 
   /**
-   * Updates a records state to either failed or deployed based on the result of deployment
+   * This function removes a child node. It will also clear out all original finals
    *
-   * @param entry record that triggered deployment
-   * @param status status to update entry to
+   * @param entry entry to delete
+   * @param ip ip to connect to
+   * @param username username to connect
+   * @param password password to connect
+   * @param sshPort ssh port for server
    */
-  private void updateState(final DeploymentEntry entry, final DeploymentProcessStatus status) {
-    Session clientSession = PathStoreCluster.getInstance().connect();
+  private void remove(
+      final DeploymentEntry entry,
+      final String ip,
+      final String username,
+      final String password,
+      final int sshPort) {
 
-    Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
-    update
-        .where(QueryBuilder.eq(NEW_NODE_ID, entry.newNodeId))
-        .and(QueryBuilder.eq(PARENT_NODE_ID, entry.parentNodeId))
-        .and(QueryBuilder.eq(SERVER_UUID, entry.serverUUID.toString()))
-        .with(QueryBuilder.set(PROCESS_STATUS, status.toString()));
+    // TODO: Actually stop the processes and cleanup
 
-    clientSession.execute(update);
+    Delete delete =
+        QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
+    delete
+        .where(QueryBuilder.eq(PARENT_NODE_ID, entry.parentNodeId))
+        .and(QueryBuilder.eq(NEW_NODE_ID, entry.newNodeId));
+
+    this.session.execute(delete);
   }
 }

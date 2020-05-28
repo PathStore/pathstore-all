@@ -103,6 +103,22 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
     };
 
     /**
+     * TODO: TEMP FUNCTION
+     *
+     * Returns a button or null iff the node is eligible for re-trying deployment (the node has failed deployment)
+     *
+     * @param deployment
+     * @returns {null|*}
+     */
+    deleteButton = (deployment: Deployment[]): {} | null => {
+        const deployObject = deployment.filter(i => i.new_node_id === this.props.node);
+
+        if (deployObject[0].process_status === "DEPLOYED")
+            return <Button onClick={this.deleteOnClick}>Delete</Button>;
+        else return null;
+    };
+
+    /**
      * Get data for retry
      *
      * @param deployment
@@ -125,6 +141,28 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
     retryOnClick = (): void => {
         fetch('/api/v1/deployment', {
             method: 'PUT',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({record: this.retryData(this.props.deployment)})
+        })
+            .then(webHandler)
+            .then(() => {
+                // Optional query iff the prop exists
+                this.props.forceRefresh?.();
+                this.props.callback();
+            })
+            .catch((response: Error[]) => this.setState({errorModalShow: true, errorModalData: response}));
+
+    };
+
+    /**
+     * Delete request to remove node
+     */
+    deleteOnClick = (): void => {
+        fetch('/api/v1/deployment', {
+            method: 'DELETE',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
@@ -167,6 +205,7 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
                 {errorModal}
                 <ServerInfo deployment={this.props.deployment} servers={this.props.servers} node={this.props.node}/>
                 {this.retryButton(this.props.deployment)}
+                {this.deleteButton(this.props.deployment)}
                 <br/>
                 <ApplicationStatusViewer
                     applicationStatus={this.props.applicationStatus.filter(i => i.node_id === this.props.node)}/>

@@ -2,7 +2,12 @@ package pathstore.system.deployment.deploymentFSM;
 
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Update;
+import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS;
 
 /**
  * This utility class is used to share functionality between {@link PathStoreMasterDeploymentServer}
@@ -21,5 +26,25 @@ public class PathStoreDeploymentUtils {
     session.execute(
         QueryBuilder.insertInto(Constants.LOCAL_KEYSPACE, Constants.STARTUP)
             .value(Constants.STARTUP_COLUMNS.TASK_DONE, task));
+  }
+
+  /**
+   * Updates a records state to either failed or deployed based on the result of deployment
+   *
+   * @param entry record that triggered deployment
+   * @param status status to update entry to
+   */
+  public static void updateState(
+      final DeploymentEntry entry, final DeploymentProcessStatus status) {
+    Session clientSession = PathStoreCluster.getInstance().connect();
+
+    Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
+    update
+        .where(QueryBuilder.eq(NEW_NODE_ID, entry.newNodeId))
+        .and(QueryBuilder.eq(PARENT_NODE_ID, entry.parentNodeId))
+        .and(QueryBuilder.eq(SERVER_UUID, entry.serverUUID.toString()))
+        .with(QueryBuilder.set(PROCESS_STATUS, status.toString()));
+
+    clientSession.execute(update);
   }
 }

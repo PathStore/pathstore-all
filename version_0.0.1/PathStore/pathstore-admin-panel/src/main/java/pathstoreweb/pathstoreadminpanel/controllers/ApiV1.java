@@ -1,9 +1,6 @@
 package pathstoreweb.pathstoreadminpanel.controllers;
 
-import javax.validation.Valid;
-
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import pathstoreweb.pathstoreadminpanel.Endpoints;
 import pathstoreweb.pathstoreadminpanel.services.ValidityErrorFormatter;
@@ -16,9 +13,11 @@ import pathstoreweb.pathstoreadminpanel.services.applications.GetApplications;
 import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
 import pathstoreweb.pathstoreadminpanel.services.availablelogdates.GetAvailableLogDates;
 import pathstoreweb.pathstoreadminpanel.services.deployment.AddDeploymentRecords;
+import pathstoreweb.pathstoreadminpanel.services.deployment.DeleteDeploymentRecords;
 import pathstoreweb.pathstoreadminpanel.services.deployment.GetDeploymentRecords;
 import pathstoreweb.pathstoreadminpanel.services.deployment.UpdateDeploymentRecord;
 import pathstoreweb.pathstoreadminpanel.services.deployment.payload.AddDeploymentRecordPayload;
+import pathstoreweb.pathstoreadminpanel.services.deployment.payload.DeleteDeploymentRecordPayload;
 import pathstoreweb.pathstoreadminpanel.services.deployment.payload.UpdateDeploymentRecordPayload;
 import pathstoreweb.pathstoreadminpanel.services.logs.GetLogRecords;
 import pathstoreweb.pathstoreadminpanel.services.logs.payload.GetLogRecordsPayload;
@@ -174,6 +173,21 @@ public class ApiV1 {
     return payload.hasErrors()
         ? new ValidityErrorFormatter(payload.getErrors()).format()
         : new UpdateDeploymentRecord(payload).response();
+  }
+
+  /**
+   * TODO: Validation and error checking
+   *
+   * <p>Delete request for deployment records to remove nodes from the network
+   *
+   * @param payload payload for node to delete
+   * @return response. Either 200 or 400
+   */
+  @DeleteMapping(Endpoints.DEPLOYMENT)
+  public ResponseEntity<String> deploy(@RequestBody final DeleteDeploymentRecordPayload payload) {
+    return payload.hasErrors()
+        ? new ValidityErrorFormatter(payload.getErrors()).format()
+        : new DeleteDeploymentRecords(payload).response();
   }
 
   /** @return list of logs for the user to see for each node */

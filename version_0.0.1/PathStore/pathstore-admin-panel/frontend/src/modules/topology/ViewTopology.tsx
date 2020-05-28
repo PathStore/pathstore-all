@@ -86,11 +86,15 @@ export default class ViewTopology extends Component<ViewTopologyProps, ViewTopol
             case "WAITING_DEPLOYMENT":
                 return 'waiting_node';
             case "DEPLOYING":
-                return 'installing_node';
             case "PROCESSING_DEPLOYING":
                 return 'installing_node';
             case "FAILED":
                 return 'uninstalled_node';
+            case "WAITING_REMOVAL":
+                return 'waiting_removal_node';
+            case "REMOVING":
+            case "PROCESSING_REMOVING":
+                return 'removing_node';
             default:
                 return 'installed_node';
         }

@@ -4,20 +4,18 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
 /**
- * TODO; Handle removal of nodes
- *
- * <p>This class is used to read the deployment table and determine when to transition nodes.
+ * This class is used to read the deployment table and determine when to transition nodes.
  *
  * <p>Once a record has been transitions to deploying the slave deployment server will then execute
  * the deployment step. Once this step occurs it can either transition to deployed or failed. If
@@ -36,15 +34,16 @@ public class PathStoreMasterDeploymentServer extends Thread {
   private final Session session = PathStoreCluster.getInstance().connect();
 
   /**
-   * TODO: Removal
-   *
-   * <p>This daemon will transition rows that are WAITING_DEPLOYMENT to DEPLOYING. The steps are:
+   * This daemon will transition rows that are WAITING_DEPLOYMENT to DEPLOYING. The steps are:
    *
    * <p>(1): Query all records from the deployment table and store them into a set of node_id's
    * denoted as finished and a set of DeploymentEntry for the waiting records
    *
-   * <p>(2): Iterate over all waiting records and if the node they're waiting for has finished
-   * transition that node
+   * <p>(2): Iterate over all waiting deployment records and if the node they're waiting for has
+   * finished transition that node
+   *
+   * <p>(3): Iterate over all waiting removal records and if the node they're waiting for has been
+   * removed transition that node
    */
   @Override
   public void run() {
@@ -56,8 +55,13 @@ public class PathStoreMasterDeploymentServer extends Thread {
       Select selectAllDeploymentRecords =
           QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
 
-      Set<Integer> finished = new HashSet<>();
-      Set<DeploymentEntry> waiting = new HashSet<>();
+      // Deployment
+      Set<Integer> deployed = new HashSet<>();
+      Set<DeploymentEntry> waitingDeployment = new HashSet<>();
+
+      // Removal
+      Set<DeploymentEntry> waitingRemoval = new HashSet<>();
+      Set<Integer> completeSet = new HashSet<>();
 
       for (Row row : this.session.execute(selectAllDeploymentRecords)) {
         DeploymentProcessStatus status =
@@ -65,19 +69,44 @@ public class PathStoreMasterDeploymentServer extends Thread {
                 row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS));
         int newNodeId = row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID);
 
-        if (status == DeploymentProcessStatus.DEPLOYED) finished.add(newNodeId);
-        else if (status == DeploymentProcessStatus.WAITING_DEPLOYMENT)
-          waiting.add(
-              new DeploymentEntry(
-                  newNodeId,
-                  row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
-                  status,
-                  row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class),
-                  UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
+        // Setup filterable sets
+        switch (status) {
+          case DEPLOYED:
+            deployed.add(newNodeId);
+            break;
+          case WAITING_DEPLOYMENT:
+            waitingDeployment.add(
+                new DeploymentEntry(
+                    newNodeId,
+                    row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
+                    status,
+                    row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class),
+                    UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
+            break;
+          case WAITING_REMOVAL:
+            waitingRemoval.add(
+                new DeploymentEntry(
+                    newNodeId,
+                    row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
+                    status,
+                    row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class),
+                    UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
+            break;
+        }
+
+        // add to complete set
+        completeSet.add(newNodeId);
       }
 
       // (2)
-      waiting.stream().filter(i -> finished.containsAll(i.waitFor)).forEach(this::transition);
+      waitingDeployment.stream()
+          .filter(i -> deployed.containsAll(i.waitFor))
+          .forEach(this::transitionDeploy);
+
+      // (3) If all nodes i is waiting for aren't presented in the record set
+      waitingRemoval.stream()
+          .filter(i -> Collections.disjoint(i.waitFor, completeSet))
+          .forEach(this::transitionRemoval);
 
       try {
         Thread.sleep(5000);
@@ -92,22 +121,25 @@ public class PathStoreMasterDeploymentServer extends Thread {
    *
    * @param entry entry to transition
    */
-  private void transition(final DeploymentEntry entry) {
+  private void transitionDeploy(final DeploymentEntry entry) {
 
     logger.info(
         String.format(
             "Deploying a new child to %d with id %d", entry.parentNodeId, entry.newNodeId));
 
-    Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
-    update
-        .where(QueryBuilder.eq(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID, entry.newNodeId))
-        .and(QueryBuilder.eq(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID, entry.parentNodeId))
-        .and(QueryBuilder.eq(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID, entry.serverUUID.toString()))
-        .with(
-            QueryBuilder.set(
-                Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS,
-                DeploymentProcessStatus.DEPLOYING.toString()));
+    PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.DEPLOYING);
+  }
 
-    this.session.execute(update);
+  /**
+   * Transition the node in the table from waiting to deploying
+   *
+   * @param entry entry to transition
+   */
+  private void transitionRemoval(final DeploymentEntry entry) {
+
+    logger.info(
+        String.format("%d is removing the child node %d", entry.parentNodeId, entry.newNodeId));
+
+    PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.REMOVING);
   }
 }
