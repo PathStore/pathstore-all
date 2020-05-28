@@ -62,7 +62,7 @@ public class AddDeploymentRecords implements IService {
               record.newNodeId,
               record.parentId,
               DeploymentProcessStatus.WAITING_DEPLOYMENT,
-              Collections.singletonList(record.parentId),
+              new LinkedList<>(Collections.singleton(record.parentId)),
               UUID.fromString(record.serverUUID));
 
       Insert insert =
