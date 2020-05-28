@@ -46,9 +46,6 @@ public class PathStoreMasterSchemaServer extends Thread {
   @Override
   public void run() {
     while (true) {
-
-      //logger.debug("Checking Master");
-
       // (1)
       Select selectAllNodeSchemaRecords =
           QueryBuilder.select()

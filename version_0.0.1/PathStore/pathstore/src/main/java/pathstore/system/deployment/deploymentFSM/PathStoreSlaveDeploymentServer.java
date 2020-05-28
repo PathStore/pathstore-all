@@ -41,7 +41,7 @@ public class PathStoreSlaveDeploymentServer extends Thread {
 
   /** Logger */
   private final PathStoreLogger logger =
-      PathStoreLoggerFactory.getLogger(PathStoreSlaveSchemaServer.class);
+      PathStoreLoggerFactory.getLogger(PathStoreSlaveDeploymentServer.class);
 
   /** Cassandra port which is statically declared (temporary) */
   private static final int cassandraPort = 9052;
@@ -74,8 +74,6 @@ public class PathStoreSlaveDeploymentServer extends Thread {
   @Override
   public void run() {
     while (true) {
-      this.logger.debug("Slave Schema run");
-
       // (1)
       Select selectAllDeployment =
           QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
@@ -263,16 +261,6 @@ public class PathStoreSlaveDeploymentServer extends Thread {
         command.execute();
       }
 
-      this.logger.info(String.format("Deleting deployment record for node %d", entry.newNodeId));
-
-      Delete deploymentDelete =
-          QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
-      deploymentDelete
-          .where(QueryBuilder.eq(PARENT_NODE_ID, entry.parentNodeId))
-          .and(QueryBuilder.eq(NEW_NODE_ID, entry.newNodeId));
-
-      this.session.execute(deploymentDelete);
-
       this.logger.info(String.format("Deleting logs for node %d", entry.newNodeId));
 
       Select getAvailableLogDates =
@@ -316,6 +304,17 @@ public class PathStoreSlaveDeploymentServer extends Thread {
           QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.newNodeId));
 
       this.session.execute(nodeSchemaDelete);
+
+      this.logger.info(String.format("Deleting deployment record for node %d", entry.newNodeId));
+
+      Delete deploymentDelete =
+          QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
+      deploymentDelete
+          .where(QueryBuilder.eq(PARENT_NODE_ID, entry.parentNodeId))
+          .and(QueryBuilder.eq(NEW_NODE_ID, entry.newNodeId));
+
+      this.session.execute(deploymentDelete);
+
     } catch (JSchException e) {
       this.logger.error(
           String.format("Could not connect to node %d to un-deploy it", entry.newNodeId));

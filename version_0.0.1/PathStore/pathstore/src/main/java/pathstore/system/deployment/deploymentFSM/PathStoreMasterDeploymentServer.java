@@ -48,9 +48,6 @@ public class PathStoreMasterDeploymentServer extends Thread {
   @Override
   public void run() {
     while (true) {
-
-      logger.debug("Deployment run");
-
       // (1)
       Select selectAllDeploymentRecords =
           QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
