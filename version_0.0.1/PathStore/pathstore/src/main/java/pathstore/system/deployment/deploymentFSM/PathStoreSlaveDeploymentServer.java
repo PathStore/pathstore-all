@@ -309,7 +309,7 @@ public class PathStoreSlaveDeploymentServer extends Thread {
       nodeSchemaDelete.where(
           QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.newNodeId));
 
-      this.session.execute(nodeSchemaDelete);
+      //this.session.execute(nodeSchemaDelete);
 
       this.logger.info(String.format("Deleting deployment record for node %d", entry.newNodeId));
 
