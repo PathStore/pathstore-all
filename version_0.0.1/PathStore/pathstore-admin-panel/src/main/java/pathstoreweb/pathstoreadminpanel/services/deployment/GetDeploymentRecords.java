@@ -50,7 +50,7 @@ public class GetDeploymentRecords implements IService {
               row.getInt(NEW_NODE_ID),
               row.getInt(PARENT_NODE_ID),
               DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS)),
-              row.getInt(WAIT_FOR),
+              row.getList(WAIT_FOR, Integer.class),
               UUID.fromString(row.getString(SERVER_UUID))));
 
     return entries;

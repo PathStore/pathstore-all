@@ -100,7 +100,7 @@ public class PathStoreSlaveDeploymentServer extends Thread {
                   row.getInt(NEW_NODE_ID),
                   this.nodeId,
                   currentStatus,
-                  row.getInt(WAIT_FOR),
+                  row.getList(WAIT_FOR, Integer.class),
                   UUID.fromString(serverUUID)),
               serverRow.getString(IP),
               serverRow.getString(USERNAME),

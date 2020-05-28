@@ -12,6 +12,7 @@ import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.deployment.formatter.DeploymentRecordsFormatter;
 import pathstoreweb.pathstoreadminpanel.services.deployment.payload.AddDeploymentRecordPayload;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -61,7 +62,7 @@ public class AddDeploymentRecords implements IService {
               record.newNodeId,
               record.parentId,
               DeploymentProcessStatus.WAITING_DEPLOYMENT,
-              record.parentId,
+              Collections.singletonList(record.parentId),
               UUID.fromString(record.serverUUID));
 
       Insert insert =
@@ -69,7 +70,7 @@ public class AddDeploymentRecords implements IService {
               .value(NEW_NODE_ID, entry.newNodeId)
               .value(PARENT_NODE_ID, entry.parentNodeId)
               .value(PROCESS_STATUS, entry.deploymentProcessStatus.toString())
-              .value(WAIT_FOR, entry.parentNodeId)
+              .value(WAIT_FOR, entry.waitFor)
               .value(SERVER_UUID, entry.serverUUID.toString());
 
       session.execute(insert);

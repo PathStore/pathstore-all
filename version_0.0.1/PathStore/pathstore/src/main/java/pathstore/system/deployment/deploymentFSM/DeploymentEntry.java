@@ -1,5 +1,6 @@
 package pathstore.system.deployment.deploymentFSM;
 
+import java.util.List;
 import java.util.UUID;
 
 /** This class is used to denote a deployment record entry in the deployment table */
@@ -15,7 +16,7 @@ public class DeploymentEntry {
   public final DeploymentProcessStatus deploymentProcessStatus;
 
   /** Who is the new node waiting for */
-  public final int waitFor;
+  public final List<Integer> waitFor;
 
   /** What server is the new node being deployed on */
   public final UUID serverUUID;
@@ -31,7 +32,7 @@ public class DeploymentEntry {
       final int newNodeId,
       final int parentNodeId,
       final DeploymentProcessStatus deploymentProcessStatus,
-      final int waitFor,
+      final List<Integer> waitFor,
       final UUID serverUUID) {
     this.newNodeId = newNodeId;
     this.parentNodeId = parentNodeId;
@@ -40,9 +41,7 @@ public class DeploymentEntry {
     this.serverUUID = serverUUID;
   }
 
-  /**
-   * @return all data printed to screen. Used for debugging
-   */
+  /** @return all data printed to screen. Used for debugging */
   @Override
   public String toString() {
     return "DeploymentEntry{"

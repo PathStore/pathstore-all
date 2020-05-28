@@ -72,12 +72,12 @@ public class PathStoreMasterDeploymentServer extends Thread {
                   newNodeId,
                   row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
                   status,
-                  row.getInt(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR),
+                  row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class),
                   UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
       }
 
       // (2)
-      waiting.stream().filter(i -> finished.contains(i.waitFor)).forEach(this::transition);
+      waiting.stream().filter(i -> finished.containsAll(i.waitFor)).forEach(this::transition);
 
       try {
         Thread.sleep(5000);

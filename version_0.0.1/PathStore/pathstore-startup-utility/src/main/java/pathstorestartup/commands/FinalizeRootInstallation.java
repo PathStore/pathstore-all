@@ -9,6 +9,7 @@ import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
 import pathstore.system.deployment.utilities.StartupUTIL;
 
+import java.util.Collections;
 import java.util.UUID;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
@@ -102,7 +103,7 @@ public class FinalizeRootInstallation implements ICommand {
             .value(NEW_NODE_ID, 1)
             .value(PARENT_NODE_ID, -1)
             .value(PROCESS_STATUS, DeploymentProcessStatus.DEPLOYED.toString())
-            .value(WAIT_FOR, -1)
+            .value(WAIT_FOR, Collections.singleton(-1))
             .value(SERVER_UUID, serverUUID.toString());
 
     session.execute(insert);
