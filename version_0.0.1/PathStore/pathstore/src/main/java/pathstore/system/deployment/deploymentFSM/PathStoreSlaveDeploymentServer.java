@@ -272,17 +272,21 @@ public class PathStoreSlaveDeploymentServer extends Thread {
 
       for (Row row : this.session.execute(getAvailableLogDates)) {
         for (LoggerLevel level : LoggerLevel.values()) {
+
+          String date = row.getString(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE);
+
+          logger.debug(
+              String.format(
+                  "Deleting logs with params %d %s %s", entry.newNodeId, date, level.toString()));
+
           Delete logDeleteByDateAndLevel =
               QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
           logDeleteByDateAndLevel
               .where(QueryBuilder.eq(Constants.LOGS_COLUMNS.NODE_ID, entry.newNodeId))
-              .and(
-                  QueryBuilder.eq(
-                      Constants.LOGS_COLUMNS.DATE,
-                      row.getString(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE)))
+              .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.DATE, date))
               .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, level.toString()));
 
-          this.session.execute(logDeleteByDateAndLevel);
+          // this.session.execute(logDeleteByDateAndLevel);
         }
       }
 
