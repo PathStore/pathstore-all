@@ -346,6 +346,8 @@ public class PathStoreSlaveDeploymentServer extends Thread {
 
         this.session.execute(deploymentDelete);
 
+        this.logger.info(String.format("Successfully un-deployed node %d", entry.newNodeId));
+
       } catch (CommandError commandError) {
         this.logger.error(commandError.errorMessage);
       } finally {
