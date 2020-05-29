@@ -1,9 +1,10 @@
 import {Component} from "react";
 import {ApplicationStatus, Deployment} from "../../utilities/ApiDeclarations";
-import Modal from "react-modal";
 import {PathStoreTopology} from "../PathStoreTopology";
 import React from "react";
 import {Button} from "react-bootstrap";
+import Modal from "react-bootstrap/Modal";
+import {AlignedDivs, Left, Right} from "../../utilities/AlignedDivs";
 
 /**
  * Properties definition for {@link LiveTransitionVisualModal}
@@ -139,17 +140,33 @@ export default class LiveTransitionVisualModal extends Component<LiveTransitionV
      */
     render() {
         return (
-            <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
-                <div>
-                    <p>Live updates for: {this.props.application}</p>
-                    <p>Nodes installed are in green</p>
-                    <p>Nodes installing are in blue</p>
-                    <p>Nodes waiting are in orange</p>
-                    <p>Nodes not set are black</p>
-                    <PathStoreTopology deployment={this.props.deployment.filter(i => i.process_status === "DEPLOYED")}
-                                       get_colour={this.getClassName}/>
-                </div>
-                <Button onClick={this.props.callback}>close</Button>
+            <Modal show={this.props.show}
+                   size={"xl"}
+                   centered
+            >
+                <Modal.Header>
+                    <Modal.Title>Live updates for: {this.props.application}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <AlignedDivs>
+                        <Left width='35%'>
+                            <h2>Topology Legend</h2>
+                            <p>Nodes installed are in <span className={'d_green'}>green</span></p>
+                            <p>Nodes installing are in <span className={'d_cyan'}>cyan</span></p>
+                            <p>Nodes waiting are in <span className={'d_yellow'}>yellow</span></p>
+                            <p>Nodes not set are <span className={'d_currentLine'}>dark grey</span></p>
+                        </Left>
+                        <Right>
+                            <h2>Topology</h2>
+                            <PathStoreTopology width={700}
+                                               deployment={this.props.deployment.filter(i => i.process_status === "DEPLOYED")}
+                                               get_colour={this.getClassName}/>
+                        </Right>
+                    </AlignedDivs>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button onClick={this.props.callback}>close</Button>
+                </Modal.Footer>
             </Modal>
         )
     }

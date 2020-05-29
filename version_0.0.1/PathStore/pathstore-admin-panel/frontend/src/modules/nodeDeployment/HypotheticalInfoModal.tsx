@@ -1,7 +1,7 @@
 import {Deployment, Server} from "../../utilities/ApiDeclarations";
 import React, {FunctionComponent} from "react";
 import {Button} from "react-bootstrap";
-import Modal from "react-modal";
+import Modal from "react-bootstrap/Modal";
 import {ServerInfo} from "./servers/ServerInfo";
 
 /**
@@ -54,12 +54,18 @@ interface HypotheticalInfoModalProperties {
  * @constructor
  */
 export const HypotheticalInfoModal: FunctionComponent<HypotheticalInfoModalProperties> = (props) =>
-    <Modal isOpen={props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
-        <p>Info Modal for
-            node {props.node} and {props.hypothetical ? "Is hypothetical" : "Is not hypothetical"}</p>
-        <ServerInfo deployment={props.deployment} servers={props.servers} node={props.node}/>
-        {props.hypothetical ? <Button onClick={props.deleteNode}>Delete</Button> : null}
-        <div>
+    <Modal show={props.show}
+           size={"lg"}
+           centered
+    >
+        <Modal.Header>
+            <Modal.Title>Info Modal for node {props.node}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+            <ServerInfo deployment={props.deployment} servers={props.servers} node={props.node}/>
+        </Modal.Body>
+        <Modal.Footer>
+            {props.hypothetical ? <Button onClick={props.deleteNode}>Delete</Button> : null}
             <Button onClick={props.callback}>Close</Button>
-        </div>
+        </Modal.Footer>
     </Modal>;

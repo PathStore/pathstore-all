@@ -1,0 +1,98 @@
+@import "bootstrap-dracula";
+
+// Node text colour
+.uninstalled_node text, .previous_node text, .installation_node text, .not_set_node text, .waiting_node text, .installing_node text, .installed_node text, .waiting_removal_node text, .removing_node text, .hypothetical text {
+  background-color: $d_red;
+  fill: $d_red;
+}
+
+// Path colour
+.path {
+  fill: none;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.uninstalled_node circle {
+  fill: $d_red;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.previous_node circle {
+  fill: $d_cyan;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+
+.installation_node circle {
+  fill: $d_green;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.not_set_node circle {
+  fill: $d_currentLine;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.waiting_node circle {
+  fill: $d_yellow;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.installing_node circle {
+  fill: $d_cyan;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.installed_node circle {
+  fill: $d_green;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.waiting_removal_node circle {
+  fill: $d_pink;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.removing_node circle {
+  fill: $d_purple;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.hypothetical circle {
+  fill: $d_cyan;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.node circle {
+  fill: rgb(247, 106, 214);
+  stroke: rgb(184, 37, 81);
+  stroke-width: 1.5px;
+}
+
+.node text {
+  font-size: 11px;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background-color: black;
+  fill: $d_red;
+}
+
+.node {
+  cursor: pointer;
+}
+
+path.link {
+  fill: none;
+  stroke: #2593B8;
+  stroke-width: 1.5px;
+}

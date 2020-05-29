@@ -1,11 +1,11 @@
 import React, {Component} from "react";
-import Modal from "react-modal";
 import {Button} from "react-bootstrap";
 import {Error, Server} from "../../../utilities/ApiDeclarations";
 import {webHandler} from "../../../utilities/Utils";
 import {LoadingModal} from "../../LoadingModal";
 import {ErrorResponseModal} from "../../ErrorResponseModal";
 import ServerForm from "./ServerForm";
+import Modal from "react-bootstrap/Modal";
 
 /**
  * Properties definition for {@link ModifyServerModal}
@@ -165,17 +165,22 @@ export default class ModifyServerModal extends Component<ModifyServerModalProper
                 : null;
 
         return this.props.server !== undefined ?
-            <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
+            <Modal show={this.props.show} size={'xl'} centered>
                 {loadingModal}
                 {errorModal}
-                <h2>Server Modification Modal</h2>
-                <h3>Delete Modal</h3>
-                <Button onClick={this.delete}>Delete Server</Button>
-                <br/>
-                <h3>Update Modal</h3>
-                <ServerForm onFormSubmitCallback={this.onFormSubmit} server={this.props.server}/>
-                <br/>
-                <Button onClick={this.props.callback}>close</Button>
+                <Modal.Header>
+                    <Modal.Title>Server Modification Modal</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <h3>Delete Modal</h3>
+                    <Button onClick={this.delete}>Delete Server</Button>
+                    <hr/>
+                    <h3>Update Modal</h3>
+                    <ServerForm onFormSubmitCallback={this.onFormSubmit} server={this.props.server}/>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button onClick={this.props.callback}>close</Button>
+                </Modal.Footer>
             </Modal>
             : null;
     }

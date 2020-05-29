@@ -1,7 +1,7 @@
 import React, {FunctionComponent} from "react";
-import Modal from "react-modal";
 import {Error} from "../utilities/ApiDeclarations";
 import {Button} from "react-bootstrap";
+import Modal from "react-bootstrap/Modal";
 
 /**
  * Properties file for {@link ErrorResponseModal}
@@ -36,9 +36,19 @@ export const ErrorResponseModal: FunctionComponent<ErrorResponseModalProperties>
         message += " " + (i + 1) + ". " + props.data[i].error;
 
     return (
-        <Modal isOpen={props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
-            <p>{message}</p>
-            <Button onClick={props.callback}>close</Button>
+        <Modal show={props.show}
+               size='lg'
+               centered
+        >
+            <Modal.Header>
+                <Modal.Title>An Error has occured</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <p>{message}</p>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button onClick={props.callback}>close</Button>
+            </Modal.Footer>
         </Modal>
     );
 };

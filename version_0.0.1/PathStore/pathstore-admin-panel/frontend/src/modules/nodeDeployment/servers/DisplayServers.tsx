@@ -100,6 +100,7 @@ export default class DisplayServers extends Component<DisplayServersProperties, 
         return (
             <div>
                 {modal}
+                <h2>Servers</h2>
                 <Table>
                     <thead>
                     <tr>

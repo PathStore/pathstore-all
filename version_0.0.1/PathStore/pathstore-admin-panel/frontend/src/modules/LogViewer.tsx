@@ -129,6 +129,7 @@ export default class LogViewer extends Component<LogViewerProps, LogViewerState>
 
             return (
                 <div>
+                    <hr/>
                     <h2>Log Selector</h2>
                     <Form onSubmit={this.onFormSubmit}>
                         <Form.Group controlId="date">

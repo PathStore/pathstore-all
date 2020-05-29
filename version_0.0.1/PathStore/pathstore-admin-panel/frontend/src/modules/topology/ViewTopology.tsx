@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import {ApplicationStatus, AvailableLogDates, Deployment, Server} from "../../utilities/ApiDeclarations";
 import {PathStoreTopology} from "../PathStoreTopology";
 import NodeInfoModal from "../NodeInfoModal";
+import {AlignedDivs, Left, Right} from "../../utilities/AlignedDivs";
 
 /**
  * Properties definition for {@link ViewTopology}
@@ -135,13 +136,28 @@ export default class ViewTopology extends Component<ViewTopologyProps, ViewTopol
                 : null;
 
         return (
-            <div>
-                <p>Click on a node to view its current applications</p>
-                <PathStoreTopology deployment={this.props.deployment}
-                                   get_colour={this.getClassName}
-                                   get_click={this.handleClick}/>
+            <AlignedDivs>
                 {modal}
-            </div>
+                <Left width='25%'>
+                    <h2>Topology Legend</h2>
+                    <br/>
+                    <p>Waiting Deployment: <span className={'d_yellow'}>Yellow</span></p>
+                    <p>Deploying / Processing Deploying: <span className={'d_cyan'}>Cyan</span></p>
+                    <p>Deployed: <span className={'d_green'}>Green</span></p>
+                    <p>Failed: <span className={'d_red'}>Red</span></p>
+                    <br/>
+                    <p>Waiting Removal: <span className={'d_pink'}>Pink</span></p>
+                    <p>Removing / Processing Removing: <span className={'d_purple'}>Purple</span></p>
+                </Left>
+                <Right>
+                    <h2>Topology</h2>
+                    <p>Click on a node to view its current applications</p>
+                    <PathStoreTopology width={1400}
+                                       deployment={this.props.deployment}
+                                       get_colour={this.getClassName}
+                                       get_click={this.handleClick}/>
+                </Right>
+            </AlignedDivs>
         )
     }
 }

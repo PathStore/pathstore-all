@@ -1,5 +1,5 @@
 import React, {FunctionComponent} from "react";
-import Modal from "react-modal";
+import Modal from "react-bootstrap/Modal";
 
 /**
  * Properties definition for {@link LoadingModal}
@@ -18,6 +18,8 @@ interface LoadingModalProperties {
  * @constructor
  */
 export const LoadingModal: FunctionComponent<LoadingModalProperties> = (props) =>
-    <Modal isOpen={props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
-        <p>Loading</p>
+    <Modal show={props.show} size='sm' centered>
+        <Modal.Body>
+            <p>Loading....</p>
+        </Modal.Body>
     </Modal>;

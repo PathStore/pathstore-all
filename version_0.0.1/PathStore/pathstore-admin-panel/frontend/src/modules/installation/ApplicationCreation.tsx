@@ -174,24 +174,25 @@ export default class ApplicationCreation extends Component<ApplicationCreationPr
                 <Form onSubmit={this.onFormSubmit} ref={(form: any) => this.messageForm = form}>
                     <Form.Group controlId="application">
                         <Form.Label>Application Name</Form.Label>
-                        <Form.Control type="text" placeholder="Enter application name here"/>
-                        <Form.Text className="text-muted">
+                        <Form.Control type="plaintext" placeholder="Enter application name here"/>
+                        <Form.Text>
                             Make sure your application name starts with 'pathstore_' and your cql file / keyspace name
                             matches the application name
                         </Form.Text>
                     </Form.Group>
-                    <Form.File
-                        id="custom-file-translate-scss"
-                        label="Custom file input"
-                        lang="en"
-                        custom
-                        onChange={this.handleFileSubmit}
-                    />
+                    <Form.Group>
+                        <Form.File
+                            label="PathStore Application File"
+                            lang="en"
+                            custom
+                            onChange={this.handleFileSubmit}
+                        />
+                    </Form.Group>
                     <Button variant="primary" type="submit">
                         Submit
                     </Button>
                 </Form>
             </div>
-        )
+        );
     }
 }

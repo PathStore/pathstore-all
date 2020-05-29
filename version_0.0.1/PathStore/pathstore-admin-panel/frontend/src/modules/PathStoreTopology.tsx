@@ -7,6 +7,11 @@ import React, {FunctionComponent} from "react";
  */
 interface PathStoreTopologyProps {
     /**
+     * Width of the tree
+     */
+    readonly width: number
+
+    /**
      * List of deployment objects from api
      */
     readonly deployment: Deployment[]
@@ -36,8 +41,8 @@ export const PathStoreTopology: FunctionComponent<PathStoreTopologyProps> = (pro
     <Tree data={createTree(props.deployment, -1, props.get_colour, props.get_click)}
           nodeRadius={15}
           margins={{top: 20, bottom: 10, left: 20, right: 200}}
-          height={1000}
-          width={1080}
+          height={500}
+          width={props.width}
     />;
 
 /**
@@ -88,6 +93,7 @@ function createTreeObject(
     return {
         name: object.new_node_id,
         textProps: {x: -20, y: 25},
+        pathProps: {className: 'path'},
         gProps:
             get_click !== null ?
                 {

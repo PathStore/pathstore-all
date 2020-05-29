@@ -3,12 +3,13 @@ import {Deployment, Error, Server, Update} from "../../utilities/ApiDeclarations
 import {webHandler} from "../../utilities/Utils";
 import {PathStoreTopology} from "../PathStoreTopology";
 import Button from "react-bootstrap/Button";
-import Modal from "react-modal";
+import Modal from "react-bootstrap/Modal";
 import {HypotheticalInfoModal} from "./HypotheticalInfoModal";
 import NodeDeploymentAdditionForm from "./NodeDeploymentAdditionForm";
 import AddServers from "./servers/AddServers"
 import DisplayServers from "./servers/DisplayServers";
 import {ErrorResponseModal} from "../ErrorResponseModal";
+import {AlignedDivs, Left, Right} from "../../utilities/AlignedDivs";
 
 /**
  * Properties definition for {@link NodeDeploymentModal}
@@ -342,33 +343,47 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
                 : null;
 
         return (
-            <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
+            <Modal show={this.props.show}
+                   size={"xl"}
+                   centered
+            >
                 {modal}
                 {errorModal}
-                <div>
-                    <PathStoreTopology deployment={this.state.deployment}
-                                       get_colour={this.isHypothetical}
-                                       get_click={this.handleClick}/>
-                </div>
-
-                <NodeDeploymentAdditionForm deployment={this.state.deployment}
-                                            servers={this.props.servers}
-                                            addition={this.handleAddition}/>
-
-                <DisplayServers deployment={this.props.deployment}
-                                servers={this.props.servers}
-                                forceRefresh={this.props.forceRefresh}/>
-
-                <AddServers servers={this.props.servers}
-                            callback={this.props.forceRefresh}/>
-
-
-                <div>
+                <Modal.Header>
+                    <Modal.Title>Node Deployment</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <AlignedDivs>
+                        <Left width='35%'>
+                            <h2>Topology Legend</h2>
+                            <br/>
+                            <p>Deployed Node: <span className={'d_currentLine'}>Light Grey</span></p>
+                            <p>Hypothetical Node: <span className={'d_cyan'}>Cyan</span></p>
+                        </Left>
+                        <Right>
+                            <h2>Hypothetical Topology</h2>
+                            <PathStoreTopology width={700}
+                                               deployment={this.state.deployment}
+                                               get_colour={this.isHypothetical}
+                                               get_click={this.handleClick}/>
+                        </Right>
+                    </AlignedDivs>
+                    <NodeDeploymentAdditionForm deployment={this.state.deployment}
+                                                servers={this.props.servers}
+                                                addition={this.handleAddition}/>
+                    <hr/>
+                    <DisplayServers deployment={this.props.deployment}
+                                    servers={this.props.servers}
+                                    forceRefresh={this.props.forceRefresh}/>
+                    <hr/>
+                    <AddServers servers={this.props.servers}
+                                callback={this.props.forceRefresh}/>
+                </Modal.Body>
+                <Modal.Footer>
                     <Button onClick={this.submit}>Submit changes</Button>
-                </div>
-                <div>
+
                     <Button onClick={this.props.callback}>Close</Button>
-                </div>
+                </Modal.Footer>
             </Modal>
         );
     }

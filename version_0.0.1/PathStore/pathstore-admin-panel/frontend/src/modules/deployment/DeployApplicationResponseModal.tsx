@@ -1,9 +1,10 @@
 import React, {Component} from "react";
-import Modal from "react-modal";
 import {ApplicationStatus, Deployment, Server} from "../../utilities/ApiDeclarations";
 import NodeInfoModal from "../NodeInfoModal";
 import {PathStoreTopology} from "../PathStoreTopology";
 import {Button} from "react-bootstrap";
+import Modal from "react-bootstrap/Modal";
+import {AlignedDivs, Left, Right} from "../../utilities/AlignedDivs";
 
 /**
  * Properties definition for {@link DeployApplicationResponseModal}
@@ -165,20 +166,37 @@ export default class DeployApplicationResponseModal
                 null;
 
         return (
-            <Modal isOpen={this.props.show} style={{overlay: {zIndex: 1}}} ariaHideApp={false}>
+            <Modal show={this.props.show}
+                   size='xl'
+                   centered
+            >
                 {modal}
-                <div>
-                    <p>Application {this.props.applicationName}</p>
-                    <p>Blue nodes are nodes that have the application previous installed</p>
-                    <p>Green nodes are nodes that you just installed the application on</p>
-                    <p>Black nodes are nodes that have not be installed on</p>
-                </div>
-                <div>
-                    <PathStoreTopology deployment={this.props.deployment.filter(i => i.process_status === "DEPLOYED")}
-                                       get_colour={this.getClassName}
-                                       get_click={this.handleClick}/>
-                </div>
-                <Button onClick={this.props.callback}>close</Button>
+                <Modal.Header>
+                    <Modal.Title>Application {this.props.applicationName}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <AlignedDivs>
+                        <Left width='35%'>
+                            <h2>Topology Legend</h2>
+                            <p><span className={'d_cyan'}>Cyan</span> nodes are nodes that have the application previous
+                                installed</p>
+                            <p><span className={'d_green'}>Green</span> nodes are nodes that you just installed the
+                                application on</p>
+                            <p><span className={'d_currentLine'}>Dark Grey</span> nodes are nodes that have not be
+                                installed on</p>
+                        </Left>
+                        <Right>
+                            <h2>Application Installation Topology</h2>
+                            <PathStoreTopology width={700}
+                                               deployment={this.props.deployment.filter(i => i.process_status === "DEPLOYED")}
+                                               get_colour={this.getClassName}
+                                               get_click={this.handleClick}/>
+                        </Right>
+                    </AlignedDivs>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button onClick={this.props.callback}>close</Button>
+                </Modal.Footer>
             </Modal>
         );
     }

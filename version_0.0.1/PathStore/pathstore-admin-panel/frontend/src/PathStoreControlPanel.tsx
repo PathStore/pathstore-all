@@ -6,6 +6,7 @@ import LiveTransitionVisual from "./modules/topology/LiveTransitionVisual";
 import {DisplayAvailableApplications} from "./modules/installation/DisplayAvailableApplications";
 import ApplicationCreation from "./modules/installation/ApplicationCreation";
 import DeployApplication from "./modules/deployment/DeployApplication";
+import {Center} from "./utilities/AlignedDivs";
 
 /**
  * State definition for {@link PathStoreControlPanel}
@@ -196,48 +197,43 @@ export default class PathStoreControlPanel extends Component<{}, PathStoreContro
      * @returns {*}
      */
     render = () => (
-        <div>
-            <h1>PathStore Control Panel</h1>
+        <div className={"main"}>
+            <Center>
+                <h1 style={{fontWeight: 700, textDecoration: 'underline'}}>PathStore Control Panel</h1>
+            </Center>
             <div>
-                <div>
-                    <h2>Network Topology</h2>
-                    <ViewTopology deployment={this.state.deployment}
-                                  servers={this.state.servers}
-                                  applicationStatus={this.state.applicationStatus}
-                                  availableLogDates={this.state.availableLogDates}
-                                  forceRefresh={this.forceRefresh}/>
-                </div>
-                <br/>
-                <div>
-                    <h2>Network Expansion</h2>
-                    <NodeDeployment deployment={this.state.deployment}
-                                    servers={this.state.servers}
-                                    forceRefresh={this.forceRefresh}/>
-                </div>
-                <br/>
-                <div>
-                    <div>
-                        <h2>Live Installation Viewer</h2>
-                        <LiveTransitionVisual applications={this.state.applications}
-                                              applicationStatus={this.state.applicationStatus}
-                                              deployment={this.state.deployment}/>
-                    </div>
-                    <br/>
-                    <div>
-                        <h2>Application Creation</h2>
-                        <DisplayAvailableApplications applications={this.state.applications}/>
-                        <br/>
-                        <ApplicationCreation forceRefresh={this.forceRefresh}/>
-                    </div>
-                    <br/>
-                    <div>
-                        <h2>Application Deployment</h2>
-                        <DeployApplication deployment={this.state.deployment}
-                                           applications={this.state.applications}
-                                           applicationStatus={this.state.applicationStatus}
-                                           servers={this.state.servers}/>
-                    </div>
-                </div>
+                <ViewTopology deployment={this.state.deployment}
+                              servers={this.state.servers}
+                              applicationStatus={this.state.applicationStatus}
+                              availableLogDates={this.state.availableLogDates}
+                              forceRefresh={this.forceRefresh}/>
+            </div>
+            <div>
+                <h2>Network Expansion</h2>
+                <NodeDeployment deployment={this.state.deployment}
+                                servers={this.state.servers}
+                                forceRefresh={this.forceRefresh}/>
+            </div>
+            <hr/>
+            <div>
+                <h2>Live Installation Viewer</h2>
+                <LiveTransitionVisual applications={this.state.applications}
+                                      applicationStatus={this.state.applicationStatus}
+                                      deployment={this.state.deployment}/>
+            </div>
+            <hr/>
+            <div>
+                <h2>Application Creation</h2>
+                <DisplayAvailableApplications applications={this.state.applications}/>
+                <ApplicationCreation forceRefresh={this.forceRefresh}/>
+            </div>
+            <hr/>
+            <div>
+                <h2>Application Deployment</h2>
+                <DeployApplication deployment={this.state.deployment}
+                                   applications={this.state.applications}
+                                   applicationStatus={this.state.applicationStatus}
+                                   servers={this.state.servers}/>
             </div>
         </div>
     );

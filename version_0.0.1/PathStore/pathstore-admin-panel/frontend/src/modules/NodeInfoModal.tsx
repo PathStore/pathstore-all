@@ -1,5 +1,5 @@
 import {ApplicationStatus, AvailableLogDates, Deployment, Server, Update, Error} from "../utilities/ApiDeclarations";
-import Modal from "react-modal";
+import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
 import React, {Component} from "react";
 import {webHandler} from "../utilities/Utils";
@@ -115,7 +115,8 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
 
         if (deployObject[0].process_status === "DEPLOYED" && deployObject[0].parent_node_id !== -1)
             return <Button onClick={this.deleteOnClick}>Delete</Button>;
-        else return null;
+        else
+            return null;
     };
 
     /**
@@ -149,9 +150,9 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
         })
             .then(webHandler)
             .then(() => {
+                this.props.callback();
                 // Optional query iff the prop exists
                 this.props.forceRefresh?.();
-                this.props.callback();
             })
             .catch((response: Error[]) => this.setState({errorModalShow: true, errorModalData: response}));
 
@@ -171,9 +172,9 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
         })
             .then(webHandler)
             .then(() => {
+                this.props.callback();
                 // Optional query iff the prop exists
                 this.props.forceRefresh?.();
-                this.props.callback();
             })
             .catch((response: Error[]) => this.setState({errorModalShow: true, errorModalData: response}));
 
@@ -199,20 +200,26 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
                 : null;
 
         return (
-            <Modal isOpen={this.props.show}
-                   style={{overlay: {zIndex: 1}}}
-                   ariaHideApp={false}>
+            <Modal show={this.props.show}
+                   size='xl'
+                   centered
+            >
                 {errorModal}
-                <ServerInfo deployment={this.props.deployment} servers={this.props.servers} node={this.props.node}/>
-                {this.retryButton(this.props.deployment)}
-                {this.deleteButton(this.props.deployment)}
-                <br/>
-                <ApplicationStatusViewer
-                    applicationStatus={this.props.applicationStatus.filter(i => i.node_id === this.props.node)}/>
-                <br/>
-                <LogViewer node={this.props.node} availableLogDates={this.props.availableLogDates}/>
-                <br/>
-                <Button onClick={this.props.callback}>close</Button>
+                <Modal.Header>
+                    <Modal.Title>Node Info Modal</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <ServerInfo deployment={this.props.deployment} servers={this.props.servers} node={this.props.node}/>
+                    <hr/>
+                    <ApplicationStatusViewer
+                        applicationStatus={this.props.applicationStatus.filter(i => i.node_id === this.props.node)}/>
+                    <LogViewer node={this.props.node} availableLogDates={this.props.availableLogDates}/>
+                </Modal.Body>
+                <Modal.Footer>
+                    {this.retryButton(this.props.deployment)}
+                    {this.deleteButton(this.props.deployment)}
+                    <Button onClick={this.props.callback}>close</Button>
+                </Modal.Footer>
             </Modal>
         );
     }
