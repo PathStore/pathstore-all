@@ -37,7 +37,8 @@ public final class UpdateDeploymentRecordPayload extends ValidatedPayload {
     // (1)
     Select select =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
-    select.where(QueryBuilder.eq(Constants.PATHSTORE_COLUMNS.PATHSTORE_NODE, this.record.parentId));
+    select.where(
+        QueryBuilder.eq(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID, this.record.parentId));
 
     for (Row row : session.execute(select)) {
       int newNodeId = row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID);
