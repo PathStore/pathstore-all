@@ -30,28 +30,26 @@ public final class UpdateDeploymentRecordPayload extends ValidatedPayload {
   @Override
   protected String[] calculateErrors() {
 
-    String[] errors = {null};
+    String[] errors = {INVALID_FAILED_ENTRY};
 
     Session session = PathStoreCluster.getInstance().connect();
 
     // (1)
     Select select =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
+    select.where(QueryBuilder.eq(Constants.PATHSTORE_COLUMNS.PATHSTORE_NODE, this.record.parentId));
 
     for (Row row : session.execute(select)) {
       int newNodeId = row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID);
-      int parentNodeId = row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID);
       String serverUUID = row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID);
       DeploymentProcessStatus status =
           DeploymentProcessStatus.valueOf(
               row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS));
 
       if (newNodeId == this.record.newNodeId
-          && parentNodeId == this.record.parentId
           && serverUUID.equals(this.record.serverUUID)
           && status == DeploymentProcessStatus.FAILED) {
-
-        errors[0] = INVALID_FAILED_ENTRY;
+        errors[0] = null;
         break;
       }
     }
