@@ -60,7 +60,7 @@ public class PathStorePullServer extends Thread {
           }
         } catch (Exception e) {
           System.out.println("problem while looping over cache_entries");
-          logger.error(e);
+          this.logger.error(e);
         }
       }
     }
@@ -75,7 +75,7 @@ public class PathStorePullServer extends Thread {
         this.wait(PathStoreProperties.getInstance().PullSleep);
       } catch (Exception e) {
         System.err.println("PathStorePullServer exception: " + e.toString());
-        logger.error(e);
+        this.logger.error(e);
       }
     }
   }

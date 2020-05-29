@@ -17,12 +17,8 @@
  */
 package pathstore.system;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
-import com.datastax.driver.core.SchemaChangeListener;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -86,7 +82,6 @@ public class PathStorePushServer extends Thread {
   }
 
   private void push() {
-    logger.debug("Run push");
     // TODO: shouldn't we connect once instead of each time?
     Session parent = PathStoreParentCluster.getInstance().connect();
     Session local = PathStorePriviledgedCluster.getInstance().connect();
@@ -125,7 +120,7 @@ public class PathStorePushServer extends Thread {
 
             if (str_insert.length() > PathStoreProperties.getInstance().MaxBatchSize
                 || str_delete.length() > PathStoreProperties.getInstance().MaxBatchSize) {
-              //logger.debug("Executing parent insert and local delete");
+              // logger.debug("Executing parent insert and local delete");
               parent.execute(insert);
               local.execute(delete);
             } else {
@@ -133,7 +128,7 @@ public class PathStorePushServer extends Thread {
                       > PathStoreProperties.getInstance().MaxBatchSize
                   || deleteBatchSize + str_delete.length()
                       > PathStoreProperties.getInstance().MaxBatchSize) {
-                //logger.debug("Executing parent insert and local delete");
+                // logger.debug("Executing parent insert and local delete");
                 parent.execute(insertBatch);
                 local.execute(deleteBatch);
 
@@ -154,11 +149,10 @@ public class PathStorePushServer extends Thread {
           }
           if (insertBatchSize > 0) {
             try {
-              logger.debug("Executing parent insert and local delete");
               parent.execute(insertBatch);
               local.execute(deleteBatch);
             } catch (Exception e) {
-              e.printStackTrace();
+              this.logger.error(e);
             }
           }
         }

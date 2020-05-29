@@ -83,6 +83,7 @@ public class PathStoreLogger {
     StringWriter sw = new StringWriter();
     throwable.printStackTrace(new PrintWriter(sw));
     this.log(LoggerLevel.ERROR, sw.toString());
+    System.out.println(sw.toString());
   }
 
   /**
