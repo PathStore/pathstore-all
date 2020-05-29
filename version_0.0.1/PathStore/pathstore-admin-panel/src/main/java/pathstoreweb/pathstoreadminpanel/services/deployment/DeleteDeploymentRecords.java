@@ -2,6 +2,7 @@ package pathstoreweb.pathstoreadminpanel.services.deployment;
 
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
@@ -24,7 +25,7 @@ public class DeleteDeploymentRecords implements IService {
   @Override
   public ResponseEntity<String> response() {
     this.delete();
-    return new ResponseEntity<>("Deleted", HttpStatus.OK);
+    return new ResponseEntity<>(new JSONObject().toString(), HttpStatus.OK);
   }
 
   private void delete() {

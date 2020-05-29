@@ -3,6 +3,7 @@ package pathstoreweb.pathstoreadminpanel.services.deployment;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Update;
+import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
@@ -34,7 +35,7 @@ public class UpdateDeploymentRecord implements IService {
   public ResponseEntity<String> response() {
     this.update();
 
-    return new ResponseEntity<>("Updated", HttpStatus.OK);
+    return new ResponseEntity<>(new JSONObject().toString(), HttpStatus.OK);
   }
 
   /** Updates the given record to the status of deploying */
