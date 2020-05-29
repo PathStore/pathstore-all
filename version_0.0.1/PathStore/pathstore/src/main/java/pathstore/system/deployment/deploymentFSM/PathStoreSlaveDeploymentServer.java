@@ -307,6 +307,8 @@ public class PathStoreSlaveDeploymentServer extends Thread {
                 .and(
                     QueryBuilder.eq(
                         Constants.LOGS_COLUMNS.COUNT, logRow.getInt(Constants.LOGS_COLUMNS.COUNT)));
+
+            this.session.execute(logDelete);
           }
         }
       }
