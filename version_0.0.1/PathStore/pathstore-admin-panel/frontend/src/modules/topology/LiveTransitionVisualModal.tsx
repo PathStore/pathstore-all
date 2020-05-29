@@ -145,7 +145,7 @@ export default class LiveTransitionVisualModal extends Component<LiveTransitionV
                    centered
             >
                 <Modal.Header>
-                    <Modal.Title>Live updates for: {this.props.application}</Modal.Title>
+                    <Modal.Title>Live updates for {this.props.application}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <AlignedDivs>
