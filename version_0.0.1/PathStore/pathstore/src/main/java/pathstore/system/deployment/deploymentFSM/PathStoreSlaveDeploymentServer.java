@@ -256,99 +256,104 @@ public class PathStoreSlaveDeploymentServer extends Thread {
 
       this.logger.debug(String.format("Connection establish to %d", entry.newNodeId));
 
-      for (ICommand command : StartupUTIL.initUnDeploymentList(sshUtil)) {
-        this.logger.info(command.toString());
-        command.execute();
-      }
+      try {
+        for (ICommand command : StartupUTIL.initUnDeploymentList(sshUtil)) {
+          this.logger.info(command.toString());
+          command.execute();
+        }
 
-      sshUtil.disconnect();
+        this.logger.info(
+            String.format("Deleting Available log dates and logs for node %d", entry.newNodeId));
 
-      this.logger.info(
-          String.format("Deleting Available log dates and logs for node %d", entry.newNodeId));
-
-      Select getAvailableLogDates =
-          QueryBuilder.select()
-              .all()
-              .from(Constants.PATHSTORE_APPLICATIONS, Constants.AVAILABLE_LOG_DATES);
-      getAvailableLogDates.where(
-          QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId));
-
-      for (Row availableLogDateRow : this.session.execute(getAvailableLogDates)) {
-
-        // Delete date record for available dates
-        Delete availableLogDatesDelete =
-            QueryBuilder.delete()
+        Select getAvailableLogDates =
+            QueryBuilder.select()
+                .all()
                 .from(Constants.PATHSTORE_APPLICATIONS, Constants.AVAILABLE_LOG_DATES);
+        getAvailableLogDates.where(
+            QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId));
 
-        String date = availableLogDateRow.getString(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE);
+        for (Row availableLogDateRow : this.session.execute(getAvailableLogDates)) {
 
-        availableLogDatesDelete
-            .where(QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId))
-            .and(QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE, date));
+          // Delete date record for available dates
+          Delete availableLogDatesDelete =
+              QueryBuilder.delete()
+                  .from(Constants.PATHSTORE_APPLICATIONS, Constants.AVAILABLE_LOG_DATES);
 
-        this.session.execute(availableLogDatesDelete);
+          String date = availableLogDateRow.getString(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE);
 
-        // For all log levels delete all logs with the given date above
-        for (LoggerLevel level : LoggerLevel.values()) {
-          Select getLogs =
-              QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
-          getLogs
-              .where(QueryBuilder.eq(Constants.LOGS_COLUMNS.NODE_ID, entry.newNodeId))
-              .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.DATE, date))
-              .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, level.toString()));
+          availableLogDatesDelete
+              .where(
+                  QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId))
+              .and(QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE, date));
 
-          for (Row logRow : this.session.execute(getLogs)) {
-            Delete logDelete =
-                QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
-            logDelete
+          this.session.execute(availableLogDatesDelete);
+
+          // For all log levels delete all logs with the given date above
+          for (LoggerLevel level : LoggerLevel.values()) {
+            Select getLogs =
+                QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
+            getLogs
                 .where(QueryBuilder.eq(Constants.LOGS_COLUMNS.NODE_ID, entry.newNodeId))
                 .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.DATE, date))
-                .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, level.toString()))
-                .and(
-                    QueryBuilder.eq(
-                        Constants.LOGS_COLUMNS.COUNT, logRow.getInt(Constants.LOGS_COLUMNS.COUNT)));
+                .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, level.toString()));
 
-            this.session.execute(logDelete);
+            for (Row logRow : this.session.execute(getLogs)) {
+              Delete logDelete =
+                  QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
+              logDelete
+                  .where(QueryBuilder.eq(Constants.LOGS_COLUMNS.NODE_ID, entry.newNodeId))
+                  .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.DATE, date))
+                  .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, level.toString()))
+                  .and(
+                      QueryBuilder.eq(
+                          Constants.LOGS_COLUMNS.COUNT,
+                          logRow.getInt(Constants.LOGS_COLUMNS.COUNT)));
+
+              this.session.execute(logDelete);
+            }
           }
         }
+
+        this.logger.info(
+            String.format("Deleting node schema records for node %d", entry.newNodeId));
+
+        Select nodeSchemas =
+            QueryBuilder.select()
+                .all()
+                .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+        nodeSchemas.where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.newNodeId));
+
+        for (Row row : this.session.execute(nodeSchemas)) {
+          Delete nodeSchemaDelete =
+              QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+          nodeSchemaDelete
+              .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.newNodeId))
+              .and(
+                  QueryBuilder.eq(
+                      Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME,
+                      row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME)));
+
+          this.session.execute(nodeSchemaDelete);
+        }
+
+        this.logger.info(String.format("Deleting deployment record for node %d", entry.newNodeId));
+
+        Delete deploymentDelete =
+            QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
+        deploymentDelete
+            .where(QueryBuilder.eq(PARENT_NODE_ID, entry.parentNodeId))
+            .and(QueryBuilder.eq(NEW_NODE_ID, entry.newNodeId));
+
+        this.session.execute(deploymentDelete);
+
+      } catch (CommandError commandError) {
+        this.logger.error(commandError.errorMessage);
+      } finally {
+        sshUtil.disconnect();
       }
-
-      this.logger.info(String.format("Deleting node schema records for node %d", entry.newNodeId));
-
-      Select nodeSchemas =
-          QueryBuilder.select()
-              .all()
-              .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-      nodeSchemas.where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.newNodeId));
-
-      for (Row row : this.session.execute(nodeSchemas)) {
-        Delete nodeSchemaDelete =
-            QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-        nodeSchemaDelete
-            .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.newNodeId))
-            .and(
-                QueryBuilder.eq(
-                    Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME,
-                    row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME)));
-
-        this.session.execute(nodeSchemaDelete);
-      }
-
-      this.logger.info(String.format("Deleting deployment record for node %d", entry.newNodeId));
-
-      Delete deploymentDelete =
-          QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
-      deploymentDelete
-          .where(QueryBuilder.eq(PARENT_NODE_ID, entry.parentNodeId))
-          .and(QueryBuilder.eq(NEW_NODE_ID, entry.newNodeId));
-
-      this.session.execute(deploymentDelete);
-
     } catch (JSchException e) {
       this.logger.error(
           String.format("Could not connect to node %d to un-deploy it", entry.newNodeId));
-    } catch (CommandError commandError) {
-      this.logger.error(commandError.errorMessage);
     }
   }
 }
