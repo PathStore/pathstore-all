@@ -178,12 +178,9 @@ export default class DeployApplicationResponseModal
                     <AlignedDivs>
                         <Left width='35%'>
                             <h2>Topology Legend</h2>
-                            <p><span className={'d_cyan'}>Cyan</span> nodes are nodes that have the application previous
-                                installed</p>
-                            <p><span className={'d_green'}>Green</span> nodes are nodes that you just installed the
-                                application on</p>
-                            <p><span className={'d_currentLine'}>Dark Grey</span> nodes are nodes that have not be
-                                installed on</p>
+                            <p>Previously installed nodes are <span className={'d_cyan'}>cyan</span></p>
+                            <p>Nodes just installed are <span className={'d_green'}>green</span></p>
+                            <p>Nodes that aren't installed are <span className={'d_currentLine'}>dark grey</span></p>
                         </Left>
                         <Right>
                             <h2>Application Installation Topology</h2>
