@@ -6,6 +6,7 @@ import pathstore.common.Constants;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** This is a utility class for the schema loader */
 public class PathStoreSchemaLoaderUtils {
@@ -395,12 +396,9 @@ public class PathStoreSchemaLoaderUtils {
    * Simple function to filter out commands when a schema is passed
    *
    * @param schema schema to parse
-   * @return list of commands from passed schema
+   * @return stream of commands from passed schema to avoid collecting them to a list
    */
-  public static List<String> parseSchema(final String schema) {
-    return Arrays.stream(schema.split(";"))
-        .map(String::trim)
-        .filter(i -> i.length() > 0)
-        .collect(Collectors.toList());
+  public static Stream<String> parseSchema(final String schema) {
+    return Arrays.stream(schema.split(";")).map(String::trim).filter(i -> i.length() > 0);
   }
 }
