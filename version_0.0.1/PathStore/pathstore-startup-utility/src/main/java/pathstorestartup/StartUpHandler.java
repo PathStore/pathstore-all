@@ -193,17 +193,21 @@ public class StartUpHandler {
     // Check for docker access and that docker is online
     commands.add(new Exec(sshUtil, "docker ps", 0));
     // Potentially kill old cassandra container
-    commands.add(new Exec(sshUtil, "docker kill cassandra && docker rm cassandra", -1));
-    // Potentially remove old cassandra image TODO (1)
+    commands.add(new Exec(sshUtil, "docker kill cassandra", -1));
+    // Potentially remove old cassandra container
+    commands.add(new Exec(sshUtil, "docker rm cassandra", -1));
+    // Potentially remove old cassandra image
     commands.add(new Exec(sshUtil, "docker image rm cassandra", -1));
     // Potentially kill old pathstore container
-    commands.add(new Exec(sshUtil, "docker kill pathstore && docker rm pathstore", -1));
-    // Potentially remove old pathstore image TODO (2)
+    commands.add(new Exec(sshUtil, "docker kill pathstore", -1));
+    // Potentially remove old pathstore container
+    commands.add(new Exec(sshUtil, "docker rm pathstore", -1));
+    // Potentially remove old pathstore image
     commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
     // Potentially kill old pathstore container
-    commands.add(
-        new Exec(
-            sshUtil, "docker kill pathstore-admin-panel && docker rm pathstore-admin-panel", -1));
+    commands.add(new Exec(sshUtil, "docker kill pathstore-admin-panel", -1));
+    // Potentially rm old pathstore-admin-panel container
+    commands.add(new Exec(sshUtil, "docker rm pathstore-admin-panel", -1));
     // Potentially remove old pathstore image TODO (3)
     commands.add(new Exec(sshUtil, "docker image rm pathstore-admin-panel", -1));
     // Potentially remove old file associated with install

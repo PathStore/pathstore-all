@@ -149,11 +149,15 @@ public class StartupUTIL {
     // Check for docker access and that docker is online
     commands.add(new Exec(sshUtil, "docker ps", 0));
     // Potentially kill old cassandra container
-    commands.add(new Exec(sshUtil, "docker kill cassandra && docker rm cassandra", -1));
+    commands.add(new Exec(sshUtil, "docker kill cassandra", -1));
+    // Potentially remove old cassandra container
+    commands.add(new Exec(sshUtil, "docker rm cassandra", -1));
     // Potentially remove old cassandra image
     commands.add(new Exec(sshUtil, "docker image rm cassandra", -1));
     // Potentially kill old pathstore container
-    commands.add(new Exec(sshUtil, "docker kill pathstore && docker rm pathstore", -1));
+    commands.add(new Exec(sshUtil, "docker kill pathstore", -1));
+    // Potentially remove old pathstore container
+    commands.add(new Exec(sshUtil, "docker rm pathstore", -1));
     // Potentially remove old pathstore image
     commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
     // Potentially remove old file associated with install
@@ -225,15 +229,19 @@ public class StartupUTIL {
 
     // Check for docker access and that docker is online
     commands.add(new Exec(sshUtil, "docker ps", 0));
-    // Potentially kill old pathstore container
-    commands.add(new Exec(sshUtil, "docker kill pathstore && docker rm pathstore", 0));
-    // Potentially remove old pathstore image
-    commands.add(new Exec(sshUtil, "docker image rm pathstore", 0));
-    // Potentially kill old cassandra container
-    commands.add(new Exec(sshUtil, "docker kill cassandra && docker rm pathstore", 0));
-    // Potentially remove old cassandra image
+    // kill old cassandra container
+    commands.add(new Exec(sshUtil, "docker kill cassandra", 0));
+    // remove old cassandra container
+    commands.add(new Exec(sshUtil, "docker rm cassandra", 0));
+    // remove old cassandra image
     commands.add(new Exec(sshUtil, "docker image rm cassandra", 0));
-    // Potentially remove old file associated with install
+    // kill old pathstore container
+    commands.add(new Exec(sshUtil, "docker kill pathstore", 0));
+    // remove old pathstore container
+    commands.add(new Exec(sshUtil, "docker rm pathstore", 0));
+    // remove old pathstore image
+    commands.add(new Exec(sshUtil, "docker image rm pathstore", 0));
+    // remove old file associated with install
     commands.add(new Exec(sshUtil, "rm -rf pathstore-install", 0));
 
     return commands;
