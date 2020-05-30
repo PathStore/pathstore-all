@@ -218,6 +218,8 @@ public class StartUpHandler {
     commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/cassandra", 0));
     // Create pathstore dir
     commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/pathstore", 0));
+    // Create logs dir
+    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/pathstore/logs", 0));
     // Create website dir
     commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/pathstore-admin-panel", 0));
     // Generate pathstore properties file

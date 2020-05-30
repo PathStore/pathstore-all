@@ -21,6 +21,7 @@ public class PathStoreLoggerDaemon extends Thread {
   /** String to denote how to format the date */
   private static String DATE_FORMAT = "yyyy-MM-dd";
 
+  /** Physical log file directory */
   private static String LOGS_DIRECTORY = "/etc/pathstore/logs";
 
   /** Logger to write any errors that occur during the writing of */
@@ -36,11 +37,6 @@ public class PathStoreLoggerDaemon extends Thread {
     this.session = PathStoreCluster.getInstance().connect();
 
     this.currentDate = this.getAndSetDate();
-
-    // Create logs directory
-    File file = new File(LOGS_DIRECTORY);
-
-    if (!file.exists()) file.mkdir();
   }
 
   /**

@@ -158,8 +158,8 @@ public class StartupUTIL {
     commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
     // Potentially remove old file associated with install
     commands.add(new Exec(sshUtil, "rm -rf pathstore-install", -1));
-    // Create pathstore install dir
-    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install", 0));
+    // Create pathstore install dir and logs dir
+    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/logs", 0));
     // Generate pathstore properties file
     commands.add(
         new GeneratePropertiesFile(
