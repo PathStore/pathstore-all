@@ -292,7 +292,7 @@ public class StartUpHandler {
         new Exec(
             sshUtil,
             String.format(
-                "docker build -t base --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\"%s\" pathstore-install/base",
+                "docker build -t base --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\"%s\" --build-arg user=\"$(id -u)\" --build-arg group=\"$(id -g)\" pathstore-install/base",
                 branch),
             0));
     // Build pull
