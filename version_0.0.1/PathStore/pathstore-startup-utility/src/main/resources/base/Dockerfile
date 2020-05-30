@@ -21,4 +21,4 @@ mkdir -p /etc/pathstore && \
 addgroup --gid $group user && \
 adduser --disabled-password --gecos '' --uid $user --gid $group user && \
 chown $user:$group -R /etc/pathstore && \
-chwon $user:$group -R /cloudpath
+chown $user:$group -R /cloudpath
