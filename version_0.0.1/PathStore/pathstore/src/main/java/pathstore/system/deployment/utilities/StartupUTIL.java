@@ -190,7 +190,10 @@ public class StartupUTIL {
     commands.add(new Exec(sshUtil, "docker load -i pathstore-install/cassandra.tar", 0));
     // Start cassandra
     commands.add(
-        new Exec(sshUtil, "docker run --network=host -dit --rm --name cassandra cassandra", 0));
+        new Exec(
+            sshUtil,
+            "docker run --network=host -dit --rm --user $(id -u):$(id -g) --name cassandra cassandra",
+            0));
     // Wait for cassandra to start
     commands.add(new WaitForCassandra(ip, cassandraPort));
     // Transfer pathstore image
@@ -203,7 +206,7 @@ public class StartupUTIL {
     commands.add(
         new Exec(
             sshUtil,
-            "docker run --network=host -dit --rm -v ~/pathstore-install:/etc/pathstore --name pathstore pathstore",
+            "docker run --network=host -dit --rm -v ~/pathstore-install:/etc/pathstore --user $(id -u):$(id -g) --name pathstore pathstore",
             0));
     // Wait for pathstore to come online
     commands.add(new WaitForPathStore(ip, cassandraPort));

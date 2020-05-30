@@ -304,7 +304,10 @@ public class StartUpHandler {
         new Exec(sshUtil, "docker save -o pathstore-install/pathstore/cassandra.tar cassandra", 0));
     // Start cassandra
     commands.add(
-        new Exec(sshUtil, "docker run --network=host -dit --rm --name cassandra cassandra", 0));
+        new Exec(
+            sshUtil,
+            "docker run --network=host -dit --rm --user $(id -u):$(id -g) --name cassandra cassandra",
+            0));
     // Wait for cassandra to start
     commands.add(new WaitForCassandra(ip, cassandraPort));
     // Build pathstore
@@ -330,7 +333,7 @@ public class StartUpHandler {
     commands.add(
         new Exec(
             sshUtil,
-            "docker run --network=host -dit --rm -v ~/pathstore-install/pathstore-admin-panel:/etc/pathstore --name pathstore-admin-panel pathstore-admin-panel",
+            "docker run --network=host -dit --rm -v ~/pathstore-install/pathstore-admin-panel:/etc/pathstore --user $(id -u):$(id -g) --name pathstore-admin-panel pathstore-admin-panel",
             0));
 
     return commands;
