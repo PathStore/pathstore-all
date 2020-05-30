@@ -142,7 +142,7 @@ public class StartupUTIL {
       final String cassandraParentIP,
       final int cassandraParentPort) {
 
-    String modifiedDestinationToStore = DESTINATION_TO_STORE + ip;
+    String modifiedDestinationToStore = String.format("%s-%s", DESTINATION_TO_STORE, ip);
 
     List<ICommand> commands = new ArrayList<>();
 

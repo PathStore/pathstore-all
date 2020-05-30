@@ -367,7 +367,7 @@ public class PathStoreSchemaLoaderUtils {
             + "   AND crc_check_chance = 1.0;\n"
             + "CREATE INDEX apps_pathstore_deleted_idx ON pathstore_applications.apps (pathstore_deleted);\n"
             + "CREATE INDEX apps_pathstore_dirty_idx ON pathstore_applications.apps (pathstore_dirty);\n"
-            + "CREATE INDEX apps_pathstore_insert_sid_idx ON pathstore_applications.apps (pathstore_insert_sid)\n"
+            + "CREATE INDEX apps_pathstore_insert_sid_idx ON pathstore_applications.apps (pathstore_insert_sid);\n"
             + "CREATE INDEX apps_pathstore_parent_timestamp_idx ON pathstore_applications.apps (pathstore_parent_timestamp);\n"
             + "CREATE INDEX apps_pathstore_node_idx ON pathstore_applications.apps (pathstore_node);";
 
