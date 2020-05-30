@@ -20,5 +20,5 @@ git clone --depth 1 --single-branch --branch $branch git@github.com:delara/cloud
 mkdir -p /etc/pathstore && \
 addgroup --gid $group user && \
 adduser --disabled-password --gecos '' --uid $user --gid $group user && \
-chown $user:$group -r /etc/pathstore && \
-chwon $user:$group -r /cloudpath
+chown $user:$group -R /etc/pathstore && \
+chwon $user:$group -R /cloudpath
