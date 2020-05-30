@@ -72,6 +72,8 @@ public class PathStoreSchemaLoaderUtils {
             + "CREATE INDEX available_log_dates_pathstore_deleted_idx ON pathstore_applications.available_log_dates (pathstore_deleted);\n"
             + "CREATE INDEX available_log_dates_pathstore_dirty_idx ON pathstore_applications.available_log_dates (pathstore_dirty);\n"
             + "CREATE INDEX available_log_dates_pathstore_insert_sid_idx ON pathstore_applications.available_log_dates (pathstore_insert_sid);\n"
+            + "CREATE INDEX available_log_dates_pathstore_parent_timestamp_idx ON pathstore_applications.available_log_dates (pathstore_parent_timestamp);\n"
+            + "CREATE INDEX available_log_dates_pathstore_node_idx ON pathstore_applications.available_log_dates (pathstore_node);\n"
             + "\n"
             + "CREATE TABLE pathstore_applications.view_logs (\n"
             + "    node_id int,\n"
@@ -130,6 +132,8 @@ public class PathStoreSchemaLoaderUtils {
             + "CREATE INDEX logs_pathstore_deleted_idx ON pathstore_applications.logs (pathstore_deleted);\n"
             + "CREATE INDEX logs_pathstore_dirty_idx ON pathstore_applications.logs (pathstore_dirty);\n"
             + "CREATE INDEX logs_pathstore_insert_sid_idx ON pathstore_applications.logs (pathstore_insert_sid);\n"
+            + "CREATE INDEX logs_pathstore_parent_timestamp_idx ON pathstore_applications.logs (pathstore_parent_timestamp);\n"
+            + "CREATE INDEX logs_pathstore_node_idx ON pathstore_applications.logs (pathstore_node);\n"
             + "\n"
             + "CREATE TABLE pathstore_applications.view_deployment (\n"
             + "    new_node_id int,\n"
@@ -188,6 +192,8 @@ public class PathStoreSchemaLoaderUtils {
             + "CREATE INDEX deployment_pathstore_deleted_idx ON pathstore_applications.deployment (pathstore_deleted);\n"
             + "CREATE INDEX deployment_pathstore_dirty_idx ON pathstore_applications.deployment (pathstore_dirty);\n"
             + "CREATE INDEX deployment_pathstore_insert_sid_idx ON pathstore_applications.deployment (pathstore_insert_sid);\n"
+            + "CREATE INDEX deployment_pathstore_parent_timestamp_idx ON pathstore_applications.deployment (pathstore_parent_timestamp);\n"
+            + "CREATE INDEX deployment_pathstore_node_idx ON pathstore_applications.deployment (pathstore_node);\n"
             + "\n"
             + "CREATE TABLE pathstore_applications.view_servers (\n"
             + "    server_uuid text,\n"
@@ -250,6 +256,8 @@ public class PathStoreSchemaLoaderUtils {
             + "CREATE INDEX servers_pathstore_deleted_idx ON pathstore_applications.servers (pathstore_deleted);\n"
             + "CREATE INDEX servers_pathstore_dirty_idx ON pathstore_applications.servers (pathstore_dirty);\n"
             + "CREATE INDEX servers_pathstore_insert_sid_idx ON pathstore_applications.servers (pathstore_insert_sid);\n"
+            + "CREATE INDEX servers_pathstore_parent_timestamp_idx ON pathstore_applications.servers (pathstore_parent_timestamp);\n"
+            + "CREATE INDEX servers_pathstore_node_idx ON pathstore_applications.servers (pathstore_node);\n"
             + "\n"
             + "CREATE TABLE pathstore_applications.view_node_schemas (\n"
             + "    pathstore_view_id uuid,\n"
@@ -306,6 +314,8 @@ public class PathStoreSchemaLoaderUtils {
             + "CREATE INDEX node_schemas_pathstore_deleted_idx ON pathstore_applications.node_schemas (pathstore_deleted);\n"
             + "CREATE INDEX node_schemas_pathstore_dirty_idx ON pathstore_applications.node_schemas (pathstore_dirty);\n"
             + "CREATE INDEX node_schemas_pathstore_insert_sid_idx ON pathstore_applications.node_schemas (pathstore_insert_sid);\n"
+            + "CREATE INDEX node_schemas_pathstore_parent_timestamp_idx ON pathstore_applications.node_schemas (pathstore_parent_timestamp);\n"
+            + "CREATE INDEX node_schemas_pathstore_node_idx ON pathstore_applications.node_schemas (pathstore_node);\n"
             + "\n"
             + "CREATE TABLE pathstore_applications.view_apps (\n"
             + "    pathstore_view_id uuid,\n"
@@ -357,7 +367,9 @@ public class PathStoreSchemaLoaderUtils {
             + "   AND crc_check_chance = 1.0;\n"
             + "CREATE INDEX apps_pathstore_deleted_idx ON pathstore_applications.apps (pathstore_deleted);\n"
             + "CREATE INDEX apps_pathstore_dirty_idx ON pathstore_applications.apps (pathstore_dirty);\n"
-            + "CREATE INDEX apps_pathstore_insert_sid_idx ON pathstore_applications.apps (pathstore_insert_sid);";
+            + "CREATE INDEX apps_pathstore_insert_sid_idx ON pathstore_applications.apps (pathstore_insert_sid)\n"
+            + "CREATE INDEX apps_pathstore_parent_timestamp_idx ON pathstore_applications.apps (pathstore_parent_timestamp);\n"
+            + "CREATE INDEX apps_pathstore_node_idx ON pathstore_applications.apps (pathstore_node);";
 
     parseSchema(schema).forEach(session::execute);
   }

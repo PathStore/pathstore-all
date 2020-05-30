@@ -233,6 +233,26 @@ public class AddApplication implements IService {
                 + " (pathstore_insert_sid)");
 
     session.execute(query.toString());
+
+    query =
+        new StringBuilder(
+            "CREATE INDEX ON "
+                + table.getKeyspace_name()
+                + "."
+                + table.getTable_name()
+                + " (pathstore_parent_timestamp)");
+
+    session.execute(query.toString());
+
+    query =
+        new StringBuilder(
+            "CREATE INDEX ON "
+                + table.getKeyspace_name()
+                + "."
+                + table.getTable_name()
+                + " (pathstore_node)");
+
+    session.execute(query.toString());
   }
 
   /**
