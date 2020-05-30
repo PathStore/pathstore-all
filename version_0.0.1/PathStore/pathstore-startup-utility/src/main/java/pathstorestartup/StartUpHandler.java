@@ -193,15 +193,17 @@ public class StartUpHandler {
     // Check for docker access and that docker is online
     commands.add(new Exec(sshUtil, "docker ps", 0));
     // Potentially kill old cassandra container
-    commands.add(new Exec(sshUtil, "docker kill cassandra", -1));
+    commands.add(new Exec(sshUtil, "docker kill cassandra && docker rm cassandra", -1));
     // Potentially remove old cassandra image TODO (1)
     commands.add(new Exec(sshUtil, "docker image rm cassandra", -1));
     // Potentially kill old pathstore container
-    commands.add(new Exec(sshUtil, "docker kill pathstore", -1));
+    commands.add(new Exec(sshUtil, "docker kill pathstore && docker rm pathstore", -1));
     // Potentially remove old pathstore image TODO (2)
     commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
     // Potentially kill old pathstore container
-    commands.add(new Exec(sshUtil, "docker kill pathstore-admin-panel", -1));
+    commands.add(
+        new Exec(
+            sshUtil, "docker kill pathstore-admin-panel && docker rm pathstore-admin-panel", -1));
     // Potentially remove old pathstore image TODO (3)
     commands.add(new Exec(sshUtil, "docker image rm pathstore-admin-panel", -1));
     // Potentially remove old file associated with install
@@ -306,7 +308,7 @@ public class StartUpHandler {
     commands.add(
         new Exec(
             sshUtil,
-            "docker run --network=host -dit --rm --user $(id -u):$(id -g) --name cassandra cassandra",
+            "docker run --network=host -dit --restart always --user $(id -u):$(id -g) --name cassandra cassandra",
             0));
     // Wait for cassandra to start
     commands.add(new WaitForCassandra(ip, cassandraPort));
@@ -319,7 +321,7 @@ public class StartUpHandler {
     commands.add(
         new Exec(
             sshUtil,
-            "docker run --network=host -dit --rm -v ~/pathstore-install/pathstore:/etc/pathstore --user $(id -u):$(id -g) --name pathstore pathstore",
+            "docker run --network=host -dit --restart always -v ~/pathstore-install/pathstore:/etc/pathstore --user $(id -u):$(id -g) --name pathstore pathstore",
             0));
     // Wait for pathstore to come online
     commands.add(new WaitForPathStore(ip, cassandraPort));
@@ -333,7 +335,7 @@ public class StartUpHandler {
     commands.add(
         new Exec(
             sshUtil,
-            "docker run --network=host -dit --rm -v ~/pathstore-install/pathstore-admin-panel:/etc/pathstore --user $(id -u):$(id -g) --name pathstore-admin-panel pathstore-admin-panel",
+            "docker run --network=host -dit --restart always -v ~/pathstore-install/pathstore-admin-panel:/etc/pathstore --user $(id -u):$(id -g) --name pathstore-admin-panel pathstore-admin-panel",
             0));
 
     return commands;
