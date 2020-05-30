@@ -142,6 +142,8 @@ public class StartupUTIL {
       final String cassandraParentIP,
       final int cassandraParentPort) {
 
+    String modifiedDestinationToStore = DESTINATION_TO_STORE + ip;
+
     List<ICommand> commands = new ArrayList<>();
 
     // Check for docker access and that docker is online
@@ -173,12 +175,13 @@ public class StartupUTIL {
             cassandraPort,
             cassandraParentIP,
             cassandraParentPort,
-            DESTINATION_TO_STORE));
+            modifiedDestinationToStore));
     // Transfer properties file
     commands.add(
-        new FileTransfer(sshUtil, DESTINATION_TO_STORE, "pathstore-install/pathstore.properties"));
+        new FileTransfer(
+            sshUtil, modifiedDestinationToStore, "pathstore-install/pathstore.properties"));
     // Remove properties file
-    commands.add(new RemoveGeneratedPropertiesFile(DESTINATION_TO_STORE));
+    commands.add(new RemoveGeneratedPropertiesFile(modifiedDestinationToStore));
     // Transfer cassandra image
     commands.add(
         new FileTransfer(
