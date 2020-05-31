@@ -19,8 +19,7 @@ import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
 public class StartupUTIL {
 
   /** Denotes the dir where all installation related files are stored */
-  private static final String STARTING_DIR =
-      System.getProperty("user.dir") + "/src/main/resources/";
+  private static final String STARTING_DIR = "/etc/pathstore";
 
   /** Where the properties file will be stored locally. */
   public static final String DESTINATION_TO_STORE = STARTING_DIR + "pathstore.properties";
