@@ -44,7 +44,7 @@ import pathstore.util.SchemaInfo.Column;
 import pathstore.util.SchemaInfo.Table;
 
 /** TODO: Comment */
-public class PathStorePushServer extends Thread {
+public class PathStorePushServer implements Runnable {
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStorePushServer.class);
 
@@ -200,20 +200,5 @@ public class PathStorePushServer extends Thread {
 
     if (cmd.hasOption("nodeid"))
       PathStoreProperties.getInstance().NodeID = Integer.parseInt(cmd.getOptionValue("nodeid"));
-  }
-
-  public static void main(String args[]) {
-    try {
-
-      parseCommandLineArguments(args);
-
-      PathStorePushServer server = new PathStorePushServer();
-      server.run();
-      server.join();
-
-    } catch (Exception e) {
-      System.err.println("PathStorePullServer exception: " + e.toString());
-      e.printStackTrace();
-    }
   }
 }

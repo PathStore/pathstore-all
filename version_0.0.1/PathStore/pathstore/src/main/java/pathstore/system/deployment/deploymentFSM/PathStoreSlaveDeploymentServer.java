@@ -9,6 +9,7 @@ import com.jcraft.jsch.JSchException;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
+import pathstore.common.PathStoreThreadManager;
 import pathstore.common.Role;
 import pathstore.common.logger.LoggerLevel;
 import pathstore.common.logger.PathStoreLogger;
@@ -17,11 +18,8 @@ import pathstore.system.deployment.commands.CommandError;
 import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstore.system.deployment.utilities.StartupUTIL;
-import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
 
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.SERVER_UUID;
@@ -37,7 +35,7 @@ import static pathstore.common.Constants.SERVERS_COLUMNS.*;
  * follow the server setup guide on our github page to ensure that all required pre-requisites are
  * installed before attempting to deploy a pathstore instance to said server
  */
-public class PathStoreSlaveDeploymentServer extends Thread {
+public class PathStoreSlaveDeploymentServer implements Runnable {
 
   /** Logger */
   private final PathStoreLogger logger =
@@ -52,13 +50,9 @@ public class PathStoreSlaveDeploymentServer extends Thread {
   /** Node id so you don't need to query the properties file every run */
   private final int nodeId = PathStoreProperties.getInstance().NodeID;
 
-  /**
-   * This denotes the daemons sub process thread pool.
-   *
-   * <p>A cached thread pool is used to kill threads once they're no longer needed instead of
-   * keeping idle threads waiting for tasks that may never come
-   */
-  private final ExecutorService threadPool = Executors.newCachedThreadPool();
+  /** Reference to the sub process thread pool */
+  private final PathStoreThreadManager subProcessManager =
+      PathStoreThreadManager.subProcessInstance();
 
   /**
    * The daemon is used to deploy new children nodes for a given node. The steps to install a new
@@ -152,7 +146,7 @@ public class PathStoreSlaveDeploymentServer extends Thread {
     PathStoreDeploymentUtils.updateState(entry, newStatus);
 
     // (3)
-    this.threadPool.submit(r);
+    this.subProcessManager.spawn(r);
   }
 
   /**

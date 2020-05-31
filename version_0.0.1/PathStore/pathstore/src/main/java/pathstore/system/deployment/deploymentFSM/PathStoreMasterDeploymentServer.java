@@ -24,7 +24,7 @@ import java.util.UUID;
  * failed. This cycle could possibly continue until all errors are resolved. In order to avoid such
  * errors the administrator should follow the server setup guide on our github page.
  */
-public class PathStoreMasterDeploymentServer extends Thread {
+public class PathStoreMasterDeploymentServer implements Runnable {
 
   /** Logger */
   private final PathStoreLogger logger =

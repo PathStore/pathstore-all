@@ -23,7 +23,7 @@ import java.util.*;
  *
  * <p>Waiting_Remove -> Removing -> Removed
  */
-public class PathStoreMasterSchemaServer extends Thread {
+public class PathStoreMasterSchemaServer implements Runnable {
 
   /** Logger */
   private final PathStoreLogger logger =

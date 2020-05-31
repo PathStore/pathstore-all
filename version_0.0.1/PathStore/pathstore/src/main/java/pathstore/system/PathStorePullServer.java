@@ -38,7 +38,7 @@ import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 
 /** TODO: Comment */
-public class PathStorePullServer extends Thread {
+public class PathStorePullServer implements Runnable {
 
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStorePullServer.class);
@@ -70,7 +70,7 @@ public class PathStorePullServer extends Thread {
     logger.info("Pull Server spawned");
     while (true) {
       try {
-       // logger.debug("Pull server ran");
+        // logger.debug("Pull server ran");
         pull();
         this.wait(PathStoreProperties.getInstance().PullSleep);
       } catch (Exception e) {
@@ -102,20 +102,5 @@ public class PathStorePullServer extends Thread {
 
     if (cmd.hasOption("nodeid"))
       PathStoreProperties.getInstance().NodeID = Integer.parseInt(cmd.getOptionValue("nodeid"));
-  }
-
-  public static void main(String args[]) {
-    try {
-
-      parseCommandLineArguments(args);
-
-      PathStorePullServer server = new PathStorePullServer();
-      server.run();
-      server.join();
-
-    } catch (Exception e) {
-      System.err.println("PathStorePullServer exception: " + e.toString());
-      e.printStackTrace();
-    }
   }
 }

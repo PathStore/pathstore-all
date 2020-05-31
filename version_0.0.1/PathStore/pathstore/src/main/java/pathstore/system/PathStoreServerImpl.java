@@ -21,13 +21,16 @@ import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import com.datastax.driver.core.Session;
-import pathstore.common.Constants;
-import pathstore.common.PathStoreProperties;
-import pathstore.common.PathStoreServer;
+import pathstore.common.*;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
+import pathstore.system.deployment.deploymentFSM.PathStoreMasterDeploymentServer;
+import pathstore.system.deployment.deploymentFSM.PathStoreSlaveDeploymentServer;
+import pathstore.system.logging.PathStoreLoggerDaemon;
+import pathstore.system.schemaFSM.PathStoreMasterSchemaServer;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
+import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
 import pathstore.util.SchemaInfo;
 
 public class PathStoreServerImpl {
@@ -95,10 +98,25 @@ public class PathStoreServerImpl {
 
       PathStoreDeploymentUtils.writeTaskDone(local, 2);
 
-      DaemonManager manager = new DaemonManager();
-      manager.startDaemons();
+      spawnDaemons();
     } catch (Exception e) {
       logger.error(e);
     }
+  }
+
+  /** Spawns daemons based on server role */
+  private static void spawnDaemons() {
+    PathStoreThreadManager daemonManager = PathStoreThreadManager.getDaemonInstance();
+    daemonManager
+        .spawn(new PathStoreLoggerDaemon())
+        .spawn(new PathStoreSlaveDeploymentServer())
+        .spawn(new PathStoreSlaveSchemaServer());
+
+    if (PathStoreProperties.getInstance().role != Role.ROOTSERVER)
+      daemonManager.spawn(new PathStorePushServer()).spawn(new PathStorePullServer());
+    else
+      daemonManager
+          .spawn(new PathStoreMasterDeploymentServer())
+          .spawn(new PathStoreMasterSchemaServer());
   }
 }

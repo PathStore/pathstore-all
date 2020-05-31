@@ -8,14 +8,11 @@ import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
+import pathstore.common.PathStoreThreadManager;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.PathStorePriviledgedCluster;
 import pathstore.util.SchemaInfo;
-
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * This class is the slave schema loader.
@@ -25,7 +22,7 @@ import java.util.concurrent.Executors;
  *
  * @see PathStoreMasterSchemaServer
  */
-public class PathStoreSlaveSchemaServer extends Thread {
+public class PathStoreSlaveSchemaServer implements Runnable {
 
   /** Logger */
   private final PathStoreLogger logger =
@@ -37,13 +34,9 @@ public class PathStoreSlaveSchemaServer extends Thread {
   /** Node id so you don't need to query the properties file every run */
   private final int nodeId = PathStoreProperties.getInstance().NodeID;
 
-  /**
-   * This denotes the daemons sub process thread pool.
-   *
-   * <p>A cached thread pool is used to kill threads once they're no longer needed instead of
-   * keeping idle threads waiting for tasks that may never come
-   */
-  private final ExecutorService threadPool = Executors.newCachedThreadPool();
+  /** Reference to the sub process thread pool */
+  private final PathStoreThreadManager subProcessManager =
+      PathStoreThreadManager.subProcessInstance();
 
   /**
    * This daemon is used to install an application on the local machine. The steps it takes are as
@@ -126,7 +119,7 @@ public class PathStoreSlaveSchemaServer extends Thread {
    */
   private void spawnSubProcess(final ProccessStatus proccessStatus, final String keyspace) {
 
-    this.threadPool.submit(
+    this.subProcessManager.spawn(
         () -> {
           switch (proccessStatus) {
             case INSTALLING:
