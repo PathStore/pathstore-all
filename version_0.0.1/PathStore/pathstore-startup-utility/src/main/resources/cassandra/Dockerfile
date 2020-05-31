@@ -1,12 +1,11 @@
 FROM pull
 
-RUN mkdir cassandra  && \
-    cp -r /cloudpath/version_0.0.1/PathStore/apache-cassandra-3.9 /cassandra && \
+RUN cp -r /cloudpath/version_0.0.1/PathStore/apache-cassandra-3.9 / && \
     rm -rf /cloudpath && \
     useradd -ms /bin/bash cassandra && \
-    chown -R cassandra:cassandra /cassandra
+    chown -R cassandra:cassandra /apache-cassandra-3.9
 
 USER cassandra
 
 # start cassandra
-CMD ["./cassandra/bin/cassandra", "-f"]
+CMD ["./apache-cassandra-3.9/bin/cassandra", "-f"]

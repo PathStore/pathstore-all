@@ -1,7 +1,6 @@
 FROM pull
 
-RUN mkdir /pathstore && \
-    cp -r /cloudpath/version_0.0.1/PathStore/pathstore /pathstore && \
+RUN cp -r /cloudpath/version_0.0.1/PathStore/pathstore / && \
     rm -rf /cloudpath
 
 # set workdir
