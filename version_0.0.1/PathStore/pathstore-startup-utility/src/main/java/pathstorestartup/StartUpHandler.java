@@ -298,7 +298,7 @@ public class StartUpHandler {
         new Exec(
             sshUtil,
             String.format(
-                "docker build -t base --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\"%s\" --build-arg user=\"$(id -u)\" --build-arg group=\"$(id -g)\" pathstore-install/base",
+                "docker build -t base --build-arg key=\"$(cat pathstore-install/deploy_key)\" --build-arg branch=\"%s\" pathstore-install/base",
                 branch),
             0));
     // Build pull
@@ -312,7 +312,7 @@ public class StartUpHandler {
     commands.add(
         new Exec(
             sshUtil,
-            "docker run --network=host -dit --restart always --user $(id -u):$(id -g) --name cassandra cassandra",
+            "docker run --network=host -dit --restart always --name cassandra cassandra",
             0));
     // Wait for cassandra to start
     commands.add(new WaitForCassandra(ip, cassandraPort));
@@ -339,7 +339,7 @@ public class StartUpHandler {
     commands.add(
         new Exec(
             sshUtil,
-            "docker run --network=host -dit --restart always -v ~/pathstore-install/pathstore-admin-panel:/etc/pathstore --user $(id -u):$(id -g) --name pathstore-admin-panel pathstore-admin-panel",
+            "docker run --network=host -dit --restart always -v ~/pathstore-install/pathstore-admin-panel:/etc/pathstore --name pathstore-admin-panel pathstore-admin-panel",
             0));
 
     return commands;

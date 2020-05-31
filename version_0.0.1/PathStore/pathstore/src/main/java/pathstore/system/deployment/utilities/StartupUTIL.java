@@ -196,7 +196,7 @@ public class StartupUTIL {
     commands.add(
         new Exec(
             sshUtil,
-            "docker run --network=host -dit --restart always --user $(id -u):$(id -g) --name cassandra cassandra",
+            "docker run --network=host -dit --restart always --name cassandra cassandra",
             0));
     // Wait for cassandra to start
     commands.add(new WaitForCassandra(ip, cassandraPort));
