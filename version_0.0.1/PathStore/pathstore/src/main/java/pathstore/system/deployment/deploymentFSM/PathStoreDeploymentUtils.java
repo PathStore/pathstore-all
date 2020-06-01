@@ -7,7 +7,6 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
-import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS;
 
 /**
  * This utility class is used to share functionality between {@link PathStoreMasterDeploymentServer}
@@ -46,5 +45,16 @@ public class PathStoreDeploymentUtils {
         .with(QueryBuilder.set(PROCESS_STATUS, status.toString()));
 
     clientSession.execute(update);
+  }
+
+  /**
+   * Simple function to denote how the ICommand messages will be processed
+   *
+   * @param nodeId node id
+   * @param messages messages
+   * @return formatted string
+   */
+  public static String formatParallelMessages(final int nodeId, final String messages) {
+    return String.format("Node %d is executing command %s", nodeId, messages);
   }
 }

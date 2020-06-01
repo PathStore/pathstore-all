@@ -198,7 +198,8 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
                 PathStoreProperties.getInstance().CassandraPort)) {
 
           // Inform the user what command is being executed
-          this.logger.info(command.toString());
+          this.logger.info(
+              PathStoreDeploymentUtils.formatParallelMessages(entry.newNodeId, command.toString()));
 
           command.execute();
         }
@@ -245,6 +246,8 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
       final String password,
       final int sshPort) {
 
+    this.logger.info(String.format("Starting removal of node %d", entry.newNodeId));
+
     try {
       SSHUtil sshUtil = new SSHUtil(ip, username, password, sshPort);
 
@@ -252,7 +255,8 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
 
       try {
         for (ICommand command : StartupUTIL.initUnDeploymentList(sshUtil)) {
-          this.logger.info(command.toString());
+          this.logger.info(
+              PathStoreDeploymentUtils.formatParallelMessages(entry.newNodeId, command.toString()));
           command.execute();
         }
 
