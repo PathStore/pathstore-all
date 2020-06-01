@@ -6,6 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstoreweb.pathstoreadminpanel.services.deployment.DeploymentRecord;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
 import java.util.HashSet;
@@ -21,35 +22,8 @@ public final class AddDeploymentRecordPayload extends ValidatedPayload {
   /** List of records to write */
   public List<DeploymentRecord> records;
 
-  /** This represents a individual record supplied by the frontend */
-  public static class DeploymentRecord {
-    /** ParentId of the new node */
-    public int parentId;
-
-    /** The new node's id */
-    public int newNodeId;
-
-    /** Where to install it */
-    public String serverUUID;
-
-    /** @return string for debug purposes */
-    @Override
-    public String toString() {
-      return "AddDeploymentRecordPayload{"
-          + "parentId="
-          + parentId
-          + ", newNodeId="
-          + newNodeId
-          + ", serverUUID="
-          + serverUUID
-          + '}';
-    }
-  }
-
   /**
-   * TODO: Add non-deployed checks when node removal is finished
-   *
-   * <p>Validity check
+   * Validity check
    *
    * <p>(1): Deployment record empty check
    *
@@ -57,7 +31,7 @@ public final class AddDeploymentRecordPayload extends ValidatedPayload {
    *
    * <p>(3): Node Id duplicates
    *
-   * <p>(4): Unique server UUID's
+   * <p>(4): Unique server UUID's (not already used in a previous node deployment)
    *
    * <p>(5): unique node id's (not already used)
    *
@@ -123,10 +97,10 @@ public final class AddDeploymentRecordPayload extends ValidatedPayload {
 
     // (7)
     for (DeploymentRecord record : this.records)
-        if (record.newNodeId == record.parentId) {
-            errors[5] = NODE_ID_EQUALS_PARENT_ID;
-            break;
-        }
+      if (record.newNodeId == record.parentId) {
+        errors[5] = NODE_ID_EQUALS_PARENT_ID;
+        break;
+      }
 
     // (8)
     Select serverSelect =

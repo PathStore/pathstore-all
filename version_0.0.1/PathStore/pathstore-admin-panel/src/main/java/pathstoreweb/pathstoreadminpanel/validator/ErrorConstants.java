@@ -103,6 +103,15 @@ public final class ErrorConstants {
 
   /**
    * Validity errors for {@link
+   * pathstoreweb.pathstoreadminpanel.services.deployment.payload.DeleteDeploymentRecordPayload}
+   */
+  public static final class DELETE_DEPLOYMENT_RECORD_PAYLOAD {
+    public static final String EMPTY = ADD_DEPLOYMENT_RECORD_PAYLOAD.EMPTY;
+    public static final String INVALID_RECORD = "You must only pass records that are DEPLOYED";
+  }
+
+  /**
+   * Validity errors for {@link
    * pathstoreweb.pathstoreadminpanel.services.logs.payload.GetLogRecordsPayload}
    */
   public static final class GET_LOG_RECORDS_PAYLOAD {

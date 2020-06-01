@@ -168,7 +168,7 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({record: this.retryData(this.props.deployment)})
+            body: JSON.stringify({records: [this.retryData(this.props.deployment)]})
         })
             .then(webHandler)
             .then(() => {

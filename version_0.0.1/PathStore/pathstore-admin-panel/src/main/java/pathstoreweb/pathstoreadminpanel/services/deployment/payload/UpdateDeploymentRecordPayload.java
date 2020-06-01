@@ -7,6 +7,7 @@ import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
+import pathstoreweb.pathstoreadminpanel.services.deployment.DeploymentRecord;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
 import static pathstoreweb.pathstoreadminpanel.validator.ErrorConstants.UPDATE_DEPLOYMENT_RECORD_PAYLOAD.*;
@@ -18,7 +19,7 @@ public final class UpdateDeploymentRecordPayload extends ValidatedPayload {
    * deployment record based by user. This record must be a failed record in order to pass
    * validation
    */
-  public AddDeploymentRecordPayload.DeploymentRecord record;
+  public DeploymentRecord record;
 
   /**
    * Validity check
