@@ -347,11 +347,15 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
         this.logger.info(String.format("Successfully un-deployed node %d", entry.newNodeId));
 
       } catch (CommandError commandError) {
+        PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.DEPLOYED);
+        this.logger.error(
+            "The un-deployment has failed. The state is updated to DEPLOYED. But the node may not function properly. This is to allow you to re-try the un-deployment after the underlying issue has been solved.");
         this.logger.error(commandError.errorMessage);
       } finally {
         sshUtil.disconnect();
       }
     } catch (JSchException e) {
+      PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.DEPLOYED);
       this.logger.error(
           String.format("Could not connect to node %d to un-deploy it", entry.newNodeId));
     }
