@@ -55,7 +55,7 @@ public class AddDeploymentRecords implements IService {
 
     LinkedList<DeploymentEntry> linkedList = new LinkedList<>();
 
-    for (AddDeploymentRecordPayload.DeploymentRecord record : payload.records) {
+    for (DeploymentRecord record : payload.records) {
 
       DeploymentEntry entry =
           new DeploymentEntry(
