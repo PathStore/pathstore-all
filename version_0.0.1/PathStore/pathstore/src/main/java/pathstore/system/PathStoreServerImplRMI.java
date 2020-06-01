@@ -14,6 +14,15 @@ import java.util.UUID;
 public class PathStoreServerImplRMI implements PathStoreServer {
   private final Logger logger = LoggerFactory.getLogger(PathStoreServerImplRMI.class);
 
+  /** Static instance so that it doesn't get gc'd */
+  private static PathStoreServerImplRMI instance;
+
+  /** @return instance of rmi server */
+  public static PathStoreServerImplRMI getInstance() {
+    if (instance == null) instance = new PathStoreServerImplRMI();
+    return instance;
+  }
+
   @Override // child calls this (maybe client or child node)
   public String addUserCommandEntry(
       String user, String keyspace, String table, byte[] clauses, int limit)

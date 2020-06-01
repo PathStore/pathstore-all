@@ -39,8 +39,6 @@ public class PathStoreServerImpl {
   private static final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStoreServerImpl.class);
 
-  private static PathStoreServerImplRMI obj = null;
-
   /**
    * Startup tasks:
    *
@@ -64,8 +62,9 @@ public class PathStoreServerImpl {
 
       logger.info("Connected");
 
-      obj = new PathStoreServerImplRMI();
-      PathStoreServer stub = (PathStoreServer) UnicastRemoteObject.exportObject(obj, 0);
+      PathStoreServer stub =
+          (PathStoreServer)
+              UnicastRemoteObject.exportObject(PathStoreServerImplRMI.getInstance(), 0);
 
       System.out.println(PathStoreProperties.getInstance().ExternalAddress);
 

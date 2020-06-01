@@ -72,7 +72,7 @@ public class PathStorePullServer implements Runnable {
       try {
         // logger.debug("Pull server ran");
         pull();
-        this.wait(PathStoreProperties.getInstance().PullSleep);
+        Thread.sleep(PathStoreProperties.getInstance().PullSleep);
       } catch (Exception e) {
         System.err.println("PathStorePullServer exception: " + e.toString());
         this.logger.error(e);

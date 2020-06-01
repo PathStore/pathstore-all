@@ -170,7 +170,7 @@ public class PathStorePushServer implements Runnable {
     while (true) {
       try {
         push();
-        this.wait(PathStoreProperties.getInstance().PushSleep);
+        Thread.sleep(PathStoreProperties.getInstance().PushSleep);
       } catch (InterruptedException e) {
         System.err.println("PathStorePushServer exception: " + e.toString());
         e.printStackTrace();
