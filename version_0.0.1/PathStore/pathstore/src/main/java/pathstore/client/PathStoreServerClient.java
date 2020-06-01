@@ -121,8 +121,6 @@ public class PathStoreServerClient {
   }
 
   public UUID cretateQueryDelta(QueryCacheEntry entry) {
-    System.out.println(
-        String.format("Create query delete %s.%s", entry.getKeyspace(), entry.getTable()));
     try {
       return stub.createQueryDelta(
           entry.getKeyspace(),

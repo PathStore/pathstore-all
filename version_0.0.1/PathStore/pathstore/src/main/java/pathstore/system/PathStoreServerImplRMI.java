@@ -2,16 +2,9 @@ package pathstore.system;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCache;
-import pathstore.common.Role;
 import pathstore.exception.PathMigrateAlreadyGoneException;
-import pathstore.system.deployment.deploymentFSM.PathStoreMasterDeploymentServer;
-import pathstore.system.deployment.deploymentFSM.PathStoreSlaveDeploymentServer;
-import pathstore.system.logging.PathStoreLoggerDaemon;
-import pathstore.system.schemaFSM.PathStoreMasterSchemaServer;
-import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
