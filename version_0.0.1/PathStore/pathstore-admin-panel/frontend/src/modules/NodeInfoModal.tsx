@@ -103,23 +103,6 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
     };
 
     /**
-     * TODO: TEMP FUNCTION
-     *
-     * Returns a button or null iff the node is eligible for re-trying deployment (the node has failed deployment)
-     *
-     * @param deployment
-     * @returns {null|*}
-     */
-    deleteButton = (deployment: Deployment[]): {} | null => {
-        const deployObject = deployment.filter(i => i.new_node_id === this.props.node);
-
-        if (deployObject[0].process_status === "DEPLOYED" && deployObject[0].parent_node_id !== -1)
-            return <Button onClick={this.deleteOnClick}>Delete</Button>;
-        else
-            return null;
-    };
-
-    /**
      * Get data for retry
      *
      * @param deployment
@@ -147,28 +130,6 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({record: this.retryData(this.props.deployment)})
-        })
-            .then(webHandler)
-            .then(() => {
-                this.props.callback();
-                // Optional query iff the prop exists
-                this.props.forceRefresh?.();
-            })
-            .catch((response: Error[]) => this.setState({errorModalShow: true, errorModalData: response}));
-
-    };
-
-    /**
-     * Delete request to remove node
-     */
-    deleteOnClick = (): void => {
-        fetch('/api/v1/deployment', {
-            method: 'DELETE',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({records: [this.retryData(this.props.deployment)]})
         })
             .then(webHandler)
             .then(() => {
@@ -217,7 +178,6 @@ export default class NodeInfoModal extends Component<NodeInfoModalProperties, No
                 </Modal.Body>
                 <Modal.Footer>
                     {this.retryButton(this.props.deployment)}
-                    {this.deleteButton(this.props.deployment)}
                     <Button onClick={this.props.callback}>close</Button>
                 </Modal.Footer>
             </Modal>
