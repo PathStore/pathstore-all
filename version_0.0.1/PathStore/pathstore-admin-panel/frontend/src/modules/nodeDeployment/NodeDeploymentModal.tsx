@@ -1,6 +1,6 @@
 import React, {Component} from "react";
 import {Deployment, Error, Server, Update} from "../../utilities/ApiDeclarations";
-import {webHandler} from "../../utilities/Utils";
+import {createMap, identity, webHandler} from "../../utilities/Utils";
 import {PathStoreTopology} from "../PathStoreTopology";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
@@ -51,14 +51,24 @@ interface NodeDeploymentModalState {
     readonly deployment: Deployment[]
 
     /**
-     * List of updates nodes to determine a node is hypothetical or not
+     * List of network additions
      */
-    readonly updates: Update[]
+    readonly additions: Update[]
 
     /**
-     * Set of updates node id's
+     * List of network deletions
      */
-    readonly updateNodeIdSet: Set<number>
+    readonly deletions: Update[]
+
+    /**
+     * Set of addition node id's
+     */
+    readonly additionNodeIdSet: Set<number>
+
+    /**
+     * Set of deleted node id's
+     */
+    readonly deletionsNodeIdSet: Set<number>
 
     /**
      * Whether or not to show the info modal
@@ -66,14 +76,14 @@ interface NodeDeploymentModalState {
     readonly infoModalShow: boolean
 
     /**
-     * Whether the node clicked is a hypothetical node
-     */
-    readonly infoModalIsHypothetical: boolean
-
-    /**
      * What node was clicked
      */
     readonly infoModalNodeNumber: number
+
+    /**
+     * Whether the node clicked is a hypothetical node
+     */
+    readonly infoModalIsHypothetical: boolean
 
     /**
      * Whether to show the error modal or not
@@ -101,11 +111,13 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
 
         this.state = {
             deployment: props.deployment.slice(),
-            updates: [],
-            updateNodeIdSet: new Set<number>(),
+            additions: [],
+            deletions: [],
+            additionNodeIdSet: new Set<number>(),
+            deletionsNodeIdSet: new Set<number>(),
             infoModalShow: false,
-            infoModalIsHypothetical: false,
             infoModalNodeNumber: -1,
+            infoModalIsHypothetical: false,
             errorModalShow: false,
             errorModalData: []
         };
@@ -122,27 +134,46 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
      *
      */
     submit = (): void => {
-        if (this.state.updates.length <= 0) {
+        if (this.state.additions.length <= 0 && this.state.deletions.length <= 0) {
             alert("You have not made any changes to the network");
             return;
         }
 
-        fetch('/api/v1/deployment', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                records: this.state.updates
+        if (this.state.deletions.length > 0)
+            fetch('/api/v1/deployment', {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    records: this.state.deletions
+                })
             })
-        })
-            .then(webHandler)
-            .then(() => {
-                this.props.forceRefresh();
-                this.props.callback();
+                .then(webHandler)
+                .then(() => {
+                    this.props.forceRefresh();
+                    this.props.callback();
+                })
+                .catch((response: Error[]) => this.setState({errorModalShow: true, errorModalData: response}));
+
+        if (this.state.additions.length > 0)
+            fetch('/api/v1/deployment', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    records: this.state.additions
+                })
             })
-            .catch((response: Error[]) => this.setState({errorModalShow: true, errorModalData: response}));
+                .then(webHandler)
+                .then(() => {
+                    this.props.forceRefresh();
+                    this.props.callback();
+                })
+                .catch((response: Error[]) => this.setState({errorModalShow: true, errorModalData: response}));
     };
 
     /**
@@ -156,10 +187,16 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
      * @param object
      * @returns {string}
      */
-    isHypothetical = (object: Deployment): string =>
-        this.state.updateNodeIdSet.has(object.new_node_id) ?
+    getColour = (object: Deployment): string =>
+        this.state.additionNodeIdSet.has(object.new_node_id) ?
             'hypothetical'
-            : 'not_set_node';
+            :
+            this.state.deletionsNodeIdSet.has(object.new_node_id) ?
+                'uninstalled_node'
+                :
+                object.process_status === "DEPLOYED" ?
+                    'not_set_node'
+                    : 'waiting_node';
 
     /**
      * This function is used to update the state to display an info modal on click
@@ -170,7 +207,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
     handleClick = (event: any, node: number): void => this.setState(
         {
             infoModalShow: true,
-            infoModalIsHypothetical: this.state.updateNodeIdSet.has(node),
+            infoModalIsHypothetical: this.state.additionNodeIdSet.has(node),
             infoModalNodeNumber: node
         }
     );
@@ -183,123 +220,157 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
      */
     handleAddition = (topologyRecord: Deployment, updateRecord: Update): void => {
         this.state.deployment.push(topologyRecord);
-        this.state.updates.push(updateRecord);
-        this.state.updateNodeIdSet.add(updateRecord.newNodeId);
+        this.state.additions.push(updateRecord);
+        this.state.additionNodeIdSet.add(updateRecord.newNodeId);
 
         this.setState({
             deployment: this.state.deployment,
-            updates: this.state.updates,
-            updateNodeIdSet: this.state.updateNodeIdSet
+            additions: this.state.additions,
+            additionNodeIdSet: this.state.additionNodeIdSet
         });
     };
 
     /**
-     * Used by info modal to delete a node from the topology iff the node is hypothetical.
+     * This function is used as a callback function for the hypothetical info modal. It will delete a subtree of the
+     * topology based on which node was clicked to delete. It will also close the modal and
      *
-     * We first must update the state so that the info modal is closed as otherwise an error will occur within the
-     * info modal.
-     *
-     * Then the topology and updates arrays are filtered to remove the delete node and infoModalNodeNumber is reset
-     *
-     * @param event not used
+     * @param event
      */
-    handleDelete = (event: any): void => {
-        this.setState({
-            infoModalShow: false,
-            infoModalIsHypothetical: false
-        }, () =>
-            this.setState(this.deleteNodeAndChildren(this.state.deployment, this.state.updates, this.state.infoModalNodeNumber)));
+    handleHypotheticalDelete = (event: any): void => {
+        try {
+            const response = this.deleteSubTree(this.state.deployment, this.state.additions, this.state.deletions, this.state.infoModalNodeNumber);
+            this.setState(response, () => {
+                this.setState({
+                    infoModalShow: false,
+                    infoModalNodeNumber: -1,
+                    infoModalIsHypothetical: false
+                });
+            });
+        }catch (e) {
+            alert("You cannot perform a delete on a sub tree that has a deploying node");
+        }
     };
 
     /**
-     * This function is used to handle the deletion of a hypothetical node from the hypothetical network builder.
+     * This function is used to handle the deletion of a sub tree from the network based on what node the info modal
+     * was loaded for. This function handles all cases whether the sub tree is purley comprised of hypothetical additions,
+     * all deployed nodes, or a mixture of both. To see the logic of how each value is modified see {@link handleDeletion}
      *
-     * What this algorithm does is that it takes the list of deployment and parses it into a map, This map is a representation
-     * from P -> List<Deployment> where P is the parent node id. This is used to find a list of children based on some node number.
-     * If the response is undefined you can determine that, that node id has no children.
-     *
-     * If the node that has been requested to be deleted has no children we can simply filter out that node id from
-     * the deployment list and the updates list.
-     *
-     * If the node has children then you need to recursively check to see if children exist and delete them from
-     * both lists as well. In this case it is easier to do the work inside the map and then after produce a list
-     * based on the map, this doesn't produce any additional problems because the ordering of deployment does not
-     * matter.
-     *
-     * @param deployment list of deployment objects
-     * @param updates list of update objects
-     * @param node_number node id requested to be deleted
-     * @return updated state
+     * @param deployment deployment objects from the internal state
+     * @param additions addition objects from the internal state
+     * @param deletions deletion objects from the internal state
+     * @param node_number what node was click on for the info modal
      */
-    deleteNodeAndChildren = (deployment: Deployment[], updates: Update[], node_number: number):
-        { deployment: Deployment[], updates: Update[], updateNodeIdSet: Set<number>, infoModalNodeNumber: number } => {
+    deleteSubTree = (deployment: Deployment[], additions: Update[], deletions: Update[], node_number: number):
+        { deployment: Deployment[], additions: Update[], deletions: Update[], additionNodeIdSet: Set<number>, deletionsNodeIdSet: Set<number> } => {
 
-        const deploymentMap: Map<number, Deployment[]> = new Map<number, Deployment[]>();
+        const deploymentMap: Map<number, Deployment> = createMap<number, Deployment>(v => v.new_node_id, identity, deployment);
+        const additionMap: Map<number, Update> = createMap<number, Update>(v => v.newNodeId, identity, additions);
+        const deletionsMap: Map<number, Update> = createMap<number, Update>(v => v.newNodeId, identity, deletions);
 
-        for (let i = 0; i < deployment.length; i++)
-            if (deployment[i].new_node_id !== node_number) {
-                if (!deploymentMap.has(deployment[i].parent_node_id)) deploymentMap.set(deployment[i].parent_node_id, [deployment[i]]);
-                else deploymentMap.get(deployment[i].parent_node_id)?.push(deployment[i]);
-            }
+        const nodeToListOfChildren: Map<number, Deployment[]> = new Map<number, Deployment[]>();
 
-        if (!deploymentMap.has(node_number)) {
+        deployment.forEach(v => {
+            if (!nodeToListOfChildren.has(v.parent_node_id)) nodeToListOfChildren.set(v.parent_node_id, [v]);
+            else nodeToListOfChildren.get(v.parent_node_id)?.push(v);
+        });
 
-            const newUpdates = updates.filter(i => i.newNodeId !== node_number);
+        if (nodeToListOfChildren.has(node_number))
+            this.deleteSubTreeHelper(deploymentMap, nodeToListOfChildren, additionMap, deletionsMap, node_number);
 
-            return {
-                deployment: deployment.filter(i => i.new_node_id !== node_number),
-                updates: newUpdates,
-                updateNodeIdSet: new Set<number>(newUpdates.map(i => i.newNodeId)),
-                infoModalNodeNumber: -1
-            };
-        } else {
+        this.handleDeletion(deploymentMap, additionMap, deletionsMap, node_number);
 
-            const updatesMap: Map<number, Update> = new Map<number, Update>();
+        const newDeployment = Array.from(deploymentMap.values());
+        const newUpdates = Array.from(additionMap.values());
+        const newDeletions = Array.from(deletionsMap.values());
 
-            for (let i = 0; i < updates.length; i++)
-                updatesMap.set(updates[i].newNodeId, updates[i]);
-
-            this.deleteNodeAndChildrenHelper(deploymentMap, updatesMap, node_number);
-
-            let newDeployment: Deployment[] = [];
-
-            deploymentMap.forEach((value: Deployment[]) => newDeployment = newDeployment.concat(value));
-
-            const newUpdates: Update[] = [];
-
-            updatesMap.forEach((value: Update) => newUpdates.push(value));
-
-            return {
+        return (
+            {
                 deployment: newDeployment,
-                updates: newUpdates,
-                updateNodeIdSet: new Set<number>(newUpdates.map(i => i.newNodeId)),
-                infoModalNodeNumber: -1
-            };
+                additions: newUpdates,
+                deletions: newDeletions,
+                additionNodeIdSet: new Set<number>(newUpdates.map(i => i.newNodeId)),
+                deletionsNodeIdSet: new Set<number>(newDeletions.map(i => i.newNodeId))
+            }
+        );
+
+    };
+
+    /**
+     * This function will perform operations from a back to front order (furthest away from the root to the root node).
+     * The operations performed are based on what type the node is see {@link handleDeletion}
+     *
+     * @param deploymentMap newNodeId to deployment object
+     * @param nodeToListOfChildren newNodeId to list of children
+     * @param additionMap newNodeId to update object
+     * @param deletionsMap newNodeId to deletions object
+     * @param node node currently inspecting
+     */
+    deleteSubTreeHelper = (deploymentMap: Map<number, Deployment>, nodeToListOfChildren: Map<number, Deployment[]>, additionMap: Map<number, Update>, deletionsMap: Map<number, Update>, node: number): void => {
+        if (nodeToListOfChildren.has(node)) {
+
+            const children: Deployment[] | undefined = nodeToListOfChildren.get(node);
+
+            // Only here because Map.get may return undefined even though
+            if (children !== undefined)
+                children.forEach(c => {
+                    this.deleteSubTreeHelper(deploymentMap, nodeToListOfChildren, additionMap, deletionsMap, c.new_node_id);
+
+                    this.handleDeletion(deploymentMap, additionMap, deletionsMap, c.new_node_id);
+                });
         }
     };
 
     /**
-     * Helper function to recursively delete all children based on a given node id.
+     * If hypo then remove the updates record and remove the deployment record
      *
-     * @param deploymentMap deployment map to remove from
-     * @param updatesMap updates map to remove from
-     * @param node which node to delete
+     * Else add deletion record
+     *
+     * @param deploymentMap map of newNodeId to deployment object
+     * @param updatesMap map of newNodeId to update object
+     * @param deletionsMap map of newNodeId to deletion object
+     * @param node node to handle
      */
-    deleteNodeAndChildrenHelper = (deploymentMap: Map<number, Deployment[]>, updatesMap: Map<number, Update>, node: number): void => {
-        if (deploymentMap.has(node)) {
-            const children: Deployment[] | undefined = deploymentMap.get(node);
+    handleDeletion = (deploymentMap: Map<number, Deployment>, updatesMap: Map<number, Update>, deletionsMap: Map<number, Update>, node: number): void => {
+        if (updatesMap.has(node)) {
+            updatesMap.delete(node);
+            deploymentMap.delete(node);
+        } else {
+            if (deploymentMap.get(node)?.process_status !== "DEPLOYED")
+                throw new Error("Cannot perform a delete operation on a sub-tree with a currently deploying node");
 
-            if (children !== undefined) {
-                for (let i = 0; i < children.length; i++) {
-                    this.deleteNodeAndChildrenHelper(deploymentMap, updatesMap, children[i].new_node_id);
-                    updatesMap.delete(children[i].new_node_id);
-                }
+            const value = this.conversion(deploymentMap.get(node));
 
-                updatesMap.delete(node);
-                deploymentMap.delete(node);
-            }
+            if (value !== undefined)
+                deletionsMap.set(node, value);
         }
     };
+
+    /**
+     * Strips a deployment object of certain information to produce an update object
+     *
+     * @param deployment deployment object to produce an update object
+     */
+    conversion = (deployment: Deployment | undefined): Update | undefined => {
+        return deployment !== undefined ? {
+            newNodeId: deployment.new_node_id,
+            parentId: deployment.parent_node_id,
+            serverUUID: deployment.server_uuid
+        } : undefined;
+    };
+
+    /**
+     * This function is used to reset all changes without closing
+     *
+     * @param event
+     */
+    resetChanges = (event: any) => this.setState({
+        deployment: this.props.deployment.filter(i => i.process_status === "DEPLOYED").slice(),
+        additions: [],
+        deletions: [],
+        additionNodeIdSet: new Set<number>(),
+        deletionsNodeIdSet: new Set<number>()
+    });
 
     /**
      * Used by info modal to close itself and reset all state data associated with the modal
@@ -307,8 +378,8 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
     handleClose = (): void => this.setState(
         {
             infoModalShow: false,
-            infoModalIsHypothetical: false,
             infoModalNodeNumber: -1,
+            infoModalIsHypothetical: false,
             errorModalShow: false,
             errorModalData: []
         }
@@ -327,11 +398,11 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
         const modal =
             this.state.infoModalShow ?
                 <HypotheticalInfoModal show={this.state.infoModalShow}
-                                       hypothetical={this.state.infoModalIsHypothetical}
                                        node={this.state.infoModalNodeNumber}
+                                       isHypothetical={this.state.infoModalIsHypothetical}
                                        servers={this.props.servers}
                                        deployment={this.state.deployment}
-                                       deleteNode={this.handleDelete}
+                                       deleteNode={this.handleHypotheticalDelete}
                                        callback={this.handleClose}/>
                 : null;
 
@@ -364,8 +435,9 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
                             <h2>Hypothetical Topology</h2>
                             <PathStoreTopology width={700}
                                                deployment={this.state.deployment}
-                                               get_colour={this.isHypothetical}
+                                               get_colour={this.getColour}
                                                get_click={this.handleClick}/>
+                            <Button onClick={this.resetChanges}>Reset to default</Button>
                         </Right>
                     </AlignedDivs>
                     <NodeDeploymentAdditionForm deployment={this.state.deployment}
