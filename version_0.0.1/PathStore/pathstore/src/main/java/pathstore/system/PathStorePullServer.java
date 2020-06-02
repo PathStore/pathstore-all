@@ -61,11 +61,8 @@ public class PathStorePullServer implements Runnable {
 
         try {
           for (QueryCacheEntry cache_entry : cache_entries) {
-            if (cache_entry.isReady() && cache_entry.getIsCovered() == null) {
-              if (cache_entry.getTable().equals(Constants.NODE_SCHEMAS))
-                System.out.println("Fetching node_schema with clauses" +  PathStorePullServer.clauseToString(cache_entry.getClauses()));
+            if (cache_entry.isReady() && cache_entry.getIsCovered() == null)
               QueryCache.getInstance().fetchDelta(cache_entry);
-            }
           }
         } catch (Exception e) {
           System.out.println("problem while looping over cache_entries");
