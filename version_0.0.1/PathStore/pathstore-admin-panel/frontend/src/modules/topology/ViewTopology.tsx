@@ -140,11 +140,11 @@ export default class ViewTopology extends Component<ViewTopologyProps, ViewTopol
                                forceRefresh={this.props.forceRefresh}/>
                 : null;
 
-        let width = this.rightRef.current?.clientWidth;
+        //let width = this.rightRef.current?.clientWidth;
 
         //let height = this.rightRef.current?.clientHeight;
 
-        if (width === undefined) width = 500;
+        let width = 1200;
 
         let height = 500;
 

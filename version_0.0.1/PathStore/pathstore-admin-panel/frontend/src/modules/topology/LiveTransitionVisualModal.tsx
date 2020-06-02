@@ -145,11 +145,11 @@ export default class LiveTransitionVisualModal extends Component<LiveTransitionV
      */
     render() {
 
-        let width = this.rightRef.current?.clientWidth;
+        //let width = this.rightRef.current?.clientWidth;
 
         //let height = this.rightRef.current?.clientHeight;
 
-        if (width === undefined) width = 500;
+        let width = 700;
 
         let height = 500;
 
