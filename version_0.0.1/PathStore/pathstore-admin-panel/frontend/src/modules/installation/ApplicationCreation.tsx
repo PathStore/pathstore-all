@@ -1,5 +1,4 @@
-import React, {Component} from "react";
-import ReactDOM from 'react-dom'
+import React, {Component, RefObject} from "react";
 import {ApplicationCreationSuccess, Error} from "../../utilities/ApiDeclarations";
 import {webHandler} from "../../utilities/Utils";
 import {LoadingModal} from "../LoadingModal";
@@ -62,7 +61,7 @@ export default class ApplicationCreation extends Component<ApplicationCreationPr
     /**
      * Used to clear form on completion
      */
-    private messageForm: any;
+    private messageForm: RefObject<HTMLFormElement> = React.createRef();
 
     /**
      * Initialize props and state
@@ -120,8 +119,7 @@ export default class ApplicationCreation extends Component<ApplicationCreationPr
                 .then(webHandler)
                 .then((response: ApplicationCreationSuccess) => {
                     this.props.forceRefresh();
-                    // @ts-ignore
-                    ReactDOM.findDOMNode(this.messageForm).reset();
+                    this.messageForm.current?.reset();
                     this.setState({
                         responseModalData: response,
                         responseModalError: false
@@ -171,7 +169,7 @@ export default class ApplicationCreation extends Component<ApplicationCreationPr
             <div>
                 {loadingModal}
                 {responseModal}
-                <Form onSubmit={this.onFormSubmit} ref={(form: any) => this.messageForm = form}>
+                <Form onSubmit={this.onFormSubmit} ref={this.messageForm}>
                     <Form.Group controlId="application">
                         <Form.Label>Application Name</Form.Label>
                         <Form.Control type="plaintext" placeholder="Enter application name here"/>

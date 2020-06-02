@@ -1,5 +1,4 @@
-import React, {Component} from "react";
-import ReactDOM from 'react-dom'
+import React, {Component, RefObject} from "react";
 import {Application, ApplicationStatus, Deployment, Server, Error} from "../../utilities/ApiDeclarations";
 import {webHandler} from "../../utilities/Utils";
 import {ErrorResponseModal} from "../ErrorResponseModal";
@@ -70,7 +69,7 @@ export default class DeployApplication extends Component<DeployApplicationProper
     /**
      * Used to clear form
      */
-    private messageForm: any;
+    private messageForm: RefObject<HTMLFormElement> = React.createRef();
 
     /**
      * Initialize props and state
@@ -126,8 +125,7 @@ export default class DeployApplication extends Component<DeployApplicationProper
         })
             .then(webHandler)
             .then((response: ApplicationStatus[]) => {
-                // @ts-ignore
-                ReactDOM.findDOMNode(this.messageForm).reset();
+                this.messageForm.current?.reset();
                 this.setState({
                     responseModalApplication: application,
                     responseModalData: response,
@@ -196,7 +194,7 @@ export default class DeployApplication extends Component<DeployApplicationProper
                 );
 
         let form = this.props.applications.length > 0 ?
-            <Form onSubmit={this.onFormSubmit} ref={(form: any) => this.messageForm = form}>
+            <Form onSubmit={this.onFormSubmit} ref={this.messageForm}>
                 <Form.Group controlId="application">
                     <Form.Label>Select Application</Form.Label>
                     <Form.Control as="select">

@@ -1,5 +1,4 @@
-import React, {Component} from "react";
-import ReactDOM from "react-dom";
+import React, {Component, RefObject} from "react";
 import {Deployment, Server, Update} from "../../utilities/ApiDeclarations";
 import {Button, Form} from "react-bootstrap";
 
@@ -47,7 +46,7 @@ export default class NodeDeploymentAdditionForm
     /**
      * Used to clear message form
      */
-    private messageForm: any;
+    private messageForm: RefObject<HTMLFormElement> = React.createRef();
 
     /**
      * Initializes state and props
@@ -129,8 +128,7 @@ export default class NodeDeploymentAdditionForm
             }
         );
 
-        // @ts-ignore
-        ReactDOM.findDOMNode(this.messageForm).reset();
+        this.messageForm.current?.reset();
     };
 
     /**
@@ -163,7 +161,7 @@ export default class NodeDeploymentAdditionForm
                 );
 
         return servers.length > 0 ?
-            <Form onSubmit={this.onFormSubmit} ref={(form: any) => this.messageForm = form}>
+            <Form onSubmit={this.onFormSubmit} ref={this.messageForm}>
                 <Form.Group controlId="parentId">
                     <Form.Label>Parent Node Id</Form.Label>
                     <Form.Control type="text" placeholder="Parent Id"/>
