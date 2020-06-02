@@ -228,18 +228,18 @@ public class StartupUTIL {
 
     // Check for docker access and that docker is online
     commands.add(new Exec(sshUtil, "docker ps", 0));
-    // kill old cassandra container
-    commands.add(new Exec(sshUtil, "docker kill cassandra", 0));
-    // remove old cassandra container
-    commands.add(new Exec(sshUtil, "docker rm cassandra", 0));
-    // remove old cassandra image
-    commands.add(new Exec(sshUtil, "docker image rm cassandra", 0));
     // kill old pathstore container
     commands.add(new Exec(sshUtil, "docker kill pathstore", 0));
     // remove old pathstore container
     commands.add(new Exec(sshUtil, "docker rm pathstore", 0));
     // remove old pathstore image
     commands.add(new Exec(sshUtil, "docker image rm pathstore", 0));
+    // kill old cassandra container
+    commands.add(new Exec(sshUtil, "docker kill cassandra", 0));
+    // remove old cassandra container
+    commands.add(new Exec(sshUtil, "docker rm cassandra", 0));
+    // remove old cassandra image
+    commands.add(new Exec(sshUtil, "docker image rm cassandra", 0));
     // remove old file associated with install
     commands.add(new Exec(sshUtil, "rm -rf pathstore-install", 0));
 
