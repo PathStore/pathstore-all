@@ -49,7 +49,7 @@ public class PathStorePushServer implements Runnable {
       PathStoreLoggerFactory.getLogger(PathStorePushServer.class);
 
   private static Insert createInsert(
-      Row row, String keyspace, String tablename, List<Column> columns) {
+      Row row, String keyspace, String tablename, List<Column> columns, int nodeid) {
     Insert insert = QueryBuilder.insertInto(keyspace, tablename);
 
     for (Column column : columns) {
@@ -65,7 +65,7 @@ public class PathStorePushServer implements Runnable {
               insert.value(column.column_name, QueryBuilder.now());
             else insert.value(column.column_name, row.getObject(column.column_name));
     }
-    insert.value("pathstore_node", PathStoreProperties.getInstance().NodeID);
+    insert.value("pathstore_node", nodeid);
 
     return insert;
   }
@@ -81,7 +81,8 @@ public class PathStorePushServer implements Runnable {
     return delete;
   }
 
-  public static void push(final Session local, final Session parent, final SchemaInfo schemaInfo) {
+  public static void push(
+      final Session local, final Session parent, final SchemaInfo schemaInfo, final int nodeid) {
     try {
       for (String keyspace : schemaInfo.getSchemaInfo().keySet()) {
 
@@ -106,7 +107,7 @@ public class PathStorePushServer implements Runnable {
 
           for (Row row : results) {
 
-            Insert insert = createInsert(row, keyspace, table.getTable_name(), columns);
+            Insert insert = createInsert(row, keyspace, table.getTable_name(), columns, nodeid);
             Delete delete = createDelete(row, keyspace, table.getTable_name(), columns);
 
             String str_insert = insert.toString();
@@ -168,7 +169,7 @@ public class PathStorePushServer implements Runnable {
 
     while (true) {
       try {
-        push(local, parent, SchemaInfo.getInstance());
+        push(local, parent, SchemaInfo.getInstance(), PathStoreProperties.getInstance().NodeID);
         Thread.sleep(PathStoreProperties.getInstance().PushSleep);
       } catch (InterruptedException e) {
         System.err.println("PathStorePushServer exception: " + e.toString());

@@ -208,7 +208,7 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
           command.execute();
         }
 
-        this.logger.info(String.format("Successfully deployed node with id %d", nodeId));
+        this.logger.info(String.format("Successfully deployed node with id %d", entry.newNodeId));
         PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.DEPLOYED);
 
       } catch (CommandError commandError) { // there was an error with a given command
@@ -264,7 +264,10 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
         Session child = StartupUTIL.createCluster(ip, cassandraPort).connect();
 
         PathStorePushServer.push(
-            child, PathStorePriviledgedCluster.getInstance().connect(), new SchemaInfo(child));
+            child,
+            PathStorePriviledgedCluster.getInstance().connect(),
+            new SchemaInfo(child),
+            entry.newNodeId);
 
         child.close();
 

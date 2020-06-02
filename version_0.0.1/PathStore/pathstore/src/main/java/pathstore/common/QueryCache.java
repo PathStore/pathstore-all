@@ -442,6 +442,7 @@ public class QueryCache {
                     break;
 
                 //probable bug ... changed && to || and >= to <=
+                // Myles: This should be removed as when a node gets removed this will cause the child node not to repull 'old' data
                 if (row.getInt("pathstore_node") == nodeID ||
                         row.getUUID("pathstore_parent_timestamp").timestamp() <= parentTimestamp.timestamp())
                     continue;
