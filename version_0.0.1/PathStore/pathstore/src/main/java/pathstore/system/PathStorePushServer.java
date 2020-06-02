@@ -45,12 +45,10 @@ import pathstore.util.SchemaInfo.Table;
 
 /** TODO: Comment */
 public class PathStorePushServer implements Runnable {
-  private final PathStoreLogger logger =
+  private static final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStorePushServer.class);
 
-  public PathStorePushServer() {}
-
-  private Insert createInsert(Row row, String keyspace, String tablename, List<Column> columns) {
+  private static Insert createInsert(Row row, String keyspace, String tablename, List<Column> columns) {
     Insert insert = QueryBuilder.insertInto(keyspace, tablename);
 
     for (Column column : columns) {
@@ -71,7 +69,7 @@ public class PathStorePushServer implements Runnable {
     return insert;
   }
 
-  private Delete createDelete(Row row, String keyspace, String tablename, List<Column> columns) {
+  private static Delete createDelete(Row row, String keyspace, String tablename, List<Column> columns) {
     Delete delete = QueryBuilder.delete("pathstore_dirty").from(keyspace, tablename);
 
     for (Column column : columns)
@@ -81,11 +79,7 @@ public class PathStorePushServer implements Runnable {
     return delete;
   }
 
-  private void push() {
-    // TODO: shouldn't we connect once instead of each time?
-    Session parent = PathStoreParentCluster.getInstance().connect();
-    Session local = PathStorePriviledgedCluster.getInstance().connect();
-
+  public static void push(final Session local, final Session parent) {
     try {
       for (String keyspace : SchemaInfo.getInstance().getSchemaInfo().keySet()) {
 
@@ -152,13 +146,13 @@ public class PathStorePushServer implements Runnable {
               parent.execute(insertBatch);
               local.execute(deleteBatch);
             } catch (Exception e) {
-              this.logger.error(e);
+              logger.error(e);
             }
           }
         }
       }
     } catch (Exception e) {
-      this.logger.error(e);
+      logger.error(e);
       // local.close();
       // parent.close();
     }
@@ -167,9 +161,12 @@ public class PathStorePushServer implements Runnable {
   public synchronized void run() {
     logger.info("Spawned pathstore push server thread");
 
+    Session parent = PathStoreParentCluster.getInstance().connect();
+    Session local = PathStorePriviledgedCluster.getInstance().connect();
+
     while (true) {
       try {
-        push();
+        push(local, parent);
         Thread.sleep(PathStoreProperties.getInstance().PushSleep);
       } catch (InterruptedException e) {
         System.err.println("PathStorePushServer exception: " + e.toString());

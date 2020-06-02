@@ -1,5 +1,6 @@
 package pathstore.system.deployment.deploymentFSM;
 
+import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Delete;
@@ -14,6 +15,8 @@ import pathstore.common.Role;
 import pathstore.common.logger.LoggerLevel;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
+import pathstore.system.PathStorePriviledgedCluster;
+import pathstore.system.PathStorePushServer;
 import pathstore.system.deployment.commands.CommandError;
 import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.utilities.SSHUtil;
@@ -254,6 +257,17 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
       this.logger.debug(String.format("Connection establish to %d", entry.newNodeId));
 
       try {
+
+        this.logger.info("Starting the push of all dirty data from child");
+
+        Session child = StartupUTIL.createCluster(ip, cassandraPort).connect();
+
+        PathStorePushServer.push(child, PathStorePriviledgedCluster.getInstance().connect());
+
+        child.close();
+
+        this.logger.info("Finished pushing all dirty data");
+
         for (ICommand command : StartupUTIL.initUnDeploymentList(sshUtil)) {
           this.logger.info(
               PathStoreDeploymentUtils.formatParallelMessages(entry.newNodeId, command.toString()));
