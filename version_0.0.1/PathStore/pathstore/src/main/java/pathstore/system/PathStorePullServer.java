@@ -31,6 +31,7 @@ import org.apache.commons.cli.ParseException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
 import pathstore.common.QueryCacheEntry;
@@ -55,8 +56,11 @@ public class PathStorePullServer implements Runnable {
 
         try {
           for (QueryCacheEntry cache_entry : cache_entries) {
-            if (cache_entry.isReady() && cache_entry.getIsCovered() == null)
+            if (cache_entry.isReady() && cache_entry.getIsCovered() == null) {
+              if (cache_entry.getTable().equals(Constants.NODE_SCHEMAS))
+                System.out.println("Fetching node_schema with clauses" + cache_entry.getClauses());
               QueryCache.getInstance().fetchDelta(cache_entry);
+            }
           }
         } catch (Exception e) {
           System.out.println("problem while looping over cache_entries");

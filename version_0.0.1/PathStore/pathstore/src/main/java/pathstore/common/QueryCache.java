@@ -495,17 +495,28 @@ public class QueryCache {
         UUID deltaId = null;
         long d = System.nanoTime();
 
+        if (entry.getTable().equals(Constants.NODE_SCHEMAS))
+            System.out.println("Fetch delta triggered node_schema with clauses" + entry.getClauses());
+
 //		System.out.println("     inside fetch delta " + entry.keyspace + " " + entry.table);
 
         if (entry.getParentTimeStamp() != null) {
+
+            if (entry.getTable().equals(Constants.NODE_SCHEMAS))
+                System.out.println("Didn't miss, node_schema with clauses" + entry.getClauses());
 
             deltaId = PathStoreServerClient.getInstance().cretateQueryDelta(entry);
             if (deltaId == null) {
 //				System.out.println("no change, return");
                 return;
             }
+            if (entry.getTable().equals(Constants.NODE_SCHEMAS))
+                System.out.println("Delta id is " + deltaId + " for the node_schema entry with clauses " + entry.getClauses());
 //			System.out.println(" creating queryDelta took: " +Timer.getTime(d));
         }
+
+        if (entry.getTable().equals(Constants.NODE_SCHEMAS))
+            System.out.println("Calling fetch data with delta " + deltaId + " for node_schema with clauses " + entry.getClauses());
 
         fetchData(entry, deltaId);
 //		System.out.println(" after querydelta took: " +Timer.getTime(d));
@@ -523,6 +534,9 @@ public class QueryCache {
 
         try {
             String table = deltaID != null ? "view_" + entry.table : entry.table;
+
+            if (entry.getTable().equals(Constants.NODE_SCHEMAS))
+                System.out.println("Using the table " + table + " for node_schema query with clauses " + entry.getClauses());
 
             Select select = QueryBuilder.select().all().from(entry.keyspace, table);
 
