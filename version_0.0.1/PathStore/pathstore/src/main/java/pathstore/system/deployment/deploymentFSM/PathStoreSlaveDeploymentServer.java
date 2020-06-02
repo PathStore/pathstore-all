@@ -259,21 +259,8 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
 
       try {
 
-        this.logger.info("Starting the push of all dirty data from child");
-
-        Session child = StartupUTIL.createCluster(ip, cassandraPort).connect();
-
-        PathStorePushServer.push(
-            child,
-            PathStorePriviledgedCluster.getInstance().connect(),
-            new SchemaInfo(child),
-            entry.newNodeId);
-
-        child.close();
-
-        this.logger.info("Finished pushing all dirty data");
-
-        for (ICommand command : StartupUTIL.initUnDeploymentList(sshUtil)) {
+        for (ICommand command :
+            StartupUTIL.initUnDeploymentList(sshUtil, ip, cassandraPort, entry.newNodeId)) {
           this.logger.info(
               PathStoreDeploymentUtils.formatParallelMessages(entry.newNodeId, command.toString()));
           command.execute();

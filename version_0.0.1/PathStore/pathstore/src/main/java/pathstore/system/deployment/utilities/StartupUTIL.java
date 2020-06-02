@@ -223,7 +223,8 @@ public class StartupUTIL {
    * @param sshUtil how to connect
    * @return list of removal commands
    */
-  public static List<ICommand> initUnDeploymentList(final SSHUtil sshUtil) {
+  public static List<ICommand> initUnDeploymentList(
+      final SSHUtil sshUtil, final String ip, final int cassandraPort, final int newNodeId) {
     List<ICommand> commands = new ArrayList<>();
 
     // Check for docker access and that docker is online
@@ -234,6 +235,8 @@ public class StartupUTIL {
     commands.add(new Exec(sshUtil, "docker rm pathstore", 0));
     // remove old pathstore image
     commands.add(new Exec(sshUtil, "docker image rm pathstore", 0));
+    // force push all dirty data after pathstore is shutdown
+    commands.add(new ForcePush(ip, cassandraPort, newNodeId));
     // kill old cassandra container
     commands.add(new Exec(sshUtil, "docker kill cassandra", 0));
     // remove old cassandra container
