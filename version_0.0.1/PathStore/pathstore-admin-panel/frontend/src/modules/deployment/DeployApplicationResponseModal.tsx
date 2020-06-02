@@ -1,4 +1,4 @@
-import React, {Component} from "react";
+import React, {Component, RefObject} from "react";
 import {ApplicationStatus, Deployment, Server} from "../../utilities/ApiDeclarations";
 import NodeInfoModal from "../NodeInfoModal";
 import {PathStoreTopology} from "../PathStoreTopology";
@@ -79,6 +79,11 @@ interface DeployApplicationResponseModalState {
  */
 export default class DeployApplicationResponseModal
     extends Component<DeployApplicationResponseModalProperties, DeployApplicationResponseModalState> {
+
+    /**
+     * Reference to the right div to determine the height and width
+     */
+    private rightRef: RefObject<HTMLDivElement> = React.createRef<HTMLDivElement>();
 
     /**
      * Initializes props and state
@@ -165,6 +170,14 @@ export default class DeployApplicationResponseModal
                 :
                 null;
 
+        let width = this.rightRef.current?.clientWidth;
+
+        //let height = this.rightRef.current?.clientHeight;
+
+        if (width === undefined) width = 500;
+
+        let height = 500;
+
         return (
             <Modal show={this.props.show}
                    size='xl'
@@ -182,9 +195,10 @@ export default class DeployApplicationResponseModal
                             <p>Nodes just installed are <span className={'d_green'}>green</span></p>
                             <p>Nodes that aren't installed are <span className={'d_currentLine'}>dark grey</span></p>
                         </Left>
-                        <Right>
+                        <Right divRef={this.rightRef}>
                             <h2>Application Installation Topology</h2>
-                            <PathStoreTopology width={700}
+                            <PathStoreTopology width={width}
+                                               height={height}
                                                deployment={this.props.deployment.filter(i => i.process_status === "DEPLOYED")}
                                                get_colour={this.getClassName}
                                                get_click={this.handleClick}/>

@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, {Component, RefObject} from 'react';
 import {ApplicationStatus, AvailableLogDates, Deployment, Server} from "../../utilities/ApiDeclarations";
 import {PathStoreTopology} from "../PathStoreTopology";
 import NodeInfoModal from "../NodeInfoModal";
@@ -56,6 +56,11 @@ interface ViewTopologyState {
  * of their stage in deployment and will be coloured based on their stage.
  */
 export default class ViewTopology extends Component<ViewTopologyProps, ViewTopologyState> {
+
+    /**
+     * Reference to the right div to determine the height and width
+     */
+    private rightRef: RefObject<HTMLDivElement> = React.createRef<HTMLDivElement>();
 
     /**
      * Initializes props and state
@@ -135,6 +140,14 @@ export default class ViewTopology extends Component<ViewTopologyProps, ViewTopol
                                forceRefresh={this.props.forceRefresh}/>
                 : null;
 
+        let width = this.rightRef.current?.clientWidth;
+
+        //let height = this.rightRef.current?.clientHeight;
+
+        if (width === undefined) width = 500;
+
+        let height = 500;
+
         return (
             <AlignedDivs>
                 {modal}
@@ -149,10 +162,11 @@ export default class ViewTopology extends Component<ViewTopologyProps, ViewTopol
                     <p>Waiting Removal: <span className={'d_pink'}>Pink</span></p>
                     <p>Removing / Processing Removing: <span className={'d_purple'}>Purple</span></p>
                 </Left>
-                <Right>
+                <Right divRef={this.rightRef}>
                     <h2>Topology</h2>
                     <p>Click on a node to view its current applications</p>
-                    <PathStoreTopology width={1400}
+                    <PathStoreTopology width={width}
+                                       height={height}
                                        deployment={this.props.deployment}
                                        get_colour={this.getClassName}
                                        get_click={this.handleClick}/>

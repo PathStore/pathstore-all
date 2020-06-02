@@ -1,4 +1,4 @@
-import {Component} from "react";
+import {Component, RefObject} from "react";
 import {ApplicationStatus, Deployment} from "../../utilities/ApiDeclarations";
 import {PathStoreTopology} from "../PathStoreTopology";
 import React from "react";
@@ -60,6 +60,11 @@ interface LiveTransitionVisualModalState {
  * This component is used to display buttons for each keyspace that you can watch transition live and visually
  */
 export default class LiveTransitionVisualModal extends Component<LiveTransitionVisualModalProperties, LiveTransitionVisualModalState> {
+
+    /**
+     * Reference to the right div to determine the height and width
+     */
+    private rightRef: RefObject<HTMLDivElement> = React.createRef<HTMLDivElement>();
 
     /**
      * Initialize props and state
@@ -139,6 +144,15 @@ export default class LiveTransitionVisualModal extends Component<LiveTransitionV
      * @returns {*}
      */
     render() {
+
+        let width = this.rightRef.current?.clientWidth;
+
+        //let height = this.rightRef.current?.clientHeight;
+
+        if (width === undefined) width = 500;
+
+        let height = 500;
+
         return (
             <Modal show={this.props.show}
                    size={"xl"}
@@ -156,9 +170,10 @@ export default class LiveTransitionVisualModal extends Component<LiveTransitionV
                             <p>Nodes waiting are in <span className={'d_yellow'}>yellow</span></p>
                             <p>Nodes not set are <span className={'d_currentLine'}>dark grey</span></p>
                         </Left>
-                        <Right>
+                        <Right divRef={this.rightRef}>
                             <h2>Topology</h2>
-                            <PathStoreTopology width={700}
+                            <PathStoreTopology width={width}
+                                               height={height}
                                                deployment={this.props.deployment.filter(i => i.process_status === "DEPLOYED")}
                                                get_colour={this.getClassName}/>
                         </Right>

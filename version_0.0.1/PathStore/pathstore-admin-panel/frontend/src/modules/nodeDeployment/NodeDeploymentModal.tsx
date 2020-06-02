@@ -1,4 +1,4 @@
-import React, {Component} from "react";
+import React, {Component, RefObject} from "react";
 import {Deployment, Error, Server, Update} from "../../utilities/ApiDeclarations";
 import {createMap, identity, webHandler} from "../../utilities/Utils";
 import {PathStoreTopology} from "../PathStoreTopology";
@@ -100,6 +100,11 @@ interface NodeDeploymentModalState {
  * This component is used to allow users to deploy additional nodes to their pathstore network
  */
 export default class NodeDeploymentModal extends Component<NodeDeploymentModalProperties, NodeDeploymentModalState> {
+
+    /**
+     * Reference to the right div to determine the height and width
+     */
+    private rightRef: RefObject<HTMLDivElement> = React.createRef<HTMLDivElement>();
 
     /**
      * Initialize props and state
@@ -246,7 +251,7 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
                     infoModalIsHypothetical: false
                 });
             });
-        }catch (e) {
+        } catch (e) {
             alert("You cannot perform a delete on a sub tree that has a deploying node");
         }
     };
@@ -413,6 +418,14 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
                                     callback={this.handleClose}/>
                 : null;
 
+        let width = this.rightRef.current?.clientWidth;
+
+       // let height = this.rightRef.current?.clientHeight;
+
+        if (width === undefined) width = 500;
+
+        let height = 500;
+
         return (
             <Modal show={this.props.show}
                    size={"xl"}
@@ -431,9 +444,10 @@ export default class NodeDeploymentModal extends Component<NodeDeploymentModalPr
                             <p>Deployed Node: <span className={'d_currentLine'}>Light Grey</span></p>
                             <p>Hypothetical Node: <span className={'d_cyan'}>Cyan</span></p>
                         </Left>
-                        <Right>
+                        <Right divRef={this.rightRef}>
                             <h2>Hypothetical Topology</h2>
-                            <PathStoreTopology width={700}
+                            <PathStoreTopology width={width}
+                                               height={height}
                                                deployment={this.state.deployment}
                                                get_colour={this.getColour}
                                                get_click={this.handleClick}/>

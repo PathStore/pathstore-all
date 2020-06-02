@@ -58,7 +58,7 @@ export const HypotheticalInfoModal: FunctionComponent<HypotheticalInfoModalPrope
 
     let button = null;
 
-    if (props.node != -1 && map.get(props.node)?.process_status === "DEPLOYED" || props.isHypothetical)
+    if ((props.node !== -1 && map.get(props.node)?.process_status === "DEPLOYED") || props.isHypothetical)
         button = <Button onClick={props.deleteNode}>Delete</Button>;
 
     return (

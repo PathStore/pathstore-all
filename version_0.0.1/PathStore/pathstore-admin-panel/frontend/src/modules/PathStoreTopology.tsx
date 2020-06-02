@@ -12,6 +12,11 @@ interface PathStoreTopologyProps {
     readonly width: number
 
     /**
+     * Height of the tree
+     */
+    readonly height: number
+
+    /**
      * List of deployment objects from api
      */
     readonly deployment: Deployment[]
@@ -41,7 +46,7 @@ export const PathStoreTopology: FunctionComponent<PathStoreTopologyProps> = (pro
     <Tree data={createTree(props.deployment, -1, props.get_colour, props.get_click)}
           nodeRadius={15}
           margins={{top: 20, bottom: 10, left: 20, right: 200}}
-          height={500}
+          height={props.height}
           width={props.width}
     />;
 
