@@ -40,7 +40,7 @@ public class QueryCacheEntry {
     QueryCacheEntry isCovered = null;
     List<QueryCacheEntry> covers = null;
     private boolean ready = false;
-    private UUID parentTimeStamp = UUID.fromString("7db079d1-5340-1118-8c57-5d749fc26b49");
+    private UUID parentTimeStamp = null;
     public int limit;
 
     public QueryCacheEntry(String keyspace, String table, List<Clause> clauses, int limit) {
