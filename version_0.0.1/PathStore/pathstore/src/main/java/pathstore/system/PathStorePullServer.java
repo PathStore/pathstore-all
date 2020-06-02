@@ -41,6 +41,11 @@ import pathstore.common.logger.PathStoreLoggerFactory;
 /** TODO: Comment */
 public class PathStorePullServer implements Runnable {
 
+  public static String clauseToString(List<Clause> clauses) {
+    Clause c = clauses.get(0);
+    return c.getName() + ":" + c.getValue();
+  }
+
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStorePullServer.class);
 
@@ -58,7 +63,7 @@ public class PathStorePullServer implements Runnable {
           for (QueryCacheEntry cache_entry : cache_entries) {
             if (cache_entry.isReady() && cache_entry.getIsCovered() == null) {
               if (cache_entry.getTable().equals(Constants.NODE_SCHEMAS))
-                System.out.println("Fetching node_schema with clauses" + cache_entry.getClauses());
+                System.out.println("Fetching node_schema with clauses" +  PathStorePullServer.clauseToString(cache_entry.getClauses()));
               QueryCache.getInstance().fetchDelta(cache_entry);
             }
           }
