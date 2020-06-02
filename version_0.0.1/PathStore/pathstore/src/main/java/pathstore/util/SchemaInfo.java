@@ -33,18 +33,17 @@ public class SchemaInfo {
   private static SchemaInfo instance = null;
 
   public static SchemaInfo getInstance() {
-    if (SchemaInfo.instance == null) SchemaInfo.instance = new SchemaInfo();
+    if (SchemaInfo.instance == null)
+      SchemaInfo.instance = new SchemaInfo(PathStorePriviledgedCluster.getInstance().connect());
     return SchemaInfo.instance;
-  }
-
-  // Hossein
-  public Metadata getMetadataForKeySpaceTable(String keyspace, String table) {
-    return PathStorePriviledgedCluster.getInstance().getMetadata();
   }
 
   final Map<String, Map<Table, List<Column>>> schemaInfo = new ConcurrentHashMap<>();
 
-  public SchemaInfo() {
+  private final Session session;
+
+  public SchemaInfo(final Session session) {
+    this.session = session;
     loadSchemas();
   }
 
@@ -58,8 +57,6 @@ public class SchemaInfo {
   }
 
   private void loadSchemas() {
-    PathStorePriviledgedCluster cluster = PathStorePriviledgedCluster.getInstance();
-    Session session = cluster.connect();
 
     try {
       String query = "select * from system_schema.keyspaces";
@@ -83,9 +80,6 @@ public class SchemaInfo {
 
   public Map<Table, List<Column>> getKeySpaceInfo(String keyspaceName) {
     if (schemaInfo.get(keyspaceName) != null) return schemaInfo.get(keyspaceName);
-
-    PathStorePriviledgedCluster cluster = PathStorePriviledgedCluster.getInstance();
-    Session session = cluster.connect();
 
     Map<Table, List<Column>> keyspaceInfo = new ConcurrentHashMap<>();
     schemaInfo.put(keyspaceName, keyspaceInfo);

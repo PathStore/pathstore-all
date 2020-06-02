@@ -21,6 +21,7 @@ import pathstore.system.deployment.commands.CommandError;
 import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstore.system.deployment.utilities.StartupUTIL;
+import pathstore.util.SchemaInfo;
 
 import java.util.UUID;
 
@@ -262,7 +263,8 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
 
         Session child = StartupUTIL.createCluster(ip, cassandraPort).connect();
 
-        PathStorePushServer.push(child, PathStorePriviledgedCluster.getInstance().connect());
+        PathStorePushServer.push(
+            child, PathStorePriviledgedCluster.getInstance().connect(), new SchemaInfo(child));
 
         child.close();
 

@@ -48,7 +48,8 @@ public class PathStorePushServer implements Runnable {
   private static final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStorePushServer.class);
 
-  private static Insert createInsert(Row row, String keyspace, String tablename, List<Column> columns) {
+  private static Insert createInsert(
+      Row row, String keyspace, String tablename, List<Column> columns) {
     Insert insert = QueryBuilder.insertInto(keyspace, tablename);
 
     for (Column column : columns) {
@@ -69,7 +70,8 @@ public class PathStorePushServer implements Runnable {
     return insert;
   }
 
-  private static Delete createDelete(Row row, String keyspace, String tablename, List<Column> columns) {
+  private static Delete createDelete(
+      Row row, String keyspace, String tablename, List<Column> columns) {
     Delete delete = QueryBuilder.delete("pathstore_dirty").from(keyspace, tablename);
 
     for (Column column : columns)
@@ -79,11 +81,11 @@ public class PathStorePushServer implements Runnable {
     return delete;
   }
 
-  public static void push(final Session local, final Session parent) {
+  public static void push(final Session local, final Session parent, final SchemaInfo schemaInfo) {
     try {
-      for (String keyspace : SchemaInfo.getInstance().getSchemaInfo().keySet()) {
+      for (String keyspace : schemaInfo.getSchemaInfo().keySet()) {
 
-        Map<Table, List<Column>> tables = SchemaInfo.getInstance().getSchemaInfo().get(keyspace);
+        Map<Table, List<Column>> tables = schemaInfo.getSchemaInfo().get(keyspace);
 
         for (Table table : tables.keySet()) {
           if (table.getTable_name().startsWith("view_")
@@ -166,7 +168,7 @@ public class PathStorePushServer implements Runnable {
 
     while (true) {
       try {
-        push(local, parent);
+        push(local, parent, SchemaInfo.getInstance());
         Thread.sleep(PathStoreProperties.getInstance().PushSleep);
       } catch (InterruptedException e) {
         System.err.println("PathStorePushServer exception: " + e.toString());
