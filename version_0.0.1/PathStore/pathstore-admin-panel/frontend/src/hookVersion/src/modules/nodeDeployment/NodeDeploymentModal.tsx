@@ -129,6 +129,10 @@ export const NodeDeploymentModal: FunctionComponent = () => {
                 })
                     .then(webHandler)
                     .then(() => {
+
+                        if (additions.length === 0)
+                            resetChanges();
+
                         if (forceRefresh && nodeDeploymentModalContext.close) {
                             forceRefresh();
                             nodeDeploymentModalContext.close();
@@ -150,6 +154,8 @@ export const NodeDeploymentModal: FunctionComponent = () => {
                 })
                     .then(webHandler)
                     .then(() => {
+                        resetChanges();
+
                         if (forceRefresh && nodeDeploymentModalContext.close) {
                             forceRefresh();
                             nodeDeploymentModalContext.close();
@@ -158,7 +164,7 @@ export const NodeDeploymentModal: FunctionComponent = () => {
                     .catch(errorModal.show)
                     .finally(loadingModal.close);
         }
-    }, [additions, deletions, forceRefresh, loadingModal, errorModal.show, nodeDeploymentModalContext, submissionErrorModal]);
+    }, [additions, deletions, forceRefresh, loadingModal, errorModal.show, nodeDeploymentModalContext, submissionErrorModal, resetChanges]);
 
     return (
         <Modal show={nodeDeploymentModalContext.visible}
