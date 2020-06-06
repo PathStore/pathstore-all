@@ -1,8 +1,9 @@
-import React, {Component, FunctionComponent, ReactElement, useCallback, useContext, useEffect, useState} from "react";
+import React, {FunctionComponent, ReactElement, useCallback, useContext, useEffect, useState} from "react";
 import {Server} from "../../../../utilities/ApiDeclarations";
 import {Table} from "react-bootstrap";
 import {NodeDeploymentModalData} from "../../contexts/NodeDeploymentModalContext";
 import {ModifyServerModalContext} from "../../contexts/ModifyServerModalContext";
+import {ObjectRow} from "../../utilities/ObjectRow";
 
 /**
  * This component is used to display a list of servers to the node deployment modal.
@@ -39,10 +40,19 @@ export const DisplayServers: FunctionComponent = () => {
 
         // load all rows
         if (servers) {
-            for (let i = 0; i < servers.length; i++)
+            for (let i = 0; i < servers.length; i++) {
+                const current = servers[i];
                 temp.push(
-                    <ServerRow key={i} server={servers[i]} handleClick={handleClick}/>
+                    <ObjectRow<Server> key={i} value={current} handleClick={handleClick}>
+                        <td>{current.server_uuid}</td>
+                        <td>{current.ip}</td>
+                        <td>{current.username}</td>
+                        <td>{current.ssh_port}</td>
+                        <td>{current.rmi_port}</td>
+                        <td>{current.name}</td>
+                    </ObjectRow>
                 );
+            }
             updateTbody(temp);
         }
     }, [servers, updateTbody, handleClick]);
@@ -69,46 +79,3 @@ export const DisplayServers: FunctionComponent = () => {
         </div>
     );
 };
-
-/**
- * Server Row properties
- */
-interface ServerRowProps {
-    /**
-     * Server object to display and to return on click
-     */
-    readonly server: Server;
-
-    /**
-     * What function to call on click
-     */
-    readonly handleClick: (server: Server) => void
-}
-
-/**
- * This component is used to render a given row in the servers display table. It is also used to all for the on click
- * function to have a server object as the property so that there doesn't need to be additional parsing of data
- */
-class ServerRow extends Component<ServerRowProps> {
-
-    /**
-     * Call given on click function and pass server object
-     */
-    handleClick = () => this.props.handleClick(this.props.server);
-
-    /**
-     * Render the table record
-     */
-    render() {
-        return (
-            <tr onClick={this.handleClick}>
-                <td>{this.props.server.server_uuid}</td>
-                <td>{this.props.server.ip}</td>
-                <td>{this.props.server.username}</td>
-                <td>{this.props.server.ssh_port}</td>
-                <td>{this.props.server.rmi_port}</td>
-                <td>{this.props.server.name}</td>
-            </tr>
-        );
-    }
-}

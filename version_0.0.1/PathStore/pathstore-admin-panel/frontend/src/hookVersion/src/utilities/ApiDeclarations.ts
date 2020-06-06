@@ -27,6 +27,15 @@ export interface Application {
     keyspace_name: string
 }
 
+
+// All process statuses possible by the application deployment process
+export enum APPLICATION_STATE {
+    "WAITING_INSTALL",
+    "INSTALLING",
+    "PROCESSING_INSTALLING",
+    "INSTALLED"
+}
+
 /**
  * Parse response from application management
  */

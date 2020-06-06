@@ -8,6 +8,7 @@ import {Center} from "./utilities/AlignedDivs";
 import {NodeInfoModalProvider} from "./contexts/NodeInfoModalContext";
 import {NodeDeployment} from "./modules/nodeDeployment/NodeDeployment";
 import {NodeDeploymentModalProvider} from "./contexts/NodeDeploymentModalContext";
+import {ApplicationInstallation} from "./modules/appInstallation/ApplicationInstallation";
 
 /**
  * This is the main component for the pathstore control panel website. It must have access to the {@link APIContext}
@@ -47,6 +48,10 @@ export const PathStoreControlPanel: FunctionComponent = () => {
             <NodeDeploymentModalProvider>
                 <NodeDeployment/>
             </NodeDeploymentModalProvider>
+            <hr/>
+            <ApplicationInstallation/>
+            <hr/>
+            // Application deployment
         </>
     );
 };

@@ -30,7 +30,7 @@ export const HypotheticalInfoModal: FunctionComponent = (props) => {
     const {visible, data, close} = useContext(HypotheticalInfoModalContext);
 
     // reference all needed data from the node deployment modal data contex
-    const {deployment, servers, additions, deletions, updateAdditions, updateDeletions, updateAdditionNodeIdSet, updateDeletionNodeIdSet} = useContext(NodeDeploymentModalData);
+    const {deployment, servers, additions, deletions, updateAdditions, updateDeletions} = useContext(NodeDeploymentModalData);
 
     /** This state and effect are used to watch for updated deployment and additions objects to create the
      * same 'stitched' deployment object set.
@@ -51,19 +51,17 @@ export const HypotheticalInfoModal: FunctionComponent = (props) => {
     const handleHypotheticalDelete = useCallback((event: any): void => {
         event.preventDefault();
         try {
-            if (stitchedDeployment && additions && deletions && data && updateAdditions && updateDeletions && updateAdditionNodeIdSet && updateDeletionNodeIdSet && close) {
+            if (stitchedDeployment && additions && deletions && data && updateAdditions && updateDeletions && close) {
                 const response = deleteSubTree(stitchedDeployment, additions, deletions, data.node);
                 updateAdditions(response.additions);
                 updateDeletions(response.deletions);
-                updateAdditionNodeIdSet(response.additionNodeIdSet);
-                updateDeletionNodeIdSet(response.deletionsNodeIdSet);
                 close();
             }
         } catch (e) {
             if (submissionErrorModal.show)
                 submissionErrorModal.show("You cannot delete a node which has a child deploying");
         }
-    }, [additions, deletions, data, updateAdditions, updateDeletions, updateAdditionNodeIdSet, updateDeletionNodeIdSet, close, stitchedDeployment, submissionErrorModal]);
+    }, [additions, deletions, data, updateAdditions, updateDeletions, close, stitchedDeployment, submissionErrorModal]);
 
     /**
      * This function is used to determine if the delete button should be rendered.
@@ -109,7 +107,7 @@ export const HypotheticalInfoModal: FunctionComponent = (props) => {
  * @param node_number what node was click on for the info modal
  */
 const deleteSubTree = (deployment: Deployment[], additions: Update[], deletions: Update[], node_number: number):
-    { additions: Update[], deletions: Update[], additionNodeIdSet: Set<number>, deletionsNodeIdSet: Set<number> } => {
+    { additions: Update[], deletions: Update[] } => {
 
     const deploymentMap: Map<number, Deployment> = createMap<number, Deployment>(v => v.new_node_id, identity, deployment);
     const additionMap: Map<number, Update> = createMap<number, Update>(v => v.newNodeId, identity, additions);
@@ -134,8 +132,6 @@ const deleteSubTree = (deployment: Deployment[], additions: Update[], deletions:
         {
             additions: newUpdates,
             deletions: newDeletions,
-            additionNodeIdSet: new Set<number>(newUpdates.map(i => i.newNodeId)),
-            deletionsNodeIdSet: new Set<number>(newDeletions.map(i => i.newNodeId))
         }
     );
 

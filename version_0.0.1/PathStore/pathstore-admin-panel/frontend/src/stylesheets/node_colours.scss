@@ -1,7 +1,7 @@
 @import "bootstrap-dracula";
 
 // Node text colour
-.uninstalled_node text, .previous_node text, .installation_node text, .not_set_node text, .waiting_node text, .installing_node text, .installed_node text, .waiting_removal_node text, .removing_node text, .hypothetical text {
+.uninstalled_node text, .previous_node text, .installation_node text, .not_set_node text, .waiting_node text, .installing_node text, .installed_node text, .waiting_removal_node text, .removing_node text, .hypothetical text, .processing_node text {
   background-color: $d_red;
   fill: $d_red;
 }
@@ -28,6 +28,12 @@
 
 .installation_node circle {
   fill: $d_green;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.processing_node circle {
+  fill: $d_orange;
   stroke: $border-colour;
   stroke-width: 1.5px;
 }

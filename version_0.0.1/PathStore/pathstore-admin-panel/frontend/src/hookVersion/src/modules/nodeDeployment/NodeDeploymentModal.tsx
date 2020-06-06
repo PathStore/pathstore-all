@@ -1,4 +1,4 @@
-import React, {FunctionComponent, useCallback, useContext, useEffect} from "react";
+import React, {FunctionComponent, useCallback, useContext} from "react";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
 import {AlignedDivs, Left, Right} from "../../utilities/AlignedDivs";
@@ -6,7 +6,7 @@ import {NodeDeploymentModalContext, NodeDeploymentModalData} from "../../context
 import {Deployment, Update} from "../../utilities/ApiDeclarations";
 import {PathStoreTopology} from "../../../../modules/PathStoreTopology";
 import {NodeDeploymentAdditionForm} from "./NodeDeploymentAdditionForm";
-import {DisplayServers} from "./DisplayServer";
+import {DisplayServers} from "./DisplayServers";
 import {AddServers} from "./AddServers";
 import {LoadingModalContext, LoadingModalProvider} from "../../contexts/LoadingModalContext";
 import {ErrorModalContext, ErrorModalProvider} from "../../contexts/ErrorModalContext";
@@ -48,17 +48,7 @@ export const NodeDeploymentModal: FunctionComponent = () => {
     const nodeDeploymentModalContext = useContext(NodeDeploymentModalContext);
 
     // Shared data between node deployment components
-    const {deployment, additions, updateAdditions, deletions, updateDeletions, additionNodeIdSet, updateAdditionNodeIdSet, deletionNodeIdSet, updateDeletionNodeIdSet} = useContext(NodeDeploymentModalData);
-
-    /**
-     * Everytime the additions and or the deletions updates the addition node id and deletion node id sets are updated
-     */
-    useEffect(() => {
-        if (updateAdditionNodeIdSet && updateDeletionNodeIdSet && additions && deletions) {
-            updateAdditionNodeIdSet(new Set<number>(additions.map(i => i.newNodeId)));
-            updateDeletionNodeIdSet(new Set<number>(deletions.map(i => i.newNodeId)));
-        }
-    }, [additions, deletions, updateAdditionNodeIdSet, updateDeletionNodeIdSet]);
+    const {deployment, additions, updateAdditions, deletions, updateDeletions, additionNodeIdSet, deletionNodeIdSet} = useContext(NodeDeploymentModalData);
 
     /**
      * Graph colour function.
@@ -97,13 +87,11 @@ export const NodeDeploymentModal: FunctionComponent = () => {
      * This callback is called when the user clicks the reset button. This function wipes all non-submitted data
      */
     const resetChanges = useCallback(() => {
-        if (updateAdditionNodeIdSet && updateDeletionNodeIdSet && updateAdditions && updateDeletions) {
-            updateAdditionNodeIdSet(new Set<number>());
-            updateDeletionNodeIdSet(new Set<number>());
+        if (updateAdditions && updateDeletions) {
             updateAdditions([]);
             updateDeletions([]);
         }
-    }, [updateAdditionNodeIdSet, updateDeletionNodeIdSet, updateAdditions, updateDeletions]);
+    }, [updateAdditions, updateDeletions]);
 
     /**
      * This callback is called when the user requests to submit their changes

@@ -17,6 +17,9 @@ export const NodeDeployment: FunctionComponent = () => {
     }, [show]);
 
     return (
-        <Button onClick={onClick}>Deploy Additional Nodes to the Network</Button>
+        <>
+            <h2>Network Expansion</h2>
+            <Button onClick={onClick}>Deploy Additional Nodes to the Network</Button>
+        </>
     );
 };

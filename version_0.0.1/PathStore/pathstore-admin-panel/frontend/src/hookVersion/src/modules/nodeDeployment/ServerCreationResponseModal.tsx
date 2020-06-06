@@ -9,6 +9,7 @@ import {ServerCreationResponseModalContext} from "../../contexts/ServerCreationR
  */
 export const ServerCreationResponseModal: FunctionComponent = () => {
 
+    // load modal state context
     const {visible, data, close} = useContext(ServerCreationResponseModalContext);
 
     return (

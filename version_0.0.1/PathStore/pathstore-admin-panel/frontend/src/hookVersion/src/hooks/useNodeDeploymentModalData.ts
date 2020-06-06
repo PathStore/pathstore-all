@@ -1,6 +1,7 @@
 import {Deployment, Server, Update} from "../utilities/ApiDeclarations";
 import {useContext, useState} from "react";
 import {APIContext} from "../contexts/APIContext";
+import {useObjectAttachedSet} from "./useObjectAttachedSet";
 
 /**
  * This is the definition for {@link NodeDeploymentModalContextData}
@@ -42,19 +43,9 @@ export interface NodeDeploymentModalContextData {
     readonly additionNodeIdSet: Set<number>;
 
     /**
-     * Updates the above set
-     */
-    readonly updateAdditionNodeIdSet: (v: Set<number>) => void;
-
-    /**
      * Set of deletion nodes. This is for O(1) tc on the get colour function
      */
     readonly deletionNodeIdSet: Set<number>;
-
-    /**
-     * Updates the above set
-     */
-    readonly updateDeletionNodeIdSet: (v: Set<number>) => void;
 
     /**
      * Force refresh function used to force refresh {@link APIContext}
@@ -73,9 +64,9 @@ export function useNodeDeploymentModalData(): NodeDeploymentModalContextData {
 
     const [deletions, updateDeletions] = useState<Update[]>([]);
 
-    const [additionNodeIdSet, updateAdditionNodeIdSet] = useState<Set<number>>(new Set<number>());
+    const additionNodeIdSet = useObjectAttachedSet<Update, number>(additions, updateToNewNodeId);
 
-    const [deletionNodeIdSet, updateDeletionNodeIdSet] = useState<Set<number>>(new Set<number>());
+    const deletionNodeIdSet = useObjectAttachedSet<Update, number>(deletions, updateToNewNodeId);
 
     return {
         deployment: apiContext.deployment ? apiContext.deployment : [],
@@ -85,9 +76,9 @@ export function useNodeDeploymentModalData(): NodeDeploymentModalContextData {
         deletions: deletions,
         updateDeletions: updateDeletions,
         additionNodeIdSet: additionNodeIdSet,
-        updateAdditionNodeIdSet: updateAdditionNodeIdSet,
         deletionNodeIdSet: deletionNodeIdSet,
-        updateDeletionNodeIdSet: updateDeletionNodeIdSet,
         forceRefresh: apiContext.forceRefresh
     }
 }
+
+const updateToNewNodeId = (update: Update): number => update.newNodeId;
