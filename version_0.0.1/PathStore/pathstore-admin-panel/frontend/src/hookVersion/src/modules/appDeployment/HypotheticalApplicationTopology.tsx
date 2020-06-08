@@ -125,8 +125,10 @@ const deleteSubTree = (
     // Handle delete for sub tree
     deleteSubTreeHelper(additionsMap, deletionsMap, statusMap, deploymentMap, nodeToListOfChildren, application, node);
 
+    const submittedChildren = nodeToListOfChildren.get(node);
+
     // handle delete for requested node
-    handleDelete(additionsMap, deletionsMap, statusMap, application, node);
+    handleDelete(additionsMap, deletionsMap, statusMap, application, node, submittedChildren ? submittedChildren.map(i => i.new_node_id) : [-1]);
 
     return (
         {
@@ -152,7 +154,7 @@ const deleteSubTreeHelper = (
         if (children && !deletionsMap.has(node)) {
             for (let {new_node_id} of children) {
                 deleteSubTreeHelper(additionsMap, deletionsMap, statusMap, deploymentMap, nodeToListOfChildren, application, new_node_id);
-                handleDelete(additionsMap, deletionsMap, statusMap, application, new_node_id);
+                handleDelete(additionsMap, deletionsMap, statusMap, application, new_node_id, children.map(i => i.new_node_id));
             }
         }
     }
@@ -163,12 +165,13 @@ const handleDelete = (
     deletionsMap: Map<number, ApplicationUpdate>,
     statusMap: Map<number, ApplicationStatus>,
     application: Application,
-    node: number): void => {
+    node: number,
+    children: number[]): void => {
 
     if (additionsMap.has(node)) additionsMap.delete(node);
     else if (statusMap.has(node)) {
         if (statusMap.get(node)?.process_status === "INSTALLED")
-            deletionsMap.set(node, applicationUpdateFromInfo(application, node));
+            deletionsMap.set(node, applicationUpdateFromInfo(application, node, children.length > 0 ? children : [-1]));
         else
             throw new Error();
     }

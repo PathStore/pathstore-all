@@ -76,6 +76,7 @@ export interface DeploymentUpdate {
 export interface ApplicationUpdate {
     nodeId: number
     keyspaceName: string
+    waitFor: number[]
 }
 
 /**

@@ -44,18 +44,12 @@ public class ApiV1 {
     return new GetApplicationState().response();
   }
 
-  /** @return List of applications on the system */
-  @GetMapping(Endpoints.APPLICATIONS)
-  public ResponseEntity<String> getApplications() {
-    return new GetApplications().response();
-  }
-
   /**
    * deploy applications on the network
    *
    * @return {}
    */
-  @PostMapping(Endpoints.APPLICATIONS)
+  @PostMapping(Endpoints.APPLICATION_MANAGEMENT)
   public ResponseEntity<String> deployApplication(
       @RequestBody AddApplicationDeploymentRecordPayload payload) {
     return payload.hasErrors()
@@ -68,12 +62,18 @@ public class ApiV1 {
    *
    * @return {}
    */
-  @DeleteMapping(Endpoints.APPLICATIONS)
+  @DeleteMapping(Endpoints.APPLICATION_MANAGEMENT)
   public ResponseEntity<String> unDeployApplication(
       @RequestBody DeleteApplicationDeploymentRecordPayload payload) {
     return payload.hasErrors()
         ? new ValidityErrorFormatter(payload.getErrors()).format()
         : new UnDeployApplications(payload).response();
+  }
+
+  /** @return List of applications on the system */
+  @GetMapping(Endpoints.APPLICATIONS)
+  public ResponseEntity<String> getApplications() {
+    return new GetApplications().response();
   }
 
   /**

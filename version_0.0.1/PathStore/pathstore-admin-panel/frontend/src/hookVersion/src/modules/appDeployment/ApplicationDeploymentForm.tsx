@@ -139,7 +139,7 @@ const deployApplicationHelper = (
 
         if (parent && !statusMap.has(node) && !additionsMap.has(node)) {
             deployApplicationHelper(deploymentMap, statusMap, additionsMap, deletionsMap, application, parent);
-            additionsMap.set(node, applicationUpdateFromInfo(application, node));
+            additionsMap.set(node, applicationUpdateFromInfo(application, node, [parent]));
         }
     }
 };
@@ -149,12 +149,14 @@ const deployApplicationHelper = (
  *
  * @param application current application
  * @param node node id
+ * @param waitFor list to wait for
  */
-export const applicationUpdateFromInfo = (application: Application, node: number): ApplicationUpdate => {
+export const applicationUpdateFromInfo = (application: Application, node: number, waitFor: number[]): ApplicationUpdate => {
     return (
         {
             nodeId: node,
-            keyspaceName: application.keyspace_name
+            keyspaceName: application.keyspace_name,
+            waitFor: waitFor
         }
     );
 };
