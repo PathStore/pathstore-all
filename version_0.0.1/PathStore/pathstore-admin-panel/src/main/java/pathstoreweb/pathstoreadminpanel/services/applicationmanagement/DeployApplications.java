@@ -40,7 +40,7 @@ public class DeployApplications implements IService {
     for (ApplicationRecord record : this.payload.records) {
 
       Insert insert =
-          QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT)
+          QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS)
               .value(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, record.nodeId)
               .value(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, record.keyspaceName)
               .value(
