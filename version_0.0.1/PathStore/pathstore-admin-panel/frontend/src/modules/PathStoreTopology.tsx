@@ -69,11 +69,11 @@ function createTree(
 
     let children = [];
 
-    for (let i = 0; i < array.length; i++)
+    for (let d of array)
         if (parentId === -1) {
-            if (array[i].parent_node_id === parentId) return createTreeObject(array[i], array, get_colour, get_click);
+            if (d.parent_node_id === parentId) return createTreeObject(d, array, get_colour, get_click);
         } else {
-            if (array[i].parent_node_id === parentId) children.push(createTreeObject(array[i], array, get_colour, get_click));
+            if (d.parent_node_id === parentId) children.push(createTreeObject(d, array, get_colour, get_click));
         }
 
 

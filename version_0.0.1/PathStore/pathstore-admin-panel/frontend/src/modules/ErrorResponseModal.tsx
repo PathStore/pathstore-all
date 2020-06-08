@@ -1,42 +1,26 @@
-import React, {FunctionComponent} from "react";
-import {Error} from "../utilities/ApiDeclarations";
+import React, {FunctionComponent, useContext} from "react";
 import {Button} from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
-
-/**
- * Properties file for {@link ErrorResponseModal}
- */
-interface ErrorResponseModalProperties {
-    /**
-     * Whether to show the modal or not
-     */
-    readonly show: boolean
-
-    /**
-     * List of errors
-     */
-    readonly data: Error[]
-
-    /**
-     * Callback function to close modal
-     */
-    readonly callback: () => void
-}
+import {ErrorModalContext} from "../contexts/ErrorModalContext";
 
 /**
  * This component is used to parse and display an error message generated from the api (error code 400)
  *
- * @param props
  * @constructor
+ * @see ErrorModalContext
  */
-export const ErrorResponseModal: FunctionComponent<ErrorResponseModalProperties> = (props) => {
+export const ErrorResponseModal: FunctionComponent = () => {
+
+    const {visible, data, close} = useContext(ErrorModalContext);
+
     let message = "The following errors occured: ";
 
-    for (let i = 0; i < props.data.length; i++)
-        message += " " + (i + 1) + ". " + props.data[i].error;
+    if (data)
+        for (let [index, value] of data.entries())
+            message += " " + (index + 1) + ". " + value.error;
 
     return (
-        <Modal show={props.show}
+        <Modal show={visible}
                size='lg'
                centered
         >
@@ -47,7 +31,7 @@ export const ErrorResponseModal: FunctionComponent<ErrorResponseModalProperties>
                 <p>{message}</p>
             </Modal.Body>
             <Modal.Footer>
-                <Button onClick={props.callback}>close</Button>
+                <Button onClick={close}>close</Button>
             </Modal.Footer>
         </Modal>
     );

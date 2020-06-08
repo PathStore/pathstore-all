@@ -1,37 +1,29 @@
-import React, {FunctionComponent} from "react";
+import React, {FunctionComponent, useContext} from "react";
 import {Button, Modal} from "react-bootstrap";
+import {SubmissionErrorModalContext} from "../contexts/SubmissionErrorModalContext";
 
 /**
- * Properties definition for {@link SubmissionErrorModal}
- */
-interface SubmissionErrorModalProps {
-    /**
-     * Whether to show the modal or nit
-     */
-    readonly show: boolean;
-
-    /**
-     * Callback to parent component to flip show from true to false
-     */
-    readonly close: () => void;
-}
-
-/**
- * This component is used to inform the user of some error that has occurred during the submission of some form
- * @param props
+ * This component is used to display a submission error to the user
  * @constructor
  */
-export const SubmissionErrorModal: FunctionComponent<SubmissionErrorModalProps> = (props) =>
-    <Modal show={props.show}
-           size='lg'
-           centered>
-        <Modal.Header>
-            <Modal.Title>Submission Error Modal</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-            {props.children}
-        </Modal.Body>
-        <Modal.Footer>
-            <Button onClick={props.close}>Close</Button>
-        </Modal.Footer>
-    </Modal>;
+export const SubmissionErrorModal: FunctionComponent = () => {
+
+    // dereference context
+    const {visible, data, close} = useContext(SubmissionErrorModalContext);
+
+    return (
+        <Modal show={visible}
+               size='lg'
+               centered>
+            <Modal.Header>
+                <Modal.Title>Submission Error Modal</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <p>{data}</p>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button onClick={close}>Close</Button>
+            </Modal.Footer>
+        </Modal>
+    );
+};

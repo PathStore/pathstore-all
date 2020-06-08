@@ -14,6 +14,27 @@ export function webHandler<T>(response: { status: number; json: () => Promise<T>
 }
 
 /**
+ * This function is used to query from a url and store it in the state with the wait condition
+ *
+ * @param url url to query
+ * @param update function to update this with
+ */
+export function genericLoadFunctionWait<T extends unknown>(url: string, update: ((v: T[]) => void) | undefined): void {
+    if (update)
+        genericLoadFunctionBase<T>(url).then((response: T[]) => update(response));
+}
+
+/**
+ * This function is used to return an array of parsed object data from the api.
+ *
+ * @param url url to query
+ */
+function genericLoadFunctionBase <T extends unknown>(url: string): Promise<T[]> {
+    return fetch(url)
+        .then(response => response.json() as Promise<T[]>);
+}
+
+/**
  * Function to produce a map based on a single data set.
  *
  * @param keyFunc how to transform the key based on a given V

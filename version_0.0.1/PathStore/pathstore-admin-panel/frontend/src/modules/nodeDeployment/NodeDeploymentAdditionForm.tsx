@@ -1,190 +1,171 @@
-import React, {Component, RefObject} from "react";
-import {Deployment, Server, Update} from "../../utilities/ApiDeclarations";
+import React, {FunctionComponent, ReactElement, useCallback, useContext, useEffect, useRef, useState} from "react";
+import {NodeDeploymentModalDataContext} from "../../contexts/NodeDeploymentModalContext";
 import {Button, Form} from "react-bootstrap";
+import {SubmissionErrorModalContext} from "../../contexts/SubmissionErrorModalContext";
+import {Deployment, DEPLOYMENT_STATE, DeploymentUpdate} from "../../utilities/ApiDeclarations";
+import {createMap, identity} from "../../utilities/Utils";
 
 /**
- * Properties for {@link NodeDeploymentAdditionForm}
+ * This component is used to add a node to the hypothetical network
+ *
+ * @constructor
  */
-interface NodeDeploymentAdditionFormProperties {
-    /**
-     * List of deployment nodes from {@link NodeDeploymentModal}
-     */
-    readonly deployment: Deployment[]
+export const NodeDeploymentAdditionForm: FunctionComponent = () => {
+    // deference needed values from node deployment modal data
+    const {deployment, additions, deletions, servers, updateAdditions} = useContext(NodeDeploymentModalDataContext);
+
+    // submission error modal context
+    const submissionErrorModal = useContext(SubmissionErrorModalContext);
+
+    // reference to clear form on submission
+    const messageForm = useRef<HTMLFormElement>(null);
+
+    // node id set to represent all node ids in the hypothetical deployment
+    const [nodeIdSet, updateNodeIdSet] = useState<Set<number>>(new Set<number>());
+
+    // server uuid set to represent all server uuids used in the hypothetical deployment
+    const [serverUUIDSet, updateServerUUIDSet] = useState<Set<string>>(new Set<string>());
+
+    // store the form in the state as there may be no reason to render the form
+    const [form, updateForm] = useState<ReactElement | null>(null);
 
     /**
-     * List of server objects from the api
+     * Everytime deployment or additions is updated, update the internal nodeIdSet and serverUUIDSet to match
+     * those arrays
      */
-    readonly servers: Server[]
+    useEffect(() => {
+        if (deployment && additions) {
+            const serverUUIDLIst = deployment.map(i => i.server_uuid).concat(additions.map(i => i.serverUUID));
 
-    /**
-     * Addition function to add a node to the hypothetical network
-     */
-    readonly addition: (deployment: Deployment, update: Update) => void
-}
+            updateServerUUIDSet(new Set<string>(serverUUIDLIst));
 
-/**
- * State definition for {@link NodeDeploymentAdditionForm}
- */
-interface NodeDeploymentAdditionFormState {
-    /**
-     * Set of node id's from deployment
-     */
-    readonly deploymentNodeIdSet: Set<number>
+            const nodeIdList = deployment.map(i => i.new_node_id).concat(additions.map(i => i.newNodeId));
 
-    /**
-     * Set of server uuid's from deployment
-     */
-    readonly deploymentServerUUIDSet: Set<string>
-}
-
-/**
- * This component is a form that allows users to hypothetically add a node to the network
- */
-export default class NodeDeploymentAdditionForm
-    extends Component<NodeDeploymentAdditionFormProperties, NodeDeploymentAdditionFormState> {
-
-    /**
-     * Used to clear message form
-     */
-    private messageForm: RefObject<HTMLFormElement> = React.createRef();
-
-    /**
-     * Initializes state and props
-     *
-     * @param props
-     */
-    constructor(props: NodeDeploymentAdditionFormProperties) {
-        super(props);
-
-        this.state = {
-            deploymentNodeIdSet: new Set<number>(),
-            deploymentServerUUIDSet: new Set<string>()
+            updateNodeIdSet(new Set<number>(nodeIdList));
         }
-    }
+    }, [deployment, additions, updateServerUUIDSet, updateNodeIdSet]);
 
     /**
-     * This function will update the state on props change. As we have an internal state of sets of relevant information
-     * from the deployment object list. This is because we don't want to have all the searches be O(n)
-     *
-     * @param nextProps
-     * @param prevState
+     * This callback is used to parse the form data and to update the additions list with that data
      */
-    static getDerivedStateFromProps(nextProps: NodeDeploymentAdditionFormProperties, prevState: NodeDeploymentAdditionFormState) {
-        return {
-            deploymentNodeIdSet:
-                new Set<number>(
-                    nextProps.deployment
-                        .map(i => i.new_node_id)
-                ),
-            deploymentServerUUIDSet:
-                new Set<string>(
-                    nextProps.deployment
-                        .map(i => i.server_uuid)
-                )
-        }
-    }
-
-    /**
-     * Read all data from form and push that data to the topology array and the updates array. Also clear the form when finished
-     *
-     * @param event
-     */
-    onFormSubmit = (event: any): void => {
+    const onFormSubmit = useCallback((event: any): void => {
         event.preventDefault();
 
-        const parentId = parseInt(event.target.elements.parentId.value);
+        if (submissionErrorModal.show && additions && deletions && updateAdditions && deployment) {
 
-        const nodeId = parseInt(event.target.elements.nodeId.value);
+            const parentId = parseInt(event.target.elements.parentId.value);
 
-        if (!this.checkValidityOfInput(parentId, nodeId)) {
-            alert("You must entered a valid node id as the parent id and a unique node id as the new node id");
-            return;
-        }
+            const nodeId = parseInt(event.target.elements.nodeId.value);
 
-        const serverName = event.target.elements.serverName.value;
+            if ((!nodeIdSet.has(parentId) || nodeIdSet.has(nodeId))) {
+                submissionErrorModal.show("You must entered a valid node id as the parent id and a unique node id as the new node id");
+                return;
+            }
 
-        let serverUUID = null;
+            // If the parent node is in the process of removing cancel the submission
+            const deploymentMap: Map<number, Deployment>
+                = createMap<number, Deployment>(v => v.new_node_id, identity, deployment);
+            switch (deploymentMap.get(parentId)?.process_status) {
+                case DEPLOYMENT_STATE[DEPLOYMENT_STATE.PROCESSING_REMOVING]:
+                case DEPLOYMENT_STATE[DEPLOYMENT_STATE.REMOVING]:
+                case DEPLOYMENT_STATE[DEPLOYMENT_STATE.WAITING_REMOVAL]:
+                    submissionErrorModal.show("You cannot deploy a new node as a child to a node that is currently in the process of being removed");
+                    return;
+            }
 
-        for (let i = 0; i < this.props.servers.length; i++)
-            if (this.props.servers[i].name === serverName)
-                serverUUID = this.props.servers[i].server_uuid;
+            // if the node is queued for removal cancel the submission
+            const deletionsMap: Map<number, DeploymentUpdate> =
+                createMap<number, DeploymentUpdate>(v => v.newNodeId, identity, deletions);
+            if (deletionsMap.has(parentId)) {
+                submissionErrorModal.show("You cannot deploy a new node as a child to a node that is planned for deletions");
+                return;
+            }
 
-        if (serverUUID === null) {
-            alert("Unable to find the serverUUID from servername");
-            return;
-        }
+            const serverName = event.target.elements.serverName.value;
 
-        this.props.addition(
-            {
-                parent_node_id: parentId,
-                new_node_id: nodeId,
-                process_status: "WAITING_DEPLOYMENT",
-                server_uuid: serverUUID
-            },
-            {
+            let serverUUID = null;
+
+            if (servers) {
+                for (let server of servers)
+                    if (server.name === serverName)
+                        serverUUID = server.server_uuid;
+            }
+
+            if (serverUUID === null) {
+                submissionErrorModal.show("Unable to find the serverUUID from servername");
+                return;
+            }
+
+            updateAdditions(additions.concat({
                 parentId: parentId,
                 newNodeId: nodeId,
                 serverUUID: serverUUID
-            }
-        );
+            }));
 
-        this.messageForm.current?.reset();
-    };
-
-    /**
-     * This function ensures that the inputted parentId and nodeId are valid. As in
-     * the parent id exists already within the topology and the nodeId is unique
-     *
-     * @param parentId inputted parentNodeId
-     * @param nodeId inputted nodeId
-     */
-    checkValidityOfInput = (parentId: number, nodeId: number): boolean =>
-        this.state.deploymentNodeIdSet.has(parentId) && !this.state.deploymentNodeIdSet.has(nodeId);
-
+            messageForm.current?.reset();
+        }
+    }, [deployment, additions, deletions, servers, updateAdditions, nodeIdSet, messageForm, submissionErrorModal]);
 
     /**
-     * First gather all servers that are free (Not currently hosting another existing pathstore instance
-     * or are not in your hypothetical plan)
-     *
-     * Then if there are any free servers load the form for the user to use else inform them there are no
-     * free servers and they must create one to continue
-     *
-     * @returns {*}
+     * Everytime servers updates, generate a new form based on the information given and what the number
+     * of free servers are. If there are no free servers inform the user, if there are render the form.
+     * If the servers set is undefined render loading... to signify the api call is in progress
      */
-    render() {
-        const servers = [];
+    useEffect(() => {
 
-        for (let i = 0; i < this.props.servers.length; i++)
-            if (!this.state.deploymentServerUUIDSet.has(this.props.servers[i].server_uuid))
-                servers.push(
-                    <option key={i}>{this.props.servers[i].name}</option>
+        let value: ReactElement;
+
+        let freeServers = [];
+
+        if (servers) {
+            for (let [index, server] of servers.entries())
+                if (!serverUUIDSet.has(server.server_uuid))
+                    freeServers.push(
+                        <option key={index}>{server.name}</option>
+                    );
+            if (freeServers.length > 0) {
+                value = (
+                    <Form onSubmit={onFormSubmit} ref={messageForm}>
+                        <Form.Group controlId="parentId">
+                            <Form.Label>Parent Node Id</Form.Label>
+                            <Form.Control type="text" placeholder="Parent Id"/>
+                            <Form.Text className="text-muted">
+                                Must be an integer
+                            </Form.Text>
+                        </Form.Group>
+                        <Form.Group controlId="nodeId">
+                            <Form.Label>New Node Id</Form.Label>
+                            <Form.Control type="text" placeholder="New Node Id"/>
+                            <Form.Text className="text-muted">
+                                Must be an integer
+                            </Form.Text>
+                        </Form.Group>
+                        <Form.Group controlId="serverName">
+                            <Form.Control as="select">
+                                {freeServers}
+                            </Form.Control>
+                        </Form.Group>
+                        <Button variant="primary" type="submit">
+                            Submit
+                        </Button>
+                    </Form>
                 );
+            } else {
+                value = (
+                    <p>There are no free servers available, you need to add a server to add a node to the network</p>
+                );
+            }
+        } else {
+            value = (
+                <p>Loading...</p>
+            );
+        }
+        updateForm(value);
+    }, [servers, updateForm, serverUUIDSet, onFormSubmit]);
 
-        return servers.length > 0 ?
-            <Form onSubmit={this.onFormSubmit} ref={this.messageForm}>
-                <Form.Group controlId="parentId">
-                    <Form.Label>Parent Node Id</Form.Label>
-                    <Form.Control type="text" placeholder="Parent Id"/>
-                    <Form.Text className="text-muted">
-                        Must be an integer
-                    </Form.Text>
-                </Form.Group>
-                <Form.Group controlId="nodeId">
-                    <Form.Label>New Node Id</Form.Label>
-                    <Form.Control type="text" placeholder="New Node Id"/>
-                    <Form.Text className="text-muted">
-                        Must be an integer
-                    </Form.Text>
-                </Form.Group>
-                <Form.Group controlId="serverName">
-                    <Form.Control as="select">
-                        {servers}
-                    </Form.Control>
-                </Form.Group>
-                <Button variant="primary" type="submit">
-                    Submit
-                </Button>
-            </Form>
-            : <p>There are no free servers available, you need to add a server to add a node to the network</p>;
-    }
-}
+    return (
+        <>
+            {form}
+        </>
+    )
+};
