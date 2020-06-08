@@ -2,6 +2,7 @@ package pathstore.system.schemaFSM;
 
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
@@ -9,6 +10,7 @@ import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreThreadManager;
+import pathstore.common.QueryCache;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.PathStorePriviledgedCluster;
@@ -67,7 +69,8 @@ public class PathStoreSlaveSchemaServer implements Runnable {
         ProccessStatus currentStatus =
             ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
 
-        if (currentStatus != ProccessStatus.INSTALLING) continue;
+        if (currentStatus != ProccessStatus.INSTALLING && currentStatus != ProccessStatus.REMOVING)
+          continue;
 
         String keyspaceName = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
 
@@ -193,25 +196,29 @@ public class PathStoreSlaveSchemaServer implements Runnable {
   }
 
   /**
-   * Drops the keyspace if it exists then it updates node_schema that said keyspace is removed
+   * TODO: Force push data
+   *
+   * <p>Drops the keyspace if it exists then it updates node_schema that said keyspace is removed
    *
    * @param keyspace application to remove
    */
   private void remove_application(final String keyspace) {
+
+    // force push here
+
     SchemaInfo.getInstance().removeKeyspace(keyspace);
+    QueryCache.getInstance().remove(keyspace);
     PathStorePriviledgedCluster.getInstance()
         .connect()
         .execute("drop keyspace if exists " + keyspace);
 
-    Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-    update
+    Delete delete =
+        QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
+    delete
         .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, this.nodeId))
-        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace))
-        .with(
-            QueryBuilder.set(
-                Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, ProccessStatus.REMOVED.toString()));
+        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, keyspace));
 
-    this.session.execute(update);
+    this.session.execute(delete);
 
     logger.info("Application removed " + keyspace);
   }

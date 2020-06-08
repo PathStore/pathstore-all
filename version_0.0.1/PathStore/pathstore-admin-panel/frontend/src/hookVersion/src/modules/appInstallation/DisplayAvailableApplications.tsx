@@ -3,12 +3,12 @@ import {APIContext} from "../../contexts/APIContext";
 import {Table} from "react-bootstrap";
 import {ObjectRow} from "../../utilities/ObjectRow";
 import {Application} from "../../utilities/ApiDeclarations";
-import {LiveTransitionVisualModalContext} from "../../contexts/LiveTransitionVisualModalContext";
+import {ApplicationDeploymentModalContext} from "../../contexts/ApplicationDeploymentModalContext";
 
 /**
  * This component is used to show the user what application are available on the network.
  * If no applications are installed then it will inform them that none are installed.
- * You can click on each table row to load the LVTM for that given application to visually
+ * You can click on each table row to load the ADM for that given application to visually
  * watch the network transition through the states of application installation
  * @constructor
  */
@@ -20,16 +20,16 @@ export const DisplayAvailableApplications: FunctionComponent = () => {
     // internal state for the table or the message to inform the user that nothing is available
     const [table, setTable] = useState<ReactElement | HTMLParagraphElement | null>(null);
 
-    // LTVM context to load the modal on click of a given row
-    const liveTransitionVisualModal = useContext(LiveTransitionVisualModalContext);
+    // ADM context to load the modal on click of a given row
+    const applicationDeploymentModal = useContext(ApplicationDeploymentModalContext);
 
     /**
-     * On click function to load the LTVM for that given application
+     * On click function to load the ADM for that given application
      */
-    const onClick = useCallback((application: Application) => {
-        if (liveTransitionVisualModal.show)
-            liveTransitionVisualModal.show(application);
-    }, [liveTransitionVisualModal]);
+    const onRowClick = useCallback((application: Application) => {
+        if (applicationDeploymentModal.show)
+            applicationDeploymentModal.show(application);
+    }, [applicationDeploymentModal]);
 
     /**
      * This effect is used to update the table if the applications from the API context change i.e. someone loaded
@@ -46,7 +46,7 @@ export const DisplayAvailableApplications: FunctionComponent = () => {
             for (let i = 0; i < applications.length; i++) {
                 const current = applications[i];
                 tbody.push(
-                    <ObjectRow<Application> key={i} value={current} handleClick={onClick}>
+                    <ObjectRow<Application> key={i} value={current} handleClick={onRowClick}>
                         <td>{current.keyspace_name}</td>
                     </ObjectRow>
                 );
@@ -64,20 +64,20 @@ export const DisplayAvailableApplications: FunctionComponent = () => {
                     </tbody>
                 </Table>
             );
-        } else {
+        } else
             value = (
                 <p>No application are installed on the network</p>
             );
-        }
 
-        setTable(value)
-    }, [applications, setTable, onClick]);
+        setTable(value);
+    }, [applications, setTable, onRowClick]);
 
     // display the table
     return (
         <>
             <p>Available applications</p>
             {table}
+            <p>Click on a row to view / modify the installation of the given application</p>
         </>
     );
 };

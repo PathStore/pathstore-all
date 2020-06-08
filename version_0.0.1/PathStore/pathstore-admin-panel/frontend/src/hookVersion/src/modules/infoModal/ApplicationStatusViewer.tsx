@@ -1,7 +1,9 @@
-import React, {FunctionComponent, useContext} from "react";
+import React, {FunctionComponent, ReactElement, useCallback, useContext, useEffect, useState} from "react";
 import {Table} from "react-bootstrap";
 import {APIContext} from "../../contexts/APIContext";
 import {NodeInfoModalContext} from "../../contexts/NodeInfoModalContext";
+import {useReducedState} from "../../hooks/useReducedState";
+import {ApplicationStatus} from "../../utilities/ApiDeclarations";
 
 /**
  * This component is used to render a table to inform the user the current application statues for a desired set of nodes.
@@ -13,52 +15,81 @@ import {NodeInfoModalContext} from "../../contexts/NodeInfoModalContext";
  */
 export const ApplicationStatusViewer: FunctionComponent = () => {
 
+    // load the passed data from the node info modal context
     const {data} = useContext(NodeInfoModalContext);
 
-    let {applicationStatus} = useContext(APIContext);
+    // load application Status objects from the api
+    const {applicationStatus} = useContext(APIContext);
 
-    // If there are no application status's in the dataset inform the user about this instead of rendering an empty table
-    if (!data || !applicationStatus || applicationStatus.length === 0)
-        return (
-            <div>
-                <h2>Application Status Viewer</h2>
+    // Filter function to filter the application Status based on the passed node id
+    const filterApplicationStatus = useCallback(
+        (applicationStatus: ApplicationStatus) => applicationStatus.node_id === data?.node,
+        [data]);
+
+    // Reduce the application status info based on the node id of each record
+    const reducedApplicationStatus = useReducedState<ApplicationStatus>(applicationStatus, filterApplicationStatus);
+
+    // Store the value to be displayed in the internal state to not reload every tick.
+    const [table, setTable] = useState<ReactElement | null>(null);
+
+    /**
+     * This function is used to set the table value everytime data or the reduced application status list changes.
+     *
+     * If the reduced application status has a length of 0 then we inform the user that there are no applications installed
+     * on the given node. Else we display a table to inform them of what applications are installed or what their current
+     * process status is.
+     *
+     */
+    useEffect(() => {
+        let value: ReactElement;
+
+        if (!data || !reducedApplicationStatus || reducedApplicationStatus.length === 0)
+            value = (
                 <p>There are no application status records</p>
-            </div>
-        );
+            );
+        else {
+            let tBody = [];
 
-    let body = [];
+            // table body from the given data set
+            for (let i = 0; i < reducedApplicationStatus.length; i++) {
 
-    // table body from the given data set
-    for (let i = 0; i < applicationStatus.filter(i => i.node_id === data.node).length; i++) {
+                let currentObject = reducedApplicationStatus[i];
 
-        let currentObject = applicationStatus[i];
+                tBody.push(
+                    <tr key={i}>
+                        <td>{currentObject.node_id}</td>
+                        <td>{currentObject.keyspace_name}</td>
+                        <td>{currentObject.process_status}</td>
+                        <td>{currentObject.wait_for}</td>
+                    </tr>
+                );
+            }
 
-        body.push(
-            <tr>
-                <td>{currentObject.node_id}</td>
-                <td>{currentObject.keyspace_name}</td>
-                <td>{currentObject.process_status}</td>
-                <td>{currentObject.wait_for}</td>
-            </tr>
-        );
-    }
+            value = (
+                <Table>
+                    <thead>
+                    <tr>
+                        <th>Node Id</th>
+                        <th>Application</th>
+                        <th>Status</th>
+                        <th>Waiting</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {tBody}
+                    </tbody>
+                </Table>
+            );
+        }
+
+        setTable(value);
+
+    }, [data, reducedApplicationStatus, setTable]);
 
     return (
-        <div>
+        <>
             <h2>Application Status Viewer</h2>
-            <Table>
-                <thead>
-                <tr>
-                    <th>Nodeid</th>
-                    <th>Application</th>
-                    <th>Status</th>
-                    <th>Waiting</th>
-                </tr>
-                </thead>
-                <tbody>
-                {body}
-                </tbody>
-            </Table>
-        </div>
+            {table}
+        </>
     );
 };

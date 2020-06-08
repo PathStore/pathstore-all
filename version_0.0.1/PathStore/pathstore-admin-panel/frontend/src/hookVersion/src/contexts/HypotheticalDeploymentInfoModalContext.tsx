@@ -1,12 +1,12 @@
 import React, {createContext, FunctionComponent} from "react";
 import {ModalInfo, useModal} from "../hooks/useModal";
-import {HypotheticalInfoModal} from "../modules/nodeDeployment/HypotheticalInfoModal";
+import {HypotheticalDeploymentInfoModal} from "../modules/nodeDeployment/HypotheticalDeploymentInfoModal";
 import {SubmissionErrorModalProvider} from "./SubmissionErrorModalContext";
 
 /**
  * Definition of the hypothetical info modals show data
  */
-interface HypotheticalInfoModalContextData {
+interface HypotheticalDeploymentInfoModalContextData {
     /**
      * What node id was clicked
      */
@@ -21,7 +21,7 @@ interface HypotheticalInfoModalContextData {
 /**
  * Export the context to all components to use it
  */
-export const HypotheticalInfoModalContext = createContext<Partial<ModalInfo<HypotheticalInfoModalContextData>>>({});
+export const HypotheticalDeploymentInfoModalContext = createContext<Partial<ModalInfo<HypotheticalDeploymentInfoModalContextData>>>({});
 
 /**
  * Provider for the context, this needs to be wrapped around any component wishing to show this modal
@@ -29,10 +29,10 @@ export const HypotheticalInfoModalContext = createContext<Partial<ModalInfo<Hypo
  * @param props
  * @constructor
  */
-export const HypotheticalInfoModalProvider: FunctionComponent = (props) =>
-    <HypotheticalInfoModalContext.Provider value={useModal<HypotheticalInfoModalContextData>()}>
+export const HypotheticalDeploymentInfoModalProvider: FunctionComponent = (props) =>
+    <HypotheticalDeploymentInfoModalContext.Provider value={useModal<HypotheticalDeploymentInfoModalContextData>()}>
         <SubmissionErrorModalProvider>
-            <HypotheticalInfoModal/>
+            <HypotheticalDeploymentInfoModal/>
         </SubmissionErrorModalProvider>
         {props.children}
-    </HypotheticalInfoModalContext.Provider>;
+    </HypotheticalDeploymentInfoModalContext.Provider>;

@@ -5,15 +5,15 @@ import React, {
     useEffect,
     useState
 } from "react";
-import {Deployment, Error, Update} from "../../../../utilities/ApiDeclarations";
 import {Button} from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
-import {HypotheticalInfoModalContext} from "../../contexts/HypotheticalInfoModalContext";
-import {NodeDeploymentModalData} from "../../contexts/NodeDeploymentModalContext";
+import {HypotheticalDeploymentInfoModalContext} from "../../contexts/HypotheticalDeploymentInfoModalContext";
+import {NodeDeploymentModalDataContext} from "../../contexts/NodeDeploymentModalContext";
 import {getDeploymentObjects} from "./NodeDeploymentModal";
 import {ServerInfo} from "../modalShared/ServerInfo";
 import {SubmissionErrorModalContext} from "../../contexts/SubmissionErrorModalContext";
 import {createMap, identity} from "../../utilities/Utils";
+import {Deployment, DeploymentUpdate} from "../../utilities/ApiDeclarations";
 
 
 /**
@@ -22,15 +22,15 @@ import {createMap, identity} from "../../utilities/Utils";
  * @param props
  * @constructor
  */
-export const HypotheticalInfoModal: FunctionComponent = (props) => {
+export const HypotheticalDeploymentInfoModal: FunctionComponent = (props) => {
     // submission error modal context
     const submissionErrorModal = useContext(SubmissionErrorModalContext);
 
     // load visible, data and close from the associated context
-    const {visible, data, close} = useContext(HypotheticalInfoModalContext);
+    const {visible, data, close} = useContext(HypotheticalDeploymentInfoModalContext);
 
     // reference all needed data from the node deployment modal data contex
-    const {deployment, servers, additions, deletions, updateAdditions, updateDeletions} = useContext(NodeDeploymentModalData);
+    const {deployment, servers, additions, deletions, updateAdditions, updateDeletions} = useContext(NodeDeploymentModalDataContext);
 
     /** This state and effect are used to watch for updated deployment and additions objects to create the
      * same 'stitched' deployment object set.
@@ -106,12 +106,12 @@ export const HypotheticalInfoModal: FunctionComponent = (props) => {
  * @param deletions deletion objects from the internal state
  * @param node_number what node was click on for the info modal
  */
-const deleteSubTree = (deployment: Deployment[], additions: Update[], deletions: Update[], node_number: number):
-    { additions: Update[], deletions: Update[] } => {
+const deleteSubTree = (deployment: Deployment[], additions: DeploymentUpdate[], deletions: DeploymentUpdate[], node_number: number):
+    { additions: DeploymentUpdate[], deletions: DeploymentUpdate[] } => {
 
     const deploymentMap: Map<number, Deployment> = createMap<number, Deployment>(v => v.new_node_id, identity, deployment);
-    const additionMap: Map<number, Update> = createMap<number, Update>(v => v.newNodeId, identity, additions);
-    const deletionsMap: Map<number, Update> = createMap<number, Update>(v => v.newNodeId, identity, deletions);
+    const additionMap: Map<number, DeploymentUpdate> = createMap<number, DeploymentUpdate>(v => v.newNodeId, identity, additions);
+    const deletionsMap: Map<number, DeploymentUpdate> = createMap<number, DeploymentUpdate>(v => v.newNodeId, identity, deletions);
 
     const nodeToListOfChildren: Map<number, Deployment[]> = new Map<number, Deployment[]>();
 
@@ -147,7 +147,7 @@ const deleteSubTree = (deployment: Deployment[], additions: Update[], deletions:
  * @param deletionsMap newNodeId to deletions object
  * @param node node currently inspecting
  */
-const deleteSubTreeHelper = (deploymentMap: Map<number, Deployment>, nodeToListOfChildren: Map<number, Deployment[]>, additionMap: Map<number, Update>, deletionsMap: Map<number, Update>, node: number): void => {
+const deleteSubTreeHelper = (deploymentMap: Map<number, Deployment>, nodeToListOfChildren: Map<number, Deployment[]>, additionMap: Map<number, DeploymentUpdate>, deletionsMap: Map<number, DeploymentUpdate>, node: number): void => {
     if (nodeToListOfChildren.has(node)) {
 
         const children: Deployment[] | undefined = nodeToListOfChildren.get(node);
@@ -172,7 +172,7 @@ const deleteSubTreeHelper = (deploymentMap: Map<number, Deployment>, nodeToListO
  * @param deletionsMap map of newNodeId to deletion object
  * @param node node to handle
  */
-const handleDeletion = (deploymentMap: Map<number, Deployment>, updatesMap: Map<number, Update>, deletionsMap: Map<number, Update>, node: number): void => {
+const handleDeletion = (deploymentMap: Map<number, Deployment>, updatesMap: Map<number, DeploymentUpdate>, deletionsMap: Map<number, DeploymentUpdate>, node: number): void => {
     if (updatesMap.has(node)) {
         updatesMap.delete(node);
     } else {
@@ -191,7 +191,7 @@ const handleDeletion = (deploymentMap: Map<number, Deployment>, updatesMap: Map<
  *
  * @param deployment deployment object to produce an update object
  */
-const conversion = (deployment: Deployment | undefined): Update | undefined => {
+const conversion = (deployment: Deployment | undefined): DeploymentUpdate | undefined => {
     return deployment ? {
         newNodeId: deployment.new_node_id,
         parentId: deployment.parent_node_id,

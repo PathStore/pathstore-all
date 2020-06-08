@@ -1,8 +1,7 @@
 import React, {createContext, FunctionComponent} from "react";
 import {ModalInfo, useModal} from "../hooks/useModal";
 import {NodeDeploymentModal} from "../modules/nodeDeployment/NodeDeploymentModal";
-import {NodeDeploymentModalContextData, useNodeDeploymentModalData} from "../hooks/useNodeDeploymentModalData";
-import {HypotheticalInfoModalProvider} from "./HypotheticalInfoModalContext";
+import {NodeDeploymentModalData, useNodeDeploymentModalData} from "../hooks/useNodeDeploymentModalData";
 import {LoadingModalProvider} from "./LoadingModalContext";
 import {ErrorModalProvider} from "./ErrorModalContext";
 import {SubmissionErrorModalProvider} from "./SubmissionErrorModalContext";
@@ -11,7 +10,7 @@ import {SubmissionErrorModalProvider} from "./SubmissionErrorModalContext";
  * This context is used to store additional data not known at creation of the modal. This context
  * is used throughout all the components associated with the node deployment modal
  */
-export const NodeDeploymentModalData = createContext<Partial<NodeDeploymentModalContextData>>({});
+export const NodeDeploymentModalDataContext = createContext<Partial<NodeDeploymentModalData>>({});
 
 /**
  * Provider for the above context. This is private as it is only used around the node deployment modal provider
@@ -20,9 +19,9 @@ export const NodeDeploymentModalData = createContext<Partial<NodeDeploymentModal
  * @constructor
  */
 const NodeDeploymentModalDataProvider: FunctionComponent = (props) =>
-    <NodeDeploymentModalData.Provider value={useNodeDeploymentModalData()}>
+    <NodeDeploymentModalDataContext.Provider value={useNodeDeploymentModalData()}>
         {props.children}
-    </NodeDeploymentModalData.Provider>;
+    </NodeDeploymentModalDataContext.Provider>;
 
 /**
  * Context used for the node deployment modal information.
@@ -41,9 +40,7 @@ export const NodeDeploymentModalProvider: FunctionComponent = (props) =>
             <ErrorModalProvider>
                 <SubmissionErrorModalProvider>
                     <NodeDeploymentModalDataProvider>
-                        <HypotheticalInfoModalProvider>
                             <NodeDeploymentModal/>
-                        </HypotheticalInfoModalProvider>
                     </NodeDeploymentModalDataProvider>
                 </SubmissionErrorModalProvider>
             </ErrorModalProvider>

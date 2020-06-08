@@ -12,7 +12,9 @@ export function useObjectAttachedSet<T, U>(data: T[] | undefined, mapFunc: (v: T
     const [set, updateSet] = useState<Set<U>>(new Set<U>());
 
     // Update the set everytime the data dependency changes
-    useEffect(() => updateSet(new Set<U>(data ? data.filter(filterFunc ? filterFunc : identity).map(mapFunc) : null)), [data, mapFunc, filterFunc]);
+    useEffect(
+        () => updateSet(new Set<U>(data ? data.filter(filterFunc ? filterFunc : identity).map(mapFunc) : null)),
+        [data, mapFunc, filterFunc]);
 
     return set;
 }

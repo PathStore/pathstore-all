@@ -4,7 +4,7 @@ import {ApplicationCreation} from "./ApplicationCreation";
 import {LoadingModalProvider} from "../../contexts/LoadingModalContext";
 import {ErrorModalProvider} from "../../contexts/ErrorModalContext";
 import {SubmissionErrorModalProvider} from "../../contexts/SubmissionErrorModalContext";
-import {LiveTransitionVisualModalProvider} from "../../contexts/LiveTransitionVisualModalContext";
+import {ApplicationDeploymentModalProvider} from "../../contexts/ApplicationDeploymentModalContext";
 
 /**
  * This is the parent component of {@link ApplicationCreation} and {@link DisplayAvailableApplications}. This component
@@ -13,12 +13,12 @@ import {LiveTransitionVisualModalProvider} from "../../contexts/LiveTransitionVi
  * This component only requires the {@link APIContext} to run.
  * @constructor
  */
-export const ApplicationInstallation: FunctionComponent = () =>
+export const ApplicationManagement: FunctionComponent = () =>
     <>
-        <h2>Application Creation</h2>
-        <LiveTransitionVisualModalProvider>
+        <h2>Application Management</h2>
+        <ApplicationDeploymentModalProvider>
             <DisplayAvailableApplications/>
-        </LiveTransitionVisualModalProvider>
+        </ApplicationDeploymentModalProvider>
         <LoadingModalProvider>
             <ErrorModalProvider>
                 <SubmissionErrorModalProvider>

@@ -6,16 +6,20 @@ package pathstoreweb.pathstoreadminpanel.validator;
  */
 public final class ErrorConstants {
 
-  /**
-   * Validity errors for {@link
-   * pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.ModifyApplicationStatePayload}
-   */
-  public static final class MODIFY_APPLICATION_STATE_PAYLOAD {
-    public static final String WRONG_SUBMISSION_FORMAT =
-        "You must submit the fields: application_name and nodes";
-    public static final String APP_DOESNT_EXIST = "The application name you passed does not exist";
-    public static final String NODES_EMPTY = "You cannot pass an empty set of nodes";
-    public static final String NODES_DONT_EXIST = "You have passed a node that doesn't exist";
+  public static final class ADD_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD {
+    public static final String EMPTY = "You must pass at least one record";
+    public static final String TO_MANY_KEYSPACES =
+        "You can only pass one keyspace update per request";
+    public static final String INVALID_RECORD =
+        "Each record must reference a valid node id and it must not already have the given application installed on the node";
+  }
+
+  public static final class DELETE_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD {
+    public static final String EMPTY = ADD_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD.EMPTY;
+    public static final String TO_MANY_KEYSPACES =
+        ADD_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD.TO_MANY_KEYSPACES;
+    public static final String INVALID_RECORD =
+        "Each record must reference a valid node id and it must already have the given keyspace installed on it";
   }
 
   /**

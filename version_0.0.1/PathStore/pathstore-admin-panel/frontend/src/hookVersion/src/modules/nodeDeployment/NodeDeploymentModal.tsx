@@ -1,21 +1,20 @@
 import React, {FunctionComponent, useCallback, useContext} from "react";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
-import {AlignedDivs, Left, Right} from "../../utilities/AlignedDivs";
-import {NodeDeploymentModalContext, NodeDeploymentModalData} from "../../contexts/NodeDeploymentModalContext";
-import {Deployment, Update} from "../../utilities/ApiDeclarations";
-import {PathStoreTopology} from "../../../../modules/PathStoreTopology";
+import {NodeDeploymentModalContext, NodeDeploymentModalDataContext} from "../../contexts/NodeDeploymentModalContext";
+import {Deployment, DeploymentUpdate} from "../../utilities/ApiDeclarations";
 import {NodeDeploymentAdditionForm} from "./NodeDeploymentAdditionForm";
 import {DisplayServers} from "./DisplayServers";
 import {AddServers} from "./AddServers";
 import {LoadingModalContext, LoadingModalProvider} from "../../contexts/LoadingModalContext";
 import {ErrorModalContext, ErrorModalProvider} from "../../contexts/ErrorModalContext";
 import {ServerCreationResponseModalProvider} from "../../contexts/ServerCreationResponseModalContext";
-import {HypotheticalInfoModalContext} from "../../contexts/HypotheticalInfoModalContext";
+import {HypotheticalDeploymentInfoModalProvider} from "../../contexts/HypotheticalDeploymentInfoModalContext";
 import {webHandler} from "../../../../utilities/Utils";
 import {APIContext} from "../../contexts/APIContext";
 import {ModifyServerModalProvider} from "../../contexts/ModifyServerModalContext";
 import {SubmissionErrorModalContext, SubmissionErrorModalProvider} from "../../contexts/SubmissionErrorModalContext";
+import {HypotheticalDeploymentTopology} from "./HypotheticalDeploymentTopology";
 
 /**
  * TODO: Handle case where deployment objects change and there are conflicting addition records
@@ -41,47 +40,11 @@ export const NodeDeploymentModal: FunctionComponent = () => {
     // submission error modal context
     const submissionErrorModal = useContext(SubmissionErrorModalContext);
 
-    // Allows the hypothetical info modal to be used
-    const hypotheticalInfoModal = useContext(HypotheticalInfoModalContext);
-
     // NodeDeployment Context
-    const nodeDeploymentModalContext = useContext(NodeDeploymentModalContext);
+    const {visible, close} = useContext(NodeDeploymentModalContext);
 
     // Shared data between node deployment components
-    const {deployment, additions, updateAdditions, deletions, updateDeletions, additionNodeIdSet, deletionNodeIdSet} = useContext(NodeDeploymentModalData);
-
-    /**
-     * Graph colour function.
-     *
-     * If the node is in the addition set then the node is cyan
-     * If the node is in the deletion set then the node is red
-     * Else the node is grey
-     */
-    const getColour = useCallback((object: Deployment): string => {
-        if (!additionNodeIdSet || !deletionNodeIdSet) return 'not_set_node';
-        else {
-            return additionNodeIdSet.has(object.new_node_id) ?
-                'hypothetical'
-                :
-                deletionNodeIdSet.has(object.new_node_id) ?
-                    'uninstalled_node'
-                    :
-                    object.process_status === "DEPLOYED" ?
-                        'not_set_node'
-                        : 'waiting_node';
-        }
-    }, [additionNodeIdSet, deletionNodeIdSet]);
-
-    /**
-     * If any node is clicked render a hypothetical info modal with their information
-     */
-    const handleClick = useCallback((event: any, node: number): void => {
-        if (hypotheticalInfoModal.show && additionNodeIdSet)
-            hypotheticalInfoModal.show({
-                node: node,
-                isHypothetical: additionNodeIdSet.has(node)
-            });
-    }, [additionNodeIdSet, hypotheticalInfoModal]);
+    const {additions, updateAdditions, deletions, updateDeletions} = useContext(NodeDeploymentModalDataContext);
 
     /**
      * This callback is called when the user clicks the reset button. This function wipes all non-submitted data
@@ -121,9 +84,9 @@ export const NodeDeploymentModal: FunctionComponent = () => {
                         if (additions.length === 0)
                             resetChanges();
 
-                        if (forceRefresh && nodeDeploymentModalContext.close) {
+                        if (forceRefresh && close) {
                             forceRefresh();
-                            nodeDeploymentModalContext.close();
+                            close();
                         }
                     })
                     .catch(errorModal.show)
@@ -144,51 +107,41 @@ export const NodeDeploymentModal: FunctionComponent = () => {
                     .then(() => {
                         resetChanges();
 
-                        if (forceRefresh && nodeDeploymentModalContext.close) {
+                        if (forceRefresh && close) {
                             forceRefresh();
-                            nodeDeploymentModalContext.close();
+                            close();
                         }
                     })
                     .catch(errorModal.show)
                     .finally(loadingModal.close);
         }
-    }, [additions, deletions, forceRefresh, loadingModal, errorModal.show, nodeDeploymentModalContext, submissionErrorModal, resetChanges]);
+    }, [additions, deletions, forceRefresh, loadingModal, errorModal.show, close, submissionErrorModal, resetChanges]);
 
     return (
-        <Modal show={nodeDeploymentModalContext.visible}
+        <Modal show={visible}
                size={"xl"}
                centered>
             <Modal.Header>
                 <Modal.Title>Node Deployment</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <AlignedDivs>
-                    <Left width='35%'>
-                        <h2>Topology Legend</h2>
-                        <br/>
-                        <p>Deployed Node: <span className={'d_currentLine'}>Light Grey</span></p>
-                        <p>Hypothetical Node: <span className={'d_cyan'}>Cyan</span></p>
-                        <p>Hypothetical Deletion: <span className={'d_red'}>Red</span></p>
-                    </Left>
-                    <Right>
-                        <h2>Hypothetical Topology</h2>
-                        <PathStoreTopology width={700}
-                                           height={500}
-                                           deployment={getDeploymentObjects(deployment, additions)}
-                                           get_colour={getColour}
-                                           get_click={handleClick}
-                        />
+                {/* Topology of the hypothetical network */}
+                <HypotheticalDeploymentInfoModalProvider>
+                    <HypotheticalDeploymentTopology>
                         <Button onClick={resetChanges}>Reset to default</Button>
-                    </Right>
-                </AlignedDivs>
+                    </HypotheticalDeploymentTopology>
+                </HypotheticalDeploymentInfoModalProvider>
+                {/* Addition form, allows users to make changes to the hypothetical network */}
                 <SubmissionErrorModalProvider>
                     <NodeDeploymentAdditionForm/>
                 </SubmissionErrorModalProvider>
                 <hr/>
+                {/* Display all servers to the user */}
                 <ModifyServerModalProvider>
                     <DisplayServers/>
                 </ModifyServerModalProvider>
                 <hr/>
+                {/* Allows the user to add servers to the network */}
                 <LoadingModalProvider>
                     <ErrorModalProvider>
                         <ServerCreationResponseModalProvider>
@@ -199,7 +152,7 @@ export const NodeDeploymentModal: FunctionComponent = () => {
             </Modal.Body>
             <Modal.Footer>
                 <Button onClick={submit}>Submit changes</Button>
-                <Button onClick={nodeDeploymentModalContext.close}>Close</Button>
+                <Button onClick={close}>Close</Button>
             </Modal.Footer>
         </Modal>
     );
@@ -212,7 +165,7 @@ export const NodeDeploymentModal: FunctionComponent = () => {
  * @param deployment deployment objects from api
  * @param additions addition objects generated by the user {@link NodeDeploymentAdditionForm}
  */
-export const getDeploymentObjects = (deployment: Deployment[] | undefined, additions: Update[] | undefined): Deployment[] => {
+export const getDeploymentObjects = (deployment: Deployment[] | undefined, additions: DeploymentUpdate[] | undefined): Deployment[] => {
     if (!deployment || !additions) return [];
 
     return deployment

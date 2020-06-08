@@ -4,10 +4,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pathstoreweb.pathstoreadminpanel.Endpoints;
 import pathstoreweb.pathstoreadminpanel.services.ValidityErrorFormatter;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.DeployApplications;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.GetApplicationState;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.InstallApplication;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.UnInstallApplication;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.ModifyApplicationStatePayload;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.UnDeployApplications;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.AddApplicationDeploymentRecordPayload;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.DeleteApplicationDeploymentRecordPayload;
 import pathstoreweb.pathstoreadminpanel.services.applications.AddApplication;
 import pathstoreweb.pathstoreadminpanel.services.applications.GetApplications;
 import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
@@ -43,34 +44,36 @@ public class ApiV1 {
     return new GetApplicationState().response();
   }
 
-  /**
-   * @param modifyApplicationStatePayload {@link ModifyApplicationStatePayload}
-   * @return response
-   */
-  @PostMapping(Endpoints.APPLICATION_MANAGEMENT)
-  public ResponseEntity<String> applicationManagementInstall(
-      final ModifyApplicationStatePayload modifyApplicationStatePayload) {
-    return modifyApplicationStatePayload.hasErrors()
-        ? new ValidityErrorFormatter(modifyApplicationStatePayload.getErrors()).format()
-        : new InstallApplication(modifyApplicationStatePayload).response();
-  }
-
-  /**
-   * @param modifyApplicationStatePayload {@link ModifyApplicationStatePayload}
-   * @return response
-   */
-  @DeleteMapping(Endpoints.APPLICATION_MANAGEMENT)
-  public ResponseEntity<String> applicationManagementRemove(
-      final ModifyApplicationStatePayload modifyApplicationStatePayload) {
-    return modifyApplicationStatePayload.hasErrors()
-        ? new ValidityErrorFormatter(modifyApplicationStatePayload.getErrors()).format()
-        : new UnInstallApplication(modifyApplicationStatePayload).response();
-  }
-
   /** @return List of applications on the system */
   @GetMapping(Endpoints.APPLICATIONS)
   public ResponseEntity<String> getApplications() {
     return new GetApplications().response();
+  }
+
+  /**
+   * deploy applications on the network
+   *
+   * @return {}
+   */
+  @PostMapping(Endpoints.APPLICATIONS)
+  public ResponseEntity<String> deployApplication(
+      @RequestBody AddApplicationDeploymentRecordPayload payload) {
+    return payload.hasErrors()
+        ? new ValidityErrorFormatter(payload.getErrors()).format()
+        : new DeployApplications(payload).response();
+  }
+
+  /**
+   * un-deploy applications on the network
+   *
+   * @return {}
+   */
+  @DeleteMapping(Endpoints.APPLICATIONS)
+  public ResponseEntity<String> unDeployApplication(
+      @RequestBody DeleteApplicationDeploymentRecordPayload payload) {
+    return payload.hasErrors()
+        ? new ValidityErrorFormatter(payload.getErrors()).format()
+        : new UnDeployApplications(payload).response();
   }
 
   /**

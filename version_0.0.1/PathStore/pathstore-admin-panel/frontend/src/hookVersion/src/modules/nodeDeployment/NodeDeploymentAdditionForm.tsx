@@ -1,7 +1,9 @@
 import React, {FunctionComponent, ReactElement, useCallback, useContext, useEffect, useRef, useState} from "react";
-import {NodeDeploymentModalData} from "../../contexts/NodeDeploymentModalContext";
+import {NodeDeploymentModalDataContext} from "../../contexts/NodeDeploymentModalContext";
 import {Button, Form} from "react-bootstrap";
 import {SubmissionErrorModalContext} from "../../contexts/SubmissionErrorModalContext";
+import {DeploymentUpdate} from "../../utilities/ApiDeclarations";
+import {createMap, identity} from "../../utilities/Utils";
 
 /**
  * This component is used to add a node to the hypothetical network
@@ -10,7 +12,7 @@ import {SubmissionErrorModalContext} from "../../contexts/SubmissionErrorModalCo
  */
 export const NodeDeploymentAdditionForm: FunctionComponent = () => {
     // deference needed values from node deployment modal data
-    const {deployment, additions, servers, updateAdditions} = useContext(NodeDeploymentModalData);
+    const {deployment, additions, deletions, servers, updateAdditions} = useContext(NodeDeploymentModalDataContext);
 
     // submission error modal context
     const submissionErrorModal = useContext(SubmissionErrorModalContext);
@@ -24,8 +26,8 @@ export const NodeDeploymentAdditionForm: FunctionComponent = () => {
     // server uuid set to represent all server uuids used in the hypothetical deployment
     const [serverUUIDSet, updateServerUUIDSet] = useState<Set<string>>(new Set<string>());
 
-    // state to store the servers to show in the table
-    const [freeServers, updateFreeServers] = useState<ReactElement[]>([]);
+    // store the form in the state as there may be no reason to render the form
+    const [form, updateForm] = useState<ReactElement | null>(null);
 
     /**
      * Everytime deployment or additions is updated, update the internal nodeIdSet and serverUUIDSet to match
@@ -41,23 +43,7 @@ export const NodeDeploymentAdditionForm: FunctionComponent = () => {
 
             updateNodeIdSet(new Set<number>(nodeIdList));
         }
-    }, [deployment, additions]);
-
-    /**
-     * Everytime servers or update free servers changes update the servers to display on the page
-     */
-    useEffect(() => {
-        let temp = [];
-
-        if (servers) {
-            for (let i = 0; i < servers.length; i++)
-                if (!serverUUIDSet.has(servers[i].server_uuid))
-                    temp.push(
-                        <option key={i}>{servers[i].name}</option>
-                    );
-            updateFreeServers(temp);
-        }
-    }, [servers, updateFreeServers, serverUUIDSet]);
+    }, [deployment, additions, updateServerUUIDSet, updateNodeIdSet]);
 
     /**
      * This callback is used to parse the form data and to update the additions list with that data
@@ -65,7 +51,7 @@ export const NodeDeploymentAdditionForm: FunctionComponent = () => {
     const onFormSubmit = useCallback((event: any): void => {
         event.preventDefault();
 
-        if (submissionErrorModal.show && additions && updateAdditions) {
+        if (submissionErrorModal.show && additions && deletions && updateAdditions) {
 
             const parentId = parseInt(event.target.elements.parentId.value);
 
@@ -73,6 +59,14 @@ export const NodeDeploymentAdditionForm: FunctionComponent = () => {
 
             if ((!nodeIdSet.has(parentId) || nodeIdSet.has(nodeId))) {
                 submissionErrorModal.show("You must entered a valid node id as the parent id and a unique node id as the new node id");
+                return;
+            }
+
+            const deletionsMap: Map<number, DeploymentUpdate> =
+                createMap<number, DeploymentUpdate>(v => v.newNodeId, identity, deletions);
+
+            if (deletionsMap.has(parentId)) {
+                submissionErrorModal.show("You cannot deploy a new node as a child to a node that is planned for deletions");
                 return;
             }
 
@@ -99,32 +93,68 @@ export const NodeDeploymentAdditionForm: FunctionComponent = () => {
 
             messageForm.current?.reset();
         }
-    }, [additions, servers, updateAdditions, nodeIdSet, messageForm, submissionErrorModal]);
+    }, [additions, deletions, servers, updateAdditions, nodeIdSet, messageForm, submissionErrorModal]);
 
-    return freeServers.length > 0 ?
-        <Form onSubmit={onFormSubmit} ref={messageForm}>
-            <Form.Group controlId="parentId">
-                <Form.Label>Parent Node Id</Form.Label>
-                <Form.Control type="text" placeholder="Parent Id"/>
-                <Form.Text className="text-muted">
-                    Must be an integer
-                </Form.Text>
-            </Form.Group>
-            <Form.Group controlId="nodeId">
-                <Form.Label>New Node Id</Form.Label>
-                <Form.Control type="text" placeholder="New Node Id"/>
-                <Form.Text className="text-muted">
-                    Must be an integer
-                </Form.Text>
-            </Form.Group>
-            <Form.Group controlId="serverName">
-                <Form.Control as="select">
-                    {freeServers}
-                </Form.Control>
-            </Form.Group>
-            <Button variant="primary" type="submit">
-                Submit
-            </Button>
-        </Form>
-        : <p>There are no free servers available, you need to add a server to add a node to the network</p>;
+    /**
+     * Everytime servers updates, generate a new form based on the information given and what the number
+     * of free servers are. If there are no free servers inform the user, if there are render the form.
+     * If the servers set is undefined render loading... to signify the api call is in progress
+     */
+    useEffect(() => {
+
+        let value: ReactElement;
+
+        let freeServers = [];
+
+        if (servers) {
+            for (let i = 0; i < servers.length; i++)
+                if (!serverUUIDSet.has(servers[i].server_uuid))
+                    freeServers.push(
+                        <option key={i}>{servers[i].name}</option>
+                    );
+            if (freeServers.length > 0) {
+                value = (
+                    <Form onSubmit={onFormSubmit} ref={messageForm}>
+                        <Form.Group controlId="parentId">
+                            <Form.Label>Parent Node Id</Form.Label>
+                            <Form.Control type="text" placeholder="Parent Id"/>
+                            <Form.Text className="text-muted">
+                                Must be an integer
+                            </Form.Text>
+                        </Form.Group>
+                        <Form.Group controlId="nodeId">
+                            <Form.Label>New Node Id</Form.Label>
+                            <Form.Control type="text" placeholder="New Node Id"/>
+                            <Form.Text className="text-muted">
+                                Must be an integer
+                            </Form.Text>
+                        </Form.Group>
+                        <Form.Group controlId="serverName">
+                            <Form.Control as="select">
+                                {freeServers}
+                            </Form.Control>
+                        </Form.Group>
+                        <Button variant="primary" type="submit">
+                            Submit
+                        </Button>
+                    </Form>
+                );
+            } else {
+                value = (
+                    <p>There are no free servers available, you need to add a server to add a node to the network</p>
+                );
+            }
+        } else {
+            value = (
+                <p>Loading...</p>
+            );
+        }
+        updateForm(value);
+    }, [servers, updateForm, serverUUIDSet, onFormSubmit]);
+
+    return (
+        <>
+            {form}
+        </>
+    )
 };

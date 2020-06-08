@@ -54,7 +54,7 @@ interface PathStoreControlPanelState {
  *          - ServerCreationResponseModal
  *      - DisplayServers
  * LiveTransitionVisual
- *  - LiveTransitionVisualModal
+ *  - ApplicationDeploymentModal
  * DisplayAvailableApplications
  * ApplicationCreation
  *  - ApplicationCreationResponseModal

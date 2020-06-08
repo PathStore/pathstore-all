@@ -1,9 +1,9 @@
 import React, {FunctionComponent, ReactElement, useCallback, useContext, useEffect, useState} from "react";
-import {Server} from "../../../../utilities/ApiDeclarations";
 import {Table} from "react-bootstrap";
-import {NodeDeploymentModalData} from "../../contexts/NodeDeploymentModalContext";
+import {NodeDeploymentModalDataContext} from "../../contexts/NodeDeploymentModalContext";
 import {ModifyServerModalContext} from "../../contexts/ModifyServerModalContext";
 import {ObjectRow} from "../../utilities/ObjectRow";
+import {Server} from "../../utilities/ApiDeclarations";
 
 /**
  * This component is used to display a list of servers to the node deployment modal.
@@ -14,7 +14,7 @@ import {ObjectRow} from "../../utilities/ObjectRow";
 export const DisplayServers: FunctionComponent = () => {
 
     // load servers from the node deployment modal data
-    const {deployment, servers, additions} = useContext(NodeDeploymentModalData);
+    const {deployment, servers, additions} = useContext(NodeDeploymentModalDataContext);
 
     // Modify server reference to load the modal when a record is clicked
     const modifyServerModal = useContext(ModifyServerModalContext);
@@ -58,7 +58,7 @@ export const DisplayServers: FunctionComponent = () => {
     }, [servers, updateTbody, handleClick]);
 
     return (
-        <div>
+        <>
             <h2>Servers</h2>
             <Table>
                 <thead>
@@ -76,6 +76,6 @@ export const DisplayServers: FunctionComponent = () => {
                 </tbody>
             </Table>
             <p>Click on a free server record to modify it</p>
-        </div>
+        </>
     );
 };

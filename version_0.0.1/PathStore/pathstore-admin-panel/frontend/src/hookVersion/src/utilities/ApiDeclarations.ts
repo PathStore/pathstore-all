@@ -64,10 +64,18 @@ export interface Log {
 /**
  * Way to format response on deployment update
  */
-export interface Update {
+export interface DeploymentUpdate {
     parentId: number
     newNodeId: number
     serverUUID: string
+}
+
+/**
+ * Way to form response on application update
+ */
+export interface ApplicationUpdate {
+    nodeId: number
+    keyspaceName: string
 }
 
 /**
