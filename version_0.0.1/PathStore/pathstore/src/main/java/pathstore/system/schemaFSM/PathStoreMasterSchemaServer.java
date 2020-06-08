@@ -158,11 +158,8 @@ public class PathStoreMasterSchemaServer implements Runnable {
 
     logger.info(
         String.format(
-            "%s node %d to %s for keyspace %s",
-            proccessStatus.toString(),
-            entry.nodeId,
-            ProccessStatus.INSTALLING,
-            entry.keyspaceName));
+            "%s node %d for keyspace %s",
+            proccessStatus.toString(), entry.nodeId, entry.keyspaceName));
 
     Update transitionUpdate =
         QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
@@ -171,8 +168,7 @@ public class PathStoreMasterSchemaServer implements Runnable {
         .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, entry.keyspaceName))
         .with(
             QueryBuilder.set(
-                Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
-                ProccessStatus.INSTALLING.toString()));
+                Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, proccessStatus.toString()));
 
     this.session.execute(transitionUpdate);
   }
