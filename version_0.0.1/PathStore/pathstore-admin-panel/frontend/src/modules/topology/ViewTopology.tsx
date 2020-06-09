@@ -3,7 +3,7 @@ import {APIContext} from "../../contexts/APIContext";
 import {PathStoreTopology} from "../PathStoreTopology";
 import {Deployment, DEPLOYMENT_STATE} from "../../utilities/ApiDeclarations";
 import {AlignedDivs, Left, Right} from "../../utilities/AlignedDivs";
-import {getNodeInfoModalData, NodeInfoModalContext} from "../../contexts/NodeInfoModalContext";
+import {NodeInfoModalContext} from "../../contexts/NodeInfoModalContext";
 
 /**
  * This component is used to display the current topology of the network
@@ -14,7 +14,7 @@ import {getNodeInfoModalData, NodeInfoModalContext} from "../../contexts/NodeInf
 export const ViewTopology: FunctionComponent = () => {
 
     /* api context for generating the node info modal data */
-    const apiContext = useContext(APIContext);
+    const {deployment} = useContext(APIContext);
 
     /* Shows the info modal when the user clicks on a node in the topology */
     const nodeInfoModal = useContext(NodeInfoModalContext);
@@ -25,24 +25,24 @@ export const ViewTopology: FunctionComponent = () => {
     /* Callback function used to handle the click of a node */
     const handleClick = useCallback((event: any, node: number) => {
         if (nodeInfoModal && nodeInfoModal.show)
-            nodeInfoModal.show(getNodeInfoModalData(apiContext, node));
+            nodeInfoModal.show(node);
 
-    }, [nodeInfoModal, apiContext]);
+    }, [nodeInfoModal]);
 
     /**
      * When the deployment records update re-create the tree
      */
     useEffect(() => updateTree(
-        apiContext && apiContext.deployment ?
+        deployment ?
             <PathStoreTopology width={1200}
                                height={500}
-                               deployment={apiContext.deployment}
+                               deployment={deployment}
                                get_colour={getClassName}
                                get_click={handleClick}
             />
             :
             null
-    ), [apiContext, handleClick]);
+    ), [deployment, handleClick]);
 
     /* Render the legend and the tree */
     return (

@@ -23,7 +23,7 @@ export const ApplicationStatusViewer: FunctionComponent = () => {
 
     // Filter function to filter the application Status based on the passed node id
     const filterApplicationStatus = useCallback(
-        (applicationStatus: ApplicationStatus) => applicationStatus.node_id === data?.node,
+        (applicationStatus: ApplicationStatus) => applicationStatus.node_id === data,
         [data]);
 
     // Reduce the application status info based on the node id of each record

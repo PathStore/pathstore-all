@@ -5,12 +5,17 @@ import {NodeInfoModalContext} from "../../contexts/NodeInfoModalContext";
 import {LoadingModalContext} from "../../contexts/LoadingModalContext";
 import {ErrorModalContext} from "../../contexts/ErrorModalContext";
 import {webHandler} from "../../utilities/Utils";
+import {APIContext} from "../../contexts/APIContext";
 
 /**
  * This component is used to display logs to the user based on their request
  * @constructor
  */
 export const LogViewer: FunctionComponent = () => {
+
+    // load available log dates from api context
+    const {availableLogDates} = useContext(APIContext);
+
     // Load the node id from the node info modal context
     const {data} = useContext(NodeInfoModalContext);
 
@@ -33,7 +38,7 @@ export const LogViewer: FunctionComponent = () => {
 
             const log_level = event.target.elements.log_level.value.trim();
 
-            const url = '/api/v1/logs?node_id=' + data?.node + "&date=" + date + "&log_level=" + log_level;
+            const url = '/api/v1/logs?node_id=' + data + "&date=" + date + "&log_level=" + log_level;
 
             // show loading
             loadingModal.show();
@@ -53,7 +58,7 @@ export const LogViewer: FunctionComponent = () => {
 
     return (
         <>
-            {formatForm(data?.availableLogDates, data?.node, onFormSubmit)}
+            {formatForm(availableLogDates, data, onFormSubmit)}
             <br/>
             {formatLog(log)}
         </>

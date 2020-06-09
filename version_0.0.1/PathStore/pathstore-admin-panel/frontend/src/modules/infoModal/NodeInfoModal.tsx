@@ -9,6 +9,7 @@ import {ErrorModalContext} from "../../contexts/ErrorModalContext";
 import {LoadingModalContext} from "../../contexts/LoadingModalContext";
 import {Deployment, DeploymentUpdate, DEPLOYMENT_STATE} from "../../utilities/ApiDeclarations";
 import {webHandler} from "../../utilities/Utils";
+import {APIContext} from "../../contexts/APIContext";
 
 /**
  * This component is used to display information in the main viewtopology about a given node.
@@ -18,6 +19,10 @@ import {webHandler} from "../../utilities/Utils";
  * @constructor
  */
 export const NodeInfoModal: FunctionComponent = () => {
+
+    // load data from api context
+    const {deployment, servers, forceRefresh} = useContext(APIContext);
+
     // declare loading modal usage
     const loadingModal = useContext(LoadingModalContext);
 
@@ -39,19 +44,19 @@ export const NodeInfoModal: FunctionComponent = () => {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({record: retryData(data?.deployment, data?.node)})
+                body: JSON.stringify({record: retryData(deployment, data)})
             })
                 .then(webHandler)
                 .then(() => {
                     if (close)
                         close();
-                    if (data?.forceRefresh)
-                        data?.forceRefresh()
+                    if (forceRefresh)
+                        forceRefresh();
                 })
                 .catch(errorModal.show)
                 .finally(loadingModal.close);
         }
-    }, [data, errorModal, loadingModal, close]);
+    }, [data, errorModal, loadingModal, close, deployment, forceRefresh]);
 
     return (
         <Modal show={visible}
@@ -62,13 +67,13 @@ export const NodeInfoModal: FunctionComponent = () => {
                 <Modal.Title>Node Info Modal</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <ServerInfo deployment={data?.deployment} servers={data?.servers} node={data?.node}/>
+                <ServerInfo deployment={deployment} servers={servers} node={data}/>
                 <hr/>
                 <ApplicationStatusViewer/>
                 <LogViewer/>
             </Modal.Body>
             <Modal.Footer>
-                {retryButton(data?.deployment, data?.node, retryOnClick)}
+                {retryButton(deployment, data, retryOnClick)}
                 <Button onClick={close}>close</Button>
             </Modal.Footer>
         </Modal>
