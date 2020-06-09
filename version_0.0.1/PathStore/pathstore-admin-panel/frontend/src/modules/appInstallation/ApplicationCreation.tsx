@@ -5,7 +5,6 @@ import {LoadingModalContext} from "../../contexts/LoadingModalContext";
 import {ErrorModalContext} from "../../contexts/ErrorModalContext";
 import {SubmissionErrorModalContext} from "../../contexts/SubmissionErrorModalContext";
 import {webHandler} from "../../utilities/Utils";
-import {ApplicationCreationSuccess} from "../../utilities/ApiDeclarations";
 
 /**
  * This component is used to load an application into the network. This component must be used before deploying an application
@@ -62,8 +61,7 @@ export const ApplicationCreation: FunctionComponent = () => {
                     body: formData
                 })
                     .then(webHandler)
-                    .then((response: ApplicationCreationSuccess) => {
-                        alert(response.keyspace_created);
+                    .then(() => {
                         if (formRef.current)
                             formRef.current.reset();
                         if (forceRefresh)
