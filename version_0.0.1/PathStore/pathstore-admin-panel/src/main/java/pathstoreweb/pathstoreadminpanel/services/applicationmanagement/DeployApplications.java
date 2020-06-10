@@ -12,6 +12,8 @@ import pathstore.system.schemaFSM.ProccessStatus;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.AddApplicationDeploymentRecordPayload;
 
+import java.util.LinkedList;
+
 /**
  * This services writes all validated records to the table which will cause pathstore to install
  * application on a subtree of the network
@@ -46,7 +48,7 @@ public class DeployApplications implements IService {
               .value(
                   Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
                   ProccessStatus.WAITING_INSTALL.toString())
-              .value(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, record.waitFor);
+              .value(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, new LinkedList<>(record.waitFor));
 
       session.execute(insert);
     }

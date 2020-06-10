@@ -12,6 +12,8 @@ import pathstore.system.schemaFSM.ProccessStatus;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.DeleteApplicationDeploymentRecordPayload;
 
+import java.util.LinkedList;
+
 /** This service is used to queue applications for removal from the network */
 public class UnDeployApplications implements IService {
 
@@ -46,7 +48,7 @@ public class UnDeployApplications implements IService {
               .value(
                   Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
                   ProccessStatus.WAITING_REMOVE.toString())
-              .value(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, record.waitFor);
+              .value(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, new LinkedList<>(record.waitFor));
 
       session.execute(insert);
     }
