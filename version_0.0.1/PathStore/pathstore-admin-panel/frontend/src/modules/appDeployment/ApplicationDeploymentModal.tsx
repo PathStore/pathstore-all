@@ -105,6 +105,33 @@ export const ApplicationDeploymentModal: FunctionComponent = () => {
     // load the modal information from the modal context
     const {visible, close} = useContext(ApplicationDeploymentModalContext);
 
+    /**
+     * This callback is used to delete the given application from the network.
+     */
+    const deleteApplication = useCallback(() => {
+        if (loadingModal.show && loadingModal.close && errorModal.show && forceRefresh && close && application) {
+            loadingModal.show();
+            fetch('/api/v1/applications', {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    applicationName: application.keyspace_name
+                })
+            })
+                .then(webHandler)
+                .then(() => {
+                    forceRefresh();
+                    reset();
+                    close();
+                })
+                .catch(errorModal.show)
+                .finally(loadingModal.close)
+        }
+    }, [loadingModal, errorModal, forceRefresh, reset, close, application]);
+
     return (
         <Modal show={visible}
                size={"xl"}
@@ -121,6 +148,7 @@ export const ApplicationDeploymentModal: FunctionComponent = () => {
             </Modal.Body>
             <Modal.Footer>
                 <Button onClick={submitChanges}>Submit Changes</Button>
+                <Button onClick={deleteApplication}>Delete Application</Button>
                 <Button onClick={close}>close</Button>
             </Modal.Footer>
         </Modal>

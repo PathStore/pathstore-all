@@ -95,17 +95,9 @@ export interface ApplicationUpdate {
     keyspaceName: string
     waitFor: number[]
 }
-
 /**
  * Parse error response (error code 400)
  */
 export interface Error {
     error: string
-}
-
-/**
- * Parse application success response
- */
-export interface ApplicationCreationSuccess {
-    keyspace_created: string
 }
