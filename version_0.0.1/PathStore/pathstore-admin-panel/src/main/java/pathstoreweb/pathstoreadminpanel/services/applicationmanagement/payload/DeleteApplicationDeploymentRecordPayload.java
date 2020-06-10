@@ -79,7 +79,7 @@ public class DeleteApplicationDeploymentRecordPayload extends ValidatedPayload {
       return new String[] {INVALID_RECORD};
 
     // (4)
-    if (this.records.stream()
+    if (!this.records.stream()
         .allMatch(
             o ->
                 parentNodeToListOfChildren.containsKey(o.nodeId)
