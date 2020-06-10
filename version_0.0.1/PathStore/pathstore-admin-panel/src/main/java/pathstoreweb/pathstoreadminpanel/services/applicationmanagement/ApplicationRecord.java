@@ -1,6 +1,6 @@
 package pathstoreweb.pathstoreadminpanel.services.applicationmanagement;
 
-import java.util.List;
+import java.util.Set;
 
 /** Denotes what a single application record looks like */
 public class ApplicationRecord {
@@ -11,5 +11,5 @@ public class ApplicationRecord {
   public String keyspaceName;
 
   /** List of nodes to wait for */
-  public List<Integer> waitFor;
+  public Set<Integer> waitFor;
 }

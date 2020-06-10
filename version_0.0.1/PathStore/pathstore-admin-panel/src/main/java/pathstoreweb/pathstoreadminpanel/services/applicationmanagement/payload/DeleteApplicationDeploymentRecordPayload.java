@@ -10,9 +10,7 @@ import pathstore.system.schemaFSM.ProccessStatus;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.ApplicationRecord;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static pathstoreweb.pathstoreadminpanel.validator.ErrorConstants.DELETE_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD.*;
 
@@ -30,6 +28,8 @@ public class DeleteApplicationDeploymentRecordPayload extends ValidatedPayload {
    *
    * <p>(3): If at least one node id isn't valid or at least one node doesn't have the keyspace
    * installed this is a invalid record set
+   *
+   * <p>(4): All records must wait for all their children
    *
    * @return all null iff valid record set
    */
@@ -51,8 +51,15 @@ public class DeleteApplicationDeploymentRecordPayload extends ValidatedPayload {
 
     Set<Integer> validNodeIdSet = new HashSet<>();
 
-    for (Row row : session.execute(queryAllDeployment))
-      validNodeIdSet.add(row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID));
+    Map<Integer, Set<Integer>> parentNodeToListOfChildren = new HashMap<>();
+
+    for (Row row : session.execute(queryAllDeployment)) {
+      int newNode = row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID);
+      int parentNode = row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID);
+      validNodeIdSet.add(newNode);
+      parentNodeToListOfChildren.computeIfAbsent(parentNode, k -> new HashSet<>());
+      parentNodeToListOfChildren.get(parentNode).add(newNode);
+    }
 
     Select nodeSchemaSelect =
         QueryBuilder.select().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
@@ -70,6 +77,15 @@ public class DeleteApplicationDeploymentRecordPayload extends ValidatedPayload {
     if (!this.records.stream().map(i -> i.nodeId).allMatch(validNodeIdSet::contains)
         || !this.records.stream().map(i -> i.nodeId).allMatch(applicationNodeIdSet::contains))
       return new String[] {INVALID_RECORD};
+
+    // (4)
+    if (this.records.stream()
+        .allMatch(
+            o ->
+                parentNodeToListOfChildren.containsKey(o.nodeId)
+                    ? o.waitFor.equals(parentNodeToListOfChildren.get(o.nodeId))
+                    : o.waitFor.equals(Collections.singleton(-1))))
+      return new String[] {INVALID_WAIT_FOR};
 
     return new String[0];
   }

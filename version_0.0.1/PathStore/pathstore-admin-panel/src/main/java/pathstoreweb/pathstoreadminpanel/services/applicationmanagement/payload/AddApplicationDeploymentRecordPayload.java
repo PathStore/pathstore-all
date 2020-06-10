@@ -9,9 +9,7 @@ import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.ApplicationRecord;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static pathstoreweb.pathstoreadminpanel.validator.ErrorConstants.ADD_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD.*;
 
@@ -31,7 +29,7 @@ public class AddApplicationDeploymentRecordPayload extends ValidatedPayload {
    * <p>(3): If at least 1 node id isn't in the node id list or any node is in the node schema list
    * this is a conflict
    *
-   * <p>(4): TODO: Validate waits
+   * <p>(4): Ensure all waitfors are directed at the parent node
    *
    * @return null iff valid
    */
@@ -51,10 +49,15 @@ public class AddApplicationDeploymentRecordPayload extends ValidatedPayload {
     Select queryAllDeployment =
         QueryBuilder.select().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
 
+    Map<Integer, Integer> childToParentId = new HashMap<>();
+
     Set<Integer> validNodeIdSet = new HashSet<>();
 
-    for (Row row : session.execute(queryAllDeployment))
-      validNodeIdSet.add(row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID));
+    for (Row row : session.execute(queryAllDeployment)) {
+      int childNode = row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID);
+      validNodeIdSet.add(childNode);
+      childToParentId.put(childNode, row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID));
+    }
 
     Select nodeSchemaSelect =
         QueryBuilder.select().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
@@ -70,6 +73,11 @@ public class AddApplicationDeploymentRecordPayload extends ValidatedPayload {
     if (!this.records.stream().map(i -> i.nodeId).allMatch(validNodeIdSet::contains)
         || this.records.stream().map(i -> i.nodeId).anyMatch(applicationNodeIdSet::contains))
       return new String[] {INVALID_RECORD};
+
+    // (4)
+    if (!this.records.stream()
+        .allMatch(o -> o.waitFor.size() == 1 && o.waitFor.contains(childToParentId.get(o.nodeId))))
+      return new String[] {INVALID_WAIT_FOR};
 
     return new String[0];
   }

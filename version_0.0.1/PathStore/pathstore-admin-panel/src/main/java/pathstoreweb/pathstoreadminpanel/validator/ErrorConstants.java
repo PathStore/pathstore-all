@@ -12,6 +12,8 @@ public final class ErrorConstants {
         "You can only pass one keyspace update per request";
     public static final String INVALID_RECORD =
         "Each record must reference a valid node id and it must not already have the given application installed on the node";
+    public static final String INVALID_WAIT_FOR =
+        "Each record must wait for their parent node unless the node is the root node which it must wait for -1";
   }
 
   public static final class DELETE_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD {
@@ -20,6 +22,8 @@ public final class ErrorConstants {
         ADD_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD.TO_MANY_KEYSPACES;
     public static final String INVALID_RECORD =
         "Each record must reference a valid node id and it must already have the given keyspace installed on it";
+    public static final String INVALID_WAIT_FOR =
+        "Each record must wait for all their children unless they have no children it must be -1";
   }
 
   /**

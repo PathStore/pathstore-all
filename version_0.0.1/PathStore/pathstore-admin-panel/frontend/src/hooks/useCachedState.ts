@@ -52,7 +52,6 @@ export function useCachedState<K, V>(key: K | undefined): [V[], (v: V[]) => void
                 if (original) updateValue(original);
                 else updateMap(map => updateMapAndValue(map, []));
             }
-
         },
         [key, updateValue, map, updateMap, updateMapAndValue]
     );
