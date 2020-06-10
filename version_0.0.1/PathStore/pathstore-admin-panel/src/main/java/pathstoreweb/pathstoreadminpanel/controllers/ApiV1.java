@@ -11,7 +11,9 @@ import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.A
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.DeleteApplicationDeploymentRecordPayload;
 import pathstoreweb.pathstoreadminpanel.services.applications.AddApplication;
 import pathstoreweb.pathstoreadminpanel.services.applications.GetApplications;
+import pathstoreweb.pathstoreadminpanel.services.applications.RemoveApplication;
 import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
+import pathstoreweb.pathstoreadminpanel.services.applications.payload.RemoveApplicationPayload;
 import pathstoreweb.pathstoreadminpanel.services.availablelogdates.GetAvailableLogDates;
 import pathstoreweb.pathstoreadminpanel.services.deployment.AddDeploymentRecords;
 import pathstoreweb.pathstoreadminpanel.services.deployment.DeleteDeploymentRecords;
@@ -51,7 +53,7 @@ public class ApiV1 {
    */
   @PostMapping(Endpoints.APPLICATION_MANAGEMENT)
   public ResponseEntity<String> deployApplication(
-      @RequestBody AddApplicationDeploymentRecordPayload payload) {
+      @RequestBody final AddApplicationDeploymentRecordPayload payload) {
     return payload.hasErrors()
         ? new ValidityErrorFormatter(payload.getErrors()).format()
         : new DeployApplications(payload).response();
@@ -64,7 +66,7 @@ public class ApiV1 {
    */
   @DeleteMapping(Endpoints.APPLICATION_MANAGEMENT)
   public ResponseEntity<String> unDeployApplication(
-      @RequestBody DeleteApplicationDeploymentRecordPayload payload) {
+      @RequestBody final DeleteApplicationDeploymentRecordPayload payload) {
     return payload.hasErrors()
         ? new ValidityErrorFormatter(payload.getErrors()).format()
         : new UnDeployApplications(payload).response();
@@ -77,11 +79,10 @@ public class ApiV1 {
   }
 
   /**
-   * TODO: Build a schema builder. Properties: 1 keyspace. n tables, with some number of attributes
-   * each
+   * Take in a schema and an application name
    *
    * @param payload user passed payload
-   * @return todo
+   * @return {}
    */
   @PostMapping(Endpoints.APPLICATIONS)
   public ResponseEntity<String> addApplication(final AddApplicationPayload payload) {
@@ -90,10 +91,18 @@ public class ApiV1 {
         : new AddApplication(payload).response();
   }
 
-  /** @return todo */
+  /**
+   * This endpoint removes an application from the apps table
+   *
+   * @param payload payload from user {@link RemoveApplicationPayload}
+   * @return {} 200 or 400 with errors
+   */
   @DeleteMapping(Endpoints.APPLICATIONS)
-  public String removeApplication() {
-    return "Not Supported";
+  public ResponseEntity<String> removeApplication(
+      @RequestBody final RemoveApplicationPayload payload) {
+    return payload.hasErrors()
+        ? new ValidityErrorFormatter(payload.getErrors()).format()
+        : new RemoveApplication(payload).response();
   }
 
   /** @return JSON Array of all servers created */

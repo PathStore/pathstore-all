@@ -6,6 +6,10 @@ package pathstoreweb.pathstoreadminpanel.validator;
  */
 public final class ErrorConstants {
 
+  /**
+   * Validity errors for {@link
+   * pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.AddApplicationDeploymentRecordPayload}
+   */
   public static final class ADD_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD {
     public static final String EMPTY = "You must pass at least one record";
     public static final String TO_MANY_KEYSPACES =
@@ -16,6 +20,10 @@ public final class ErrorConstants {
         "Each record must wait for their parent node unless the node is the root node which it must wait for -1";
   }
 
+  /**
+   * Validity errors for {@link
+   * pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.DeleteApplicationDeploymentRecordPayload}
+   */
   public static final class DELETE_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD {
     public static final String EMPTY = ADD_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD.EMPTY;
     public static final String TO_MANY_KEYSPACES =
@@ -37,6 +45,18 @@ public final class ErrorConstants {
         "Your application name must start with pathstore_";
     public static final String APPLICATION_NAME_NOT_UNIQUE =
         "The application name you passed is already used";
+  }
+
+  /**
+   * Validity errors for {@link
+   * pathstoreweb.pathstoreadminpanel.services.applications.payload.RemoveApplicationPayload}
+   */
+  public static final class REMOVE_APPLICATION_PAYLOAD {
+    public static final String WRONG_SUBMISSION_FORMAT = "You must pass a valid application name";
+    public static final String APPLICATION_DOESNT_EXIST =
+        "The application name passed does not exist";
+    public static final String APPLICATION_IS_DEPLOYED =
+        "In order to delete an application from the network it must not be deployed on any node";
   }
 
   /**
