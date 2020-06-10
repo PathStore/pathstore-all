@@ -9,7 +9,7 @@ import {useCallback, useEffect, useState} from "react";
  *
  * @param key key to load
  */
-export function useMapState<K, V>(key: K | undefined): [V[], (v: V[]) => void] {
+export function useCachedState<K, V>(key: K | undefined): [V[], (v: V[]) => void] {
 
     // store map in state
     const [map, updateMap] = useState<Map<K, V[]>>(new Map<K, V[]>());

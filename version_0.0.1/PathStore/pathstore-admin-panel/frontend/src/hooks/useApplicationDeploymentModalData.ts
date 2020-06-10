@@ -9,7 +9,7 @@ import {useObjectAttachedSet} from "./useObjectAttachedSet";
 import {useCallback, useContext} from "react";
 import {useReducedState} from "./useReducedState";
 import {APIContext} from "../contexts/APIContext";
-import {useMapState} from "./useMapState";
+import {useCachedState} from "./useCachedState";
 
 /**
  * Application Deployment Modal data for that modal and the children
@@ -165,10 +165,10 @@ export function useApplicationDeploymentModalData(application: Application | und
         processingRemovingFilter);
 
     // additions based on the current keyspace
-    const [additions, updateAdditions] = useMapState<string, ApplicationUpdate>(application?.keyspace_name);
+    const [additions, updateAdditions] = useCachedState<string, ApplicationUpdate>(application?.keyspace_name);
 
     // deletions based on the current keyspace
-    const [deletions, updateDeletions] = useMapState<string, ApplicationUpdate>(application?.keyspace_name);
+    const [deletions, updateDeletions] = useCachedState<string, ApplicationUpdate>(application?.keyspace_name);
 
     // node id set based on the addition objects
     const additionNodeIdSet = useObjectAttachedSet<ApplicationUpdate, number>(
