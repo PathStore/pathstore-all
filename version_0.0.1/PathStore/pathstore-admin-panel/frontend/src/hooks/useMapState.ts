@@ -19,14 +19,16 @@ export function useMapState<K, V>(key: K | undefined): [V[], (v: V[]) => void] {
 
     // Function to generated an update map and add a value set
     const updateMapAndValue = useCallback((map: Map<K, V[]>, v: V[]): Map<K, V[]> => {
-        if (key) {
-            map = map.set(key, v);
+            if (key) {
+                map = map.set(key, v);
 
-            const updated = map.get(key);
-            if (updated) updateValue(updated);
-        }
-        return map;
-    }, [key, updateValue]);
+                const updated = map.get(key);
+                if (updated) updateValue(updated);
+            }
+            return map;
+        },
+        [key, updateValue]
+    );
 
     // update function
     const update = useCallback(

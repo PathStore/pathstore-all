@@ -5,8 +5,8 @@ import {
     Deployment,
     Server
 } from "../utilities/ApiDeclarations";
-import {useState} from "react";
-import {genericLoadFunctionWait} from "../utilities/Utils";
+import {useCallback, useState} from "react";
+import {genericLoadFunction} from "../utilities/Utils";
 
 /**
  * Definition of the api context {@link APIContext}
@@ -84,13 +84,13 @@ export function useAPIContext(): APIContextType {
 
     const [availableLogDates, setAvailableLogDates] = useState<AvailableLogDates[]>([]);
 
-    const forceRefresh = () => {
-        genericLoadFunctionWait<Server>('/api/v1/servers', setServers);
-        genericLoadFunctionWait<Application>('/api/v1/applications', setApplications);
-        genericLoadFunctionWait<Deployment>('/api/v1/deployment', setDeployment);
-        genericLoadFunctionWait<ApplicationStatus>('/api/v1/application_management', setApplicationStatus);
-        genericLoadFunctionWait<AvailableLogDates>('/api/v1/available_log_dates', setAvailableLogDates);
-    };
+    const forceRefresh = useCallback(() => {
+        genericLoadFunction<Server>('/api/v1/servers', setServers);
+        genericLoadFunction<Application>('/api/v1/applications', setApplications);
+        genericLoadFunction<Deployment>('/api/v1/deployment', setDeployment);
+        genericLoadFunction<ApplicationStatus>('/api/v1/application_management', setApplicationStatus);
+        genericLoadFunction<AvailableLogDates>('/api/v1/available_log_dates', setAvailableLogDates);
+    }, [setServers, setApplications, setDeployment, setApplicationStatus, setAvailableLogDates]);
 
     return {
         deployment,

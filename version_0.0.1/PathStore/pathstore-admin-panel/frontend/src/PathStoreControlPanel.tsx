@@ -1,7 +1,6 @@
 import React, {FunctionComponent, useContext, useEffect, useState} from "react";
 import {useInterval} from "./hooks/useInterval";
 import {APIContext} from "./contexts/APIContext";
-import {genericLoadFunctionWait} from "./utilities/Utils";
 import {ApplicationStatus, AvailableLogDates, Deployment} from "./utilities/ApiDeclarations";
 import {ViewTopology} from "./modules/topology/ViewTopology";
 import {Center} from "./utilities/AlignedDivs";
@@ -9,6 +8,7 @@ import {NodeInfoModalProvider} from "./contexts/NodeInfoModalContext";
 import {NodeDeployment} from "./modules/nodeDeployment/NodeDeployment";
 import {NodeDeploymentModalProvider} from "./contexts/NodeDeploymentModalContext";
 import {ApplicationManagement} from "./modules/appInstallation/ApplicationManagement";
+import {useLockedApiRequest} from "./hooks/useLockedApiRequest";
 
 /**
  * This is the main component for the pathstore control panel website. It must have access to the {@link APIContext}
@@ -18,6 +18,15 @@ import {ApplicationManagement} from "./modules/appInstallation/ApplicationManage
 export const PathStoreControlPanel: FunctionComponent = () => {
     // Grab needed values from the context
     const {setDeployment, setApplicationStatus, setAvailableLogDates, forceRefresh} = useContext(APIContext);
+
+    // function to query deployment objects
+    const queryDeployment = useLockedApiRequest<Deployment>('/api/v1/deployment', setDeployment);
+
+    // function to query application status objects
+    const queryApplicationStatus = useLockedApiRequest<ApplicationStatus>('/api/v1/application_management', setApplicationStatus);
+
+    // function to query available log dates
+    const queryAvailableLogDates = useLockedApiRequest<AvailableLogDates>('/api/v1/available_log_dates', setAvailableLogDates);
 
     // state to force the use effect to only be called on startup
     const [called, setCalled] = useState<boolean>(false);
@@ -32,9 +41,9 @@ export const PathStoreControlPanel: FunctionComponent = () => {
 
     // every 2 seconds reload the below endpoint
     useInterval(() => {
-        genericLoadFunctionWait<Deployment>('/api/v1/deployment', setDeployment);
-        genericLoadFunctionWait<ApplicationStatus>('/api/v1/application_management', setApplicationStatus);
-        genericLoadFunctionWait<AvailableLogDates>('/api/v1/available_log_dates', setAvailableLogDates);
+        queryDeployment();
+        queryApplicationStatus();
+        queryAvailableLogDates();
     }, 2000);
 
     return (
