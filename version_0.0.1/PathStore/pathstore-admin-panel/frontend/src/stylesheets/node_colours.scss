@@ -1,7 +1,7 @@
 @import "bootstrap-dracula";
 
 // Node text colour
-.uninstalled_node text, .previous_node text, .installation_node text, .not_set_node text, .waiting_node text, .installing_node text, .installed_node text, .waiting_removal_node text, .removing_node text, .hypothetical text {
+.d_red_node text, .d_cyan_node text, .installation_node text, .d_current_line_node text, .d_yellow_node text, .installing_node text, .d_green_node text, .d_pink_node text, .d_purple_node text, .hypothetical text, .d_orange_node text {
   background-color: $d_red;
   fill: $d_red;
 }
@@ -13,63 +13,50 @@
   stroke-width: 1.5px;
 }
 
-.uninstalled_node circle {
-  fill: $d_red;
-  stroke: $border-colour;
-  stroke-width: 1.5px;
-}
-
-.previous_node circle {
-  fill: $d_cyan;
-  stroke: $border-colour;
-  stroke-width: 1.5px;
-}
-
-
-.installation_node circle {
-  fill: $d_green;
-  stroke: $border-colour;
-  stroke-width: 1.5px;
-}
-
-.not_set_node circle {
+.d_current_line_node circle {
   fill: $d_currentLine;
   stroke: $border-colour;
   stroke-width: 1.5px;
 }
 
-.waiting_node circle {
+.d_yellow_node circle {
   fill: $d_yellow;
   stroke: $border-colour;
   stroke-width: 1.5px;
 }
 
-.installing_node circle {
+.d_cyan_node circle {
   fill: $d_cyan;
   stroke: $border-colour;
   stroke-width: 1.5px;
 }
 
-.installed_node circle {
+.d_green_node circle {
   fill: $d_green;
   stroke: $border-colour;
   stroke-width: 1.5px;
 }
 
-.waiting_removal_node circle {
+.d_red_node circle {
+  fill: $d_red;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.d_orange_node circle {
+  fill: $d_orange;
+  stroke: $border-colour;
+  stroke-width: 1.5px;
+}
+
+.d_pink_node circle {
   fill: $d_pink;
   stroke: $border-colour;
   stroke-width: 1.5px;
 }
 
-.removing_node circle {
+.d_purple_node circle {
   fill: $d_purple;
-  stroke: $border-colour;
-  stroke-width: 1.5px;
-}
-
-.hypothetical circle {
-  fill: $d_cyan;
   stroke: $border-colour;
   stroke-width: 1.5px;
 }

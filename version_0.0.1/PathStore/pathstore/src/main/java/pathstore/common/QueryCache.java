@@ -64,6 +64,10 @@ public class QueryCache {
      */
     final HashMap<String, HashMap<String, HashMap<String, List<QueryCacheEntry>>>> deviceCommands = new HashMap<>();
 
+    public void remove(final String keyspace){
+        entries.remove(keyspace);
+    }
+
 
     public HashMap<String, HashMap<String, List<QueryCacheEntry>>> getEntries() {
         return entries;

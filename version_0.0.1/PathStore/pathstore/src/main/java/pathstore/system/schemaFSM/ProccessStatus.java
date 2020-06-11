@@ -9,7 +9,7 @@ package pathstore.system.schemaFSM;
  *
  * <p>The cycle for removing is
  *
- * <p>WAITING_REMOVE -> REMOVING -> REMOVED
+ * <p>WAITING_REMOVE -> REMOVING -> deleted record
  */
 public enum ProccessStatus {
   WAITING_INSTALL,
@@ -19,5 +19,4 @@ public enum ProccessStatus {
   WAITING_REMOVE,
   REMOVING,
   PROCESSING_REMOVING,
-  REMOVED
 }

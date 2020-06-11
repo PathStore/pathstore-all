@@ -4,13 +4,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pathstoreweb.pathstoreadminpanel.Endpoints;
 import pathstoreweb.pathstoreadminpanel.services.ValidityErrorFormatter;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.DeployApplications;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.GetApplicationState;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.InstallApplication;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.UnInstallApplication;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.ModifyApplicationStatePayload;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.UnDeployApplications;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.AddApplicationDeploymentRecordPayload;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.DeleteApplicationDeploymentRecordPayload;
 import pathstoreweb.pathstoreadminpanel.services.applications.AddApplication;
 import pathstoreweb.pathstoreadminpanel.services.applications.GetApplications;
+import pathstoreweb.pathstoreadminpanel.services.applications.RemoveApplication;
 import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
+import pathstoreweb.pathstoreadminpanel.services.applications.payload.RemoveApplicationPayload;
 import pathstoreweb.pathstoreadminpanel.services.availablelogdates.GetAvailableLogDates;
 import pathstoreweb.pathstoreadminpanel.services.deployment.AddDeploymentRecords;
 import pathstoreweb.pathstoreadminpanel.services.deployment.DeleteDeploymentRecords;
@@ -44,27 +47,29 @@ public class ApiV1 {
   }
 
   /**
-   * @param modifyApplicationStatePayload {@link ModifyApplicationStatePayload}
-   * @return response
+   * deploy applications on the network
+   *
+   * @return {}
    */
   @PostMapping(Endpoints.APPLICATION_MANAGEMENT)
-  public ResponseEntity<String> applicationManagementInstall(
-      final ModifyApplicationStatePayload modifyApplicationStatePayload) {
-    return modifyApplicationStatePayload.hasErrors()
-        ? new ValidityErrorFormatter(modifyApplicationStatePayload.getErrors()).format()
-        : new InstallApplication(modifyApplicationStatePayload).response();
+  public ResponseEntity<String> deployApplication(
+      @RequestBody final AddApplicationDeploymentRecordPayload payload) {
+    return payload.hasErrors()
+        ? new ValidityErrorFormatter(payload.getErrors()).format()
+        : new DeployApplications(payload).response();
   }
 
   /**
-   * @param modifyApplicationStatePayload {@link ModifyApplicationStatePayload}
-   * @return response
+   * un-deploy applications on the network
+   *
+   * @return {}
    */
   @DeleteMapping(Endpoints.APPLICATION_MANAGEMENT)
-  public ResponseEntity<String> applicationManagementRemove(
-      final ModifyApplicationStatePayload modifyApplicationStatePayload) {
-    return modifyApplicationStatePayload.hasErrors()
-        ? new ValidityErrorFormatter(modifyApplicationStatePayload.getErrors()).format()
-        : new UnInstallApplication(modifyApplicationStatePayload).response();
+  public ResponseEntity<String> unDeployApplication(
+      @RequestBody final DeleteApplicationDeploymentRecordPayload payload) {
+    return payload.hasErrors()
+        ? new ValidityErrorFormatter(payload.getErrors()).format()
+        : new UnDeployApplications(payload).response();
   }
 
   /** @return List of applications on the system */
@@ -74,11 +79,10 @@ public class ApiV1 {
   }
 
   /**
-   * TODO: Build a schema builder. Properties: 1 keyspace. n tables, with some number of attributes
-   * each
+   * Take in a schema and an application name
    *
    * @param payload user passed payload
-   * @return todo
+   * @return {}
    */
   @PostMapping(Endpoints.APPLICATIONS)
   public ResponseEntity<String> addApplication(final AddApplicationPayload payload) {
@@ -87,10 +91,18 @@ public class ApiV1 {
         : new AddApplication(payload).response();
   }
 
-  /** @return todo */
+  /**
+   * This endpoint removes an application from the apps table
+   *
+   * @param payload payload from user {@link RemoveApplicationPayload}
+   * @return {} 200 or 400 with errors
+   */
   @DeleteMapping(Endpoints.APPLICATIONS)
-  public String removeApplication() {
-    return "Not Supported";
+  public ResponseEntity<String> removeApplication(
+      @RequestBody final RemoveApplicationPayload payload) {
+    return payload.hasErrors()
+        ? new ValidityErrorFormatter(payload.getErrors()).format()
+        : new RemoveApplication(payload).response();
   }
 
   /** @return JSON Array of all servers created */

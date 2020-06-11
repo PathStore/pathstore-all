@@ -8,14 +8,30 @@ public final class ErrorConstants {
 
   /**
    * Validity errors for {@link
-   * pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.ModifyApplicationStatePayload}
+   * pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.AddApplicationDeploymentRecordPayload}
    */
-  public static final class MODIFY_APPLICATION_STATE_PAYLOAD {
-    public static final String WRONG_SUBMISSION_FORMAT =
-        "You must submit the fields: application_name and nodes";
-    public static final String APP_DOESNT_EXIST = "The application name you passed does not exist";
-    public static final String NODES_EMPTY = "You cannot pass an empty set of nodes";
-    public static final String NODES_DONT_EXIST = "You have passed a node that doesn't exist";
+  public static final class ADD_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD {
+    public static final String EMPTY = "You must pass at least one record";
+    public static final String TO_MANY_KEYSPACES =
+        "You can only pass one keyspace update per request";
+    public static final String INVALID_RECORD =
+        "Each record must reference a valid node id and it must not already have the given application installed on the node";
+    public static final String INVALID_WAIT_FOR =
+        "Each record must wait for their parent node unless the node is the root node which it must wait for -1";
+  }
+
+  /**
+   * Validity errors for {@link
+   * pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.DeleteApplicationDeploymentRecordPayload}
+   */
+  public static final class DELETE_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD {
+    public static final String EMPTY = ADD_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD.EMPTY;
+    public static final String TO_MANY_KEYSPACES =
+        ADD_APPLICATION_DEPLOYMENT_RECORD_PAYLOAD.TO_MANY_KEYSPACES;
+    public static final String INVALID_RECORD =
+        "Each record must reference a valid node id and it must already have the given keyspace installed on it";
+    public static final String INVALID_WAIT_FOR =
+        "Each record must wait for all their children unless they have no children it must be -1";
   }
 
   /**
@@ -29,6 +45,18 @@ public final class ErrorConstants {
         "Your application name must start with pathstore_";
     public static final String APPLICATION_NAME_NOT_UNIQUE =
         "The application name you passed is already used";
+  }
+
+  /**
+   * Validity errors for {@link
+   * pathstoreweb.pathstoreadminpanel.services.applications.payload.RemoveApplicationPayload}
+   */
+  public static final class REMOVE_APPLICATION_PAYLOAD {
+    public static final String WRONG_SUBMISSION_FORMAT = "You must pass a valid application name";
+    public static final String APPLICATION_DOESNT_EXIST =
+        "The application name passed does not exist";
+    public static final String APPLICATION_IS_DEPLOYED =
+        "In order to delete an application from the network it must not be deployed on any node";
   }
 
   /**

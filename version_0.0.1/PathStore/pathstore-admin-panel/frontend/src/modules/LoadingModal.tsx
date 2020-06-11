@@ -1,25 +1,17 @@
-import React, {FunctionComponent} from "react";
+import React, {FunctionComponent, useContext} from "react";
 import Modal from "react-bootstrap/Modal";
-
-/**
- * Properties definition for {@link LoadingModal}
- */
-interface LoadingModalProperties {
-    /**
-     * Whether to show the modal or not
-     */
-    readonly show: boolean
-}
+import {LoadingModalContext} from "../contexts/LoadingModalContext";
 
 /**
  * Forced loading modal that cannot be closed by user.
  *
- * @param props
  * @constructor
+ * @see LoadingModalContext
  */
-export const LoadingModal: FunctionComponent<LoadingModalProperties> = (props) =>
-    <Modal show={props.show} size='sm' centered>
+export const LoadingModal: FunctionComponent = () =>
+    <Modal show={useContext(LoadingModalContext).visible} size='sm' centered>
         <Modal.Body>
             <p>Loading....</p>
         </Modal.Body>
     </Modal>;
+

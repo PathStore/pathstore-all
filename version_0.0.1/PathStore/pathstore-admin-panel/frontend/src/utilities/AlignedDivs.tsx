@@ -1,4 +1,4 @@
-import React, {FunctionComponent, RefObject} from "react";
+import React, {FunctionComponent} from "react";
 
 /**
  * This is the parent component for two aligned divs
@@ -34,30 +34,15 @@ export const Left: FunctionComponent<LeftProps> = (props) =>
 
 
 /**
- * Props for {@link Left}
- */
-interface RightProps {
-    /**
-     * Reference
-     */
-    readonly divRef?: RefObject<HTMLDivElement>;
-}
-
-/**
  * This is the second child which will be on the right
  *
  * @param props
  * @constructor
  */
-export class Right extends React.Component<RightProps> {
-    render() {
-        return (
-            <div ref={this.props.divRef} style={{flex: 1}}>
-                {this.props.children}
-            </div>
-        );
-    }
-}
+export const Right: FunctionComponent = (props) =>
+    <div style={{flex: 1}}>
+        {props.children}
+    </div>;
 
 /**
  * Centered div

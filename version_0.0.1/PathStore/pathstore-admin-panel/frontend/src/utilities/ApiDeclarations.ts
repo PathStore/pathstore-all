@@ -9,6 +9,20 @@ export interface Deployment {
 }
 
 /**
+ * Deployment states
+ */
+export enum DEPLOYMENT_STATE {
+    "WAITING_DEPLOYMENT",
+    "DEPLOYING",
+    "PROCESSING_DEPLOYING",
+    "DEPLOYED",
+    "WAITING_REMOVAL",
+    "REMOVING",
+    "PROCESSING_REMOVING",
+    "FAILED"
+}
+
+/**
  * Parse response from any server endpoint
  */
 export interface Server {
@@ -25,6 +39,18 @@ export interface Server {
  */
 export interface Application {
     keyspace_name: string
+}
+
+
+// All process statuses possible by the application deployment process
+export enum APPLICATION_STATE {
+    "WAITING_INSTALL",
+    "INSTALLING",
+    "PROCESSING_INSTALLING",
+    "INSTALLED",
+    "WAITING_REMOVE",
+    "REMOVING",
+    "PROCESSING_REMOVING"
 }
 
 /**
@@ -55,22 +81,23 @@ export interface Log {
 /**
  * Way to format response on deployment update
  */
-export interface Update {
+export interface DeploymentUpdate {
     parentId: number
     newNodeId: number
     serverUUID: string
 }
 
 /**
+ * Way to form response on application update
+ */
+export interface ApplicationUpdate {
+    nodeId: number
+    keyspaceName: string
+    waitFor: number[]
+}
+/**
  * Parse error response (error code 400)
  */
 export interface Error {
     error: string
-}
-
-/**
- * Parse application success response
- */
-export interface ApplicationCreationSuccess {
-    keyspace_created: string
 }
