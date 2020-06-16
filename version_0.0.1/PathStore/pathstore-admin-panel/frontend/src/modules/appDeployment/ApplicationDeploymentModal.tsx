@@ -12,6 +12,7 @@ import {APIContext} from "../../contexts/APIContext";
 import {LoadingModalContext} from "../../contexts/LoadingModalContext";
 import {ErrorModalContext} from "../../contexts/ErrorModalContext";
 import {webHandler} from "../../utilities/Utils";
+import {ConfirmationButton} from "../confirmation/ConfirmationButton";
 
 /**
  * This component is used to visualize the transition of the network through the deployment and undeployment proccesses
@@ -147,8 +148,14 @@ export const ApplicationDeploymentModal: FunctionComponent = () => {
                 <ApplicationDeploymentForm/>
             </Modal.Body>
             <Modal.Footer>
-                <Button onClick={submitChanges}>Submit Changes</Button>
-                <Button onClick={deleteApplication}>Delete Application</Button>
+                <ConfirmationButton message={"Are you sure you want to submit your application deployment changes?"}
+                                    onClick={submitChanges}>
+                    Submit Changes
+                </ConfirmationButton>
+                <ConfirmationButton message={"Are you sure you want to delete this application from the network?"}
+                                    onClick={deleteApplication}>
+                    Delete Applications
+                </ConfirmationButton>
                 <Button onClick={close}>close</Button>
             </Modal.Footer>
         </Modal>

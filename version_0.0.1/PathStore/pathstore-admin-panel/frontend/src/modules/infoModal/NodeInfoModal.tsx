@@ -10,6 +10,7 @@ import {LoadingModalContext} from "../../contexts/LoadingModalContext";
 import {Deployment, DeploymentUpdate, DEPLOYMENT_STATE} from "../../utilities/ApiDeclarations";
 import {webHandler} from "../../utilities/Utils";
 import {APIContext} from "../../contexts/APIContext";
+import {ConfirmationButton} from "../confirmation/ConfirmationButton";
 
 /**
  * This component is used to display information in the main viewtopology about a given node.
@@ -93,7 +94,12 @@ const retryButton = (deployment: Deployment[] | undefined, node: number | undefi
     const deployObject: Deployment = deployment.filter(i => i.new_node_id === node)[0];
 
     if (deployObject && deployObject.process_status === DEPLOYMENT_STATE[DEPLOYMENT_STATE.FAILED])
-        return <Button onClick={retryOnClick}>Retry</Button>;
+        return (
+            <ConfirmationButton message={"Are you sure you want to retry the deployment of the given node?"}
+                                onClick={retryOnClick}>
+                Retry
+            </ConfirmationButton>
+        );
     else return undefined;
 };
 

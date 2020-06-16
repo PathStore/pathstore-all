@@ -15,6 +15,7 @@ import {ModifyServerModalProvider} from "../../contexts/ModifyServerModalContext
 import {SubmissionErrorModalContext, SubmissionErrorModalProvider} from "../../contexts/SubmissionErrorModalContext";
 import {HypotheticalDeploymentTopology} from "./HypotheticalDeploymentTopology";
 import {webHandler} from "../../utilities/Utils";
+import {ConfirmationButton} from "../confirmation/ConfirmationButton";
 
 /**
  * The component is used to allow the user to modify the network in a workbench environment. Either adding additional servers,
@@ -149,7 +150,10 @@ export const NodeDeploymentModal: FunctionComponent = () => {
                 </LoadingModalProvider>
             </Modal.Body>
             <Modal.Footer>
-                <Button onClick={submit}>Submit changes</Button>
+                <ConfirmationButton message={"Are you sure you want to submit your node deployment changes?"}
+                                    onClick={submit}>
+                    Submit Changes
+                </ConfirmationButton>
                 <Button onClick={close}>Close</Button>
             </Modal.Footer>
         </Modal>
