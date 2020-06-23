@@ -115,7 +115,7 @@ public class DevelopmentDeployment {
    * This function will prompt the user for the connection information to a server and ask for the
    * rmi port to start the root server with
    *
-   * @see #initList(SSHUtil, String, int)
+   * @see #initList(SSHUtil, String, int, FinalizeRootInstallation)
    * @see FinalizeRootInstallation
    */
   private void deploy() {
@@ -141,14 +141,14 @@ public class DevelopmentDeployment {
       System.out.println("Connected");
 
       try {
-        List<ICommand> commands = this.initList(sshUtil, ip, rmiPort);
-
-        // Add the finalize command
-        commands.add(
-            new FinalizeRootInstallation(ip, cassandraPort, username, password, sshPort, rmiPort));
-
         // Execute all commands in the given list
-        for (ICommand command : commands) {
+        for (ICommand command :
+            this.initList(
+                sshUtil,
+                ip,
+                rmiPort,
+                new FinalizeRootInstallation(
+                    ip, cassandraPort, username, password, sshPort, rmiPort))) {
           System.out.println(command);
           command.execute();
         }
@@ -169,10 +169,14 @@ public class DevelopmentDeployment {
    * @param sshUtil used for commands that need to use ssh
    * @param ip ip of new node
    * @param rmiRegistryPort new node's local rmi registry port
+   * @param finalizeRootInstallation finalization object to occur at the end of deployment
    * @return list of deployment commands to execute
    */
   private List<ICommand> initList(
-      final SSHUtil sshUtil, final String ip, final int rmiRegistryPort) {
+      final SSHUtil sshUtil,
+      final String ip,
+      final int rmiRegistryPort,
+      final FinalizeRootInstallation finalizeRootInstallation) {
 
     return new BootstrapDeploymentBuilder(sshUtil)
         .initBootstrap()
@@ -209,6 +213,7 @@ public class DevelopmentDeployment {
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN, new WaitForPathStore(ip, cassandraPort))
         .startImageAndWait(
             BootstrapDeploymentConstants.RUN_COMMANDS.PATHSTORE_ADMIN_PANEL_RUN, null)
+        .custom(finalizeRootInstallation)
         .build();
   }
 }
