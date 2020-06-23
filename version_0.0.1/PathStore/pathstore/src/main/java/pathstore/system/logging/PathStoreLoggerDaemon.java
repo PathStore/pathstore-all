@@ -9,6 +9,7 @@ import pathstore.common.PathStoreProperties;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.common.logger.PathStoreLoggerMessage;
+import pathstore.system.deployment.utilities.DeploymentConstants;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -22,7 +23,8 @@ public class PathStoreLoggerDaemon extends Thread {
   private static String DATE_FORMAT = "yyyy-MM-dd";
 
   /** Physical log file directory */
-  private static String LOGS_DIRECTORY = "/etc/pathstore/logs";
+  private static String LOGS_DIRECTORY =
+      String.format("/etc/pathstore/%s", DeploymentConstants.LOGS_DIRECTORY_NAME);
 
   /** Logger to write any errors that occur during the writing of */
   private final PathStoreLogger logger =

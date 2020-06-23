@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Properties;
 
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PULL_SLEEP;
+
 /**
  * This command is used to generate a pathstore properties file and have it available to be able to
  * load it into the docker container
@@ -105,20 +108,22 @@ public class GeneratePropertiesFile implements ICommand {
    */
   @Override
   public void execute() throws CommandError {
-    Properties properties =
-        StartupUTIL.generatePropertiesFile(
-            this.nodeID,
-            this.ip,
-            this.parentNodeId,
-            this.role,
-            this.rmiRegistryIP,
-            this.rmiRegistryPort,
-            this.rmiRegistryParentIP,
-            this.rmiRegistryParentPort,
-            this.cassandraIP,
-            this.cassandraPort,
-            this.cassandraParentIP,
-            this.cassandraParentPort);
+      Properties properties = new Properties();
+
+      properties.put(NODE_ID, String.valueOf(this.nodeID));
+      properties.put(EXTERNAL_ADDRESS, this.ip);
+      properties.put(PARENT_ID, String.valueOf(this.parentNodeId));
+      properties.put(ROLE, this.role.toString());
+      properties.put(RMI_REGISTRY_IP, this.rmiRegistryIP);
+      properties.put(RMI_REGISTRY_PORT, String.valueOf(this.rmiRegistryPort));
+      properties.put(RMI_REGISTRY_PARENT_IP, this.rmiRegistryParentIP);
+      properties.put(RMI_REGISTRY_PARENT_PORT, String.valueOf(this.rmiRegistryParentPort));
+      properties.put(CASSANDRA_IP, this.cassandraIP);
+      properties.put(CASSANDRA_PORT, String.valueOf(this.cassandraPort));
+      properties.put(CASSANDRA_PARENT_IP, this.cassandraParentIP);
+      properties.put(CASSANDRA_PARENT_PORT, String.valueOf(this.cassandraParentPort));
+      properties.put(PUSH_SLEEP, String.valueOf(1000));
+      properties.put(PULL_SLEEP, String.valueOf(1000));
 
     try {
       OutputStream outputStream =

@@ -49,10 +49,10 @@ public class Exec implements ICommand {
 
     } catch (JSchException ignored) {
       throw new CommandError(
-          "We where unable to create an exec channel to execute the command please ensure that the system is online and is connectable over ssh");
+          "We were unable to create an exec channel to execute the command please ensure that the system is online and is connectable over ssh");
     } catch (IOException ignore) {
       throw new CommandError(
-          " We where unable to read the output stream of the command. This is most likely caused by a local issue. Please ensure the machine executing the deployment has no issues and try again");
+          " We were unable to read the output stream of the command. This is most likely caused by a local issue. Please ensure the machine executing the deployment has no issues and try again");
     }
   }
 

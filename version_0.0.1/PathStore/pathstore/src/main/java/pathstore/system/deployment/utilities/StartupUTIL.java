@@ -17,13 +17,6 @@ import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
 
 /** Things related to cassandra for startup that can't rely on pathstore properties file */
 public class StartupUTIL {
-
-  /** Denotes the dir where all installation related files are stored */
-  private static final String STARTING_DIR = "/etc/pathstore/";
-
-  /** Where the properties file will be stored locally. */
-  public static final String DESTINATION_TO_STORE = STARTING_DIR + "pathstore.properties";
-
   /**
    * Used to create a cluster connection with an ip and port
    *
@@ -42,55 +35,6 @@ public class StartupUTIL {
                 .setRefreshNodeListIntervalMillis(0)
                 .setRefreshSchemaIntervalMillis(0))
         .build();
-  }
-
-  /**
-   * @param nodeID node id of node
-   * @param ip public ip of node
-   * @param parentNodeId parent node id of node (-1 if root)
-   * @param role role of server (ROOTSERVER, SERVER)
-   * @param rmiRegistryIP rmi ip of local node (should be localhost)
-   * @param rmiRegistryPort rmi port for local rmi connection
-   * @param rmiRegistryParentIP rmi ip of parent node (only of role is SERVER)
-   * @param rmiRegistryParentPort rmi port of parent node (only if role is SERVER)
-   * @param cassandraIP cassandra ip of attached cassandra instance
-   * @param cassandraPort cassandra port of attached cassandra instance
-   * @param cassandraParentIP cassandra ip of parent cassandra instance (only if role is SERVER)
-   * @param cassandraParentPort cassandra port of parent cassandra instance (only if role is SERVER)
-   * @return generate properties file (You need to write it to {@link Constants#PROPERTIESFILE})
-   */
-  public static Properties generatePropertiesFile(
-      final int nodeID,
-      final String ip,
-      final int parentNodeId,
-      final Role role,
-      final String rmiRegistryIP,
-      final int rmiRegistryPort,
-      final String rmiRegistryParentIP,
-      final int rmiRegistryParentPort,
-      final String cassandraIP,
-      final int cassandraPort,
-      final String cassandraParentIP,
-      final int cassandraParentPort) {
-
-    Properties properties = new Properties();
-
-    properties.put(NODE_ID, String.valueOf(nodeID));
-    properties.put(EXTERNAL_ADDRESS, ip);
-    properties.put(PARENT_ID, String.valueOf(parentNodeId));
-    properties.put(ROLE, role.toString());
-    properties.put(RMI_REGISTRY_IP, rmiRegistryIP);
-    properties.put(RMI_REGISTRY_PORT, String.valueOf(rmiRegistryPort));
-    properties.put(RMI_REGISTRY_PARENT_IP, rmiRegistryParentIP);
-    properties.put(RMI_REGISTRY_PARENT_PORT, String.valueOf(rmiRegistryParentPort));
-    properties.put(CASSANDRA_IP, cassandraIP);
-    properties.put(CASSANDRA_PORT, String.valueOf(cassandraPort));
-    properties.put(CASSANDRA_PARENT_IP, cassandraParentIP);
-    properties.put(CASSANDRA_PARENT_PORT, String.valueOf(cassandraParentPort));
-    properties.put(PUSH_SLEEP, String.valueOf(1000));
-    properties.put(PULL_SLEEP, String.valueOf(1000));
-
-    return properties;
   }
 
   /**
@@ -141,31 +85,16 @@ public class StartupUTIL {
       final String cassandraParentIP,
       final int cassandraParentPort) {
 
-    String modifiedDestinationToStore = String.format("%s-%s", DESTINATION_TO_STORE, ip);
-
-    List<ICommand> commands = new ArrayList<>();
-
-    // Check for docker access and that docker is online
-    commands.add(new Exec(sshUtil, "docker ps", 0));
-    // Potentially kill old cassandra container
-    commands.add(new Exec(sshUtil, "docker kill cassandra", -1));
-    // Potentially remove old cassandra container
-    commands.add(new Exec(sshUtil, "docker rm cassandra", -1));
-    // Potentially remove old cassandra image
-    commands.add(new Exec(sshUtil, "docker image rm cassandra", -1));
-    // Potentially kill old pathstore container
-    commands.add(new Exec(sshUtil, "docker kill pathstore", -1));
-    // Potentially remove old pathstore container
-    commands.add(new Exec(sshUtil, "docker rm pathstore", -1));
-    // Potentially remove old pathstore image
-    commands.add(new Exec(sshUtil, "docker image rm pathstore", -1));
-    // Potentially remove old file associated with install
-    commands.add(new Exec(sshUtil, "rm -rf pathstore-install", -1));
-    // Create pathstore install dir and logs dir
-    commands.add(new Exec(sshUtil, "mkdir -p pathstore-install/logs", 0));
-    // Generate pathstore properties file
-    commands.add(
-        new GeneratePropertiesFile(
+    return new DeploymentBuilder(sshUtil)
+        .init()
+        .createRemoteDirectory(DeploymentConstants.REMOTE_PATHSTORE_LOGS_SUB_DIR)
+        .copyAndLoad(
+            DeploymentConstants.COPY_AND_LOAD.LOCAL_CASSANDRA_TAR,
+            DeploymentConstants.COPY_AND_LOAD.REMOTE_CASSANDRA_TAR)
+        .copyAndLoad(
+            DeploymentConstants.COPY_AND_LOAD.LOCAL_PATHSTORE_TAR,
+            DeploymentConstants.COPY_AND_LOAD.REMOTE_PATHSTORE_TAR)
+        .generatePropertiesFiles(
             nodeID,
             ip,
             parentNodeId,
@@ -178,43 +107,13 @@ public class StartupUTIL {
             cassandraPort,
             cassandraParentIP,
             cassandraParentPort,
-            modifiedDestinationToStore));
-    // Transfer properties file
-    commands.add(
-        new FileTransfer(
-            sshUtil, modifiedDestinationToStore, "pathstore-install/pathstore.properties"));
-    // Remove properties file
-    commands.add(new RemoveGeneratedPropertiesFile(modifiedDestinationToStore));
-    // Transfer cassandra image
-    commands.add(
-        new FileTransfer(
-            sshUtil, "/etc/pathstore/cassandra.tar", "pathstore-install/cassandra.tar"));
-    // Load cassandra
-    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/cassandra.tar", 0));
-    // Start cassandra
-    commands.add(
-        new Exec(
-            sshUtil,
-            "docker run --network=host -dit --restart always --name cassandra cassandra",
-            0));
-    // Wait for cassandra to start
-    commands.add(new WaitForCassandra(ip, cassandraPort));
-    // Transfer pathstore image
-    commands.add(
-        new FileTransfer(
-            sshUtil, "/etc/pathstore/pathstore.tar", "pathstore-install/pathstore.tar"));
-    // Load pathstore
-    commands.add(new Exec(sshUtil, "docker load -i pathstore-install/pathstore.tar", 0));
-    // Start pathstore
-    commands.add(
-        new Exec(
-            sshUtil,
-            "docker run --network=host -dit --restart always -v ~/pathstore-install:/etc/pathstore --user $(id -u):$(id -g) --name pathstore pathstore",
-            0));
-    // Wait for pathstore to come online
-    commands.add(new WaitForPathStore(ip, cassandraPort));
-
-    return commands;
+            DeploymentConstants.GENERATE_PROPERTIES.LOCAL_TEMP_PROPERTIES_FILE,
+            DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE)
+        .startImageAndWait(
+            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
+        .startImageAndWait(
+            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN, new WaitForPathStore(ip, cassandraPort))
+        .build();
   }
 
   /**
@@ -225,27 +124,8 @@ public class StartupUTIL {
    */
   public static List<ICommand> initUnDeploymentList(
       final SSHUtil sshUtil, final String ip, final int cassandraPort, final int newNodeId) {
-    List<ICommand> commands = new ArrayList<>();
-
-    // Check for docker access and that docker is online
-    commands.add(new Exec(sshUtil, "docker ps", 0));
-    // kill old pathstore container
-    commands.add(new Exec(sshUtil, "docker kill pathstore", 0));
-    // remove old pathstore container
-    commands.add(new Exec(sshUtil, "docker rm pathstore", 0));
-    // remove old pathstore image
-    commands.add(new Exec(sshUtil, "docker image rm pathstore", 0));
-    // force push all dirty data after pathstore is shutdown
-    commands.add(new ForcePush(ip, cassandraPort, newNodeId));
-    // kill old cassandra container
-    commands.add(new Exec(sshUtil, "docker kill cassandra", 0));
-    // remove old cassandra container
-    commands.add(new Exec(sshUtil, "docker rm cassandra", 0));
-    // remove old cassandra image
-    commands.add(new Exec(sshUtil, "docker image rm cassandra", 0));
-    // remove old file associated with install
-    commands.add(new Exec(sshUtil, "rm -rf pathstore-install", 0));
-
-    return commands;
+    return new DeploymentBuilder(sshUtil)
+        .remove(new ForcePush(ip, cassandraPort, newNodeId))
+        .build();
   }
 }

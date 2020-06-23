@@ -1,6 +1,5 @@
 package pathstore.system.deployment.deploymentFSM;
 
-import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Delete;
@@ -15,13 +14,10 @@ import pathstore.common.Role;
 import pathstore.common.logger.LoggerLevel;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
-import pathstore.system.PathStorePriviledgedCluster;
-import pathstore.system.PathStorePushServer;
 import pathstore.system.deployment.commands.CommandError;
 import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstore.system.deployment.utilities.StartupUTIL;
-import pathstore.util.SchemaInfo;
 
 import java.util.UUID;
 
