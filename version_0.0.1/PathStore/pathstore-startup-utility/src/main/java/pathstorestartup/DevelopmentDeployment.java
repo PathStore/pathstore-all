@@ -65,7 +65,6 @@ public class DevelopmentDeployment {
 
     // build cassandra
     new DevelopmentBuilder()
-        .execute(DELETE_TAR_TAG, this.cassandraTar, DELETE_TAR(this.cassandraTar))
         .execute(
             BUILDING_IMAGE_TAG,
             DeploymentConstants.CASSANDRA,
@@ -78,7 +77,6 @@ public class DevelopmentDeployment {
 
     // build pathstore
     new DevelopmentBuilder()
-        .execute(DELETE_TAR_TAG, this.pathstoreTar, DELETE_TAR(this.pathstoreTar))
         .execute(MVN_PACKAGE_TAG, pathstorePath, MVN_PACKAGE(pathstorePath))
         .execute(
             BUILDING_IMAGE_TAG,
@@ -92,8 +90,6 @@ public class DevelopmentDeployment {
 
     // build pathstore-admin-panel
     new DevelopmentBuilder()
-        .execute(
-            DELETE_TAR_TAG, this.pathstoreAdminPanelTar, DELETE_TAR(this.pathstoreAdminPanelTar))
         .execute(MVN_PACKAGE_TAG, pathstoreAdminPanelPath, MVN_PACKAGE(pathstoreAdminPanelPath))
         .execute(
             BUILDING_IMAGE_TAG,
@@ -109,6 +105,14 @@ public class DevelopmentDeployment {
 
     // deploy the built images to a server
     this.deploy();
+
+    // remove local tars after deployment is finished
+    new DevelopmentBuilder()
+        .execute(DELETE_TAR_TAG, this.cassandraTar, DELETE_TAR(this.cassandraTar))
+        .execute(DELETE_TAR_TAG, this.pathstoreTar, DELETE_TAR(this.pathstoreTar))
+        .execute(
+            DELETE_TAR_TAG, this.pathstoreAdminPanelTar, DELETE_TAR(this.pathstoreAdminPanelTar))
+        .build();
   }
 
   /**
