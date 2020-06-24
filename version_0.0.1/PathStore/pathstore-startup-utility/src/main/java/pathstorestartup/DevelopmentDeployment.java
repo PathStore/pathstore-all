@@ -68,39 +68,45 @@ public class DevelopmentDeployment {
         .execute(
             BUILDING_IMAGE_TAG,
             DeploymentConstants.CASSANDRA,
-            BUILD_IMAGE(DeploymentConstants.CASSANDRA, cassandraPath))
+            BUILD_IMAGE(DeploymentConstants.CASSANDRA, cassandraPath),
+            0)
         .execute(
             SAVING_IMAGE_TAG,
             DeploymentConstants.CASSANDRA,
-            SAVING_IMAGE(this.cassandraTar, DeploymentConstants.CASSANDRA))
+            SAVING_IMAGE(this.cassandraTar, DeploymentConstants.CASSANDRA),
+            0)
         .build();
 
     // build pathstore
     new DevelopmentBuilder()
-        .execute(MVN_PACKAGE_TAG, pathstorePath, MVN_PACKAGE(pathstorePath))
+        .execute(MVN_PACKAGE_TAG, pathstorePath, MVN_PACKAGE(pathstorePath), 0)
         .execute(
             BUILDING_IMAGE_TAG,
             DeploymentConstants.PATHSTORE,
-            BUILD_IMAGE(DeploymentConstants.PATHSTORE, pathstorePath))
+            BUILD_IMAGE(DeploymentConstants.PATHSTORE, pathstorePath),
+            0)
         .execute(
             SAVING_IMAGE_TAG,
             DeploymentConstants.PATHSTORE,
-            SAVING_IMAGE(this.pathstoreTar, DeploymentConstants.PATHSTORE))
+            SAVING_IMAGE(this.pathstoreTar, DeploymentConstants.PATHSTORE),
+            0)
         .build();
 
     // build pathstore-admin-panel
     new DevelopmentBuilder()
-        .execute(MVN_PACKAGE_TAG, pathstoreAdminPanelPath, MVN_PACKAGE(pathstoreAdminPanelPath))
+        .execute(MVN_PACKAGE_TAG, pathstoreAdminPanelPath, MVN_PACKAGE(pathstoreAdminPanelPath), 0)
         .execute(
             BUILDING_IMAGE_TAG,
             BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL,
             BUILD_IMAGE(
-                BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL, pathstoreAdminPanelPath))
+                BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL, pathstoreAdminPanelPath),
+            0)
         .execute(
             SAVING_IMAGE_TAG,
             BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL,
             SAVING_IMAGE(
-                this.pathstoreAdminPanelTar, BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL))
+                this.pathstoreAdminPanelTar, BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL),
+            0)
         .build();
 
     // deploy the built images to a server
@@ -108,10 +114,10 @@ public class DevelopmentDeployment {
 
     // remove local tars after deployment is finished
     new DevelopmentBuilder()
-        .execute(DELETE_TAR_TAG, this.cassandraTar, DELETE_TAR(this.cassandraTar))
-        .execute(DELETE_TAR_TAG, this.pathstoreTar, DELETE_TAR(this.pathstoreTar))
+        .execute(DELETE_TAR_TAG, this.cassandraTar, DELETE_TAR(this.cassandraTar), 0)
+        .execute(DELETE_TAR_TAG, this.pathstoreTar, DELETE_TAR(this.pathstoreTar), 0)
         .execute(
-            DELETE_TAR_TAG, this.pathstoreAdminPanelTar, DELETE_TAR(this.pathstoreAdminPanelTar))
+            DELETE_TAR_TAG, this.pathstoreAdminPanelTar, DELETE_TAR(this.pathstoreAdminPanelTar), 0)
         .build();
   }
 

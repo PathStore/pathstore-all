@@ -89,10 +89,7 @@ public class BootstrapDeploymentConstants {
     }
   }
 
-  /**
-   * This class stores constants for {@link BootstrapDeploymentBuilder#initBootstrap(List,
-   * SSHUtil)}
-   */
+  /** This class stores constants for {@link BootstrapDeploymentBuilder#initBootstrap()} */
   public static final class INIT_BOOTSTRAP_COMMANDS {
     // command to kill the pathstore admin panel container
     public static final String KILL_PATHSTORE_ADMIN_PANEL =

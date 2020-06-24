@@ -26,6 +26,9 @@ public class DevelopmentBuilder {
     /** Message to display on error of the process */
     public final String error;
 
+    /** Desired exit status for the process (-1 if irrelevant) */
+    public final int desiredExitStatus;
+
     /**
      * @param processBuilder {@link #processBuilder}
      * @param entry {@link #entry}
@@ -36,11 +39,13 @@ public class DevelopmentBuilder {
         final ProcessBuilder processBuilder,
         final String entry,
         final String exit,
-        final String error) {
+        final String error,
+        final int desiredExitStatus) {
       this.processBuilder = processBuilder;
       this.entry = entry;
       this.exit = exit;
       this.error = error;
+      this.desiredExitStatus = desiredExitStatus;
     }
   }
 
@@ -56,13 +61,17 @@ public class DevelopmentBuilder {
    * @return reference to this builder to add to the sequence of commands or to execute theml
    */
   public DevelopmentBuilder execute(
-      final String commandName, final String commandContext, final List<String> commands) {
+      final String commandName,
+      final String commandContext,
+      final List<String> commands,
+      final int desiredExitStatus) {
     this.processes.add(
         new Event(
             new ProcessBuilder(commands),
             this.format(commandName + ": %s", commandContext),
             this.format("Finished " + commandName + " %s", commandContext),
-            this.format("Error " + commandName + " %s", commandContext)));
+            this.format("Error " + commandName + " %s", commandContext),
+            desiredExitStatus));
     return this;
   }
 
@@ -101,6 +110,12 @@ public class DevelopmentBuilder {
                     .redirectError(ProcessBuilder.Redirect.INHERIT)
                     .start();
             p.waitFor();
+
+            if (event.desiredExitStatus != -1 && event.desiredExitStatus != p.exitValue()) {
+              System.err.println(event.error);
+              System.exit(-1);
+            }
+
             System.out.println(event.exit);
           } catch (InterruptedException | IOException e) {
             System.err.println(event.error);
