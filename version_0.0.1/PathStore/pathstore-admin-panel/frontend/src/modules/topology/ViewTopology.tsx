@@ -93,7 +93,9 @@ const getClassName = (object: Deployment): string => {
             return 'd_cyan_node';
         case DEPLOYMENT_STATE[DEPLOYMENT_STATE.WAITING_DEPLOYMENT]:
             return 'd_yellow_node';
+        case DEPLOYMENT_STATE[DEPLOYMENT_STATE.FAILED]:
+            return 'd_red';
         default:
-            return 'd_red'
+            return 'd_red';
     }
 };
