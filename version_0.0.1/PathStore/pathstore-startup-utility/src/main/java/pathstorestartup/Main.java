@@ -7,8 +7,7 @@ public class Main {
 
     Scanner scanner = new Scanner(System.in);
 
-    if (args.length == 1 && args[0].equals("-d")) new DevelopmentDeployment(scanner).init();
-    else new ProductionDeployment(scanner).init();
+    new DevelopmentDeployment(scanner).init();
 
     scanner.close();
   }

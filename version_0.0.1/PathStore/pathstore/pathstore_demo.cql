@@ -20,3 +20,4 @@ CREATE TABLE pathstore_demo.users (
     AND min_index_interval = 128
     AND read_repair_chance = 0.0
     AND speculative_retry = '99PERCENTILE';
+CREATE INDEX users_vegetarian_idx ON pathstore_demo.users (vegetarian);
