@@ -298,7 +298,7 @@ public class PathStoreSession implements Session {
     // hossein here:
     statement.setFetchSize(1000);
 
-    System.out.println(String.format("Time to execute is: %d", System.currentTimeMillis() - start));
+    System.out.println("Time to execute: " + (System.currentTimeMillis() - start));
 
     ResultSet set = this.session.execute(statement);
 
