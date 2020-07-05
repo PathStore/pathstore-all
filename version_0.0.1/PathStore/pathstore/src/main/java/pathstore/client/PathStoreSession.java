@@ -159,7 +159,7 @@ public class PathStoreSession implements Session {
     // hossein here:
     statement.setFetchSize(1000);
 
-    return new PathStoreResultSet(this.session.execute(statement), keyspace, table);
+    return new PathStoreResultSet(this.session.execute(statement), keyspace, table, false);
   }
 
   /**
@@ -204,6 +204,7 @@ public class PathStoreSession implements Session {
       throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
     String keyspace = statement.getKeyspace();
     String table = "";
+    boolean allowFilteringValue = false;
 
     long start = System.currentTimeMillis();
 
@@ -217,8 +218,7 @@ public class PathStoreSession implements Session {
       try {
         Field allowFiltering = Select.class.getField("allowFiltering");
         allowFiltering.setAccessible(true);
-        boolean value = allowFiltering.getBoolean(select);
-        System.out.println(value);
+        allowFilteringValue = allowFiltering.getBoolean(select);
       } catch (NoSuchFieldException | IllegalAccessException e) {
         e.printStackTrace();
       }
@@ -314,7 +314,7 @@ public class PathStoreSession implements Session {
 
     ResultSet set = this.session.execute(statement);
 
-    return new PathStoreResultSet(set, keyspace, table);
+    return new PathStoreResultSet(set, keyspace, table, allowFilteringValue);
   }
 
   /**
