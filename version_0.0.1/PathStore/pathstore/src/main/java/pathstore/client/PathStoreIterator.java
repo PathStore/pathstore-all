@@ -1,136 +1,138 @@
-/**********
+/**
+ * ********
  *
- * Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
+ * <p>Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * <p>Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  *
- ***********/
+ * <p>*********
+ */
 package pathstore.client;
 
 import java.util.Iterator;
 import java.util.List;
 
+import com.datastax.driver.core.Session;
+import pathstore.system.PathStorePriviledgedCluster;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 
 import com.datastax.driver.core.ArrayBackedRow;
-import com.datastax.driver.core.ColumnDefinitions.Definition;
 import com.datastax.driver.core.Row;
 
-/**
- * TODO: Comment
- */
+/** TODO: Comment */
 public class PathStoreIterator implements Iterator<Row> {
 
-    private Iterator<Row> iter;
-    private String keyspace;
-    private String table;
-    private ArrayBackedRow row_next = null;
-    private ArrayBackedRow row = null;
+  private static final Session priv = PathStorePriviledgedCluster.getInstance().connect();
 
-    public PathStoreIterator(Iterator<Row> iter, String keyspace, String table) {
-        this.iter = iter;
-        this.keyspace = keyspace;
-        this.table = table;
+  private final Iterator<Row> iter;
+  private final String keyspace;
+  private final String table;
+  private final boolean allowFiltering;
+
+  // internal rows for iterator transitions
+  private ArrayBackedRow row_next = null;
+  private ArrayBackedRow row = null;
+
+  public PathStoreIterator(
+      final Iterator<Row> iter,
+      final String keyspace,
+      final String table,
+      final boolean allowFiltering) {
+    this.iter = iter;
+    this.keyspace = keyspace;
+    this.table = table;
+    this.allowFiltering = allowFiltering;
+  }
+
+  @Override
+  public boolean hasNext() {
+
+    if (this.row != null) return true;
+
+    if (this.row_next == null) this.row = (ArrayBackedRow) this.iter.next();
+    else this.row = this.row_next;
+
+    this.row_next = (ArrayBackedRow) this.iter.next();
+
+    // handle deleted rows
+    while (this.row != null && is_deleted(this.row)) { // row is a deleted row
+
+      // for all
+      while (this.row_next != null && same_key(this.row, this.row_next))
+        this.row_next = (ArrayBackedRow) this.iter.next();
+      this.row = this.row_next;
+      this.row_next = (ArrayBackedRow) this.iter.next();
     }
 
-    @Override
-    public boolean hasNext() {
-
-        if (row != null)
-            return true;
-
-        if (row_next == null)
-            row = (ArrayBackedRow) iter.next();
-        else
-            row = row_next;
-
-        row_next = (ArrayBackedRow) iter.next();
-
-        // handle deleted rows
-        while (row != null && is_deleted(row)) {
-            while (row_next != null && same_key(row, row_next)) {
-                row_next = (ArrayBackedRow) iter.next();
-            }
-            row = row_next;
-            row_next = (ArrayBackedRow) iter.next();
-        }
-
-        while (row_next != null && same_key(row, row_next)) {
-            merge(row, row_next);
-            row_next = (ArrayBackedRow) iter.next();
-        }
-
-        return row != null;
+    // handle partial rows (updates)
+    while (this.row_next != null && same_key(this.row, this.row_next)) {
+      merge(this.row, this.row_next);
+      this.row_next = (ArrayBackedRow) this.iter.next();
     }
 
+    return this.row != null;
+  }
 
-    private boolean is_deleted(ArrayBackedRow row) {
-        Object value = row.getObject("pathstore_deleted");
-        return value != null;
+  // TODO: Confirm the only two states pathstore_deleted can be are true and null (there may be a
+  // chance it is false)
+  private boolean is_deleted(final ArrayBackedRow row) {
+    Object value = row.getObject("pathstore_deleted");
+    return value != null;
+  }
+
+  private boolean same_key(final ArrayBackedRow row, final ArrayBackedRow row_next) {
+    List<Column> columns = SchemaInfo.getInstance().getTableColumns(this.keyspace, this.table);
+
+    for (Column col : columns) {
+      if (col.kind.compareTo("regular") != 0 && !col.column_name.startsWith("pathstore_")) {
+
+        Object value1 = row.getObject(col.column_name);
+        Object value2 = row_next.getObject(col.column_name);
+
+        if (!value1.equals(value2)) return false;
+      }
     }
 
-    private boolean same_key(ArrayBackedRow row, ArrayBackedRow row_next) {
-        List<Column> columns = SchemaInfo.getInstance().getTableColumns(keyspace, table);
+    return true;
+  }
 
-        for (Column col : columns) {
-            if (col.kind.compareTo("regular") != 0 &&
-                    col.column_name.startsWith("pathstore_") == false) {
+  private void merge(final ArrayBackedRow row, final ArrayBackedRow row_next) {
+    int num_columns = Math.max(row.metadata.asList().size(), row_next.metadata.asList().size());
 
-                Object value1 = row.getObject(col.column_name);
-                Object value2 = row_next.getObject(col.column_name);
+    for (int x = 0; x < num_columns; x++)
+      if (row.data.get(x) == null) row.data.set(x, row_next.data.get(x));
+  }
 
-                if (value1.equals(value2) == false)
-                    return false;
-            }
-        }
+  // TODO: Re add removal of pathstore hidden collumns
+  @Override
+  public Row next() {
 
-        return true;
+    /*
+    // remove pathstore metacolumns
+    List<Definition>columns_query = row.metadata.asList();
+    for (int x = columns_query.size()-1; x > -1; x--) {
+    	String name = columns_query.get(x).getName();
+    	if (columns_query.get(x).getName().startsWith("pathstore_")) {
+    		row.data.set(x, null);
+    	}
     }
+    */
+    ArrayBackedRow tempRow = this.row;
+    this.row = null;
+    return tempRow;
+  }
 
-    private void merge(ArrayBackedRow row, ArrayBackedRow row_next) {
-        int num_columns = row.metadata.asList().size() > row_next.metadata.asList().size() ?
-                row.metadata.asList().size() :
-                row_next.metadata.asList().size();
-
-        for (int x = 0; x < num_columns; x++) {
-            if (row.data.get(x) == null)
-                row.data.set(x, row_next.data.get(x));
-        }
-    }
-
-
-    @Override
-    public Row next() {
-
-		/*
-		// remove pathstore metacolumns
-		List<Definition>columns_query = row.metadata.asList();
-		for (int x = columns_query.size()-1; x > -1; x--) {
-			String name = columns_query.get(x).getName();
-			if (columns_query.get(x).getName().startsWith("pathstore_")) {
-				row.data.set(x, null);
-			}
-		}
-		*/
-        ArrayBackedRow tempRow = row;
-        row = null;
-        return tempRow;
-    }
-
-    @Override
-    public void remove() {
-        iter.remove();
-    }
-
+  @Override
+  public void remove() {
+    this.iter.remove();
+  }
 }
