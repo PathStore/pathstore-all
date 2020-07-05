@@ -17,6 +17,7 @@
  */
 package pathstore.client;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
@@ -212,6 +213,15 @@ public class PathStoreSession implements Session {
     if (statement instanceof Select) {
       Select select = (Select) statement;
       table = select.getTable();
+
+      try {
+        Field allowFiltering = Select.class.getField("allowFiltering");
+        allowFiltering.setAccessible(true);
+        boolean value = allowFiltering.getBoolean(select);
+        System.out.println(value);
+      } catch (NoSuchFieldException | IllegalAccessException e) {
+        e.printStackTrace();
+      }
 
       if (!table.startsWith("local_")) {
         List<Clause> clauses = select.where().getClauses();
