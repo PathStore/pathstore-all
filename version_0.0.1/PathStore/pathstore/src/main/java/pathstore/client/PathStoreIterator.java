@@ -19,8 +19,13 @@ package pathstore.client;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Select;
+import pathstore.common.Constants;
 import pathstore.system.PathStorePriviledgedCluster;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
@@ -64,9 +69,7 @@ public class PathStoreIterator implements Iterator<Row> {
     this.row_next = (ArrayBackedRow) this.iter.next();
 
     // handle deleted rows
-    while (this.row != null && is_deleted(this.row)) { // row is a deleted row
-
-      // for all
+    while (this.row != null && is_deleted(this.row)) {
       while (this.row_next != null && same_key(this.row, this.row_next))
         this.row_next = (ArrayBackedRow) this.iter.next();
       this.row = this.row_next;
@@ -77,6 +80,15 @@ public class PathStoreIterator implements Iterator<Row> {
     while (this.row_next != null && same_key(this.row, this.row_next)) {
       merge(this.row, this.row_next);
       this.row_next = (ArrayBackedRow) this.iter.next();
+    }
+
+    // If the user made a query with allow filtering then there is a chance that the row from
+    // the database is not the most up to date row. If this is the case we need to check to see if
+    // there is a more up to date row. If there is then we cannot return that row to the user
+    // because it doesn't actually exist and is part of the row set to a particular primary key.
+    if (this.allowFiltering && this.hasNewerRows(this.row)) {
+      this.row = null;
+      return this.hasNext();
     }
 
     return this.row != null;
@@ -112,7 +124,39 @@ public class PathStoreIterator implements Iterator<Row> {
       if (row.data.get(x) == null) row.data.set(x, row_next.data.get(x));
   }
 
-  // TODO: Re add removal of pathstore hidden collumns
+  /**
+   * This function takes a given row and queries the database iff
+   *
+   * @param row
+   * @return
+   */
+  private boolean hasNewerRows(final ArrayBackedRow row) {
+
+    if (row == null) return false;
+
+    Select checkForNewerRows = QueryBuilder.select().all().from(this.keyspace, this.table);
+
+    // add where clauses to fix all primary key columns excluding pathstore_version.
+    SchemaInfo.getInstance().getTableColumns(this.keyspace, this.table).stream()
+        .filter(
+            column ->
+                column.kind.compareTo("regular") != 0
+                    && !column.column_name.startsWith("pathstore_"))
+        .map(column -> column.column_name)
+        .forEach(
+            columnName ->
+                checkForNewerRows.where(QueryBuilder.eq(columnName, row.getObject(columnName))));
+
+    // add greater than clause to pathstore_version
+    checkForNewerRows.where(
+        QueryBuilder.gt(
+            Constants.PATHSTORE_COLUMNS.PATHSTORE_VERSION,
+            row.getUUID(Constants.PATHSTORE_COLUMNS.PATHSTORE_VERSION)));
+
+    return priv.execute(checkForNewerRows).one() != null;
+  }
+
+  // TODO: Re add removal of pathstore hidden columns
   @Override
   public Row next() {
 

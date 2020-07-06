@@ -17,9 +17,8 @@
  */
 package pathstore.client;
 
-import java.lang.reflect.Field;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import pathstore.common.QueryCache;
 import pathstore.exception.InvalidKeyspaceException;
@@ -46,6 +45,8 @@ import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
 import com.datastax.driver.core.querybuilder.Update.Assignments;
 import com.google.common.util.concurrent.ListenableFuture;
+import pathstore.util.SchemaInfo;
+import pathstore.util.SchemaInfo.Column;
 
 /**
  * TODO: Fix all string literals and move to {@link pathstore.common.Constants} This is a class is
@@ -204,25 +205,25 @@ public class PathStoreSession implements Session {
       throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
     String keyspace = statement.getKeyspace();
     String table = "";
-    boolean allowFilteringValue = false;
-
-    long start = System.currentTimeMillis();
+    boolean allowFiltering = false;
 
     if (!keyspace.startsWith("pathstore"))
       throw new InvalidKeyspaceException("Keyspace does not start with pathstore prefix");
 
     if (statement instanceof Select) {
       Select select = (Select) statement;
+
+      allowFiltering = select.hasAllowFiltering();
+
       table = select.getTable();
 
       if (!table.startsWith("local_")) {
-        List<Clause> clauses = select.where().getClauses();
-        int a = select.getFetchSize();
-        int l = -1;
-        if ((select.limit instanceof Integer)) l = (Integer) select.limit;
-        QueryCache.getInstance().updateCache(keyspace, table, clauses, l);
+        QueryCache.getInstance().updateCache(keyspace, table, this.parseClauses(select), -1);
+
+        /*
         if (device != null)
           QueryCache.getInstance().updateDeviceCommandCache(device, keyspace, table, clauses, l);
+         */
       }
     } else if (statement instanceof Insert) {
       Insert insert = (Insert) statement;
@@ -300,13 +301,78 @@ public class PathStoreSession implements Session {
     // hossein here:
     statement.setFetchSize(1000);
 
-    long dif = System.currentTimeMillis() - start;
-
-    System.out.println("Time to execute: " + dif);
-
     ResultSet set = this.session.execute(statement);
 
-    return new PathStoreResultSet(set, keyspace, table, allowFilteringValue);
+    return new PathStoreResultSet(set, keyspace, table, allowFiltering);
+  }
+
+  /**
+   * TODO: This function currently doesn't account for secondary indexes
+   *
+   * <p>TODO: Solution for secondary indexes would to be to determine if a where clause points to an
+   * index and if it does exclude that where clause
+   *
+   * <p>This function is used to determine what where clauses are valid to store in the QueryCache.
+   *
+   * <p>There are 3 main cases that are considered:
+   *
+   * <p>1) The query doesn't use allow filtering thus all records will be considered with a given
+   * primary key so all clauses are returned.
+   *
+   * <p>2) The query uses allow filtering but not all partition key columns are fixed, so an empty
+   * list of clauses is returned.
+   *
+   * <p>3) The query uses allow filtering and all partition key columns are fixed and some number of
+   * clustering key columns are fixed (may be zero). Only the partition key statements and
+   * clustering columns are returned.
+   *
+   * @param select
+   * @return
+   */
+  private List<Clause> parseClauses(final Select select) {
+
+    List<Clause> clauses = select.where().getClauses();
+
+    if (select.hasAllowFiltering()) {
+
+      List<Column> columns =
+          SchemaInfo.getInstance().getTableColumns(select.getKeyspace(), select.getTable());
+
+      Set<String> partitionKeys =
+          columns.stream()
+              .filter(
+                  column ->
+                      column.kind.compareTo("partition_key") == 0
+                          && !column.column_name.startsWith("pathstore_"))
+              .map(column -> column.column_name)
+              .collect(Collectors.toSet());
+
+      Set<String> clusteringKeys =
+          columns.stream()
+              .filter(
+                  column ->
+                      column.kind.compareTo("clustering") == 0
+                          && !column.column_name.startsWith("pathstore_"))
+              .map(column -> column.column_name)
+              .collect(Collectors.toSet());
+
+      Set<String> columnNames =
+          select.where().getClauses().stream().map(Clause::getName).collect(Collectors.toSet());
+
+      // if the where clauses contains all parition keys then filter all regular statements out,
+      // else return an empty list
+      clauses =
+          columnNames.containsAll(partitionKeys)
+              ? clauses.stream()
+                  .filter(
+                      clause ->
+                          partitionKeys.contains(clause.getName())
+                              && clusteringKeys.contains(clause.getName()))
+                  .collect(Collectors.toList())
+              : Collections.emptyList();
+    }
+
+    return clauses;
   }
 
   /**
