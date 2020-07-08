@@ -35,6 +35,21 @@
               </transformers>
             </configuration>
           </execution>
+          <execution>
+            <id>build-second</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer>
+                  <mainClass>pathstore.test.AllowFilteringTest</mainClass>
+                </transformer>
+              </transformers>
+              <finalName>test</finalName>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
     </plugins>
