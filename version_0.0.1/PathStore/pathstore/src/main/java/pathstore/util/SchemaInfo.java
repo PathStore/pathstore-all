@@ -59,13 +59,25 @@ public class SchemaInfo {
 
   public SchemaInfo(final Session session) {
     this.session = session;
+<<<<<<< HEAD
+=======
+    this.loadSchemas();
+  }
+
+  public void reset() {
+    this.columnInfo.clear();
+>>>>>>> dbf0ee10326adddf3bb71316c7d0f9b323fcdc18
     this.loadSchemas();
   }
 
   private void loadSchemas() {
     StreamSupport.stream(
             this.session
+<<<<<<< HEAD
                 .execute(QueryBuilder.select("keyspace_name").from("system_schema", "keyspaces"))
+=======
+                .execute(QueryBuilder.select("keyspace_name").from("system_schema", "keyspace"))
+>>>>>>> dbf0ee10326adddf3bb71316c7d0f9b323fcdc18
                 .spliterator(),
             true)
         .map(row -> row.getString("keyspace_name"))
