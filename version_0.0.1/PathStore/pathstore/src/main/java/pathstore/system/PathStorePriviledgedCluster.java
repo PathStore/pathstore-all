@@ -28,18 +28,14 @@ import com.datastax.driver.core.SocketOptions;
 /** TODO: Copy of {@link pathstore.client.PathStoreCluster} */
 public class PathStorePriviledgedCluster {
 
-  private static final Object lock = new Object();
-
   static PathStorePriviledgedCluster pathStoreCluster = null;
 
   private Cluster cluster = null;
   private Session session = null;
 
-  public static PathStorePriviledgedCluster getInstance() {
-    synchronized (lock) {
-      if (PathStorePriviledgedCluster.pathStoreCluster == null)
-        PathStorePriviledgedCluster.pathStoreCluster = new PathStorePriviledgedCluster();
-    }
+  public static synchronized PathStorePriviledgedCluster getInstance() {
+    if (PathStorePriviledgedCluster.pathStoreCluster == null)
+      PathStorePriviledgedCluster.pathStoreCluster = new PathStorePriviledgedCluster();
     return PathStorePriviledgedCluster.pathStoreCluster;
   }
 

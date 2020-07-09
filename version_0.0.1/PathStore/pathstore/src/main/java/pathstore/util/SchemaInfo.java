@@ -19,140 +19,214 @@ package pathstore.util;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import io.netty.util.internal.ConcurrentSet;
+import pathstore.common.logger.PathStoreLogger;
+import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.PathStorePriviledgedCluster;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
-/** TODO: Comment */
 public class SchemaInfo {
   private static SchemaInfo instance = null;
 
-  public static SchemaInfo getInstance() {
+  public static synchronized SchemaInfo getInstance() {
     if (SchemaInfo.instance == null)
       SchemaInfo.instance = new SchemaInfo(PathStorePriviledgedCluster.getInstance().connect());
     return SchemaInfo.instance;
   }
 
-  final Map<String, Map<Table, List<Column>>> schemaInfo = new ConcurrentHashMap<>();
+  private static final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(SchemaInfo.class);
+
+  private final Set<String> keyspacesLoaded = new ConcurrentSet<>();
+
+  private final ConcurrentMap<String, ConcurrentMap<String, Table>> tableMap =
+      new ConcurrentHashMap<>();
+
+  private final ConcurrentMap<String, ConcurrentMap<Table, Collection<Column>>> columnInfo =
+      new ConcurrentHashMap<>();
+
+  private final ConcurrentMap<String, ConcurrentMap<Table, Collection<Index>>> indexInfo =
+      new ConcurrentHashMap<>();
 
   private final Session session;
 
   public SchemaInfo(final Session session) {
     this.session = session;
-    loadSchemas();
-  }
-
-  public Map<String, Map<Table, List<Column>>> getSchemaInfo() {
-    return schemaInfo;
-  }
-
-  public void reset() {
-    this.schemaInfo.clear();
     this.loadSchemas();
   }
 
   private void loadSchemas() {
-
-    try {
-      String query = "select * from system_schema.keyspaces";
-      ResultSet results = session.execute(query);
-
-      for (Row row : results) {
-        String keyspace_name = row.getString("keyspace_name");
-        if (keyspace_name.startsWith("pathstore_")) getKeySpaceInfo(keyspace_name);
-      }
-
-    } finally {
-      // session.close();
-    }
+    StreamSupport.stream(
+            this.session
+                .execute(QueryBuilder.select("keyspace_name").from("system_schema", "keyspaces"))
+                .spliterator(),
+            true)
+        .map(row -> row.getString("keyspace_name"))
+        .forEach(this::loadKeyspace);
   }
 
   public void removeKeyspace(final String keyspace) {
-    synchronized (this.schemaInfo) {
-      this.schemaInfo.remove(keyspace);
-    }
+    this.keyspacesLoaded.remove(keyspace);
+    this.tableMap.remove(keyspace);
+    this.columnInfo.remove(keyspace);
+    this.indexInfo.remove(keyspace);
+
+    logger.info(String.format("Removed keyspace %s", keyspace));
   }
 
-  public Map<Table, List<Column>> getKeySpaceInfo(String keyspaceName) {
-    if (schemaInfo.get(keyspaceName) != null) return schemaInfo.get(keyspaceName);
+  public void loadKeyspace(final String keyspace) {
+    this.tableMap.put(keyspace, this.loadTableCollectionsForKeyspace(keyspace));
+    this.columnInfo.put(keyspace, this.getColumnInfoPerKeyspace(keyspace));
+    this.indexInfo.put(keyspace, this.getIndexInfoPerKeyspace(keyspace));
+    this.keyspacesLoaded.add(keyspace);
 
-    Map<Table, List<Column>> keyspaceInfo = new ConcurrentHashMap<>();
-    schemaInfo.put(keyspaceName, keyspaceInfo);
-
-    PreparedStatement prepared =
-        session.prepare("select * from system_schema.tables where keyspace_name=?");
-
-    BoundStatement bound = prepared.bind(keyspaceName);
-    ResultSet results = session.execute(bound);
-
-    List<Column> columns = null;
-
-    for (Row row : results) {
-      Table table = Table.buildFromRow(row);
-      columns = new ArrayList<Column>();
-      keyspaceInfo.put(table, columns);
-    }
-
-    prepared = session.prepare("select * from system_schema.columns where keyspace_name=?");
-
-    bound = prepared.bind(keyspaceName);
-    results = session.execute(bound);
-
-    for (Row row : results) {
-      String keyspace_name = row.getString("keyspace_name");
-      String table_name = row.getString("table_name");
-      String column_name = row.getString("column_name");
-      String clustering_order = row.getString("clustering_order");
-      String kind = row.getString("kind");
-      int position = row.getInt("position");
-      String type = row.getString("type");
-
-      Column column =
-          new Column(
-              keyspace_name, table_name, column_name, clustering_order, kind, position, type);
-
-      columns = getColumns(keyspaceInfo, table_name);
-
-      columns.add(column);
-    }
-
-    return keyspaceInfo;
+    logger.info(
+        String.format(
+            "Loaded keyspace %s it has %d tables",
+            keyspace, this.tableMap.get(keyspace).values().size()));
   }
 
-  private List<Column> getColumns(Map<Table, List<Column>> keyspaceInfo, String tableName) {
-    for (Table t : keyspaceInfo.keySet()) {
-      if (t.table_name.compareTo(tableName) == 0) return keyspaceInfo.get(t);
-    }
-    return null;
+  public boolean isKeyspaceLoaded(final String keyspace) {
+    return this.keyspacesLoaded.contains(keyspace);
   }
 
-  public List<Column> getTableColumns(String keyspace, String table) {
-    return getColumns(getKeySpaceInfo(keyspace), table);
+  public Collection<String> getLoadedKeyspaces() {
+    return this.keyspacesLoaded;
+  }
+
+  public Collection<Table> getTablesFromKeyspace(final String keyspace) {
+    return this.tableMap.get(keyspace).values();
+  }
+
+  private ConcurrentMap<String, Table> loadTableCollectionsForKeyspace(final String keyspaceName) {
+    return StreamSupport.stream(
+            this.session
+                .execute(
+                    QueryBuilder.select()
+                        .all()
+                        .from("system_schema", "tables")
+                        .where(QueryBuilder.eq("keyspace_name", keyspaceName))
+                        .limit(-1))
+                .spliterator(),
+            true)
+        .map(Table::buildFromRow)
+        .collect(Collectors.toConcurrentMap(table -> table.table_name, Function.identity()));
+  }
+
+  private ConcurrentMap<Table, Collection<Column>> getColumnInfoPerKeyspace(final String keyspace) {
+    return this.tableMap.get(keyspace).values().stream()
+        .collect(
+            Collectors.toConcurrentMap(
+                Function.identity(), table -> Column.buildFromTable(this.session, table)));
+  }
+
+  private ConcurrentMap<Table, Collection<Index>> getIndexInfoPerKeyspace(final String keyspace) {
+    return this.tableMap.get(keyspace).values().stream()
+        .collect(
+            Collectors.toConcurrentMap(
+                Function.identity(), table -> Index.buildFromTable(this.session, table)));
+  }
+
+  public Collection<Column> getTableColumns(final String keyspace, final String tableName) {
+    return Optional.of(
+            this.columnInfo.get(keyspace).get(this.tableMap.get(keyspace).get(tableName)))
+        .orElse(Collections.emptySet());
+  }
+
+  public Collection<Index> getTableIndexes(final String keyspaceName, final String tableName) {
+    return Optional.of(
+            this.indexInfo.get(keyspaceName).get(this.tableMap.get(keyspaceName).get(tableName)))
+        .orElse(Collections.emptySet());
+  }
+
+  /**
+   * This class represents a row in the system_schema.indexes table.
+   *
+   * @see SchemaInfo#loadSchemas()
+   */
+  public static class Index {
+    /** keyspace name where the index exists */
+    public final String keyspace_name;
+
+    /** Table name where the index exists */
+    public final String table_name;
+
+    /** Name of index that was provided at time of creation */
+    public final String index_name;
+
+    /** type of index (TODO: What are the options?) */
+    public final String kind;
+
+    /**
+     * key name is 'target' according to apache docs to get the name of the column where the index
+     * is present
+     */
+    public final Map<String, String> options;
+
+    private Index(
+        final String keyspace_name,
+        final String table_name,
+        final String index_name,
+        final String kind,
+        final Map<String, String> options) {
+      this.keyspace_name = keyspace_name;
+      this.table_name = table_name;
+      this.index_name = index_name;
+      this.kind = kind;
+      this.options = options;
+    }
+
+    public static Collection<Index> buildFromTable(final Session session, final Table table) {
+      return StreamSupport.stream(
+              session
+                  .execute(
+                      QueryBuilder.select()
+                          .all()
+                          .from("system_schema", "indexes")
+                          .where(QueryBuilder.eq("keyspace_name", table.keyspace_name))
+                          .and(QueryBuilder.eq("table_name", table.table_name))
+                          .limit(-1))
+                  .spliterator(),
+              true)
+          .map(Index::buildFromRow)
+          .collect(Collectors.toSet());
+    }
+
+    // system_schema.indexes
+    public static Index buildFromRow(final Row row) {
+      return new Index(
+          row.getString("keyspace_name"),
+          row.getString("table_name"),
+          row.getString("index_name"),
+          row.getString("kind"),
+          row.getMap("options", String.class, String.class));
+    }
   }
 
   public static class Column {
-    public String keyspace_name;
-    public String table_name;
-    public String column_name;
-    public String clustering_order;
-    public String kind;
-    public int position;
-    public String type;
+    public final String keyspace_name;
+    public final String table_name;
+    public final String column_name;
+    public final String clustering_order;
+    public final String kind;
+    public final int position;
+    public final String type;
 
-    public Column(
-        String keyspace_name,
-        String table_name,
-        String column_name,
-        String clustering_order,
-        String kind,
-        int position,
-        String type) {
-      super();
+    private Column(
+        final String keyspace_name,
+        final String table_name,
+        final String column_name,
+        final String clustering_order,
+        final String kind,
+        final int position,
+        final String type) {
       this.keyspace_name = keyspace_name;
       this.table_name = table_name;
       this.column_name = column_name;
@@ -161,215 +235,124 @@ public class SchemaInfo {
       this.position = position;
       this.type = type;
     }
+
+    public static Collection<Column> buildFromTable(final Session session, final Table table) {
+      return StreamSupport.stream(
+              session
+                  .execute(
+                      QueryBuilder.select()
+                          .all()
+                          .from("system_schema", "columns")
+                          .where(QueryBuilder.eq("keyspace_name", table.keyspace_name))
+                          .and(QueryBuilder.eq("table_name", table.table_name))
+                          .limit(-1))
+                  .spliterator(),
+              true)
+          .map(Column::buildFromRow)
+          .collect(Collectors.toSet());
+    }
+
+    // row from system_schema.columns
+    private static Column buildFromRow(final Row row) {
+      return new Column(
+          row.getString("keyspace_name"),
+          row.getString("table_name"),
+          row.getString("column_name"),
+          row.getString("clustering_order"),
+          row.getString("kind"),
+          row.getInt("position"),
+          row.getString("type"));
+    }
   }
 
   public static class Table {
-    String keyspace_name;
-    String table_name;
-    double bloom_filter_fp_chance;
-    Object caching;
-    boolean cdc;
-    String comment;
-    Object compaction;
-    Object compression;
-    double crc_check_chance;
-    double dclocal_read_repair_chance;
-    int default_time_to_live;
-    Object extensions;
-    Object flags;
-    int gc_grace_seconds;
-    UUID id;
-    int max_index_interval;
-    int memtable_flush_period_in_ms;
-    int min_index_interval;
-    double read_repair_chance;
-    String speculative_retry;
+    public final String keyspace_name;
+    public final String table_name;
+    public final double bloom_filter_fp_chance;
+    public final Object caching;
+    public final boolean cdc;
+    public final String comment;
+    public final Object compaction;
+    public final Object compression;
+    public final double crc_check_chance;
+    public final double dclocal_read_repair_chance;
+    public final int default_time_to_live;
+    public final Object extensions;
+    public final Object flags;
+    public final int gc_grace_seconds;
+    public final UUID id;
+    public final int max_index_interval;
+    public final int memtable_flush_period_in_ms;
+    public final int min_index_interval;
+    public final double read_repair_chance;
+    public final String speculative_retry;
 
-    public String getKeyspace_name() {
-      return keyspace_name;
-    }
-
-    public void setKeyspace_name(String keyspace_name) {
+    private Table(
+        final String keyspace_name,
+        final String table_name,
+        final double bloom_filter_fp_chance,
+        final Object caching,
+        final boolean cdc,
+        final String comment,
+        final Object compaction,
+        final Object compression,
+        final double crc_check_chance,
+        final double dclocal_read_repair_chance,
+        final int default_time_to_live,
+        final Object extensions,
+        final Object flags,
+        final int gc_grace_seconds,
+        final UUID id,
+        final int max_index_interval,
+        final int memtable_flush_period_in_ms,
+        final int min_index_interval,
+        final double read_repair_chance,
+        final String speculative_retry) {
       this.keyspace_name = keyspace_name;
-    }
-
-    public String getTable_name() {
-      return table_name;
-    }
-
-    public void setTable_name(String table_name) {
       this.table_name = table_name;
-    }
-
-    public double getBloom_filter_fp_chance() {
-      return bloom_filter_fp_chance;
-    }
-
-    public void setBloom_filter_fp_chance(double bloom_filter_fp_chance) {
       this.bloom_filter_fp_chance = bloom_filter_fp_chance;
-    }
-
-    public Object getCaching() {
-      return caching;
-    }
-
-    public void setCaching(Object caching) {
       this.caching = caching;
-    }
-
-    public boolean isCdc() {
-      return cdc;
-    }
-
-    public void setCdc(boolean cdc) {
       this.cdc = cdc;
-    }
-
-    public String getComment() {
-      return comment;
-    }
-
-    public void setComment(String comment) {
       this.comment = comment;
-    }
-
-    public Object getCompaction() {
-      return compaction;
-    }
-
-    public void setCompaction(Object compaction) {
       this.compaction = compaction;
-    }
-
-    public Object getCompression() {
-      return compression;
-    }
-
-    public void setCompression(Object compression) {
       this.compression = compression;
-    }
-
-    public double getCrc_check_chance() {
-      return crc_check_chance;
-    }
-
-    public void setCrc_check_chance(double crc_check_chance) {
       this.crc_check_chance = crc_check_chance;
-    }
-
-    public double getDclocal_read_repair_chance() {
-      return dclocal_read_repair_chance;
-    }
-
-    public void setDclocal_read_repair_chance(double dclocal_read_repair_chance) {
       this.dclocal_read_repair_chance = dclocal_read_repair_chance;
-    }
-
-    public int getDefault_time_to_live() {
-      return default_time_to_live;
-    }
-
-    public void setDefault_time_to_live(int default_time_to_live) {
       this.default_time_to_live = default_time_to_live;
-    }
-
-    public Object getExtensions() {
-      return extensions;
-    }
-
-    public void setExtensions(Object extensions) {
       this.extensions = extensions;
-    }
-
-    public Object getFlags() {
-      return flags;
-    }
-
-    public void setFlags(Object flags) {
       this.flags = flags;
-    }
-
-    public int getGc_grace_seconds() {
-      return gc_grace_seconds;
-    }
-
-    public void setGc_grace_seconds(int gc_grace_seconds) {
       this.gc_grace_seconds = gc_grace_seconds;
-    }
-
-    public UUID getId() {
-      return id;
-    }
-
-    public void setId(UUID id) {
       this.id = id;
-    }
-
-    public int getMax_index_interval() {
-      return max_index_interval;
-    }
-
-    public void setMax_index_interval(int max_index_interval) {
       this.max_index_interval = max_index_interval;
-    }
-
-    public int getMemtable_flush_period_in_ms() {
-      return memtable_flush_period_in_ms;
-    }
-
-    public void setMemtable_flush_period_in_ms(int memtable_flush_period_in_ms) {
       this.memtable_flush_period_in_ms = memtable_flush_period_in_ms;
-    }
-
-    public int getMin_index_interval() {
-      return min_index_interval;
-    }
-
-    public void setMin_index_interval(int min_index_interval) {
       this.min_index_interval = min_index_interval;
-    }
-
-    public double getRead_repair_chance() {
-      return read_repair_chance;
-    }
-
-    public void setRead_repair_chance(double read_repair_chance) {
       this.read_repair_chance = read_repair_chance;
-    }
-
-    public String getSpeculative_retry() {
-      return speculative_retry;
-    }
-
-    public void setSpeculative_retry(String speculative_retry) {
       this.speculative_retry = speculative_retry;
     }
 
-    static Table buildFromRow(Row row) {
-      Table t = new Table();
-
-      t.keyspace_name = row.getString("keyspace_name");
-      t.table_name = row.getString("table_name");
-      t.bloom_filter_fp_chance = row.getDouble("bloom_filter_fp_chance");
-      t.caching = row.getObject("caching");
-      t.cdc = row.getBool("cdc");
-      t.comment = row.getString("comment");
-      t.compaction = row.getObject("compaction");
-      t.compression = row.getObject("compression");
-      t.crc_check_chance = row.getDouble("crc_check_chance");
-      t.dclocal_read_repair_chance = row.getDouble("dclocal_read_repair_chance");
-      t.default_time_to_live = row.getInt("default_time_to_live");
-      t.extensions = row.getObject("extensions");
-      t.flags = row.getObject("flags");
-      t.gc_grace_seconds = row.getInt("gc_grace_seconds");
-      t.id = row.getUUID("id");
-      t.max_index_interval = row.getInt("max_index_interval");
-      t.memtable_flush_period_in_ms = row.getInt("memtable_flush_period_in_ms");
-      t.min_index_interval = row.getInt("min_index_interval");
-      t.read_repair_chance = row.getDouble("read_repair_chance");
-      t.speculative_retry = row.getString("speculative_retry");
-
-      return t;
+    // row from system_schema.tables
+    public static Table buildFromRow(final Row row) {
+      return new Table(
+          row.getString("keyspace_name"),
+          row.getString("table_name"),
+          row.getDouble("bloom_filter_fp_chance"),
+          row.getObject("caching"),
+          row.getBool("cdc"),
+          row.getString("comment"),
+          row.getObject("compaction"),
+          row.getObject("compression"),
+          row.getDouble("crc_check_chance"),
+          row.getDouble("dclocal_read_repair_chance"),
+          row.getInt("default_time_to_live"),
+          row.getObject("extensions"),
+          row.getObject("flags"),
+          row.getInt("gc_grace_seconds"),
+          row.getUUID("id"),
+          row.getInt("max_index_interval"),
+          row.getInt("memtable_flush_period_in_ms"),
+          row.getInt("min_index_interval"),
+          row.getDouble("read_repair_chance"),
+          row.getString("speculative_retry"));
     }
   }
 }

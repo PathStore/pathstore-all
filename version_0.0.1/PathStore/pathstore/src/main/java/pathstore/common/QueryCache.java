@@ -23,10 +23,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.sql.Time;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import pathstore.client.PathStoreServerClient;
 import pathstore.exception.PathMigrateAlreadyGoneException;
@@ -424,7 +421,7 @@ public class QueryCache {
 
             ResultSet results = local.execute(select);
 
-            List<Column> columns = SchemaInfo.getInstance().getTableColumns(keyspace, table);
+            Collection<Column> columns = SchemaInfo.getInstance().getTableColumns(keyspace, table);
 
             Batch batch = QueryBuilder.batch();
 
@@ -544,7 +541,7 @@ public class QueryCache {
 
             ResultSet results = parent.execute(select);
 
-            List<Column> columns = SchemaInfo.getInstance().getTableColumns(entry.keyspace, entry.table);
+            Collection<Column> columns = SchemaInfo.getInstance().getTableColumns(entry.keyspace, entry.table);
 
             Batch batch = QueryBuilder.batch();
 

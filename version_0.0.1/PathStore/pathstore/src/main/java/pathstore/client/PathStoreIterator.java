@@ -17,10 +17,8 @@
  */
 package pathstore.client;
 
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
@@ -102,7 +100,7 @@ public class PathStoreIterator implements Iterator<Row> {
   }
 
   private boolean same_key(final ArrayBackedRow row, final ArrayBackedRow row_next) {
-    List<Column> columns = SchemaInfo.getInstance().getTableColumns(this.keyspace, this.table);
+    Collection<Column> columns = SchemaInfo.getInstance().getTableColumns(this.keyspace, this.table);
 
     for (Column col : columns) {
       if (col.kind.compareTo("regular") != 0 && !col.column_name.startsWith("pathstore_")) {

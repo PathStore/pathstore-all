@@ -17,8 +17,8 @@
  */
 package pathstore.system;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Collection;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -49,7 +49,7 @@ public class PathStorePushServer implements Runnable {
       PathStoreLoggerFactory.getLogger(PathStorePushServer.class);
 
   private static Insert createInsert(
-      Row row, String keyspace, String tablename, List<Column> columns, int nodeid) {
+      Row row, String keyspace, String tablename, Collection<Column> columns, int nodeid) {
     Insert insert = QueryBuilder.insertInto(keyspace, tablename);
 
     for (Column column : columns) {
@@ -71,7 +71,7 @@ public class PathStorePushServer implements Runnable {
   }
 
   private static Delete createDelete(
-      Row row, String keyspace, String tablename, List<Column> columns) {
+      Row row, String keyspace, String tablename, Collection<Column> columns) {
     Delete delete = QueryBuilder.delete("pathstore_dirty").from(keyspace, tablename);
 
     for (Column column : columns)
@@ -84,20 +84,17 @@ public class PathStorePushServer implements Runnable {
   public static void push(
       final Session local, final Session parent, final SchemaInfo schemaInfo, final int nodeid) {
     try {
-      for (String keyspace : schemaInfo.getSchemaInfo().keySet()) {
+      for (String keyspace : schemaInfo.getLoadedKeyspaces()) {
+        for (Table table : schemaInfo.getTablesFromKeyspace(keyspace)) {
+          if (table.table_name.startsWith("view_") || table.table_name.startsWith("local_"))
+            continue;
 
-        Map<Table, List<Column>> tables = schemaInfo.getSchemaInfo().get(keyspace);
-
-        for (Table table : tables.keySet()) {
-          if (table.getTable_name().startsWith("view_")
-              || table.getTable_name().startsWith("local_")) continue;
-
-          Select select = QueryBuilder.select().all().from(keyspace, table.getTable_name());
+          Select select = QueryBuilder.select().all().from(keyspace, table.table_name);
           select.where(QueryBuilder.eq("pathstore_dirty", true));
 
           ResultSet results = local.execute(select);
 
-          List<Column> columns = tables.get(table);
+          Collection<Column> columns = schemaInfo.getTableColumns(keyspace, table.table_name);
 
           Batch insertBatch = QueryBuilder.batch();
           Batch deleteBatch = QueryBuilder.batch();
@@ -107,8 +104,8 @@ public class PathStorePushServer implements Runnable {
 
           for (Row row : results) {
 
-            Insert insert = createInsert(row, keyspace, table.getTable_name(), columns, nodeid);
-            Delete delete = createDelete(row, keyspace, table.getTable_name(), columns);
+            Insert insert = createInsert(row, keyspace, table.table_name, columns, nodeid);
+            Delete delete = createDelete(row, keyspace, table.table_name, columns);
 
             String str_insert = insert.toString();
             String str_delete = delete.toString();
