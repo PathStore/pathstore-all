@@ -33,6 +33,7 @@ import pathstore.system.PathStorePriviledgedCluster;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
+/** TODO: Should this class be stateless? */
 public class SchemaInfo {
   private static SchemaInfo instance = null;
 
@@ -59,11 +60,6 @@ public class SchemaInfo {
 
   public SchemaInfo(final Session session) {
     this.session = session;
-    this.loadSchemas();
-  }
-
-  public void reset() {
-    this.columnInfo.clear();
     this.loadSchemas();
   }
 
@@ -117,8 +113,7 @@ public class SchemaInfo {
                     QueryBuilder.select()
                         .all()
                         .from("system_schema", "tables")
-                        .where(QueryBuilder.eq("keyspace_name", keyspaceName))
-                        .limit(-1))
+                        .where(QueryBuilder.eq("keyspace_name", keyspaceName)))
                 .spliterator(),
             true)
         .map(Table::buildFromRow)
@@ -196,8 +191,7 @@ public class SchemaInfo {
                           .all()
                           .from("system_schema", "indexes")
                           .where(QueryBuilder.eq("keyspace_name", table.keyspace_name))
-                          .and(QueryBuilder.eq("table_name", table.table_name))
-                          .limit(-1))
+                          .and(QueryBuilder.eq("table_name", table.table_name)))
                   .spliterator(),
               true)
           .map(Index::buildFromRow)
@@ -249,8 +243,7 @@ public class SchemaInfo {
                           .all()
                           .from("system_schema", "columns")
                           .where(QueryBuilder.eq("keyspace_name", table.keyspace_name))
-                          .and(QueryBuilder.eq("table_name", table.table_name))
-                          .limit(-1))
+                          .and(QueryBuilder.eq("table_name", table.table_name)))
                   .spliterator(),
               true)
           .map(Column::buildFromRow)
