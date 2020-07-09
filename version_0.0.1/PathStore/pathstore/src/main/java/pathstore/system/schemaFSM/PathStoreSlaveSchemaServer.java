@@ -179,7 +179,9 @@ public class PathStoreSlaveSchemaServer implements Runnable {
     PathStoreSchemaLoaderUtils.parseSchema(augmentedSchema)
         .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
 
-    SchemaInfo.getInstance().getKeySpaceInfo(keyspace);
+    // after keyspace is loaded we need to inform the schemainfo class that a new keyspace has been
+    // installed
+    SchemaInfo.getInstance().loadKeyspace(keyspace);
 
     Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
     update

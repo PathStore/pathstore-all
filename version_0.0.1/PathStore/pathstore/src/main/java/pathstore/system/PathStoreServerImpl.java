@@ -85,15 +85,14 @@ public class PathStoreServerImpl {
 
       logger.info("Binded to java RMI");
 
-      if (!SchemaInfo.getInstance().getSchemaInfo().containsKey(Constants.PATHSTORE_APPLICATIONS)) {
+      if (!SchemaInfo.getInstance().isKeyspaceLoaded(Constants.PATHSTORE_APPLICATIONS)) {
         logger.info("Application keyspace not detected, attempting to load");
         PathStoreSchemaLoaderUtils.loadApplicationSchema(local);
+        SchemaInfo.getInstance().loadKeyspace(Constants.PATHSTORE_APPLICATIONS);
         PathStoreDeploymentUtils.writeTaskDone(local, 1);
       } else logger.info("Application keyspace already loaded");
 
       logger.info("Application keyspace successfully loaded");
-
-      SchemaInfo.getInstance().reset();
 
       logger.info("PathStore Ready");
 

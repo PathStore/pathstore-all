@@ -10,33 +10,23 @@ import java.util.concurrent.Executors;
  */
 public class PathStoreThreadManager {
 
-  /** Lock for the creation of the daemon instance */
-  private static final Object daemonLock = new Object();
-
   /** Daemon instance. Only set once */
   private static PathStoreThreadManager daemonInstance = null;
 
   /** @return daemon instance */
-  public static PathStoreThreadManager getDaemonInstance() {
-    synchronized (daemonLock) {
+  public static synchronized PathStoreThreadManager getDaemonInstance() {
       if (daemonInstance == null)
         daemonInstance = new PathStoreThreadManager(Executors.newFixedThreadPool(5));
-    }
     return daemonInstance;
   }
-
-  /** Lock for the creation of the sub processes instance */
-  private static final Object subProcessLock = new Object();
 
   /** Sub process instance. Only set once */
   private static PathStoreThreadManager subProcessInstance = null;
 
   /** @return sub process instance */
-  public static PathStoreThreadManager subProcessInstance() {
-    synchronized (subProcessLock) {
+  public static synchronized PathStoreThreadManager subProcessInstance() {
       if (subProcessInstance == null)
         subProcessInstance = new PathStoreThreadManager(Executors.newCachedThreadPool());
-    }
     return subProcessInstance;
   }
 

@@ -33,9 +33,6 @@ import com.datastax.driver.core.SocketOptions;
  */
 public class PathStoreCluster {
 
-  /** Lock used to synchronize creation of PathStoreCluster */
-  private static final Object lock = new Object();
-
   /**
    * Stores a static reference to the current instance of path store cluster.
    *
@@ -62,11 +59,9 @@ public class PathStoreCluster {
    *
    * @return either a new copy of {@link PathStoreCluster} or the current saved instance.
    */
-  public static PathStoreCluster getInstance() {
-    synchronized (lock) {
-      if (PathStoreCluster.pathStoreCluster == null)
-        PathStoreCluster.pathStoreCluster = new PathStoreCluster();
-    }
+  public static synchronized PathStoreCluster getInstance() {
+    if (PathStoreCluster.pathStoreCluster == null)
+      PathStoreCluster.pathStoreCluster = new PathStoreCluster();
     return PathStoreCluster.pathStoreCluster;
   }
 

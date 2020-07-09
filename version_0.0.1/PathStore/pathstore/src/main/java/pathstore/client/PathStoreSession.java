@@ -335,7 +335,7 @@ public class PathStoreSession implements Session {
 
     if (select.hasAllowFiltering()) {
 
-      List<Column> columns =
+      Collection<Column> columns =
           SchemaInfo.getInstance().getTableColumns(select.getKeyspace(), select.getTable());
 
       Set<String> partitionKeys =
@@ -367,7 +367,7 @@ public class PathStoreSession implements Session {
                   .filter(
                       clause ->
                           partitionKeys.contains(clause.getName())
-                              && clusteringKeys.contains(clause.getName()))
+                              || clusteringKeys.contains(clause.getName()))
                   .collect(Collectors.toList())
               : Collections.emptyList();
     }
