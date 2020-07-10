@@ -94,7 +94,7 @@ public class PathStorePushServer implements Runnable {
 
           ResultSet results = local.execute(select);
 
-          Collection<Column> columns = schemaInfo.getTableColumns(keyspace, table.table_name);
+          Collection<Column> columns = schemaInfo.getTableColumns(table);
 
           Batch insertBatch = QueryBuilder.batch();
           Batch deleteBatch = QueryBuilder.batch();

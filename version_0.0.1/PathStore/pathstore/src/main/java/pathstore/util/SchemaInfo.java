@@ -26,6 +26,7 @@ import java.util.stream.StreamSupport;
 
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import io.netty.util.internal.ConcurrentSet;
+import pathstore.common.Constants;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.PathStorePriviledgedCluster;
@@ -33,59 +34,104 @@ import pathstore.system.PathStorePriviledgedCluster;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
-/** TODO: Should this class be stateless? */
+/**
+ * TODO: (Myles) Should this class be stateless?
+ *
+ * <p>The purpose of this class is to represent the keyspace system_schema in memory for usage
+ * throughout the application whenever a decision needs to be made specifically based some aspect of
+ * a table.
+ *
+ * <p>The current aspects that we keep track of are: Tables per keyspace, Columns per table, Indexes
+ * per table. Their literal table names are: tables, columns, indexes respectively. We also use the
+ * system_schema.keyspaces table to query available keyspaces on startup, this is used if a node has
+ * failed and restarts as {@link SchemaInfo#loadKeyspace(String)} won't be recalled for each
+ * keyspace
+ *
+ * @apiNote This class makes the assumption that once a keyspace is loaded into memory it is
+ *     final. We get to make this assumption because PathStore controls the loading / unloading of
+ *     keyspaces on a network wide scale. This will cause problems when developers chose to modify a
+ *     keyspace manually on a given node to test a feature. Thus the keyspace registered through
+ *     admin panel should be considered final and shouldn't be modified locally.
+ * @implNote Data retrieved adheres to Cassandra version 3.9. If Cassandra is updated this class
+ *     along with all associated constants must be checked to make sure they match the format
+ *     described in the newer Cassandra version.
+ */
 public class SchemaInfo {
+  /** Factory instance of this class */
   private static SchemaInfo instance = null;
 
+  /** @return instance of this class (there will only ever be one) */
   public static synchronized SchemaInfo getInstance() {
     if (SchemaInfo.instance == null)
       SchemaInfo.instance = new SchemaInfo(PathStorePriviledgedCluster.getInstance().connect());
     return SchemaInfo.instance;
   }
 
+  /**
+   * Logger for this class
+   *
+   * @see PathStoreLoggerFactory
+   */
   private static final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(SchemaInfo.class);
 
+  /** Set of keyspace names that have been loaded in */
   private final Set<String> keyspacesLoaded = new ConcurrentSet<>();
 
+  /**
+   * Map is defined as tableMap: keyspace_name -> table_name -> table object
+   *
+   * @see #getTablesFromKeyspace(String)
+   * @see #getTableColumns(String, String)
+   * @see #getTableIndexes(String, String)
+   */
   private final ConcurrentMap<String, ConcurrentMap<String, Table>> tableMap =
       new ConcurrentHashMap<>();
 
+  /**
+   * Map is defined as columnInfo: keyspace_name -> table object -> collection of column objects
+   *
+   * @see #getTableColumns(Table)
+   * @see #removeKeyspace(String)
+   */
   private final ConcurrentMap<String, ConcurrentMap<Table, Collection<Column>>> columnInfo =
       new ConcurrentHashMap<>();
 
+  /**
+   * Map is defined as indexInfo: keyspace_name -> table object -> collection of index objects
+   *
+   * @see #getTableIndexes(Table)
+   * @see #removeKeyspace(String)
+   */
   private final ConcurrentMap<String, ConcurrentMap<Table, Collection<Index>>> indexInfo =
       new ConcurrentHashMap<>();
 
+  /** @see PathStorePriviledgedCluster */
   private final Session session;
 
+  /**
+   * @param session must be a raw connection to a cassandra database. Not a pathstore wrapped
+   *     connection.
+   */
   public SchemaInfo(final Session session) {
     this.session = session;
     this.loadSchemas();
   }
 
-  private void loadSchemas() {
-    StreamSupport.stream(
-            this.session
-                .execute(QueryBuilder.select("keyspace_name").from("system_schema", "keyspaces"))
-                .spliterator(),
-            true)
-        .map(row -> row.getString("keyspace_name"))
-        .filter(keyspace -> keyspace.startsWith("pathstore_"))
-        .forEach(this::loadKeyspace);
-  }
+  // publicly accessible functions
 
-  public void removeKeyspace(final String keyspace) {
-    this.keyspacesLoaded.remove(keyspace);
-    this.tableMap.remove(keyspace);
-    this.columnInfo.remove(keyspace);
-    this.indexInfo.remove(keyspace);
-
-    logger.info(String.format("Removed keyspace %s", keyspace));
-  }
-
+  /**
+   * This function is used to load a new keyspace's information into memory.
+   *
+   * @param keyspace keyspace to load into memory. Assumed valid.
+   * @apiNote There is no validity check to ensure the keyspace name you've passed actually exists
+   *     within the local Cassandra node. The main caller of this function however can guarantee
+   *     that the passed keyspace name exists within Cassandra as it loads it prior to calling this
+   *     function.
+   * @see pathstore.system.schemaFSM.PathStoreSlaveSchemaServer
+   */
   public void loadKeyspace(final String keyspace) {
 
-    if (keyspace.startsWith("pathstore_")) {
+    if (keyspace.startsWith(Constants.PATHSTORE_PREFIX)) {
       this.tableMap.put(keyspace, this.loadTableCollectionsForKeyspace(keyspace));
       this.columnInfo.put(keyspace, this.getColumnInfoPerKeyspace(keyspace));
       this.indexInfo.put(keyspace, this.getIndexInfoPerKeyspace(keyspace));
@@ -101,32 +147,167 @@ public class SchemaInfo {
     }
   }
 
+  /**
+   * This function is used to remove a new keyspace's information from memory. This should only be
+   * called when a keyspace is being removed from the database but still resides in memory.
+   *
+   * @param keyspace keyspace to remove from memory. Assumed present.
+   * @apiNote There is not validity check to ensure the keyspace name passed actually exists within
+   *     memory. This is because the sole caller of this function can guarentee that it is removing
+   *     a keyspace from memory that use to exist within the local Cassandra node but no longer
+   *     exists. If you wish to use this function within your application you should use it with
+   *     caution.
+   */
+  public void removeKeyspace(final String keyspace) {
+    this.keyspacesLoaded.remove(keyspace);
+    this.tableMap.remove(keyspace);
+    this.columnInfo.remove(keyspace);
+    this.indexInfo.remove(keyspace);
+
+    logger.info(String.format("Removed keyspace %s", keyspace));
+  }
+
+  /**
+   * This function is used to determine if a given keyspace has already been loaded into memory.
+   * This function is here for startup purposes only. It is used to determine whether
+   * pathstore_applications is loaded in on startup. To expand on this case, it is only loaded in if
+   * the node has failed (stopped) and has then been restarted.
+   *
+   * @param keyspace keyspace to check
+   * @return true if present, false if not
+   */
   public boolean isKeyspaceLoaded(final String keyspace) {
     return this.keyspacesLoaded.contains(keyspace);
   }
 
+  /**
+   * This function is used to retrieve a set of keyspaces (strings) that are loaded into memory.
+   *
+   * @return list of keyspaces loaded into memory
+   * @apiNote Unless modified (adding calls to load / remove), this will give you an entire list of
+   *     pathstore related keyspaces on the local cassandra node
+   */
   public Collection<String> getLoadedKeyspaces() {
     return this.keyspacesLoaded;
   }
 
+  /**
+   * TODO: (Myles) Is validation (null check) needed here?
+   *
+   * <p>This function will give you a set of table objects based on a keyspace
+   *
+   * @param keyspace keyspace of interest. Assumed valid.
+   * @return collection of table objects associated with a given keyspace
+   */
   public Collection<Table> getTablesFromKeyspace(final String keyspace) {
     return this.tableMap.get(keyspace).values();
   }
 
+  /**
+   * This function is used to retrieve a set of column objects based on a keyspace and table name.
+   *
+   * @param keyspace keyspace name
+   * @param tableName table name
+   * @return set of column objects for that table
+   * @see #getTableIndexes(Table)
+   */
+  public Collection<Column> getTableColumns(final String keyspace, final String tableName) {
+    return this.getTableColumns(this.tableMap.get(keyspace).get(tableName));
+  }
+
+  /**
+   * This function is used to retrieve a set of column objects based on a table object.
+   *
+   * @param table table object to get column objects from.
+   * @return list of column objects or an empty set if none are present
+   */
+  public Collection<Column> getTableColumns(final Table table) {
+    return Optional.of(this.columnInfo.get(table.keyspace_name).get(table))
+        .orElse(Collections.emptySet());
+  }
+
+  /**
+   * This function is used to retrieve a set of index objects based on a keyspace and table name.
+   *
+   * @param keyspaceName keyspace name
+   * @param tableName table name
+   * @return set of index objects from the given table
+   * @see #getTableIndexes(Table)
+   */
+  public Collection<Index> getTableIndexes(final String keyspaceName, final String tableName) {
+    return this.getTableIndexes(this.tableMap.get(keyspaceName).get(tableName));
+  }
+
+  /**
+   * This function is used to retrieve a set of index objects based on a table object
+   *
+   * @param table table object
+   * @return set of index objects associated with the given table
+   */
+  public Collection<Index> getTableIndexes(final Table table) {
+    return Optional.of(this.indexInfo.get(table.keyspace_name).get(table))
+        .orElse(Collections.emptySet());
+  }
+
+  // Private functions
+
+  /**
+   * This function is only used on object creation which occurs during the startup phase of this
+   * application. It is used to load any schema information that pertains to any pathstore table
+   * that was already loaded into the local cassandra instance. This only modifies the state if the
+   * node was shutoff (by intent or failure). Otherwise its a sanity check.
+   *
+   * @see pathstore.system.PathStoreServerImpl
+   */
+  private void loadSchemas() {
+    StreamSupport.stream(
+            this.session
+                .execute(
+                    QueryBuilder.select(Constants.KEYSPACES_COLUMNS.KEYSPACE_NAME)
+                        .from(Constants.SYSTEM_SCHEMA, Constants.KEYSPACES))
+                .spliterator(),
+            true)
+        .map(row -> row.getString(Constants.KEYSPACES_COLUMNS.KEYSPACE_NAME))
+        .filter(keyspace -> keyspace.startsWith(Constants.PATHSTORE_PREFIX))
+        .forEach(this::loadKeyspace);
+  }
+
+  /**
+   * This function is used to produce a map from table_name -> table object for constant time
+   * lookups of column / index information given a keyspace name & table name.
+   *
+   * @param keyspaceName keyspace name
+   * @return map from table_name -> table object for all tables that reside within a given keyspace.
+   */
   private ConcurrentMap<String, Table> loadTableCollectionsForKeyspace(final String keyspaceName) {
     return StreamSupport.stream(
             this.session
                 .execute(
                     QueryBuilder.select()
                         .all()
-                        .from("system_schema", "tables")
-                        .where(QueryBuilder.eq("keyspace_name", keyspaceName)))
+                        .from(Constants.SYSTEM_SCHEMA, Constants.TABLES)
+                        .where(
+                            QueryBuilder.eq(Constants.TABLES_COLUMNS.KEYSPACE_NAME, keyspaceName)))
                 .spliterator(),
             true)
         .map(Table::buildFromRow)
         .collect(Collectors.toConcurrentMap(table -> table.table_name, Function.identity()));
   }
 
+  /**
+   * This function is used to produce a map from table object -> collection of column objects for
+   * that given table. This is used to update {@link #columnInfo} for a given keyspace with column
+   * information for each table.
+   *
+   * @param keyspace keyspace to build column objects for
+   * @return map from table object -> collection of column objects
+   * @see #loadKeyspace(String)
+   * @see Column#buildFromTable(Session, Table)
+   * @apiNote This function works under the assumption that the table objects in {@link #tableMap}
+   *     have already been generated for the provided keyspace. Otherwise this will do nothing as
+   *     there are no table objects associated with the provided keyspace to build the collection
+   *     from.
+   */
   private ConcurrentMap<Table, Collection<Column>> getColumnInfoPerKeyspace(final String keyspace) {
     return this.tableMap.get(keyspace).values().stream()
         .collect(
@@ -134,6 +315,20 @@ public class SchemaInfo {
                 Function.identity(), table -> Column.buildFromTable(this.session, table)));
   }
 
+  /**
+   * This function is used to produce a map from table object -> collection of index objects for
+   * that given table. This used to update {@link #indexInfo} for a given keyspace with index
+   * information for each table.
+   *
+   * @param keyspace keyspace to build index objects for
+   * @return map from table object -> collection of index objects
+   * @see #loadKeyspace(String)
+   * @see Index#buildFromTable(Session, Table)
+   * @apiNote This function works under the assumption that the table objects in {@link #tableMap}
+   *     have already been generated for the provided keyspace. Otherwise this will do nothing as
+   *     there are no table objects associated with the provided keyspace to build the collection
+   *     from.
+   */
   private ConcurrentMap<Table, Collection<Index>> getIndexInfoPerKeyspace(final String keyspace) {
     return this.tableMap.get(keyspace).values().stream()
         .collect(
@@ -141,22 +336,10 @@ public class SchemaInfo {
                 Function.identity(), table -> Index.buildFromTable(this.session, table)));
   }
 
-  public Collection<Column> getTableColumns(final String keyspace, final String tableName) {
-    return Optional.of(
-            this.columnInfo.get(keyspace).get(this.tableMap.get(keyspace).get(tableName)))
-        .orElse(Collections.emptySet());
-  }
-
-  public Collection<Index> getTableIndexes(final String keyspaceName, final String tableName) {
-    return Optional.of(
-            this.indexInfo.get(keyspaceName).get(this.tableMap.get(keyspaceName).get(tableName)))
-        .orElse(Collections.emptySet());
-  }
-
   /**
    * This class represents a row in the system_schema.indexes table.
    *
-   * @see SchemaInfo#loadSchemas()
+   * @see SchemaInfo#loadKeyspace(String)
    */
   public static class Index {
     /** keyspace name where the index exists */
@@ -177,6 +360,13 @@ public class SchemaInfo {
      */
     public final Map<String, String> options;
 
+    /**
+     * @param keyspace_name {@link #keyspace_name}
+     * @param table_name {@link #table_name}
+     * @param index_name {@link #index_name}
+     * @param kind {@link #kind}
+     * @param options {@link #options}
+     */
     private Index(
         final String keyspace_name,
         final String table_name,
@@ -190,41 +380,104 @@ public class SchemaInfo {
       this.options = options;
     }
 
+    /**
+     * This function is used to build a collection of index objects from a table object.
+     *
+     * @param session {@link SchemaInfo#session}
+     * @param table table object to build index objects for
+     * @return collection of indexes objects per table.
+     * @apiNote This function queries the database so its usage should be limited
+     * @implNote Since the storage of indexes is in a set which isn't ordered we use parallel stream
+     *     processing to improve the processing time of each row.
+     */
     public static Collection<Index> buildFromTable(final Session session, final Table table) {
       return StreamSupport.stream(
               session
                   .execute(
                       QueryBuilder.select()
                           .all()
-                          .from("system_schema", "indexes")
-                          .where(QueryBuilder.eq("keyspace_name", table.keyspace_name))
-                          .and(QueryBuilder.eq("table_name", table.table_name)))
+                          .from(Constants.SYSTEM_SCHEMA, Constants.INDEXES)
+                          .where(
+                              QueryBuilder.eq(
+                                  Constants.INDEXES_COLUMNS.KEYSPACE_NAME, table.keyspace_name))
+                          .and(
+                              QueryBuilder.eq(
+                                  Constants.INDEXES_COLUMNS.TABLE_NAME, table.table_name)))
                   .spliterator(),
               true)
           .map(Index::buildFromRow)
           .collect(Collectors.toSet());
     }
 
-    // system_schema.indexes
-    public static Index buildFromRow(final Row row) {
+    /**
+     * This function is used to process a system_schema.indexes row into an Index object.
+     *
+     * @param row row from system_schema.indexes
+     * @return processed index object
+     * @implNote If this function gets changed to public you would need to verify where the row came
+     *     from otherwise runtime errors can be thrown
+     */
+    private static Index buildFromRow(final Row row) {
       return new Index(
-          row.getString("keyspace_name"),
-          row.getString("table_name"),
-          row.getString("index_name"),
-          row.getString("kind"),
-          row.getMap("options", String.class, String.class));
+          row.getString(Constants.INDEXES_COLUMNS.KEYSPACE_NAME),
+          row.getString(Constants.INDEXES_COLUMNS.TABLE_NAME),
+          row.getString(Constants.INDEXES_COLUMNS.INDEX_NAME),
+          row.getString(Constants.INDEXES_COLUMNS.KIND),
+          row.getMap(Constants.INDEXES_COLUMNS.OPTIONS, String.class, String.class));
     }
   }
 
+  /**
+   * This class represents a row within the system_schema.columns table.
+   *
+   * @see SchemaInfo#loadKeyspace(String)
+   */
   public static class Column {
+    /** Name of keyspace the column is associated with */
     public final String keyspace_name;
+
+    /** Name of table the column is associated with */
     public final String table_name;
+
+    /** Column name */
     public final String column_name;
+
+    /**
+     * Clustering order, this is only not-none if the column is part of the sorting / clustering key
+     */
     public final String clustering_order;
+
+    /**
+     * This has three potential values.
+     *
+     * <p>(1): partition_key
+     *
+     * <p>(2): clustering
+     *
+     * <p>(3): regular
+     *
+     * <p>These types cover all possible types of columns within Cassandra
+     */
     public final String kind;
+
+    /** TODO: (Myles) What does this represent? */
     public final int position;
+
+    /**
+     * What type of information is stored within this column. This cannot be determined as UDT's
+     * exist within Cassandra
+     */
     public final String type;
 
+    /**
+     * @param keyspace_name {@link #keyspace_name}
+     * @param table_name {@link #table_name}
+     * @param column_name {@link #columnInfo}
+     * @param clustering_order {@link #clustering_order}
+     * @param kind {@link #kind}
+     * @param position {@link #position}
+     * @param type {@link #type}
+     */
     private Column(
         final String keyspace_name,
         final String table_name,
@@ -242,37 +495,70 @@ public class SchemaInfo {
       this.type = type;
     }
 
+    /**
+     * This function is used to build a collection of column objects from a table object.
+     *
+     * @param session {@link SchemaInfo#session}
+     * @param table table object to build column objects from
+     * @return collection of column objects associated with the table object
+     * @apiNote This function queries the database so its usage should be limited
+     * @implNote Since the storage of columns is in a set which isn't ordered we use parallel stream
+     *     processing to improve the processing time of each row.
+     */
     public static Collection<Column> buildFromTable(final Session session, final Table table) {
       return StreamSupport.stream(
               session
                   .execute(
                       QueryBuilder.select()
                           .all()
-                          .from("system_schema", "columns")
-                          .where(QueryBuilder.eq("keyspace_name", table.keyspace_name))
-                          .and(QueryBuilder.eq("table_name", table.table_name)))
+                          .from(Constants.SYSTEM_SCHEMA, Constants.COLUMNS)
+                          .where(
+                              QueryBuilder.eq(
+                                  Constants.COLUMNS_COLUMNS.KEYSPACE_NAME, table.keyspace_name))
+                          .and(
+                              QueryBuilder.eq(
+                                  Constants.COLUMNS_COLUMNS.TABLE_NAME, table.table_name)))
                   .spliterator(),
               true)
           .map(Column::buildFromRow)
           .collect(Collectors.toSet());
     }
 
-    // row from system_schema.columns
+    /**
+     * This function is used to process a system_schema.columns row into an Column object.
+     *
+     * @param row row from system_schema.columns
+     * @return processed column object
+     * @implNote If this function gets changed to public you would need to verify where the row came
+     *     from otherwise runtime errors can be thrown
+     */
     private static Column buildFromRow(final Row row) {
       return new Column(
-          row.getString("keyspace_name"),
-          row.getString("table_name"),
-          row.getString("column_name"),
-          row.getString("clustering_order"),
-          row.getString("kind"),
-          row.getInt("position"),
-          row.getString("type"));
+          row.getString(Constants.COLUMNS_COLUMNS.KEYSPACE_NAME),
+          row.getString(Constants.COLUMNS_COLUMNS.TABLE_NAME),
+          row.getString(Constants.COLUMNS_COLUMNS.COLUMN_NAME),
+          row.getString(Constants.COLUMNS_COLUMNS.CLUSTERING_ORDER),
+          row.getString(Constants.COLUMNS_COLUMNS.KIND),
+          row.getInt(Constants.COLUMNS_COLUMNS.POSITION),
+          row.getString(Constants.COLUMNS_COLUMNS.TYPE));
     }
   }
 
+  /**
+   * This class represents a row within the system_schema.tables table.
+   *
+   * @see SchemaInfo#loadKeyspace(String)
+   */
   public static class Table {
+    /** Keyspace name where the table exists */
     public final String keyspace_name;
+
+    /** Name of the table */
     public final String table_name;
+
+    // All other fields are solely used for schema augmentation in the admin panel on registration
+    // of a new application
+
     public final double bloom_filter_fp_chance;
     public final Object caching;
     public final boolean cdc;
@@ -292,6 +578,28 @@ public class SchemaInfo {
     public final double read_repair_chance;
     public final String speculative_retry;
 
+    /**
+     * @param keyspace_name {@link #keyspace_name}
+     * @param table_name {@link #table_name}
+     * @param bloom_filter_fp_chance {@link #bloom_filter_fp_chance}
+     * @param caching {@link #caching}
+     * @param cdc {@link #cdc}
+     * @param comment {@link #comment}
+     * @param compaction {@link #compaction}
+     * @param compression {@link #compression}
+     * @param crc_check_chance {@link #crc_check_chance}
+     * @param dclocal_read_repair_chance {@link #dclocal_read_repair_chance}
+     * @param default_time_to_live {@link #default_time_to_live}
+     * @param extensions {@link #extensions}
+     * @param flags {@link #flags}
+     * @param gc_grace_seconds {@link #gc_grace_seconds}
+     * @param id {@link #id}
+     * @param max_index_interval {@link #max_index_interval}
+     * @param memtable_flush_period_in_ms {@link #memtable_flush_period_in_ms}
+     * @param min_index_interval {@link #min_index_interval}
+     * @param read_repair_chance {@link #read_repair_chance}
+     * @param speculative_retry {@link #speculative_retry}
+     */
     private Table(
         final String keyspace_name,
         final String table_name,
@@ -335,29 +643,34 @@ public class SchemaInfo {
       this.speculative_retry = speculative_retry;
     }
 
-    // row from system_schema.tables
+    /**
+     * This function is used to process a system_schema.tables row into an Table object.
+     *
+     * @param row row from system_schema.tables
+     * @return processed table object
+     */
     public static Table buildFromRow(final Row row) {
       return new Table(
-          row.getString("keyspace_name"),
-          row.getString("table_name"),
-          row.getDouble("bloom_filter_fp_chance"),
-          row.getObject("caching"),
-          row.getBool("cdc"),
-          row.getString("comment"),
-          row.getObject("compaction"),
-          row.getObject("compression"),
-          row.getDouble("crc_check_chance"),
-          row.getDouble("dclocal_read_repair_chance"),
-          row.getInt("default_time_to_live"),
-          row.getObject("extensions"),
-          row.getObject("flags"),
-          row.getInt("gc_grace_seconds"),
-          row.getUUID("id"),
-          row.getInt("max_index_interval"),
-          row.getInt("memtable_flush_period_in_ms"),
-          row.getInt("min_index_interval"),
-          row.getDouble("read_repair_chance"),
-          row.getString("speculative_retry"));
+          row.getString(Constants.TABLES_COLUMNS.KEYSPACE_NAME),
+          row.getString(Constants.TABLES_COLUMNS.TABLE_NAME),
+          row.getDouble(Constants.TABLES_COLUMNS.BLOOM_FILTER_FP_CHANCE),
+          row.getObject(Constants.TABLES_COLUMNS.CACHING),
+          row.getBool(Constants.TABLES_COLUMNS.CDC),
+          row.getString(Constants.TABLES_COLUMNS.COMMENT),
+          row.getObject(Constants.TABLES_COLUMNS.COMPACTION),
+          row.getObject(Constants.TABLES_COLUMNS.COMPRESSION),
+          row.getDouble(Constants.TABLES_COLUMNS.CRC_CHECK_CHANCE),
+          row.getDouble(Constants.TABLES_COLUMNS.DCLOCAL_READ_REPAIR_CHANCE),
+          row.getInt(Constants.TABLES_COLUMNS.DEFAULT_TIME_TO_LIVE),
+          row.getObject(Constants.TABLES_COLUMNS.EXTENSIONS),
+          row.getObject(Constants.TABLES_COLUMNS.FLAGS),
+          row.getInt(Constants.TABLES_COLUMNS.GC_GRACE_SECONDS),
+          row.getUUID(Constants.TABLES_COLUMNS.ID),
+          row.getInt(Constants.TABLES_COLUMNS.MAX_INDEX_INTERVAL),
+          row.getInt(Constants.TABLES_COLUMNS.MEMTABLE_FLUSH_PERIOD_IN_MS),
+          row.getInt(Constants.TABLES_COLUMNS.MIN_INDEX_INTERVAL),
+          row.getDouble(Constants.TABLES_COLUMNS.READ_REPAIR_CHANCE),
+          row.getString(Constants.TABLES_COLUMNS.SPECULATIVE_RETRY));
     }
   }
 }

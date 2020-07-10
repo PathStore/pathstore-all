@@ -22,6 +22,8 @@ public final class Constants {
 
   public static final String PROPERTIESFILE = "/etc/pathstore/pathstore.properties";
 
+  public static final String PATHSTORE_PREFIX = "pathstore_";
+
   public static final class PROPERTIES_CONSTANTS {
     public static final String ROLE = "Role";
     public static final String EXTERNAL_ADDRESS = "ExternalAddress";
@@ -48,6 +50,61 @@ public final class Constants {
     public static final String PATHSTORE_DIRTY = "pathstore_dirty";
     public static final String PATHSTORE_NODE = "pathstore_node";
     public static final String PATHSTORE_INSERT_SID = "pathstore_insert_sid";
+  }
+
+  public static final String SYSTEM_SCHEMA = "system_schema";
+
+  public static final String KEYSPACES = "keyspaces";
+
+  public static final class KEYSPACES_COLUMNS {
+    public static final String KEYSPACE_NAME = "keyspace_name";
+  }
+
+  public static final String TABLES = "tables";
+
+  public static final class TABLES_COLUMNS {
+    public static final String KEYSPACE_NAME = "keyspace_name";
+    public static final String TABLE_NAME = "table_name";
+    public static final String BLOOM_FILTER_FP_CHANCE = "bloom_filter_fp_chance";
+    public static final String CACHING = "caching";
+    public static final String CDC = "cdc";
+    public static final String COMMENT = "comment";
+    public static final String COMPACTION = "compaction";
+    public static final String COMPRESSION = "compression";
+    public static final String CRC_CHECK_CHANCE = "crc_check_chance";
+    public static final String DCLOCAL_READ_REPAIR_CHANCE = "dclocal_read_repair_chance";
+    public static final String DEFAULT_TIME_TO_LIVE = "default_time_to_live";
+    public static final String EXTENSIONS = "extensions";
+    public static final String FLAGS = "flags";
+    public static final String GC_GRACE_SECONDS = "gc_grace_seconds";
+    public static final String ID = "id";
+    public static final String MAX_INDEX_INTERVAL = "max_index_interval";
+    public static final String MEMTABLE_FLUSH_PERIOD_IN_MS = "memtable_flush_period_in_ms";
+    public static final String MIN_INDEX_INTERVAL = "min_index_interval";
+    public static final String READ_REPAIR_CHANCE = "read_repair_chance";
+    public static final String SPECULATIVE_RETRY = "speculative_retry";
+  }
+
+  public static final String COLUMNS = "columns";
+
+  public static final class COLUMNS_COLUMNS {
+    public static final String KEYSPACE_NAME = "keyspace_name";
+    public static final String TABLE_NAME = "table_name";
+    public static final String COLUMN_NAME = "column_name";
+    public static final String CLUSTERING_ORDER = "clustering_order";
+    public static final String KIND = "kind";
+    public static final String POSITION = "position";
+    public static final String TYPE = "type";
+  }
+
+  public static final String INDEXES = "indexes";
+
+  public static final class INDEXES_COLUMNS {
+    public static final String KEYSPACE_NAME = "keyspace_name";
+    public static final String TABLE_NAME = "table_name";
+    public static final String INDEX_NAME = "index_name";
+    public static final String KIND = "kind";
+    public static final String OPTIONS = "options";
   }
 
   public static final String PATHSTORE_APPLICATIONS = "pathstore_applications";

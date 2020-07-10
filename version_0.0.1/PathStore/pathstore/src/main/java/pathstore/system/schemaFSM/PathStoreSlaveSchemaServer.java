@@ -137,7 +137,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
                 return;
               }
 
-              this.install_application(keyspace, augmentedKeyspace);
+              this.installApplication(keyspace, augmentedKeyspace);
 
               break;
             case REMOVING:
@@ -145,7 +145,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
                   String.format(
                       "Spawned sub thread to remove %s on node %d", keyspace, this.nodeId));
 
-              this.remove_application(keyspace);
+              this.removeApplication(keyspace);
               break;
           }
         });
@@ -174,7 +174,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
    *
    * @param keyspace application to install
    */
-  private void install_application(final String keyspace, final String augmentedSchema) {
+  private void installApplication(final String keyspace, final String augmentedSchema) {
 
     PathStoreSchemaLoaderUtils.parseSchema(augmentedSchema)
         .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
@@ -204,7 +204,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
    *
    * @param keyspace application to remove
    */
-  private void remove_application(final String keyspace) {
+  private void removeApplication(final String keyspace) {
 
     // force push here
 
