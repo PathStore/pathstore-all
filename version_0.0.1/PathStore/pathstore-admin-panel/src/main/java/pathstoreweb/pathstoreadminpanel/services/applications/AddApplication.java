@@ -13,6 +13,7 @@ import pathstoreweb.pathstoreadminpanel.services.applications.formatter.AddAppli
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.io.*;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
@@ -98,14 +99,16 @@ public class AddApplication implements IService {
 
     try {
       PathStoreSchemaLoaderUtils.parseSchema(schema).forEach(this.session::execute);
+
+      // load information for that loaded schema.
+      this.schemaInfo.loadKeyspace(this.addApplicationPayload.applicationName);
     } catch (RuntimeException ignored) { // error loading the schema
       session.execute("drop keyspace if exists " + this.addApplicationPayload.applicationName);
       throw new Exception();
     }
 
-    this.schemaInfo.reset();
     for (SchemaInfo.Table table :
-        this.schemaInfo.getSchemaInfo().get(this.addApplicationPayload.applicationName).keySet()) {
+        this.schemaInfo.getTablesFromKeyspace(this.addApplicationPayload.applicationName)) {
 
       augmentSchema(table);
       createViewTable(table);
@@ -114,13 +117,13 @@ public class AddApplication implements IService {
           this.addApplicationPayload.applicationName,
           PathStorePriviledgedCluster.getInstance()
               .getMetadata()
-              .getKeyspace(table.getKeyspace_name())
+              .getKeyspace(table.keyspace_name)
               .exportAsString());
     }
 
     session.execute("drop keyspace if exists " + this.addApplicationPayload.applicationName);
 
-    this.schemaInfo.reset();
+    this.schemaInfo.removeKeyspace(this.addApplicationPayload.applicationName);
   }
   /**
    * Rebuilds schema based on data queried by {@link SchemaInfo} to include a few extra columns
@@ -135,12 +138,10 @@ public class AddApplication implements IService {
   private void augmentSchema(final SchemaInfo.Table table) {
     dropTable(table);
 
-    List<SchemaInfo.Column> columns =
-        this.schemaInfo.getTableColumns(table.getKeyspace_name(), table.getTable_name());
+    Collection<SchemaInfo.Column> columns = this.schemaInfo.getTableColumns(table);
 
     StringBuilder query =
-        new StringBuilder(
-            "CREATE TABLE " + table.getKeyspace_name() + "." + table.getTable_name() + "(");
+        new StringBuilder("CREATE TABLE " + table.keyspace_name + "." + table.table_name + "(");
 
     for (SchemaInfo.Column col : columns) {
       String type = col.type.compareTo("counter") == 0 ? "int" : col.type;
@@ -174,32 +175,32 @@ public class AddApplication implements IService {
 
     query
         .append("	    AND caching = ")
-        .append(mapToString(table.getCaching()))
+        .append(mapToString(table.caching))
         .append("	    AND comment = '")
-        .append(table.getComment())
+        .append(table.comment)
         .append("'")
         .append("	    AND compaction = ")
-        .append(mapToString(table.getCompaction()))
+        .append(mapToString(table.compaction))
         .append("	    AND compression = ")
-        .append(mapToString(table.getCompression()))
+        .append(mapToString(table.compression))
         .append("	    AND crc_check_chance = ")
-        .append(table.getCrc_check_chance())
+        .append(table.crc_check_chance)
         .append("	    AND dclocal_read_repair_chance = ")
-        .append(table.getDclocal_read_repair_chance())
+        .append(table.dclocal_read_repair_chance)
         .append("	    AND default_time_to_live = ")
-        .append(table.getDefault_time_to_live())
+        .append(table.default_time_to_live)
         .append("	    AND gc_grace_seconds = ")
-        .append(table.getGc_grace_seconds())
+        .append(table.gc_grace_seconds)
         .append("	    AND max_index_interval = ")
-        .append(table.getMax_index_interval())
+        .append(table.max_index_interval)
         .append("	    AND memtable_flush_period_in_ms = ")
-        .append(table.getMemtable_flush_period_in_ms())
+        .append(table.memtable_flush_period_in_ms)
         .append("	    AND min_index_interval = ")
-        .append(table.getMin_index_interval())
+        .append(table.min_index_interval)
         .append("	    AND read_repair_chance = ")
-        .append(table.getRead_repair_chance())
+        .append(table.read_repair_chance)
         .append("	    AND speculative_retry = '")
-        .append(table.getSpeculative_retry())
+        .append(table.speculative_retry)
         .append("'");
 
     session.execute(query.toString());
@@ -207,9 +208,9 @@ public class AddApplication implements IService {
     query =
         new StringBuilder(
             "CREATE INDEX ON "
-                + table.getKeyspace_name()
+                + table.keyspace_name
                 + "."
-                + table.getTable_name()
+                + table.table_name
                 + " (pathstore_dirty)");
 
     session.execute(query.toString());
@@ -217,9 +218,9 @@ public class AddApplication implements IService {
     query =
         new StringBuilder(
             "CREATE INDEX ON "
-                + table.getKeyspace_name()
+                + table.keyspace_name
                 + "."
-                + table.getTable_name()
+                + table.table_name
                 + " (pathstore_deleted)");
 
     session.execute(query.toString());
@@ -227,9 +228,9 @@ public class AddApplication implements IService {
     query =
         new StringBuilder(
             "CREATE INDEX ON "
-                + table.getKeyspace_name()
+                + table.keyspace_name
                 + "."
-                + table.getTable_name()
+                + table.table_name
                 + " (pathstore_insert_sid)");
 
     session.execute(query.toString());
@@ -237,9 +238,9 @@ public class AddApplication implements IService {
     query =
         new StringBuilder(
             "CREATE INDEX ON "
-                + table.getKeyspace_name()
+                + table.keyspace_name
                 + "."
-                + table.getTable_name()
+                + table.table_name
                 + " (pathstore_parent_timestamp)");
 
     session.execute(query.toString());
@@ -247,9 +248,9 @@ public class AddApplication implements IService {
     query =
         new StringBuilder(
             "CREATE INDEX ON "
-                + table.getKeyspace_name()
+                + table.keyspace_name
                 + "."
-                + table.getTable_name()
+                + table.table_name
                 + " (pathstore_node)");
 
     session.execute(query.toString());
@@ -263,12 +264,11 @@ public class AddApplication implements IService {
   private void createViewTable(final SchemaInfo.Table table) {
     StringBuilder query =
         new StringBuilder(
-            "CREATE TABLE " + table.getKeyspace_name() + ".view_" + table.getTable_name() + "(");
+            "CREATE TABLE " + table.keyspace_name + ".view_" + table.table_name + "(");
 
     query.append("pathstore_view_id uuid,");
 
-    List<SchemaInfo.Column> columns =
-        this.schemaInfo.getTableColumns(table.getKeyspace_name(), table.getTable_name());
+    Collection<SchemaInfo.Column> columns = this.schemaInfo.getTableColumns(table);
 
     for (SchemaInfo.Column col : columns) {
       String type = col.type.compareTo("counter") == 0 ? "int" : col.type;
@@ -317,7 +317,7 @@ public class AddApplication implements IService {
 
   /** @param table table to drop. */
   private void dropTable(final SchemaInfo.Table table) {
-    String query = "DROP TABLE " + table.getKeyspace_name() + "." + table.getTable_name();
+    String query = "DROP TABLE " + table.keyspace_name + "." + table.table_name;
     this.session.execute(query);
   }
 
