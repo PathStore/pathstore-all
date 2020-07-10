@@ -107,6 +107,15 @@ public final class Constants {
     public static final String OPTIONS = "options";
   }
 
+  public static final String TYPES = "types";
+
+  public static final class TYPES_COLUMNS {
+    public static final String KEYSPACE_NAME = "keyspace_name";
+    public static final String TYPE_NAME = "type_name";
+    public static final String FIELD_NAMES = "field_names";
+    public static final String FIELD_TYPES = "field_types";
+  }
+
   public static final String PATHSTORE_APPLICATIONS = "pathstore_applications";
 
   public static final String NODE_SCHEMAS = "node_schemas";

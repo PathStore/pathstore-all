@@ -42,10 +42,10 @@ import com.datastax.driver.core.Session;
  * a table.
  *
  * <p>The current aspects that we keep track of are: Tables per keyspace, Columns per table, Indexes
- * per table. Their literal table names are: tables, columns, indexes respectively. We also use the
- * system_schema.keyspaces table to query available keyspaces on startup, this is used if a node has
- * failed and restarts as {@link SchemaInfo#loadKeyspace(String)} won't be recalled for each
- * keyspace
+ * per table and UDT's per keyspace (User defined types). Their literal table names are: tables,
+ * columns, indexes and types respectively. We also use the system_schema.keyspaces table to query
+ * available keyspaces on startup, this is used if a node has failed and restarts as {@link
+ * SchemaInfo#loadKeyspace(String)} won't be recalled for each keyspace
  *
  * @apiNote This class makes the assumption that once a keyspace is loaded into memory it is final.
  *     We get to make this assumption because PathStore controls the loading / unloading of
@@ -105,6 +105,14 @@ public class SchemaInfo {
   private final ConcurrentMap<String, ConcurrentMap<Table, Collection<Index>>> indexInfo =
       new ConcurrentHashMap<>();
 
+  /**
+   * Map is defined as typeInfo: keyspace_name -> collection of types for that keyspace
+   *
+   * @see Type#buildFromKeyspace(Session, String)
+   * @see #getKeyspaceTypes(String) 
+   */
+  private final ConcurrentMap<String, Collection<Type>> typeInfo = new ConcurrentHashMap<>();
+
   /** @see PathStorePriviledgedCluster */
   private final Session session;
 
@@ -135,12 +143,15 @@ public class SchemaInfo {
       this.tableMap.put(keyspace, this.loadTableCollectionsForKeyspace(keyspace));
       this.columnInfo.put(keyspace, this.getColumnInfoPerKeyspace(keyspace));
       this.indexInfo.put(keyspace, this.getIndexInfoPerKeyspace(keyspace));
+      this.typeInfo.put(keyspace, Type.buildFromKeyspace(this.session, keyspace));
       this.keyspacesLoaded.add(keyspace);
 
       logger.info(
           String.format(
-              "Loaded keyspace %s it has %d table(s)",
-              keyspace, this.tableMap.get(keyspace).values().size()));
+              "Loaded keyspace %s it has %d table(s) and has %d udt(s)",
+              keyspace,
+              this.tableMap.get(keyspace).values().size(),
+              this.typeInfo.get(keyspace).size()));
     } else {
       logger.error(
           String.format("Could not load keyspace %s as it is not a pathstore keyspace", keyspace));
@@ -163,6 +174,7 @@ public class SchemaInfo {
     this.tableMap.remove(keyspace);
     this.columnInfo.remove(keyspace);
     this.indexInfo.remove(keyspace);
+    this.typeInfo.remove(keyspace);
 
     logger.info(String.format("Removed keyspace %s", keyspace));
   }
@@ -247,6 +259,17 @@ public class SchemaInfo {
   public Collection<Index> getTableIndexes(final Table table) {
     return Optional.of(this.indexInfo.get(table.keyspace_name).get(table))
         .orElse(Collections.emptySet());
+  }
+
+  /**
+   * This function is used to retrieve a set of UDT's (user defined types) based on a keyspace name.
+   * As these are created at the keyspace level rather then the table level
+   *
+   * @param keyspace non-validated keyspace name.
+   * @return a set of types for that keyspace always not null
+   */
+  public Collection<Type> getKeyspaceTypes(final String keyspace) {
+    return Optional.of(this.typeInfo.get(keyspace)).orElse(Collections.emptySet());
   }
 
   // Private functions
@@ -334,6 +357,85 @@ public class SchemaInfo {
         .collect(
             Collectors.toConcurrentMap(
                 Function.identity(), table -> Index.buildFromTable(this.session, table)));
+  }
+
+  /**
+   * This class represents a row in system_schema.types
+   *
+   * @apiNote In order to get an associated type from a field name you need to know the index where
+   *     that name exists. I.e index 1 in field_names corresponding type is stored in index 1 in
+   *     field_type
+   * @see SchemaInfo#loadKeyspace(String)
+   */
+  public static class Type {
+    /** keyspace name the type is associated with */
+    public final String keyspace_name;
+
+    /** Name of the type */
+    public final String type_name;
+
+    /** List of field names in the type */
+    public final List<String> field_names;
+
+    /** Associated types with each name */
+    public final List<String> field_types;
+
+    /**
+     * @param keyspace_name {@link #keyspace_name}
+     * @param type_name {@link #type_name}
+     * @param field_names {@link #field_names}
+     * @param field_types {@link #field_types}
+     */
+    private Type(
+        final String keyspace_name,
+        final String type_name,
+        final List<String> field_names,
+        final List<String> field_types) {
+      this.keyspace_name = keyspace_name;
+      this.type_name = type_name;
+      this.field_names = field_names;
+      this.field_types = field_types;
+    }
+
+    /**
+     * This function is used to build a collection of type objects from a keyspace name.
+     *
+     * @param session {@link SchemaInfo#session}
+     * @param keyspace name of keyspace
+     * @return collection of type objects per keyspace.
+     * @apiNote This function queries the database so its usage should be limited
+     * @implNote Since the storage of types is in a set which isn't ordered we use parallel stream
+     *     processing to improve the processing time of each row.
+     */
+    public static Collection<Type> buildFromKeyspace(final Session session, final String keyspace) {
+      return StreamSupport.stream(
+              session
+                  .execute(
+                      QueryBuilder.select()
+                          .all()
+                          .from(Constants.SYSTEM_SCHEMA, Constants.TYPES)
+                          .where(QueryBuilder.eq(Constants.TYPES_COLUMNS.KEYSPACE_NAME, keyspace)))
+                  .spliterator(),
+              true)
+          .map(Type::buildFromRow)
+          .collect(Collectors.toSet());
+    }
+
+    /**
+     * This function is used to process a system_schema.types row into a Type object.
+     *
+     * @param row row from system_schema.types
+     * @return processed Type object
+     * @implNote If this function gets changed to public you would need to verify where the row came
+     *     from otherwise runtime errors can be thrown
+     */
+    private static Type buildFromRow(final Row row) {
+      return new Type(
+          row.getString(Constants.TYPES_COLUMNS.KEYSPACE_NAME),
+          row.getString(Constants.TYPES_COLUMNS.TYPE_NAME),
+          row.getList(Constants.TYPES_COLUMNS.FIELD_NAMES, String.class),
+          row.getList(Constants.TYPES_COLUMNS.FIELD_TYPES, String.class));
+    }
   }
 
   /**
