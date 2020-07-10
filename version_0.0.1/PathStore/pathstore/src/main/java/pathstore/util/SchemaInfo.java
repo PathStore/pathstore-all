@@ -70,6 +70,7 @@ public class SchemaInfo {
                 .spliterator(),
             true)
         .map(row -> row.getString("keyspace_name"))
+        .filter(keyspace -> keyspace.startsWith("pathstore_"))
         .forEach(this::loadKeyspace);
   }
 
@@ -83,15 +84,21 @@ public class SchemaInfo {
   }
 
   public void loadKeyspace(final String keyspace) {
-    this.tableMap.put(keyspace, this.loadTableCollectionsForKeyspace(keyspace));
-    this.columnInfo.put(keyspace, this.getColumnInfoPerKeyspace(keyspace));
-    this.indexInfo.put(keyspace, this.getIndexInfoPerKeyspace(keyspace));
-    this.keyspacesLoaded.add(keyspace);
 
-    logger.info(
-        String.format(
-            "Loaded keyspace %s it has %d tables",
-            keyspace, this.tableMap.get(keyspace).values().size()));
+    if (keyspace.startsWith("pathstore_")) {
+      this.tableMap.put(keyspace, this.loadTableCollectionsForKeyspace(keyspace));
+      this.columnInfo.put(keyspace, this.getColumnInfoPerKeyspace(keyspace));
+      this.indexInfo.put(keyspace, this.getIndexInfoPerKeyspace(keyspace));
+      this.keyspacesLoaded.add(keyspace);
+
+      logger.info(
+          String.format(
+              "Loaded keyspace %s it has %d table(s)",
+              keyspace, this.tableMap.get(keyspace).values().size()));
+    } else {
+      logger.error(
+          String.format("Could not load keyspace %s as it is not a pathstore keyspace", keyspace));
+    }
   }
 
   public boolean isKeyspaceLoaded(final String keyspace) {
