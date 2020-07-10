@@ -47,10 +47,10 @@ import com.datastax.driver.core.Session;
  * failed and restarts as {@link SchemaInfo#loadKeyspace(String)} won't be recalled for each
  * keyspace
  *
- * @apiNote This class makes the assumption that once a keyspace is loaded into memory it is
- *     final. We get to make this assumption because PathStore controls the loading / unloading of
+ * @apiNote This class makes the assumption that once a keyspace is loaded into memory it is final.
+ *     We get to make this assumption because PathStore controls the loading / unloading of
  *     keyspaces on a network wide scale. This will cause problems when developers chose to modify a
- *     keyspace manually on a given node to test a feature. Thus the keyspace registered through
+ *     keyspace manually on a given node to test a feature. Thus the keyspace registered through the
  *     admin panel should be considered final and shouldn't be modified locally.
  * @implNote Data retrieved adheres to Cassandra version 3.9. If Cassandra is updated this class
  *     along with all associated constants must be checked to make sure they match the format
