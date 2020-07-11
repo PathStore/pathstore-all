@@ -254,6 +254,18 @@ public class AddApplication implements IService {
                 + " (pathstore_node)");
 
     session.execute(query.toString());
+
+    // load indexes
+    for (SchemaInfo.Index index : this.schemaInfo.getTableIndexes(table)) {
+      String indexQuery =
+          String.format(
+              "CREATE INDEX ON %s.%s (%s)",
+              index.keyspace_name, index.table_name, index.options.get("target"));
+
+      System.out.println(indexQuery);
+
+      session.execute(indexQuery);
+    }
   }
 
   /**
