@@ -76,6 +76,7 @@ public class AddApplication implements IService {
     try {
       this.loadSchemas(this.getUserPassSchema());
     } catch (Exception e) {
+      this.schemaInfo.removeKeyspace(this.addApplicationPayload.applicationName);
       e.printStackTrace();
       return new RuntimeErrorFormatter("Schema that was passed is invalid").format();
     }
@@ -136,7 +137,6 @@ public class AddApplication implements IService {
    * @param table table to augment
    */
   private void augmentSchema(final SchemaInfo.Table table) {
-    dropTable(table);
 
     Collection<SchemaInfo.Column> columns = this.schemaInfo.getTableColumns(table);
 
@@ -345,12 +345,6 @@ public class AddApplication implements IService {
       result.append("'").append(key).append("':'").append(m.get(key)).append("',");
 
     return result.substring(0, result.length() - 1) + "}";
-  }
-
-  /** @param table table to drop. */
-  private void dropTable(final SchemaInfo.Table table) {
-    String query = "DROP TABLE " + table.keyspace_name + "." + table.table_name;
-    this.session.execute(query);
   }
 
   /**
