@@ -31,6 +31,8 @@ public class SecondaryIndexTest {
       Update update = QueryBuilder.update("pathstore_demo", "users");
       update.where(QueryBuilder.eq("name", "myles")).with(QueryBuilder.set("vegetarian", false));
 
+      psSession.execute(update);
+
       System.out.println("updated");
     }
 
