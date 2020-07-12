@@ -13,7 +13,7 @@ public class SecondaryIndexTest {
 
   public static void main(String[] args) {
 
-    if (args[0] == null) {
+    if (args.length == 0) {
 
       Insert insert =
           QueryBuilder.insertInto("pathstore_demo", "users")
