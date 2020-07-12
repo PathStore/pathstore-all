@@ -54,6 +54,8 @@ public class PathStoreIterator implements Iterator<Row> {
     this.keyspace = keyspace;
     this.table = table;
     this.allowFiltering = allowFiltering;
+
+    System.out.println(String.format("%s.%s %b", this.keyspace, this.table, this.allowFiltering));
   }
 
   @Override
@@ -100,7 +102,8 @@ public class PathStoreIterator implements Iterator<Row> {
   }
 
   private boolean same_key(final ArrayBackedRow row, final ArrayBackedRow row_next) {
-    Collection<Column> columns = SchemaInfo.getInstance().getTableColumns(this.keyspace, this.table);
+    Collection<Column> columns =
+        SchemaInfo.getInstance().getTableColumns(this.keyspace, this.table);
 
     for (Column col : columns) {
       if (col.kind.compareTo("regular") != 0 && !col.column_name.startsWith("pathstore_")) {
