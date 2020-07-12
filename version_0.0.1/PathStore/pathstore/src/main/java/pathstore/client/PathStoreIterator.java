@@ -54,8 +54,6 @@ public class PathStoreIterator implements Iterator<Row> {
     this.keyspace = keyspace;
     this.table = table;
     this.allowFiltering = allowFiltering;
-
-    System.out.println(String.format("%s.%s %b", this.keyspace, this.table, this.allowFiltering));
   }
 
   @Override

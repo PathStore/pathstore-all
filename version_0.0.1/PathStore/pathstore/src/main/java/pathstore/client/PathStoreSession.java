@@ -245,9 +245,11 @@ public class PathStoreSession implements Session {
   }
 
   private void printDifference(final List<Clause> original, final List<Clause> stripped) {
-    original.removeAll(stripped);
+    List<Clause> originalClone = new ArrayList<>(original);
 
-    for (Clause clause : original) {
+    originalClone.removeAll(stripped);
+
+    for (Clause clause : originalClone) {
       logger.info(String.format("stripped clause on column %s", clause.getName()));
     }
   }
