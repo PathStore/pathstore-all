@@ -1,0 +1,57 @@
+package pathstore.test;
+
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.Insert;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Select;
+import com.datastax.driver.core.querybuilder.Update;
+import pathstore.client.PathStoreCluster;
+
+public class SecondaryIndexTest {
+  private static final Session psSession = PathStoreCluster.getInstance().connect();
+
+  public static void main(String[] args) {
+
+    if (args[0] == null) {
+
+      Insert insert =
+          QueryBuilder.insertInto("pathstore_demo", "users")
+              .value("name", "myles")
+              .value("sport", "golf")
+              .value("years", 20)
+              .value("vegetarian", true);
+
+      psSession.execute(insert);
+
+      System.out.println("inserted");
+
+      select(true);
+
+      Update update = QueryBuilder.update("pathstore_demo", "users");
+      update.where(QueryBuilder.eq("name", "myles")).with(QueryBuilder.set("vegetarian", false));
+
+      System.out.println("updated");
+    }
+
+    select(true);
+
+    System.out.println("Test complete");
+    psSession.close();
+  }
+
+  public static void select(final boolean bool) {
+    Select select = QueryBuilder.select().all().from("pathstore_demo", "users");
+    select.where(QueryBuilder.eq("vegetarian", bool));
+
+    for (Row row : psSession.execute(select)) {
+      System.out.println(
+          String.format(
+              "%s %s %d %b",
+              row.getString("name"),
+              row.getString("sport"),
+              row.getInt("years"),
+              row.getBool("vegetarian")));
+    }
+  }
+}

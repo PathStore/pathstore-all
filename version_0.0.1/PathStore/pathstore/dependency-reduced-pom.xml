@@ -47,7 +47,22 @@
                   <mainClass>pathstore.test.AllowFilteringTest</mainClass>
                 </transformer>
               </transformers>
-              <finalName>test</finalName>
+              <finalName>allow_filtering_test</finalName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>build-third</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer>
+                  <mainClass>pathstore.test.SecondaryIndexTest</mainClass>
+                </transformer>
+              </transformers>
+              <finalName>secondary_index_test</finalName>
             </configuration>
           </execution>
         </executions>
