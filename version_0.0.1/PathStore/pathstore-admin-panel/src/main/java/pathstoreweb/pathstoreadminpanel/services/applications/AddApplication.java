@@ -107,7 +107,7 @@ public class AddApplication implements IService {
     } catch (RuntimeException ignored) { // error loading the schema
       throw new Exception();
     } finally {
-      session.execute("drop keyspace if exists " + this.addApplicationPayload.applicationName);
+      this.session.execute("drop keyspace if exists " + this.addApplicationPayload.applicationName);
     }
 
     for (SchemaInfo.Table table :
@@ -125,6 +125,7 @@ public class AddApplication implements IService {
     }
 
     this.schemaInfo.removeKeyspace(this.addApplicationPayload.applicationName);
+    this.session.execute("drop keyspace if exists " + this.addApplicationPayload.applicationName);
   }
   /**
    * Rebuilds schema based on data queried by {@link SchemaInfo} to include a few extra columns
