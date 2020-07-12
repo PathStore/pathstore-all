@@ -21,6 +21,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import pathstore.common.QueryCache;
+import pathstore.common.logger.PathStoreLogger;
+import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.exception.InvalidKeyspaceException;
 import pathstore.exception.InvalidStatementTypeException;
 import pathstore.exception.PathMigrateAlreadyGoneException;
@@ -48,88 +50,44 @@ import com.google.common.util.concurrent.ListenableFuture;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 
-/**
- * TODO: Fix all string literals and move to {@link pathstore.common.Constants} This is a class is
- * used for communication to the local Cassandra instance
- *
- * @apiNote Many of the functions throw {@link UnsupportedOperationException}
- * @see Session
- */
 public class PathStoreSession implements Session {
 
-  /**
-   * Internal session variable that was gathered from the cassandra cluster object
-   *
-   * @see Cluster
-   */
+  private static final PathStoreLogger logger =
+      PathStoreLoggerFactory.getLogger(PathStoreSession.class);
+
   private final Session session;
 
-  /** TODO: Find purpose */
   boolean useColumn = false; // temporary
 
-  /** @param cluster set internal session field to the clusters session */
   public PathStoreSession(final Cluster cluster) {
     this.session = cluster.connect();
   }
 
-  /** @return TODO: find purpose */
   public String getLoggedKeyspace() {
     return this.session.getLoggedKeyspace();
   }
 
-  /**
-   * @return nothing
-   * @apiNote Unsupported Operation
-   */
   public Session init() {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * @return nothing
-   * @apiNote Unsupported Operation
-   */
   public ListenableFuture<Session> initAsync() {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * TODO: Potentially remove functionality to use cql strings as querying TODO: Should not throw
-   * {@link UnsupportedOperationException} if the operation is supported
-   *
-   * @param query cql string to execute on the local cassandra DB
-   * @return response from local db
-   */
   public ResultSet execute(final String query) {
     if (query.toLowerCase().contains("local_".toLowerCase())) return this.session.execute(query);
     else throw new UnsupportedOperationException();
   }
 
-  /**
-   * @return nothing
-   * @apiNote Unsupported Operation
-   */
   public ResultSet execute(final String query, final Object... values) {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * @return nothing
-   * @apiNote Unsupported Operation
-   */
   public ResultSet execute(final String query, final Map<String, Object> values) {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * Only used by {@link pathstore.common.PathStoreMigrate} and {@link
-   * pathstore.common.PathStoreAuthenticate} TODO: Potential only allow for internal usage only
-   * TODO: Migrate literal strings to strings in {@link pathstore.common.Constants}
-   *
-   * @param statement statement to execute on local cassandra service
-   * @param device TODO: Explain
-   * @return result of your query
-   */
   public ResultSet executeLocal(final Statement statement, final String device) {
     String keyspace = statement.getKeyspace();
     String table = "";
@@ -163,44 +121,15 @@ public class PathStoreSession implements Session {
     return new PathStoreResultSet(this.session.execute(statement), keyspace, table, false);
   }
 
-  /**
-   * @param statement Statement to execute
-   * @return result of query
-   * @see #executeNomral(Statement, String)
-   */
   public ResultSet execute(final Statement statement) {
     return executeNomral(statement, null);
   }
 
-  /**
-   * @param statement Statement to execute
-   * @param device TODO: Explain
-   * @return result of query
-   * @see #executeNomral(Statement, String)
-   */
   public ResultSet execute(final Statement statement, final String device)
       throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
     return executeNomral(statement, device);
   }
 
-  /**
-   * TODO: Potentially private TODO: Migrate all string literals to {@link
-   * pathstore.common.Constants}
-   *
-   * <p>Select: Update query cache to include our current query. TODO: Smart coverage Insert: Append
-   * the hidden values. Delete: This operation is actually an insert with the row pathstore_deleted
-   * added. Update: This operation is actually an insert with the updated data. To keep our design
-   * of a log of data over time
-   *
-   * <p>Then our operation is executed over our database connection and a result set is returned to
-   * be iterated over.
-   *
-   * @param statement statement to execute. This value does get reset
-   * @param device TODO: Explain
-   * @return result of statement iff one of the following exceptions is not thrown
-   * @throws PathMigrateAlreadyGoneException
-   * @throws PathStoreRemoteException
-   */
   public ResultSet executeNomral(Statement statement, final String device)
       throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
     String keyspace = statement.getKeyspace();
@@ -213,12 +142,21 @@ public class PathStoreSession implements Session {
     if (statement instanceof Select) {
       Select select = (Select) statement;
 
-      allowFiltering = select.hasAllowFiltering();
-
       table = select.getTable();
 
       if (!table.startsWith("local_")) {
-        QueryCache.getInstance().updateCache(keyspace, table, this.parseClauses(select), -1);
+
+        List<Clause> original = select.where().getClauses();
+
+        int originalSize = original.size();
+
+        List<Clause> strippedClauses = this.parseClauses(select);
+
+        allowFiltering = originalSize < strippedClauses.size();
+
+        this.printDifference(original, strippedClauses);
+
+        QueryCache.getInstance().updateCache(keyspace, table, strippedClauses, -1);
 
         /*
         if (device != null)
@@ -306,73 +244,55 @@ public class PathStoreSession implements Session {
     return new PathStoreResultSet(set, keyspace, table, allowFiltering);
   }
 
-  /**
-   * TODO: This function currently doesn't account for secondary indexes
-   *
-   * <p>TODO: Solution for secondary indexes would to be to determine if a where clause points to an
-   * index and if it does exclude that where clause
-   *
-   * <p>This function is used to determine what where clauses are valid to store in the QueryCache.
-   *
-   * <p>There are 3 main cases that are considered:
-   *
-   * <p>1) The query doesn't use allow filtering thus all records will be considered with a given
-   * primary key so all clauses are returned.
-   *
-   * <p>2) The query uses allow filtering but not all partition key columns are fixed, so an empty
-   * list of clauses is returned.
-   *
-   * <p>3) The query uses allow filtering and all partition key columns are fixed and some number of
-   * clustering key columns are fixed (may be zero). Only the partition key statements and
-   * clustering columns are returned.
-   *
-   * @param select
-   * @return
-   */
+  private void printDifference(final List<Clause> original, final List<Clause> stripped) {
+    if (original.removeAll(stripped)) {
+      logger.info("Has difference");
+      for (Clause clause : original) {
+        logger.info(String.format("stripped clause on column %s", clause.getName()));
+      }
+    } else {
+      logger.info("No difference");
+    }
+  }
+
   private List<Clause> parseClauses(final Select select) {
 
     List<Clause> clauses = select.where().getClauses();
 
-    if (select.hasAllowFiltering()) {
+    Collection<Column> columns =
+        SchemaInfo.getInstance().getTableColumns(select.getKeyspace(), select.getTable());
 
-      Collection<Column> columns =
-          SchemaInfo.getInstance().getTableColumns(select.getKeyspace(), select.getTable());
+    Set<String> partitionKeys =
+        columns.stream()
+            .filter(
+                column ->
+                    column.kind.compareTo("partition_key") == 0
+                        && !column.column_name.startsWith("pathstore_"))
+            .map(column -> column.column_name)
+            .collect(Collectors.toSet());
 
-      Set<String> partitionKeys =
-          columns.stream()
-              .filter(
-                  column ->
-                      column.kind.compareTo("partition_key") == 0
-                          && !column.column_name.startsWith("pathstore_"))
-              .map(column -> column.column_name)
-              .collect(Collectors.toSet());
+    Set<String> clusteringKeys =
+        columns.stream()
+            .filter(
+                column ->
+                    column.kind.compareTo("clustering") == 0
+                        && !column.column_name.startsWith("pathstore_"))
+            .map(column -> column.column_name)
+            .collect(Collectors.toSet());
 
-      Set<String> clusteringKeys =
-          columns.stream()
-              .filter(
-                  column ->
-                      column.kind.compareTo("clustering") == 0
-                          && !column.column_name.startsWith("pathstore_"))
-              .map(column -> column.column_name)
-              .collect(Collectors.toSet());
+    Set<String> columnNames =
+        select.where().getClauses().stream().map(Clause::getName).collect(Collectors.toSet());
 
-      Set<String> columnNames =
-          select.where().getClauses().stream().map(Clause::getName).collect(Collectors.toSet());
-
-      // if the where clauses contains all parition keys then filter all regular statements out,
-      // else return an empty list
-      clauses =
-          columnNames.containsAll(partitionKeys)
-              ? clauses.stream()
-                  .filter(
-                      clause ->
-                          partitionKeys.contains(clause.getName())
-                              || clusteringKeys.contains(clause.getName()))
-                  .collect(Collectors.toList())
-              : Collections.emptyList();
-    }
-
-    return clauses;
+    // if the where clauses contains all parition keys then filter all regular statements out,
+    // else return an empty list
+    return columnNames.containsAll(partitionKeys)
+        ? clauses.stream()
+            .filter(
+                clause ->
+                    partitionKeys.contains(clause.getName())
+                        || clusteringKeys.contains(clause.getName()))
+            .collect(Collectors.toList())
+        : Collections.emptyList();
   }
 
   /**
@@ -401,114 +321,56 @@ public class PathStoreSession implements Session {
     return slct;
   }
 
-  /**
-   * TODO: Should not throw {@link UnsupportedOperationException} when the operation is only
-   * supported if a condition holds. Modify to another error
-   *
-   * @param query command to query
-   * @return async result set.
-   */
   public ResultSetFuture executeAsync(final String query) {
     if (query.toLowerCase().contains("local_".toLowerCase()))
       return this.session.executeAsync(query);
     else throw new UnsupportedOperationException();
   }
 
-  /**
-   * @return null
-   * @apiNote Unsupported Operation
-   */
   public ResultSetFuture executeAsync(String query, Object... values) {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * @return null
-   * @apiNote Unsupported Operation
-   */
   public ResultSetFuture executeAsync(String query, Map<String, Object> values) {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * @return null
-   * @apiNote Unsupported Operation
-   */
   public ResultSetFuture executeAsync(Statement statement) {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * @return null
-   * @apiNote Unsupported Operation
-   */
   public PreparedStatement prepare(String query) {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * @return null
-   * @apiNote Unsupported Operation
-   */
   public PreparedStatement prepare(RegularStatement statement) {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * @return null
-   * @apiNote Unsupported Operation
-   */
   public ListenableFuture<PreparedStatement> prepareAsync(String query) {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * @return null
-   * @apiNote Unsupported Operation
-   */
   public ListenableFuture<PreparedStatement> prepareAsync(RegularStatement statement) {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * @return null
-   * @apiNote Unsupported Operation
-   */
   public CloseFuture closeAsync() {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * Closes the current session
-   *
-   * @see #session
-   */
   public void close() {
     this.session.close();
   }
 
-  /**
-   * You should call this function if you plan on executing something to ensure the session is
-   * opened
-   *
-   * @return whether the current session is opened.
-   */
   public boolean isClosed() {
     return this.session.isClosed();
   }
 
-  /**
-   * @return null
-   * @apiNote Unsupported Operation
-   */
   public Cluster getCluster() {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * @return null
-   * @apiNote Unsupported Operation
-   */
   public State getState() {
     throw new UnsupportedOperationException();
   }
