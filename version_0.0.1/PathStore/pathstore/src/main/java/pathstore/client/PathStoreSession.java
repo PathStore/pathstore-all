@@ -245,13 +245,10 @@ public class PathStoreSession implements Session {
   }
 
   private void printDifference(final List<Clause> original, final List<Clause> stripped) {
-    if (original.removeAll(stripped)) {
-      logger.info("Has difference");
-      for (Clause clause : original) {
-        logger.info(String.format("stripped clause on column %s", clause.getName()));
-      }
-    } else {
-      logger.info("No difference");
+    original.removeAll(stripped);
+
+    for (Clause clause : original) {
+      logger.info(String.format("stripped clause on column %s", clause.getName()));
     }
   }
 
