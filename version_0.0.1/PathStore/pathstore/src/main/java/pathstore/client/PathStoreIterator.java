@@ -80,10 +80,6 @@ public class PathStoreIterator implements Iterator<Row> {
       this.row_next = (ArrayBackedRow) this.iter.next();
     }
 
-    // If the user made a query with allow filtering then there is a chance that the row from
-    // the database is not the most up to date row. If this is the case we need to check to see if
-    // there is a more up to date row. If there is then we cannot return that row to the user
-    // because it doesn't actually exist and is part of the row set to a particular primary key.
     if (this.allowFiltering && this.hasNewerRows(this.row)) {
       this.row = null;
       return this.hasNext();
@@ -129,16 +125,16 @@ public class PathStoreIterator implements Iterator<Row> {
 
     Select checkForNewerRows = QueryBuilder.select().all().from(this.keyspace, this.table);
 
-    // add where clauses to fix all primary key columns excluding pathstore_version.
-    SchemaInfo.getInstance().getTableColumns(this.keyspace, this.table).stream()
-        .filter(
-            column ->
-                column.kind.compareTo("regular") != 0
-                    && !column.column_name.startsWith("pathstore_"))
-        .map(column -> column.column_name)
-        .forEach(
-            columnName ->
-                checkForNewerRows.where(QueryBuilder.eq(columnName, row.getObject(columnName))));
+    SchemaInfo schemaInfo = SchemaInfo.getInstance();
+
+    // produce a set of all primary key column names
+    Collection<String> primaryKeyColumns =
+        schemaInfo.getPartitionColumnNames(this.keyspace, this.table);
+    primaryKeyColumns.addAll(schemaInfo.getClusterColumnNames(this.keyspace, this.table));
+
+    primaryKeyColumns.forEach(
+        columnName ->
+            checkForNewerRows.where(QueryBuilder.eq(columnName, row.getObject(columnName))));
 
     // add greater than clause to pathstore_version
     checkForNewerRows.where(
