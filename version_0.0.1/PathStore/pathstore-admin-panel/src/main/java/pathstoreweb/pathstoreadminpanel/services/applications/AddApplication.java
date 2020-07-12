@@ -280,7 +280,7 @@ public class AddApplication implements IService {
 
       String typeQuery =
           String.format(
-              "CREATE TYPE %s.%s (%s)", type.keyspace_name, type.type_name, types.toString());
+              "CREATE TYPE %s.%s (\n%s\n)", type.keyspace_name, type.type_name, types.toString());
 
       System.out.println(typeQuery);
 
