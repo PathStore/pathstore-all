@@ -266,6 +266,26 @@ public class AddApplication implements IService {
 
       session.execute(indexQuery);
     }
+
+    // load UDT's
+    for (SchemaInfo.Type type :
+        this.schemaInfo.getKeyspaceTypes(this.addApplicationPayload.applicationName)) {
+
+      // Build types into string
+      StringBuilder types = new StringBuilder();
+      for (int i = 0; i < type.field_names.size(); i++) {
+        if (i > 0) types.append(",").append("\n");
+        types.append(type.field_names.get(i)).append(" ").append(type.field_types.get(i));
+      }
+
+      String typeQuery =
+          String.format(
+              "CREATE TYPE %s.%s (%s)", type.keyspace_name, type.type_name, types.toString());
+
+      System.out.println(typeQuery);
+
+      session.execute(typeQuery);
+    }
   }
 
   /**
