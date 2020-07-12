@@ -152,7 +152,7 @@ public class PathStoreSession implements Session {
 
         List<Clause> strippedClauses = this.parseClauses(select);
 
-        allowFiltering = originalSize < strippedClauses.size();
+        allowFiltering = originalSize > strippedClauses.size();
 
         this.printDifference(original, strippedClauses);
 
