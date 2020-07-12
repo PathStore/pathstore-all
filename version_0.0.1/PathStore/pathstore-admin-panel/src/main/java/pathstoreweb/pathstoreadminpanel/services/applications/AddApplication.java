@@ -137,6 +137,10 @@ public class AddApplication implements IService {
    * @param table table to augment
    */
   private void augmentSchema(final SchemaInfo.Table table) {
+    this.session.execute(
+        String.format(
+            "CREATE KEYSPACE %s WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;",
+            this.addApplicationPayload.applicationName));
 
     Collection<SchemaInfo.Column> columns = this.schemaInfo.getTableColumns(table);
 
