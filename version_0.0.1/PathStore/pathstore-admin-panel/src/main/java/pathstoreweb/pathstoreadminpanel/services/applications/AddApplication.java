@@ -76,6 +76,7 @@ public class AddApplication implements IService {
     try {
       this.loadSchemas(this.getUserPassSchema());
     } catch (Exception e) {
+      e.printStackTrace();
       return new RuntimeErrorFormatter("Schema that was passed is invalid").format();
     }
 

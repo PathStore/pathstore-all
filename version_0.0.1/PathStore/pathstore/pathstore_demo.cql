@@ -21,9 +21,3 @@ CREATE TABLE pathstore_demo.users (
     AND read_repair_chance = 0.0
     AND speculative_retry = '99PERCENTILE';
 CREATE INDEX users_vegetarian_idx ON pathstore_demo.users (vegetarian);
-CREATE TYPE pathstore_demo.test_type (
-	name1 timestamp,
-	name2 text,
-	name3 int,
-	name4 Boolean
-);
