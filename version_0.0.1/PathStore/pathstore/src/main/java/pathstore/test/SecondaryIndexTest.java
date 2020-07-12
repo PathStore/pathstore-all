@@ -8,6 +8,24 @@ import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
 
+/**
+ * This test will check to make sure that the secondary index recognition works. In order to perform
+ * this test you need to do the follow
+ *
+ * <p>(1): Deploy a child node to the root node
+ *
+ * <p>(2): Register the pathstore_demo application
+ *
+ * <p>(3): Deploy the application on the root node and its child.
+ *
+ * <p>(4): Run the test on the root node with no args. It will write 2 records to the table and will
+ * spit out 1 row after the insert and 0 after the update
+ *
+ * <p>(5): Run the test on the child node with atleast 1 arg. It will print out nothing. If this
+ * occurs then the test as passed. This should that all the data is properly loaded through the
+ * querycache and that the filtering mechanism in the pathstore iterator / pathstore session is
+ * working properly.
+ */
 public class SecondaryIndexTest {
   private static final Session psSession = PathStoreCluster.getInstance().connect();
 
