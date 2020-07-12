@@ -35,9 +35,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
 /**
- * TODO: (Myles) Should this class be stateless?
- *
- * <p>The purpose of this class is to represent the keyspace system_schema in memory for usage
+ * The purpose of this class is to represent the keyspace system_schema in memory for usage
  * throughout the application whenever a decision needs to be made specifically based some aspect of
  * a table.
  *
@@ -83,6 +81,7 @@ public class SchemaInfo {
    * @see #getTablesFromKeyspace(String)
    * @see #getTableColumns(String, String)
    * @see #getTableIndexes(String, String)
+   * @see #loadKeyspace(String)
    */
   private final ConcurrentMap<String, ConcurrentMap<String, Table>> tableMap =
       new ConcurrentHashMap<>();
@@ -91,16 +90,39 @@ public class SchemaInfo {
    * Map is defined as columnInfo: keyspace_name -> table object -> collection of column objects
    *
    * @see #getTableColumns(Table)
-   * @see #removeKeyspace(String)
+   * @see #getTableColumns(String, String)
+   * @see #loadKeyspace(String)
    */
   private final ConcurrentMap<String, ConcurrentMap<Table, Collection<Column>>> columnInfo =
+      new ConcurrentHashMap<>();
+
+  /**
+   * Map is defined as partitionColumnNames: keyspace_name -> table object -> collection of
+   * partition column names
+   *
+   * @see #getPartitionColumnNames(Table)
+   * @see #getPartitionColumnNames(String, String)
+   * @see #loadKeyspace(String)
+   */
+  private final ConcurrentMap<String, ConcurrentMap<Table, Collection<String>>>
+      partitionColumnNames = new ConcurrentHashMap<>();
+
+  /**
+   * Map is defined as clusterColumnNames: keyspace_name -> table object -> collection of cluster
+   * column names
+   *
+   * @see #getClusterColumnNames(Table)
+   * @see #getClusterColumnNames(String, String)
+   * @see #loadKeyspace(String)
+   */
+  private final ConcurrentMap<String, ConcurrentMap<Table, Collection<String>>> clusterColumnNames =
       new ConcurrentHashMap<>();
 
   /**
    * Map is defined as indexInfo: keyspace_name -> table object -> collection of index objects
    *
    * @see #getTableIndexes(Table)
-   * @see #removeKeyspace(String)
+   * @see #loadKeyspace(String)
    */
   private final ConcurrentMap<String, ConcurrentMap<Table, Collection<Index>>> indexInfo =
       new ConcurrentHashMap<>();
@@ -109,7 +131,8 @@ public class SchemaInfo {
    * Map is defined as typeInfo: keyspace_name -> collection of types for that keyspace
    *
    * @see Type#buildFromKeyspace(Session, String)
-   * @see #getKeyspaceTypes(String) 
+   * @see #getKeyspaceTypes(String)
+   * @see #loadKeyspace(String)
    */
   private final ConcurrentMap<String, Collection<Type>> typeInfo = new ConcurrentHashMap<>();
 
@@ -135,6 +158,9 @@ public class SchemaInfo {
    *     within the local Cassandra node. The main caller of this function however can guarantee
    *     that the passed keyspace name exists within Cassandra as it loads it prior to calling this
    *     function.
+   * @implNote The placement of the loading of data is very specific. As there are dependencies
+   *     between loading data. If you plan to modify this function you need to read the impl notes
+   *     for each loading function, they explain what they depend on.
    * @see pathstore.system.schemaFSM.PathStoreSlaveSchemaServer
    */
   public void loadKeyspace(final String keyspace) {
@@ -142,6 +168,9 @@ public class SchemaInfo {
     if (keyspace.startsWith(Constants.PATHSTORE_PREFIX)) {
       this.tableMap.put(keyspace, this.loadTableCollectionsForKeyspace(keyspace));
       this.columnInfo.put(keyspace, this.getColumnInfoPerKeyspace(keyspace));
+      this.partitionColumnNames.put(
+          keyspace, this.getColumnNamesPerKeyspace(keyspace, "partition_key"));
+      this.clusterColumnNames.put(keyspace, this.getColumnNamesPerKeyspace(keyspace, "clustering"));
       this.indexInfo.put(keyspace, this.getIndexInfoPerKeyspace(keyspace));
       this.typeInfo.put(keyspace, Type.buildFromKeyspace(this.session, keyspace));
       this.keyspacesLoaded.add(keyspace);
@@ -173,6 +202,8 @@ public class SchemaInfo {
     this.keyspacesLoaded.remove(keyspace);
     this.tableMap.remove(keyspace);
     this.columnInfo.remove(keyspace);
+    this.partitionColumnNames.remove(keyspace);
+    this.clusterColumnNames.remove(keyspace);
     this.indexInfo.remove(keyspace);
     this.typeInfo.remove(keyspace);
 
@@ -235,6 +266,54 @@ public class SchemaInfo {
    */
   public Collection<Column> getTableColumns(final Table table) {
     return Optional.of(this.columnInfo.get(table.keyspace_name).get(table))
+        .orElse(Collections.emptySet());
+  }
+
+  /**
+   * This function is used to retrieve a set of partition column names from a keyspace and table
+   * names.
+   *
+   * @param keyspace keyspace name
+   * @param tableName table name
+   * @return set of partition column names
+   * @see #getPartitionColumnNames(Table)
+   */
+  public Collection<String> getPartitionColumnNames(final String keyspace, final String tableName) {
+    return this.getPartitionColumnNames(this.tableMap.get(keyspace).get(tableName));
+  }
+
+  /**
+   * This function is used to retrieve a set of partition column names from a table object.
+   *
+   * @param table table object
+   * @return set of partition column names
+   */
+  public Collection<String> getPartitionColumnNames(final Table table) {
+    return Optional.of(this.partitionColumnNames.get(table.keyspace_name).get(table))
+        .orElse(Collections.emptySet());
+  }
+
+  /**
+   * This function is used to retrieve a set of clustering column names from a keyspace and table
+   * names.
+   *
+   * @param keyspace keyspace name
+   * @param tableName table name
+   * @return set of clustering column names
+   * @see #getClusterColumnNames(Table)
+   */
+  public Collection<String> getClusterColumnNames(final String keyspace, final String tableName) {
+    return this.getClusterColumnNames(this.tableMap.get(keyspace).get(tableName));
+  }
+
+  /**
+   * This function is used to retrieve a set of clustering column names from a table object.
+   *
+   * @param table table object
+   * @return set of clustering column names
+   */
+  public Collection<String> getClusterColumnNames(final Table table) {
+    return Optional.of(this.clusterColumnNames.get(table.keyspace_name).get(table))
         .orElse(Collections.emptySet());
   }
 
@@ -326,16 +405,46 @@ public class SchemaInfo {
    * @return map from table object -> collection of column objects
    * @see #loadKeyspace(String)
    * @see Column#buildFromTable(Session, Table)
-   * @apiNote This function works under the assumption that the table objects in {@link #tableMap}
+   * @implNote This function works under the assumption that the table objects in {@link #tableMap}
    *     have already been generated for the provided keyspace. Otherwise this will do nothing as
    *     there are no table objects associated with the provided keyspace to build the collection
    *     from.
    */
   private ConcurrentMap<Table, Collection<Column>> getColumnInfoPerKeyspace(final String keyspace) {
     return this.tableMap.get(keyspace).values().stream()
+        .parallel()
         .collect(
             Collectors.toConcurrentMap(
                 Function.identity(), table -> Column.buildFromTable(this.session, table)));
+  }
+
+  /**
+   * This function is used to produce a map from table object -> collection of column names with a
+   * given column type. This is used to update {@link #partitionColumnNames} and {@link
+   * #clusterColumnNames} for a given keyspace with names of columns that have specific types.
+   *
+   * @param keyspace keyspace to build names from
+   * @param columnType what type either "partition_key" or "clustering"
+   * @return built map.
+   * @implNote This function works under the assumption that {@link #tableMap} has been built for
+   *     the passed keyspace and that {@link #columnInfo} has been built for the passed keyspace.
+   */
+  private ConcurrentMap<Table, Collection<String>> getColumnNamesPerKeyspace(
+      final String keyspace, final String columnType) {
+    return this.tableMap.get(keyspace).values().stream()
+        .parallel()
+        .collect(
+            Collectors.toConcurrentMap(
+                Function.identity(),
+                table ->
+                    this.getTableColumns(table).stream()
+                        .parallel()
+                        .filter(
+                            column ->
+                                column.kind.equals(columnType)
+                                    && !column.column_name.startsWith(Constants.PATHSTORE_PREFIX))
+                        .map(column -> column.column_name)
+                        .collect(Collectors.toSet())));
   }
 
   /**
@@ -347,13 +456,14 @@ public class SchemaInfo {
    * @return map from table object -> collection of index objects
    * @see #loadKeyspace(String)
    * @see Index#buildFromTable(Session, Table)
-   * @apiNote This function works under the assumption that the table objects in {@link #tableMap}
+   * @implNote This function works under the assumption that the table objects in {@link #tableMap}
    *     have already been generated for the provided keyspace. Otherwise this will do nothing as
    *     there are no table objects associated with the provided keyspace to build the collection
    *     from.
    */
   private ConcurrentMap<Table, Collection<Index>> getIndexInfoPerKeyspace(final String keyspace) {
     return this.tableMap.get(keyspace).values().stream()
+        .parallel()
         .collect(
             Collectors.toConcurrentMap(
                 Function.identity(), table -> Index.buildFromTable(this.session, table)));

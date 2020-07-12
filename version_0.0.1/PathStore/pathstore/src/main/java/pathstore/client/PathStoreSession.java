@@ -258,33 +258,16 @@ public class PathStoreSession implements Session {
 
     List<Clause> clauses = select.where().getClauses();
 
-    Collection<Column> columns =
-        SchemaInfo.getInstance().getTableColumns(select.getKeyspace(), select.getTable());
+    Collection<String> partitionKeys =
+        SchemaInfo.getInstance().getPartitionColumnNames(select.getKeyspace(), select.getTable());
 
-    Set<String> partitionKeys =
-        columns.stream()
-            .filter(
-                column ->
-                    column.kind.compareTo("partition_key") == 0
-                        && !column.column_name.startsWith("pathstore_"))
-            .map(column -> column.column_name)
-            .collect(Collectors.toSet());
+    Collection<String> clusteringKeys =
+        SchemaInfo.getInstance().getClusterColumnNames(select.getKeyspace(), select.getTable());
 
-    Set<String> clusteringKeys =
-        columns.stream()
-            .filter(
-                column ->
-                    column.kind.compareTo("clustering") == 0
-                        && !column.column_name.startsWith("pathstore_"))
-            .map(column -> column.column_name)
-            .collect(Collectors.toSet());
-
-    Set<String> columnNames =
-        select.where().getClauses().stream().map(Clause::getName).collect(Collectors.toSet());
-
-    // if the where clauses contains all parition keys then filter all regular statements out,
-    // else return an empty list
-    return columnNames.containsAll(partitionKeys)
+    return select.where().getClauses().stream()
+            .map(Clause::getName)
+            .collect(Collectors.toSet())
+            .containsAll(partitionKeys)
         ? clauses.stream()
             .filter(
                 clause ->

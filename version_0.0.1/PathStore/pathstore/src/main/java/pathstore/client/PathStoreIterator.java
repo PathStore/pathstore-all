@@ -123,12 +123,6 @@ public class PathStoreIterator implements Iterator<Row> {
       if (row.data.get(x) == null) row.data.set(x, row_next.data.get(x));
   }
 
-  /**
-   * This function takes a given row and queries the database iff
-   *
-   * @param row
-   * @return
-   */
   private boolean hasNewerRows(final ArrayBackedRow row) {
 
     if (row == null) return false;
