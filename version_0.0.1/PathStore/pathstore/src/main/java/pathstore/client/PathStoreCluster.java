@@ -80,6 +80,7 @@ public class PathStoreCluster {
     this.cluster =
         new Cluster.Builder()
             .addContactPoints(PathStoreProperties.getInstance().CassandraIP)
+            .withCredentials("cassandra", "cassandra")
             .withPort(PathStoreProperties.getInstance().CassandraPort)
             .withSocketOptions(
                 new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
