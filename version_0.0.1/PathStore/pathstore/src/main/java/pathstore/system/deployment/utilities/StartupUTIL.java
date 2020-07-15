@@ -22,11 +22,15 @@ public class StartupUTIL {
    *
    * @param ip ip of cassandra server
    * @param port port cassandra is running on
+   * @param username username to login with
+   * @param password password to login with
    * @return created cluster
    */
-  public static Cluster createCluster(final String ip, final int port) {
+  public static Cluster createCluster(
+      final String ip, final int port, final String username, final String password) {
     return new Cluster.Builder()
         .addContactPoints(ip)
+        .withCredentials(username, password)
         .withPort(port)
         .withSocketOptions((new SocketOptions()).setTcpNoDelay(true).setReadTimeoutMillis(15000000))
         .withQueryOptions(

@@ -53,7 +53,7 @@ public class WaitForCassandra implements ICommand {
   @Override
   public void execute() throws CommandError {
     try {
-      Cluster cluster = StartupUTIL.createCluster(this.ip, this.port);
+      Cluster cluster = StartupUTIL.createCluster(this.ip, this.port, "cassandra", "cassandra");
       Session session = cluster.connect();
 
       logger.info("Cassandra is online, loading local keyspace for pathstore started");

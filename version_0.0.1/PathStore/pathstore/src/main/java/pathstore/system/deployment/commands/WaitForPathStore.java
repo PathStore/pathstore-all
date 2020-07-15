@@ -45,7 +45,7 @@ public class WaitForPathStore implements ICommand {
    * @param port cassandra port
    */
   public WaitForPathStore(final String ip, final int port) {
-    this.cluster = StartupUTIL.createCluster(ip, port);
+    this.cluster = StartupUTIL.createCluster(ip, port, "cassandra", "cassandra");
     this.currentWaitCount = 0;
     this.neededRecords = new HashMap<>();
     this.neededRecords.put(0, "RMI Server started");

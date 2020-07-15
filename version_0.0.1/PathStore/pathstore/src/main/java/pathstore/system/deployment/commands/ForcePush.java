@@ -40,7 +40,7 @@ public class ForcePush implements ICommand {
    */
   @Override
   public void execute() {
-    Session child = StartupUTIL.createCluster(this.ip, this.cassandraPort).connect();
+    Session child = StartupUTIL.createCluster(this.ip, this.cassandraPort, "cassandra", "cassandra").connect();
 
     this.logger.info("Successfully connected to child cassandra");
 
