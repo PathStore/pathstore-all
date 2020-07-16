@@ -76,7 +76,7 @@ public class FinalizeRootInstallation implements ICommand {
 
     System.out.println("Writing server record to root's table");
 
-    Cluster cluster = StartupUTIL.createCluster(ip, cassandraPort);
+    Cluster cluster = StartupUTIL.createCluster(ip, cassandraPort, "cassandra", "cassandra");
     Session session = cluster.connect();
 
     UUID serverUUID = UUID.randomUUID();
