@@ -80,8 +80,8 @@ public class PathStoreCluster {
     this.cluster =
         new Cluster.Builder()
             .addContactPoints(PathStoreProperties.getInstance().CassandraIP)
-            .withCredentials("cassandra", "cassandra")
             .withPort(PathStoreProperties.getInstance().CassandraPort)
+            .withCredentials("cassandra", "cassandra")
             .withSocketOptions(
                 new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
             .withQueryOptions(
@@ -108,6 +108,7 @@ public class PathStoreCluster {
         new Cluster.Builder()
             .addContactPoints(custom.CassandraIP)
             .withPort(custom.CassandraPort)
+            .withCredentials("cassandra", "cassandra")
             .withSocketOptions(
                 new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
             .withQueryOptions(

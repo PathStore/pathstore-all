@@ -30,8 +30,8 @@ public class StartupUTIL {
       final String ip, final int port, final String username, final String password) {
     return new Cluster.Builder()
         .addContactPoints(ip)
-        .withCredentials(username, password)
         .withPort(port)
+        .withCredentials(username, password)
         .withSocketOptions((new SocketOptions()).setTcpNoDelay(true).setReadTimeoutMillis(15000000))
         .withQueryOptions(
             (new QueryOptions())

@@ -49,8 +49,8 @@ public class PathStorePriviledgedCluster {
     this.cluster =
         new Cluster.Builder()
             .addContactPoints(PathStoreProperties.getInstance().CassandraIP)
-            .withCredentials("cassandra", "cassandra")
             .withPort(PathStoreProperties.getInstance().CassandraPort)
+            .withCredentials("cassandra", "cassandra")
             .withSocketOptions(
                 new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
             .withQueryOptions(
