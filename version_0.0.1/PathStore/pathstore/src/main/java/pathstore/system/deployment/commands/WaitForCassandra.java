@@ -63,8 +63,9 @@ public class WaitForCassandra implements ICommand {
    */
   @Override
   public void execute() throws CommandError {
+    PathStorePrivilegedCluster cluster = null;
     try {
-      PathStorePrivilegedCluster cluster =
+      cluster =
           PathStorePrivilegedCluster.getChildInstance(
               this.username, this.password, this.ip, this.port);
       Session session = cluster.connect();
@@ -73,7 +74,6 @@ public class WaitForCassandra implements ICommand {
 
       PathStoreSchemaLoaderUtils.loadLocalKeyspace(session);
 
-      cluster.close();
     } catch (NoHostAvailableException e) {
       try {
         if (this.currentWaitCount >= maxWaitTime)
@@ -86,6 +86,8 @@ public class WaitForCassandra implements ICommand {
         throw new CommandError("Sleep was interrupted while waiting for cassandra to come online");
       }
       this.execute();
+    } finally {
+      if (cluster != null) cluster.close();
     }
   }
 

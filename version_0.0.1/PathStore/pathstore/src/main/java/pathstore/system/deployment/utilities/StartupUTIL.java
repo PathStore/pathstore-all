@@ -1,20 +1,12 @@
 package pathstore.system.deployment.utilities;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.QueryOptions;
-import com.datastax.driver.core.SocketOptions;
-import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
-
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
 
 /** Things related to cassandra for startup that can't rely on pathstore properties file */
 public class StartupUTIL {

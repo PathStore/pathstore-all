@@ -89,13 +89,13 @@ public class WaitForPathStore implements ICommand {
     for (Row row : session.execute(tasks)) {
       int task = row.getInt(Constants.STARTUP_COLUMNS.TASK_DONE);
 
-      if (neededRecords.containsKey(task)) {
-        logger.info(neededRecords.get(task));
-        neededRecords.remove(task);
+      if (this.neededRecords.containsKey(task)) {
+        this.logger.info(neededRecords.get(task));
+        this.neededRecords.remove(task);
       }
     }
 
-    if (neededRecords.size() > 0) {
+    if (this.neededRecords.size() > 0) {
       try {
         if (this.currentWaitCount >= maxWaitTime)
           throw new CommandError(
@@ -108,7 +108,7 @@ public class WaitForPathStore implements ICommand {
         throw new CommandError("Sleep was interrupted while waiting for pathstore to come online");
       }
     } else {
-      logger.info("PathStore started up");
+      this.logger.info("PathStore started up");
       cluster.close();
     }
   }
