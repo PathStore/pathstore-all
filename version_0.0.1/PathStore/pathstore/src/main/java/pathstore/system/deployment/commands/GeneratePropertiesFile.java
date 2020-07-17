@@ -56,6 +56,12 @@ public class GeneratePropertiesFile implements ICommand {
   /** Where to store the generate pathstore file */
   private final String destinationToStore;
 
+  /** Super user account for cassandra */
+  private final String username;
+
+  /** Super user account for cassandra */
+  private final String password;
+
   /**
    * @param nodeID {@link #nodeID}
    * @param ip {@link #ip}
@@ -84,7 +90,9 @@ public class GeneratePropertiesFile implements ICommand {
       final int cassandraPort,
       final String cassandraParentIP,
       final int cassandraParentPort,
-      final String destinationToStore) {
+      final String destinationToStore,
+      final String username,
+      final String password) {
     this.nodeID = nodeID;
     this.ip = ip;
     this.parentNodeId = parentNodeId;
@@ -98,6 +106,8 @@ public class GeneratePropertiesFile implements ICommand {
     this.cassandraParentIP = cassandraParentIP;
     this.cassandraParentPort = cassandraParentPort;
     this.destinationToStore = destinationToStore;
+    this.username = username;
+    this.password = password;
   }
 
   /**
@@ -108,22 +118,24 @@ public class GeneratePropertiesFile implements ICommand {
    */
   @Override
   public void execute() throws CommandError {
-      Properties properties = new Properties();
+    Properties properties = new Properties();
 
-      properties.put(NODE_ID, String.valueOf(this.nodeID));
-      properties.put(EXTERNAL_ADDRESS, this.ip);
-      properties.put(PARENT_ID, String.valueOf(this.parentNodeId));
-      properties.put(ROLE, this.role.toString());
-      properties.put(RMI_REGISTRY_IP, this.rmiRegistryIP);
-      properties.put(RMI_REGISTRY_PORT, String.valueOf(this.rmiRegistryPort));
-      properties.put(RMI_REGISTRY_PARENT_IP, this.rmiRegistryParentIP);
-      properties.put(RMI_REGISTRY_PARENT_PORT, String.valueOf(this.rmiRegistryParentPort));
-      properties.put(CASSANDRA_IP, this.cassandraIP);
-      properties.put(CASSANDRA_PORT, String.valueOf(this.cassandraPort));
-      properties.put(CASSANDRA_PARENT_IP, this.cassandraParentIP);
-      properties.put(CASSANDRA_PARENT_PORT, String.valueOf(this.cassandraParentPort));
-      properties.put(PUSH_SLEEP, String.valueOf(1000));
-      properties.put(PULL_SLEEP, String.valueOf(1000));
+    properties.put(NODE_ID, String.valueOf(this.nodeID));
+    properties.put(EXTERNAL_ADDRESS, this.ip);
+    properties.put(PARENT_ID, String.valueOf(this.parentNodeId));
+    properties.put(ROLE, this.role.toString());
+    properties.put(RMI_REGISTRY_IP, this.rmiRegistryIP);
+    properties.put(RMI_REGISTRY_PORT, String.valueOf(this.rmiRegistryPort));
+    properties.put(RMI_REGISTRY_PARENT_IP, this.rmiRegistryParentIP);
+    properties.put(RMI_REGISTRY_PARENT_PORT, String.valueOf(this.rmiRegistryParentPort));
+    properties.put(CASSANDRA_IP, this.cassandraIP);
+    properties.put(CASSANDRA_PORT, String.valueOf(this.cassandraPort));
+    properties.put(CASSANDRA_PARENT_IP, this.cassandraParentIP);
+    properties.put(CASSANDRA_PARENT_PORT, String.valueOf(this.cassandraParentPort));
+    properties.put(PUSH_SLEEP, String.valueOf(1000));
+    properties.put(PULL_SLEEP, String.valueOf(1000));
+    properties.put(USERNAME, this.username);
+    properties.put(PASSWORD, this.password);
 
     try {
       OutputStream outputStream =

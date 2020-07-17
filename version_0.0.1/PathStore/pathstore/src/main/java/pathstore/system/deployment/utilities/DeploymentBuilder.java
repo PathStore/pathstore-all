@@ -1,5 +1,6 @@
 package pathstore.system.deployment.utilities;
 
+import authentication.Credential;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
 
@@ -135,6 +136,8 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    * @param cassandraParentPort cassandra parent port
    * @param localProperties where to store the local copy
    * @param remoteProperties where to transfer to
+   * @param username username to local cassandra node
+   * @param password password to local cassandra node
    * @return this
    */
   public T generatePropertiesFiles(
@@ -151,7 +154,9 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
       final String cassandraParentIP,
       final int cassandraParentPort,
       final String localProperties,
-      final String remoteProperties) {
+      final String remoteProperties,
+      final String username,
+      final String password) {
 
     this.commands.add(
         new GeneratePropertiesFile(
@@ -167,12 +172,30 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
             cassandraPort,
             cassandraParentIP,
             cassandraParentPort,
-            localProperties));
+            localProperties,
+            username,
+            password));
 
     this.commands.add(new FileTransfer(this.remoteHostConnect, localProperties, remoteProperties));
 
     this.commands.add(new RemoveGeneratedPropertiesFile(localProperties));
 
+    return (T) this;
+  }
+
+  public T writeChildUserAccountToCassandra(
+      final int childNodeId, final String username, final String password) {
+    this.commands.add(new WriteChildCredential(childNodeId, username, password));
+    return (T) this;
+  }
+
+  public T writeUserAccountToChild(
+      final Credential currentNodeCred,
+      final String username,
+      final String password,
+      final String ip,
+      final int port) {
+    this.commands.add(new SetupCredentials(currentNodeCred, username, password, ip, port));
     return (T) this;
   }
 

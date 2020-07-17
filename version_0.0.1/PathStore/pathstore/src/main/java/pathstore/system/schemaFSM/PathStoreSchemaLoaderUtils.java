@@ -399,7 +399,26 @@ public class PathStoreSchemaLoaderUtils {
             + "   AND speculative_retry = '99PERCENTILE'\n"
             + "   AND min_index_interval = 128\n"
             + "   AND max_index_interval = 2048\n"
+            + "   AND crc_check_chance = 1.0;"
+            + "CREATE TABLE local_keyspace.auth (\n"
+            + "    node_id int,\n"
+            + "    username text,\n"
+            + "    password text,\n"
+            + "    PRIMARY KEY (node_id)\n"
+            + ") WITH read_repair_chance = 0.0\n"
+            + "   AND dclocal_read_repair_chance = 0.1\n"
+            + "   AND gc_grace_seconds = 864000\n"
+            + "   AND bloom_filter_fp_chance = 0.01\n"
+            + "   AND caching = { 'keys' : 'ALL', 'rows_per_partition' : 'NONE' }\n"
+            + "   AND comment = ''\n"
+            + "   AND compaction = { 'class' : 'org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy', 'max_threshold' : 32, 'min_threshold' : 4 }\n"
+            + "   AND compression = { 'chunk_length_in_kb' : 64, 'class' : 'org.apache.cassandra.io.compress.LZ4Compressor' }\n"
+            + "   AND default_time_to_live = 0\n"
+            + "   AND speculative_retry = '99PERCENTILE'\n"
+            + "   AND min_index_interval = 128\n"
+            + "   AND max_index_interval = 2048\n"
             + "   AND crc_check_chance = 1.0;";
+    ;
 
     parseSchema(localKeyspace).forEach(session::execute);
   }

@@ -1,6 +1,5 @@
 package pathstore.system.deployment.commands;
 
-import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
@@ -8,7 +7,7 @@ import com.datastax.driver.core.querybuilder.Select;
 import pathstore.common.Constants;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
-import pathstore.system.deployment.utilities.StartupUTIL;
+import pathstore.system.PathStorePrivilegedCluster;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,26 +25,30 @@ public class WaitForPathStore implements ICommand {
    */
   private static final int maxWaitTime = 60 * 5;
 
-  /** Tasks that need to be completed before we can consider pathstore to be officially online */
-  private final Map<Integer, String> neededRecords;
+  /** Cluster to child node */
+  private final PathStorePrivilegedCluster cluster;
 
-  /** Cluster created on initialization */
-  private final Cluster cluster;
-
-  /** Connects once this command is called, not local to avoid multiple connections */
-  private Session session = null;
+  /** Session to child node */
+  private final Session session;
 
   /** Denotes the current amount of time waited in seconds */
   private int currentWaitCount;
 
+  /** Tasks that need to be completed before we can consider pathstore to be officially online */
+  private final Map<Integer, String> neededRecords;
+
   /**
    * Creates cluster
    *
+   * @param username child username
+   * @param password child password
    * @param ip ip of new root
    * @param port cassandra port
    */
-  public WaitForPathStore(final String ip, final int port) {
-    this.cluster = StartupUTIL.createCluster(ip, port, "cassandra", "cassandra");
+  public WaitForPathStore(
+      final String username, final String password, final String ip, final int port) {
+    this.cluster = PathStorePrivilegedCluster.getChildInstance(username, password, ip, port);
+    this.session = cluster.connect();
     this.currentWaitCount = 0;
     this.neededRecords = new HashMap<>();
     this.neededRecords.put(0, "RMI Server started");
@@ -61,8 +64,6 @@ public class WaitForPathStore implements ICommand {
    */
   @Override
   public void execute() throws CommandError {
-
-    if (this.session == null) this.session = this.cluster.connect();
 
     Select tasks = QueryBuilder.select().all().from(Constants.LOCAL_KEYSPACE, Constants.STARTUP);
 
@@ -89,7 +90,6 @@ public class WaitForPathStore implements ICommand {
       }
     } else {
       logger.info("PathStore started up");
-      this.session.close();
       this.cluster.close();
     }
   }

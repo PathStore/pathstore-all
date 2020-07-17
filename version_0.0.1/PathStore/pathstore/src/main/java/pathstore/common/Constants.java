@@ -40,6 +40,8 @@ public final class Constants {
     public static final String MAX_BATCH_SIZE = "MaxBatchSize";
     public static final String PULL_SLEEP = "PullSleep";
     public static final String PUSH_SLEEP = "PushSleep";
+    public static final String USERNAME = "Username";
+    public static final String PASSWORD = "Password";
   }
 
   /** TODO: Change all references to this class */

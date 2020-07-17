@@ -26,21 +26,33 @@ public class CreateWebsitePropertiesFile implements ICommand {
   /** Destination to store file locally */
   private final String destinationToWrite;
 
+  /** admin username */
+  private final String username;
+
+  /** admin password */
+  private final String password;
+
   /**
    * @param ip {@link #ip}
    * @param cassandraPort {@link #cassandraPort}
    * @param rmiPort {@link #rmiPort}
    * @param destinationToWrite {@link #destinationToWrite}
+   * @param username {@link #username}
+   * @param password {@link #password}
    */
   public CreateWebsitePropertiesFile(
       final String ip,
       final int cassandraPort,
       final int rmiPort,
-      final String destinationToWrite) {
+      final String destinationToWrite,
+      final String username,
+      final String password) {
     this.ip = ip;
     this.cassandraPort = cassandraPort;
     this.rmiPort = rmiPort;
     this.destinationToWrite = destinationToWrite;
+    this.username = username;
+    this.password = password;
   }
 
   /**
@@ -58,6 +70,8 @@ public class CreateWebsitePropertiesFile implements ICommand {
     properties.setProperty(CASSANDRA_PORT, String.valueOf(cassandraPort));
     properties.setProperty(RMI_REGISTRY_IP, ip);
     properties.setProperty(RMI_REGISTRY_PORT, String.valueOf(rmiPort));
+    properties.setProperty(USERNAME, this.username);
+    properties.setProperty(PASSWORD, this.password);
 
     try {
       OutputStream outputStream = new FileOutputStream(this.destinationToWrite);

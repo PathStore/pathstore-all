@@ -17,6 +17,8 @@
  */
 package pathstore.common;
 
+import authentication.Credential;
+
 import java.io.FileInputStream;
 import java.util.Properties;
 
@@ -117,6 +119,9 @@ public class PathStoreProperties {
   /** Denotes the node's parent cassandra instance port */
   public int CassandraParentPort;
 
+  /** Denotes credential to local cassandra instance */
+  public Credential credential;
+
   /**
    * Denotes batch size
    *
@@ -161,6 +166,11 @@ public class PathStoreProperties {
           this.RMIRegistryPort = Integer.parseInt(this.getProperty(props, RMI_REGISTRY_PORT));
           this.CassandraIP = this.getProperty(props, CASSANDRA_IP);
           this.CassandraPort = Integer.parseInt(this.getProperty(props, CASSANDRA_PORT));
+          this.credential =
+              new Credential(
+                  this.NodeID,
+                  this.getProperty(props, USERNAME),
+                  this.getProperty(props, PASSWORD));
           break;
         default:
           throw new Exception();

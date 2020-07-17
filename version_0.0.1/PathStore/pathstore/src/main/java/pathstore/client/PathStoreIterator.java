@@ -24,7 +24,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.common.Constants;
-import pathstore.system.PathStorePriviledgedCluster;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 
@@ -34,7 +34,7 @@ import com.datastax.driver.core.Row;
 /** TODO: Comment */
 public class PathStoreIterator implements Iterator<Row> {
 
-  private static final Session priv = PathStorePriviledgedCluster.getInstance().connect();
+  private static final Session priv = PathStorePrivilegedCluster.getInstance().connect();
 
   private final Iterator<Row> iter;
   private final String keyspace;

@@ -18,25 +18,17 @@
 package pathstore.common;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.sql.Time;
 import java.util.*;
 
 import pathstore.client.PathStoreServerClient;
 import pathstore.exception.PathMigrateAlreadyGoneException;
 import pathstore.exception.PathStoreRemoteException;
-import pathstore.system.PathStoreParentCluster;
-import pathstore.system.PathStorePriviledgedCluster;
-import pathstore.system.PathStorePullServer;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
-import pathstore.util.SchemaInfo.Table;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
@@ -45,7 +37,6 @@ import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import com.kenai.jffi.Array;
 
 /**
  * This class is responsible for storing queries that have already been made.
@@ -412,7 +403,7 @@ public class QueryCache {
             select.where(clause);
 
 
-        Session local = PathStorePriviledgedCluster.getInstance().connect();
+        Session local = PathStorePrivilegedCluster.getInstance().connect();
 
         try {
 
@@ -427,7 +418,7 @@ public class QueryCache {
 
             int batchSize = 0;
 
-            PathStorePriviledgedCluster cluster = PathStorePriviledgedCluster.getInstance();
+            PathStorePrivilegedCluster cluster = PathStorePrivilegedCluster.getInstance();
 
             String primary = cluster.getMetadata().getKeyspace(keyspace).getTable(table).getPrimaryKey().get(0).getName();
 
@@ -520,8 +511,8 @@ public class QueryCache {
 
 
     private void fetchData(QueryCacheEntry entry, UUID deltaID) {
-        Session parent = PathStoreParentCluster.getInstance().connect();
-        Session local = PathStorePriviledgedCluster.getInstance().connect();
+        Session parent = PathStorePrivilegedCluster.getParentInstance().connect();
+        Session local = PathStorePrivilegedCluster.getInstance().connect();
 
         try {
             String table = deltaID != null ? "view_" + entry.table : entry.table;

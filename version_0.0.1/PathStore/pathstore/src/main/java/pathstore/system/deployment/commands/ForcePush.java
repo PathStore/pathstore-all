@@ -3,9 +3,8 @@ package pathstore.system.deployment.commands;
 import com.datastax.driver.core.Session;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
-import pathstore.system.PathStorePriviledgedCluster;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.PathStorePushServer;
-import pathstore.system.deployment.utilities.StartupUTIL;
 import pathstore.util.SchemaInfo;
 
 /** This command is used to force push all dirty data from a client on shutdown */
@@ -14,24 +13,20 @@ public class ForcePush implements ICommand {
   /** Logger for this class */
   private final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(ForcePush.class);
 
-  /** Ip of child */
-  private final String ip;
+  /** Child cluster */
+  private final PathStorePrivilegedCluster cluster;
 
-  /** Cassandra port to connect with */
-  private final int cassandraPort;
-
-  /** Child node id for the push server */
-  private final int newNodeId;
+  /** Node id of child */
+  private final int nodeId;
 
   /**
-   * @param ip {@link #ip}
-   * @param cassandraPort {@link #cassandraPort}
-   * @param newNodeId {@link #newNodeId}
+   * @param nodeId node of child
+   * @param ip ip of child
+   * @param cassandraPort port of child
    */
-  public ForcePush(final String ip, final int cassandraPort, final int newNodeId) {
-    this.ip = ip;
-    this.cassandraPort = cassandraPort;
-    this.newNodeId = newNodeId;
+  public ForcePush(final int nodeId, final String ip, final int cassandraPort) {
+    this.cluster = PathStorePrivilegedCluster.getChildInstance(nodeId, ip, cassandraPort);
+    this.nodeId = nodeId;
   }
 
   /**
@@ -40,17 +35,17 @@ public class ForcePush implements ICommand {
    */
   @Override
   public void execute() {
-    Session child = StartupUTIL.createCluster(this.ip, this.cassandraPort, "cassandra", "cassandra").connect();
+    Session child = this.cluster.connect();
 
     this.logger.info("Successfully connected to child cassandra");
 
     PathStorePushServer.push(
         child,
-        PathStorePriviledgedCluster.getInstance().connect(),
+        PathStorePrivilegedCluster.getInstance().connect(),
         new SchemaInfo(child),
-        this.newNodeId);
+        this.nodeId);
 
-    child.close();
+    this.cluster.close();
 
     this.logger.info("Finished pushing all dirty data");
   }
@@ -58,6 +53,6 @@ public class ForcePush implements ICommand {
   /** @return inform the user what command is happening */
   @Override
   public String toString() {
-    return String.format("Starting the push of all dirty data from child with ip %s", this.ip);
+    return String.format("Starting the push of all dirty data from child node %d", this.nodeId);
   }
 }

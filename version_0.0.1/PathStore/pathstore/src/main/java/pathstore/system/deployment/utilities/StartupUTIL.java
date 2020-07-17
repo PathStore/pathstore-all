@@ -4,6 +4,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.SocketOptions;
 import pathstore.common.Constants;
+import pathstore.common.PathStoreProperties;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
 
@@ -17,30 +18,6 @@ import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
 
 /** Things related to cassandra for startup that can't rely on pathstore properties file */
 public class StartupUTIL {
-  /**
-   * Used to create a cluster connection with an ip and port
-   *
-   * @param ip ip of cassandra server
-   * @param port port cassandra is running on
-   * @param username username to login with
-   * @param password password to login with
-   * @return created cluster
-   */
-  public static Cluster createCluster(
-      final String ip, final int port, final String username, final String password) {
-    return new Cluster.Builder()
-        .addContactPoints(ip)
-        .withPort(port)
-        .withCredentials(username, password)
-        .withSocketOptions((new SocketOptions()).setTcpNoDelay(true).setReadTimeoutMillis(15000000))
-        .withQueryOptions(
-            (new QueryOptions())
-                .setRefreshNodeIntervalMillis(0)
-                .setRefreshNodeListIntervalMillis(0)
-                .setRefreshSchemaIntervalMillis(0))
-        .build();
-  }
-
   /**
    * Convert a local relative path to an absolute
    *
@@ -89,7 +66,10 @@ public class StartupUTIL {
       final String cassandraParentIP,
       final int cassandraParentPort) {
 
-    return new DeploymentBuilder(sshUtil)
+    String childUserName = "cassandra";
+    String childPassword = "cassandra";
+
+    return new DeploymentBuilder<>(sshUtil)
         .init()
         .createRemoteDirectory(DeploymentConstants.REMOTE_PATHSTORE_LOGS_SUB_DIR)
         .copyAndLoad(
@@ -112,11 +92,22 @@ public class StartupUTIL {
             cassandraParentIP,
             cassandraParentPort,
             DeploymentConstants.GENERATE_PROPERTIES.LOCAL_TEMP_PROPERTIES_FILE,
-            DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE)
+            DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
+            childUserName,
+            childPassword)
+        .writeChildUserAccountToCassandra(nodeID, childUserName, childPassword)
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
+            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN,
+            new WaitForCassandra(childUserName, childPassword, ip, cassandraPort))
+        .writeUserAccountToChild(
+            PathStoreProperties.getInstance().credential,
+            childUserName,
+            childPassword,
+            ip,
+            cassandraPort)
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN, new WaitForPathStore(ip, cassandraPort))
+            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
+            new WaitForPathStore(childUserName, childPassword, ip, cassandraPort))
         .build();
   }
 
@@ -128,8 +119,8 @@ public class StartupUTIL {
    */
   public static List<ICommand> initUnDeploymentList(
       final SSHUtil sshUtil, final String ip, final int cassandraPort, final int newNodeId) {
-    return new DeploymentBuilder(sshUtil)
-        .remove(new ForcePush(ip, cassandraPort, newNodeId))
+    return new DeploymentBuilder<>(sshUtil)
+        .remove(new ForcePush(newNodeId, ip, cassandraPort))
         .build();
   }
 }

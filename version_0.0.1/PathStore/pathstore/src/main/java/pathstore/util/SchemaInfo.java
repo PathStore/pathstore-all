@@ -29,7 +29,7 @@ import io.netty.util.internal.ConcurrentSet;
 import pathstore.common.Constants;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
-import pathstore.system.PathStorePriviledgedCluster;
+import pathstore.system.PathStorePrivilegedCluster;
 
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
@@ -61,7 +61,7 @@ public class SchemaInfo {
   /** @return instance of this class (there will only ever be one) */
   public static synchronized SchemaInfo getInstance() {
     if (SchemaInfo.instance == null)
-      SchemaInfo.instance = new SchemaInfo(PathStorePriviledgedCluster.getInstance().connect());
+      SchemaInfo.instance = new SchemaInfo(PathStorePrivilegedCluster.getInstance().connect());
     return SchemaInfo.instance;
   }
 
@@ -136,7 +136,7 @@ public class SchemaInfo {
    */
   private final ConcurrentMap<String, Collection<Type>> typeInfo = new ConcurrentHashMap<>();
 
-  /** @see PathStorePriviledgedCluster */
+  /** @see PathStorePrivilegedCluster */
   private final Session session;
 
   /**

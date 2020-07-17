@@ -50,10 +50,19 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
    * @param rmiPort rmi port of the root node
    */
   public BootstrapDeploymentBuilder generateWebsiteProperties(
-      final String ip, final int cassandraPort, final int rmiPort) {
+      final String ip,
+      final int cassandraPort,
+      final int rmiPort,
+      final String username,
+      final String password) {
     this.commands.add(
         new CreateWebsitePropertiesFile(
-            ip, cassandraPort, rmiPort, BootstrapDeploymentConstants.LOCAL_TEMP_PROPERTIES_FILE));
+            ip,
+            cassandraPort,
+            rmiPort,
+            BootstrapDeploymentConstants.LOCAL_TEMP_PROPERTIES_FILE,
+            username,
+            password));
 
     this.commands.add(
         new FileTransfer(

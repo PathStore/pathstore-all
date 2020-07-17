@@ -215,12 +215,16 @@ public class DevelopmentDeployment {
             "127.0.0.1",
             cassandraPort,
             BootstrapDeploymentConstants.LOCAL_TEMP_PROPERTIES_FILE,
-            DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE)
-        .generateWebsiteProperties(ip, cassandraPort, rmiRegistryPort)
+            DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
+            "cassandra",
+            "cassandra")
+        .generateWebsiteProperties(ip, cassandraPort, rmiRegistryPort, "cassandra", "cassandra")
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
+            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN,
+            new WaitForCassandra("cassandra", "cassandra", ip, cassandraPort))
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN, new WaitForPathStore(ip, cassandraPort))
+            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
+            new WaitForPathStore("cassandra", "cassandra", ip, cassandraPort))
         .startImageAndWait(
             BootstrapDeploymentConstants.RUN_COMMANDS.PATHSTORE_ADMIN_PANEL_RUN, null)
         .custom(finalizeRootInstallation)

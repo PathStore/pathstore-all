@@ -27,7 +27,7 @@ import pathstore.exception.InvalidKeyspaceException;
 import pathstore.exception.InvalidStatementTypeException;
 import pathstore.exception.PathMigrateAlreadyGoneException;
 import pathstore.exception.PathStoreRemoteException;
-import pathstore.system.PathStorePriviledgedCluster;
+import pathstore.system.PathStorePrivilegedCluster;
 
 import com.datastax.driver.core.CloseFuture;
 import com.datastax.driver.core.Cluster;
@@ -48,7 +48,6 @@ import com.datastax.driver.core.querybuilder.Update;
 import com.datastax.driver.core.querybuilder.Update.Assignments;
 import com.google.common.util.concurrent.ListenableFuture;
 import pathstore.util.SchemaInfo;
-import pathstore.util.SchemaInfo.Column;
 
 public class PathStoreSession implements Session {
 
@@ -266,8 +265,7 @@ public class PathStoreSession implements Session {
 
     return select.where().getClauses().stream()
             .map(Clause::getName)
-            .collect(Collectors.toSet())
-            .containsAll(partitionKeys)
+            .allMatch(partitionKeys::contains)
         ? clauses.stream()
             .filter(
                 clause ->
@@ -288,7 +286,7 @@ public class PathStoreSession implements Session {
   public static Select InsertToSelect(final Insert ins) {
     Select slct = QueryBuilder.select().all().from(ins.getKeyspace() + "." + ins.getTable());
     List<ColumnMetadata> pkl =
-        PathStorePriviledgedCluster.getInstance()
+        PathStorePrivilegedCluster.getInstance()
             .getMetadata()
             .getKeyspace(ins.getKeyspace())
             .getTable(ins.getTable())

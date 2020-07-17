@@ -5,7 +5,7 @@ import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.springframework.http.ResponseEntity;
 import pathstore.common.Constants;
-import pathstore.system.PathStorePriviledgedCluster;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstore.util.SchemaInfo;
 import pathstoreweb.pathstoreadminpanel.services.RuntimeErrorFormatter;
@@ -14,7 +14,6 @@ import pathstoreweb.pathstoreadminpanel.services.IService;
 
 import java.io.*;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
 
@@ -37,7 +36,7 @@ public class AddApplication implements IService {
   /** @param payload {@link #addApplicationPayload} */
   public AddApplication(final AddApplicationPayload payload) {
     this.addApplicationPayload = payload;
-    this.session = PathStorePriviledgedCluster.getInstance().connect();
+    this.session = PathStorePrivilegedCluster.getInstance().connect();
     this.schemaInfo = SchemaInfo.getInstance();
   }
 
@@ -118,7 +117,7 @@ public class AddApplication implements IService {
 
       insertApplicationSchema(
           this.addApplicationPayload.applicationName,
-          PathStorePriviledgedCluster.getInstance()
+          PathStorePrivilegedCluster.getInstance()
               .getMetadata()
               .getKeyspace(table.keyspace_name)
               .exportAsString());

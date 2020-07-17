@@ -5,6 +5,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.common.Constants;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
 import pathstore.system.deployment.utilities.StartupUTIL;
@@ -76,7 +77,9 @@ public class FinalizeRootInstallation implements ICommand {
 
     System.out.println("Writing server record to root's table");
 
-    Cluster cluster = StartupUTIL.createCluster(ip, cassandraPort, "cassandra", "cassandra");
+    PathStorePrivilegedCluster cluster =
+        PathStorePrivilegedCluster.getChildInstance(
+            "cassandra", "cassandra", this.ip, this.cassandraPort);
     Session session = cluster.connect();
 
     UUID serverUUID = UUID.randomUUID();
@@ -108,8 +111,5 @@ public class FinalizeRootInstallation implements ICommand {
             .value(SERVER_UUID, serverUUID.toString());
 
     session.execute(insert);
-
-    session.close();
-    cluster.close();
   }
 }

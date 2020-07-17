@@ -13,7 +13,7 @@ import pathstore.common.PathStoreThreadManager;
 import pathstore.common.QueryCache;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
-import pathstore.system.PathStorePriviledgedCluster;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.util.SchemaInfo;
 
 /**
@@ -177,7 +177,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
   private void installApplication(final String keyspace, final String augmentedSchema) {
 
     PathStoreSchemaLoaderUtils.parseSchema(augmentedSchema)
-        .forEach(PathStorePriviledgedCluster.getInstance().connect()::execute);
+        .forEach(PathStorePrivilegedCluster.getInstance().connect()::execute);
 
     // after keyspace is loaded we need to inform the schemainfo class that a new keyspace has been
     // installed
@@ -210,7 +210,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
 
     SchemaInfo.getInstance().removeKeyspace(keyspace);
     QueryCache.getInstance().remove(keyspace);
-    PathStorePriviledgedCluster.getInstance()
+    PathStorePrivilegedCluster.getInstance()
         .connect()
         .execute("drop keyspace if exists " + keyspace);
 
