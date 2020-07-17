@@ -16,7 +16,9 @@ public class SetupCredentials implements ICommand {
 
   private final String password;
 
-  private final PathStorePrivilegedCluster childCluster;
+  private final String ip;
+
+  private final int port;
 
   public SetupCredentials(
       final Credential parentCredentials,
@@ -27,12 +29,15 @@ public class SetupCredentials implements ICommand {
     this.parentCredentials = parentCredentials;
     this.username = username;
     this.password = password;
-    this.childCluster =
-        PathStorePrivilegedCluster.getChildInstance("cassandra", "cassandra", ip, port);
+    this.ip = ip;
+    this.port = port;
   }
 
   @Override
   public void execute() {
+    PathStorePrivilegedCluster childCluster =
+        PathStorePrivilegedCluster.getChildInstance(
+            this.username, this.password, this.ip, this.port);
     Session childSession = childCluster.connect();
 
     childSession.execute(
@@ -43,6 +48,6 @@ public class SetupCredentials implements ICommand {
 
     // load new child role and delete old role.
 
-    this.childCluster.close();
+    childCluster.close();
   }
 }
