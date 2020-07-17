@@ -173,6 +173,9 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
         String.format("Deploying %d from node %d", entry.newNodeId, entry.parentNodeId));
 
     try {
+      // temp
+      System.out.println(String.format("Connecting with %s %s %s", ip, username, password));
+
       SSHUtil sshUtil = new SSHUtil(ip, username, password, sshPort);
 
       this.logger.debug("Connection established to new node");

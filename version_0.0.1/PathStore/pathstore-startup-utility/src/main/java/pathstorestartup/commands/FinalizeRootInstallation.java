@@ -111,5 +111,7 @@ public class FinalizeRootInstallation implements ICommand {
             .value(SERVER_UUID, serverUUID.toString());
 
     session.execute(insert);
+
+    cluster.close();
   }
 }
