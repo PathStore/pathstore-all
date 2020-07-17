@@ -12,7 +12,13 @@ import pathstore.system.PathStorePrivilegedCluster;
 import java.util.HashMap;
 import java.util.Map;
 
-/** This class is used to wait for pathstore to start up */
+/**
+ * This class is used to wait for pathstore to start up
+ *
+ * @implNote The local cassandra instance must be up before the you can create a cluster connection,
+ *     that is why the cluster is created in the {@link #execute()} function rather then in the
+ *     constructed
+ */
 public class WaitForPathStore implements ICommand {
 
   /** Logger */
@@ -25,11 +31,17 @@ public class WaitForPathStore implements ICommand {
    */
   private static final int maxWaitTime = 60 * 5;
 
-  /** Cluster to child node */
-  private final PathStorePrivilegedCluster cluster;
+  /** Child username */
+  private final String username;
 
-  /** Session to child node */
-  private final Session session;
+  /** Child password */
+  private final String password;
+
+  /** Child ip */
+  private final String ip;
+
+  /** Child cassandra port */
+  private final int port;
 
   /** Denotes the current amount of time waited in seconds */
   private int currentWaitCount;
@@ -47,8 +59,10 @@ public class WaitForPathStore implements ICommand {
    */
   public WaitForPathStore(
       final String username, final String password, final String ip, final int port) {
-    this.cluster = PathStorePrivilegedCluster.getChildInstance(username, password, ip, port);
-    this.session = cluster.connect();
+    this.username = username;
+    this.password = password;
+    this.ip = ip;
+    this.port = port;
     this.currentWaitCount = 0;
     this.neededRecords = new HashMap<>();
     this.neededRecords.put(0, "RMI Server started");
@@ -64,6 +78,11 @@ public class WaitForPathStore implements ICommand {
    */
   @Override
   public void execute() throws CommandError {
+
+    PathStorePrivilegedCluster cluster =
+        PathStorePrivilegedCluster.getChildInstance(
+            this.username, this.password, this.ip, this.port);
+    Session session = cluster.connect();
 
     Select tasks = QueryBuilder.select().all().from(Constants.LOCAL_KEYSPACE, Constants.STARTUP);
 
@@ -90,7 +109,7 @@ public class WaitForPathStore implements ICommand {
       }
     } else {
       logger.info("PathStore started up");
-      this.cluster.close();
+      cluster.close();
     }
   }
 
