@@ -3,6 +3,7 @@ package pathstore.system.deployment.commands;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import pathstore.common.Constants;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.PathStorePrivilegedCluster;
@@ -25,12 +26,6 @@ public class WaitForCassandra implements ICommand {
    */
   private static final int maxWaitTime = 60 * 5;
 
-  /** Username for child */
-  private final String username;
-
-  /** Password for child */
-  private final String password;
-
   /** Ip of new root node */
   private final String ip;
 
@@ -41,15 +36,10 @@ public class WaitForCassandra implements ICommand {
   private int currentWaitCount;
 
   /**
-   * @param username {@link #username}
-   * @param password {@link #password}
    * @param ip {@link #ip}
    * @param port {@link #port}
    */
-  public WaitForCassandra(
-      final String username, final String password, final String ip, final int port) {
-    this.username = username;
-    this.password = password;
+  public WaitForCassandra(final String ip, final int port) {
     this.ip = ip;
     this.port = port;
     this.currentWaitCount = 0;
@@ -67,7 +57,10 @@ public class WaitForCassandra implements ICommand {
     try {
       cluster =
           PathStorePrivilegedCluster.getChildInstance(
-              this.username, this.password, this.ip, this.port);
+              Constants.DEFAULT_CASSANDRA_USERNAME,
+              Constants.DEFAULT_CASSANDRA_PASSWORD,
+              this.ip,
+              this.port);
       Session session = cluster.connect();
 
       logger.info("Cassandra is online, loading local keyspace for pathstore started");

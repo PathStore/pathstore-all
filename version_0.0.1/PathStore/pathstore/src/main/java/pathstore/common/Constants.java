@@ -22,6 +22,12 @@ public final class Constants {
 
   public static final String PROPERTIESFILE = "/etc/pathstore/pathstore.properties";
 
+  public static final String DEFAULT_CASSANDRA_USERNAME = "cassandra";
+  public static final String DEFAULT_CASSANDRA_PASSWORD = "cassandra";
+
+  public static final String PATHSTORE_SUPERUSER_USERNAME = "pathstore-admin";
+  public static final String PATHSTORE_DAEMON_USERNAME = "pathstore";
+
   public static final String PATHSTORE_PREFIX = "pathstore_";
 
   public static final class PROPERTIES_CONSTANTS {

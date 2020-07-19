@@ -1,6 +1,7 @@
 package pathstore.system.deployment.utilities;
 
 import org.apache.commons.text.RandomStringGenerator;
+import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
@@ -60,8 +61,8 @@ public class StartupUTIL {
       final String cassandraParentIP,
       final int cassandraParentPort) {
 
-    String childUserName = "pathstore";
-    String childPassword =
+    String childSuperuserUsername = Constants.PATHSTORE_SUPERUSER_USERNAME;
+    String childSuperuserPassword =
         new RandomStringGenerator.Builder().withinRange(33, 45).build().generate(10); // temp length
 
     return new DeploymentBuilder<>(sshUtil)
@@ -88,21 +89,20 @@ public class StartupUTIL {
             cassandraParentPort,
             DeploymentConstants.GENERATE_PROPERTIES.LOCAL_TEMP_PROPERTIES_FILE,
             DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
-            childUserName,
-            childPassword)
-        .writeChildUserAccountToCassandra(nodeID, childUserName, childPassword)
+            childSuperuserUsername,
+            childSuperuserPassword)
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN,
-            new WaitForCassandra("cassandra", "cassandra", ip, cassandraPort))
+            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
         .writeUserAccountToChild(
             PathStoreProperties.getInstance().credential,
-            childUserName,
-            childPassword,
+            childSuperuserUsername,
+            childSuperuserPassword,
             ip,
             cassandraPort)
+        .writeChildUserAccountToCassandra(nodeID, childSuperuserUsername, childSuperuserPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
-            new WaitForPathStore(childUserName, childPassword, ip, cassandraPort))
+            new WaitForPathStore(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort))
         .build();
   }
 

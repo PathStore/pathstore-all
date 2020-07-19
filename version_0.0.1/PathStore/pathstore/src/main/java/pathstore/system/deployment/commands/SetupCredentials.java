@@ -3,6 +3,7 @@ package pathstore.system.deployment.commands;
 import authentication.Credential;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
@@ -40,7 +41,11 @@ public class SetupCredentials implements ICommand {
   @Override
   public void execute() {
     PathStorePrivilegedCluster childCluster =
-        PathStorePrivilegedCluster.getChildInstance("cassandra", "cassandra", this.ip, this.port);
+        PathStorePrivilegedCluster.getChildInstance(
+            Constants.DEFAULT_CASSANDRA_USERNAME,
+            Constants.DEFAULT_CASSANDRA_PASSWORD,
+            this.ip,
+            this.port);
     Session childSession = childCluster.connect();
 
     childSession.execute(
