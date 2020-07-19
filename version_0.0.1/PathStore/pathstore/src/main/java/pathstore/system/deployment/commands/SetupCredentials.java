@@ -48,12 +48,6 @@ public class SetupCredentials implements ICommand {
             this.port);
     Session childSession = childCluster.connect();
 
-    childSession.execute(
-        QueryBuilder.insertInto("local_keyspace", "auth")
-            .value("node_id", PathStoreProperties.getInstance().NodeID)
-            .value("username", this.parentCredentials.username)
-            .value("password", this.parentCredentials.password));
-
     // load new child role and delete old role.
 
     childSession.execute(
@@ -74,6 +68,14 @@ public class SetupCredentials implements ICommand {
     childSession.execute(String.format("DROP ROLE %s", "cassandra"));
 
     this.logger.info("Dropped role cassandra");
+
+    childSession.execute(
+        QueryBuilder.insertInto("local_keyspace", "auth")
+            .value("node_id", PathStoreProperties.getInstance().NodeID)
+            .value("username", this.parentCredentials.username)
+            .value("password", this.parentCredentials.password));
+
+    this.logger.info("Wrote parent credentials to child database");
 
     childCluster.close();
   }
