@@ -40,6 +40,14 @@ public class SetupCredentials implements ICommand {
 
   @Override
   public void execute() {
+    System.out.println(
+        String.format(
+            "%s %s %s %d",
+            Constants.DEFAULT_CASSANDRA_USERNAME,
+            Constants.DEFAULT_CASSANDRA_PASSWORD,
+            this.ip,
+            this.port));
+
     PathStorePrivilegedCluster childCluster =
         PathStorePrivilegedCluster.getChildInstance(
             Constants.DEFAULT_CASSANDRA_USERNAME,
