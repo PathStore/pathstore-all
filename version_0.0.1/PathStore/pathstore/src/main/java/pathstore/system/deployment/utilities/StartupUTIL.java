@@ -1,5 +1,6 @@
 package pathstore.system.deployment.utilities;
 
+import org.apache.commons.text.RandomStringGenerator;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
@@ -7,6 +8,7 @@ import pathstore.system.deployment.commands.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Random;
 
 /** Things related to cassandra for startup that can't rely on pathstore properties file */
 public class StartupUTIL {
@@ -58,8 +60,9 @@ public class StartupUTIL {
       final String cassandraParentIP,
       final int cassandraParentPort) {
 
-    String childUserName = "cassandra";
-    String childPassword = "cassandra";
+    String childUserName = "pathstore";
+    String childPassword =
+        new RandomStringGenerator.Builder().withinRange(33, 45).build().generate(10); // temp length
 
     return new DeploymentBuilder<>(sshUtil)
         .init()

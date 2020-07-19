@@ -43,8 +43,6 @@ public final class CredentialInfo {
 
   // will only work on server side because of authentication restriction of user accounts
   public void add(final int nodeId, final String username, final String password) {
-    this.credentials.put(nodeId, new Credential(nodeId, username, password));
-
     PathStorePrivilegedCluster.getInstance()
         .connect()
         .execute(
@@ -52,6 +50,8 @@ public final class CredentialInfo {
                 .value("node_id", nodeId)
                 .value("username", username)
                 .value("password", password));
+
+    this.credentials.put(nodeId, new Credential(nodeId, username, password));
   }
 
   // may return null
