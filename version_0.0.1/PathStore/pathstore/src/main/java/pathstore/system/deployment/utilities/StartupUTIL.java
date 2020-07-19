@@ -93,7 +93,7 @@ public class StartupUTIL {
         .writeChildUserAccountToCassandra(nodeID, childUserName, childPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN,
-            new WaitForCassandra(childUserName, childPassword, ip, cassandraPort))
+            new WaitForCassandra("cassandra", "cassandra", ip, cassandraPort))
         .writeUserAccountToChild(
             PathStoreProperties.getInstance().credential,
             childUserName,
