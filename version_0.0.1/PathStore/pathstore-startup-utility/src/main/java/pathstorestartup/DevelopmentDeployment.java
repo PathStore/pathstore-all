@@ -275,7 +275,7 @@ public class DevelopmentDeployment {
             Constants.PATHSTORE_APPLICATIONS)
         .createDaemonAccount(
             childSuperuserUsername,
-            childDaemonPassword,
+            childSuperuserPassword,
             ip,
             cassandraPort,
             childDaemonUsername,
