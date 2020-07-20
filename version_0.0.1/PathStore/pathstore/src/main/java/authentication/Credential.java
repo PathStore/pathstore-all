@@ -35,18 +35,4 @@ public final class Credential {
   public int hashCode() {
     return Objects.hash(node_id, username, password);
   }
-
-  @Override
-  public String toString() {
-    return "Credential{"
-        + "node_id="
-        + node_id
-        + ", username='"
-        + username
-        + '\''
-        + ", password='"
-        + password
-        + '\''
-        + '}';
-  }
 }

@@ -40,30 +40,22 @@ public class SetupCredentials implements ICommand {
 
   @Override
   public void execute() {
-    System.out.println(
-        String.format(
-            "%s %s %s %d",
-            Constants.DEFAULT_CASSANDRA_USERNAME,
-            Constants.DEFAULT_CASSANDRA_PASSWORD,
-            this.ip,
-            this.port));
-
-    System.out.println("Before");
     PathStorePrivilegedCluster childCluster =
         PathStorePrivilegedCluster.getChildInstance(
             Constants.DEFAULT_CASSANDRA_USERNAME,
             Constants.DEFAULT_CASSANDRA_PASSWORD,
             this.ip,
             this.port);
-    System.out.println("After");
     Session childSession = childCluster.connect();
 
     // load new child role and delete old role.
 
-    childSession.execute(
+    String command =
         String.format(
             "CREATE ROLE %s WITH SUPERUSER = true AND LOGIN = true and PASSWORD = '%s'",
-            this.username, this.password));
+            this.username, this.password);
+
+    childSession.execute(command);
 
     this.logger.info(
         String.format("Generated Role with login %s %s", this.username, this.password));

@@ -25,9 +25,6 @@ public class ClusterCache<T> {
   }
 
   public T getInstance(final Credential credential, final String ip, final int port) {
-
-    System.out.println("Called get instance in clustercache with values " + credential);
-
     T object = this.cache.get(credential);
 
     if (object == null) {
@@ -36,8 +33,6 @@ public class ClusterCache<T> {
               credential, createCluster(ip, port, credential.username, credential.password));
       this.cache.put(credential, object);
     }
-
-    System.out.println(this.cache);
 
     return object;
   }
