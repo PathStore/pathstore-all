@@ -258,6 +258,7 @@ public class DevelopmentDeployment {
             ip, cassandraPort, rmiRegistryPort, childSuperuserUsername, childSuperuserPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
+        .createSuperUserAccount(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
         .loadKeyspace(
             childSuperuserUsername,
             childSuperuserPassword,
@@ -272,7 +273,6 @@ public class DevelopmentDeployment {
             cassandraPort,
             PathStoreSchemaLoaderUtils::loadApplicationSchema,
             Constants.PATHSTORE_APPLICATIONS)
-        .createSuperUserAccount(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
         .createDaemonAccount(
             childSuperuserUsername,
             childDaemonPassword,
