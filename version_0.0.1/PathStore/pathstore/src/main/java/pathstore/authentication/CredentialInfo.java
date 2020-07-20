@@ -49,6 +49,8 @@ public final class CredentialInfo {
             .value("username", username)
             .value("password", password));
 
+    System.out.println(String.format("Added %d %s %s", nodeId, username, password));
+
     this.credentials.put(nodeId, new Credential(nodeId, username, password));
   }
 
