@@ -1,13 +1,10 @@
 package pathstore.system.deployment.commands;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import pathstore.common.Constants;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.PathStorePrivilegedCluster;
-import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 
 /**
  * This class is used to denote a single step where after launching cassandra we wait for a
@@ -61,11 +58,8 @@ public class WaitForCassandra implements ICommand {
               Constants.DEFAULT_CASSANDRA_PASSWORD,
               this.ip,
               this.port);
-      Session session = cluster.connect();
 
-      logger.info("Cassandra is online, loading local keyspace for pathstore started");
-
-      PathStoreSchemaLoaderUtils.loadLocalKeyspace(session);
+      logger.info("Cassandra is online");
 
     } catch (NoHostAvailableException e) {
       try {

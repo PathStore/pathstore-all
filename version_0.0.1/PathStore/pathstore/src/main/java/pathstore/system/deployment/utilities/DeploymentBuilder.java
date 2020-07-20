@@ -1,11 +1,13 @@
 package pathstore.system.deployment.utilities;
 
+import com.datastax.driver.core.Session;
 import pathstore.authentication.Credential;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * This class is used to create a sequence of commands to perform some operation on a remote host
@@ -200,9 +202,33 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
     return (T) this;
   }
 
-  public T writeChildSuperUserAccountToCassandra(
+  public T writeChildAccountToCassandra(
       final int childNodeId, final String username, final String password) {
-    this.commands.add(new WriteChildSuperUserAccountToCassandra(childNodeId, username, password));
+    this.commands.add(new WriteChildCredentialsToCassandra(childNodeId, username, password));
+    return (T) this;
+  }
+
+  public T createDaemonAccount(
+      final String username,
+      final String password,
+      final String ip,
+      final int port,
+      final String daemonUsername,
+      final String daemonPassword) {
+    this.commands.add(
+        new CreateDaemonAccount(username, password, ip, port, daemonUsername, daemonPassword));
+    return (T) this;
+  }
+
+  public T loadKeyspace(
+      final String username,
+      final String password,
+      final String ip,
+      final int port,
+      final Consumer<Session> loadKeyspaceFunction,
+      final String keyspaceName) {
+    this.commands.add(
+        new LoadKeyspace(username, password, ip, port, loadKeyspaceFunction, keyspaceName));
     return (T) this;
   }
 

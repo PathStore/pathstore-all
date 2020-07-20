@@ -63,4 +63,9 @@ public class CreateSuperUserAccount implements ICommand {
 
     childCluster.close();
   }
+
+  @Override
+  public String toString() {
+    return "Creating super user account for child node";
+  }
 }

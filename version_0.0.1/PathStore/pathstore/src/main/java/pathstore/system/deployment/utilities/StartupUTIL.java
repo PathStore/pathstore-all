@@ -5,6 +5,7 @@ import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
+import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,6 +72,14 @@ public class StartupUTIL {
             .build()
             .generate(10);
 
+    String childDaemonUsername = Constants.PATHSTORE_DAEMON_USERNAME;
+    String childDaemonPassword =
+        new RandomStringGenerator.Builder()
+            .withinRange('0', 'z')
+            .filteredBy(LETTERS, DIGITS)
+            .build()
+            .generate(10);
+
     return new DeploymentBuilder<>(sshUtil)
         .init()
         .createRemoteDirectory(DeploymentConstants.REMOTE_PATHSTORE_LOGS_SUB_DIR)
@@ -100,10 +109,30 @@ public class StartupUTIL {
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
         .createSuperUserAccount(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
-        .writeChildSuperUserAccountToCassandra(
-            nodeID, childSuperuserUsername, childSuperuserPassword)
+        .loadKeyspace(
+            childSuperuserUsername,
+            childSuperuserPassword,
+            ip,
+            cassandraPort,
+            PathStoreSchemaLoaderUtils::loadLocalKeyspace,
+            "local_keyspace")
+        .loadKeyspace(
+            childSuperuserUsername,
+            childSuperuserPassword,
+            ip,
+            cassandraPort,
+            PathStoreSchemaLoaderUtils::loadApplicationSchema,
+            Constants.PATHSTORE_APPLICATIONS)
+        .createDaemonAccount(
+            childSuperuserUsername,
+            childSuperuserPassword,
+            ip,
+            cassandraPort,
+            childDaemonUsername,
+            childDaemonPassword)
+        .writeChildAccountToCassandra(nodeID, childDaemonUsername, childDaemonPassword)
         .writeParentCredentialsToChild(
-            PathStoreProperties.getInstance().credential,
+            PathStoreProperties.getInstance().credential, // TODO: Change to daemon account
             childSuperuserUsername,
             childSuperuserPassword,
             ip,

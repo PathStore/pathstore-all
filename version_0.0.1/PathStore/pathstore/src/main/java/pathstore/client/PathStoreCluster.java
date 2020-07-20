@@ -17,13 +17,11 @@
  */
 package pathstore.client;
 
-import pathstore.authentication.Credential;
-import pathstore.common.PathStoreProperties;
-
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.SocketOptions;
+import pathstore.authentication.Credential;
+import pathstore.common.PathStoreProperties;
 import pathstore.util.ClusterCache;
 
 public class PathStoreCluster {
@@ -75,14 +73,6 @@ public class PathStoreCluster {
             .build();
 
     session = new PathStoreSession(this.cluster);
-  }
-
-  public Metadata getMetadata() {
-    return cluster.getMetadata();
-  }
-
-  public int getClusterId() {
-    return PathStoreProperties.getInstance().NodeID;
   }
 
   public PathStoreSession connect() {

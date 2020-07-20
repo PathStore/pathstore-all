@@ -46,4 +46,9 @@ public class WriteParentCredentialsToChild implements ICommand {
 
     childCluster.close();
   }
+
+  @Override
+  public String toString() {
+    return "Writing parent credentials to child cassandra";
+  }
 }
