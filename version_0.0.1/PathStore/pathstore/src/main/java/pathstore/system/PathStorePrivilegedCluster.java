@@ -71,11 +71,11 @@ public class PathStorePrivilegedCluster {
   }
 
   public Metadata getMetadata() {
-    return cluster.getMetadata();
+    return this.cluster.getMetadata();
   }
 
   public Session connect() {
-    return session;
+    return this.session;
   }
 
   public void close() {
