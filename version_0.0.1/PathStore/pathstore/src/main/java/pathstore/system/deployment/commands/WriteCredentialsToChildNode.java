@@ -31,6 +31,13 @@ public class WriteCredentialsToChildNode implements ICommand {
 
   @Override
   public void execute() {
+    System.out.println(
+        credentialsToWrite.node_id
+            + " "
+            + credentialsToWrite.username
+            + " "
+            + credentialsToWrite.password);
+
     PathStorePrivilegedCluster childCluster =
         PathStorePrivilegedCluster.getChildInstance(
             this.username, this.password, this.ip, this.port);
