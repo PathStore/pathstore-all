@@ -129,7 +129,7 @@ public class DevelopmentDeployment {
    * This function will prompt the user for the connection information to a server and ask for the
    * rmi port to start the root server with
    *
-   * @see #initList(SSHUtil, String, int, FinalizeRootInstallation)
+   * @see #initList(SSHUtil, String, int, String, String, FinalizeRootInstallation)
    * @see FinalizeRootInstallation
    */
   private void deploy() {
@@ -154,6 +154,14 @@ public class DevelopmentDeployment {
       SSHUtil sshUtil = new SSHUtil(ip, username, password, sshPort);
       System.out.println("Connected");
 
+      String childSuperuserUsername = Constants.PATHSTORE_SUPERUSER_USERNAME;
+      String childSuperuserPassword =
+          new RandomStringGenerator.Builder()
+              .withinRange('0', 'z')
+              .filteredBy(LETTERS, DIGITS)
+              .build()
+              .generate(10);
+
       try {
         // Execute all commands in the given list
         for (ICommand command :
@@ -161,8 +169,17 @@ public class DevelopmentDeployment {
                 sshUtil,
                 ip,
                 rmiPort,
+                childSuperuserUsername,
+                childSuperuserPassword,
                 new FinalizeRootInstallation(
-                    ip, cassandraPort, username, password, sshPort, rmiPort))) {
+                    childSuperuserUsername,
+                    childSuperuserPassword,
+                    ip,
+                    cassandraPort,
+                    username,
+                    password,
+                    sshPort,
+                    rmiPort))) {
           System.out.println(command);
           command.execute();
         }
@@ -183,6 +200,9 @@ public class DevelopmentDeployment {
    * @param sshUtil used for commands that need to use ssh
    * @param ip ip of new node
    * @param rmiRegistryPort new node's local rmi registry port
+   * @param childSuperuserUsername new super user username {@link
+   *     Constants#PATHSTORE_SUPERUSER_USERNAME}
+   * @param childSuperuserPassword new super user password
    * @param finalizeRootInstallation finalization object to occur at the end of deployment
    * @return list of deployment commands to execute
    */
@@ -190,15 +210,9 @@ public class DevelopmentDeployment {
       final SSHUtil sshUtil,
       final String ip,
       final int rmiRegistryPort,
+      final String childSuperuserUsername,
+      final String childSuperuserPassword,
       final FinalizeRootInstallation finalizeRootInstallation) {
-
-    String childSuperuserUsername = Constants.PATHSTORE_SUPERUSER_USERNAME;
-    String childSuperuserPassword =
-        new RandomStringGenerator.Builder()
-            .withinRange('0', 'z')
-            .filteredBy(LETTERS, DIGITS)
-            .build()
-            .generate(10);
 
     return new BootstrapDeploymentBuilder(sshUtil)
         .initBootstrap()

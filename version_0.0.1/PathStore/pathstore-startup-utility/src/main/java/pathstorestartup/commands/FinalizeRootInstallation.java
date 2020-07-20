@@ -1,6 +1,5 @@
 package pathstorestartup.commands;
 
-import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
@@ -8,7 +7,6 @@ import pathstore.common.Constants;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
-import pathstore.system.deployment.utilities.StartupUTIL;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -26,6 +24,12 @@ import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
  * root node
  */
 public class FinalizeRootInstallation implements ICommand {
+
+  /** Cassandra account username */
+  private final String cassandraUsername;
+
+  /** Cassandra account password */
+  private final String cassandraPassword;
 
   /** Ip of root node */
   private final String ip;
@@ -46,6 +50,8 @@ public class FinalizeRootInstallation implements ICommand {
   private final int rmiPort;
 
   /**
+   * @param cassandraUsername {@link #cassandraUsername}
+   * @param cassandraPassword {@link #cassandraPassword}
    * @param ip {@link #ip}
    * @param cassandraPort {@link #cassandraPort}
    * @param username {@link #username}
@@ -54,12 +60,16 @@ public class FinalizeRootInstallation implements ICommand {
    * @param rmiPort {@link #rmiPort}
    */
   public FinalizeRootInstallation(
+      final String cassandraUsername,
+      final String cassandraPassword,
       final String ip,
       final int cassandraPort,
       final String username,
       final String password,
       final int sshPort,
       final int rmiPort) {
+    this.cassandraUsername = cassandraUsername;
+    this.cassandraPassword = cassandraPassword;
     this.ip = ip;
     this.cassandraPort = cassandraPort;
     this.username = username;
@@ -79,7 +89,7 @@ public class FinalizeRootInstallation implements ICommand {
 
     PathStorePrivilegedCluster cluster =
         PathStorePrivilegedCluster.getChildInstance(
-            "cassandra", "cassandra", this.ip, this.cassandraPort);
+            this.cassandraUsername, this.cassandraPassword, this.ip, this.cassandraPort);
     Session session = cluster.connect();
 
     UUID serverUUID = UUID.randomUUID();
