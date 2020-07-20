@@ -54,6 +54,7 @@ public class PathStorePrivilegedCluster {
   // Query ip and port of child node? Seems to be easier. For now we will leave it without
   public static synchronized PathStorePrivilegedCluster getChildInstance(
       final int childNodeId, final String ip, final int port) {
+    System.out.println("Called child instance");
     return clusterCache.getInstance(
         CredentialInfo.getInstance().getCredential(childNodeId), ip, port);
   }
