@@ -51,4 +51,9 @@ public class CreateDaemonAccount implements ICommand {
 
     childCluster.close();
   }
+
+  @Override
+  public String toString() {
+    return "Create daemon account for child";
+  }
 }
