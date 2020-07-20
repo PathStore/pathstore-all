@@ -208,11 +208,10 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
         this.logger.info(String.format("Successfully deployed node with id %d", entry.newNodeId));
         PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.DEPLOYED);
 
-      } catch (CommandError commandError) { // there was an error with a given command
+      } catch (Exception e) { // there was an error with a given command
 
         this.logger.error("Deployment failed");
-        this.logger.error(commandError.errorMessage);
-        commandError.printStackTrace();
+        e.printStackTrace(); // TODO: Send this to the log
         PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.FAILED);
 
       } finally {

@@ -31,41 +31,46 @@ public class CreateSuperUserAccount implements ICommand {
 
   @Override
   public void execute() {
+
+    this.logger.info("Waiting for super user delay period to end");
+
     try {
-      PathStorePrivilegedCluster childCluster =
-          PathStorePrivilegedCluster.getChildInstance(
-              Constants.DEFAULT_CASSANDRA_USERNAME,
-              Constants.DEFAULT_CASSANDRA_PASSWORD,
-              this.ip,
-              this.port);
-
-      Session childSession = childCluster.connect();
-
-      // load new child role and delete old role.
-
-      childSession.execute(
-          String.format(
-              "CREATE ROLE %s WITH SUPERUSER = true AND LOGIN = true and PASSWORD = '%s'",
-              this.username, this.password));
-
-      this.logger.info(
-          String.format("Generated Role with login %s %s", this.username, this.password));
-
-      childCluster.close();
-
-      childCluster =
-          PathStorePrivilegedCluster.getChildInstance(
-              this.username, this.password, this.ip, this.port);
-      childSession = childCluster.connect();
-
-      childSession.execute("DROP ROLE cassandra");
-
-      this.logger.info("Dropped role cassandra");
-
-      childCluster.close();
-    } catch (Exception e) {
+      Thread.sleep(10 * 60);
+    } catch (InterruptedException e) {
       e.printStackTrace();
     }
+
+    PathStorePrivilegedCluster childCluster =
+        PathStorePrivilegedCluster.getChildInstance(
+            Constants.DEFAULT_CASSANDRA_USERNAME,
+            Constants.DEFAULT_CASSANDRA_PASSWORD,
+            this.ip,
+            this.port);
+
+    Session childSession = childCluster.connect();
+
+    // load new child role and delete old role.
+
+    childSession.execute(
+        String.format(
+            "CREATE ROLE %s WITH SUPERUSER = true AND LOGIN = true and PASSWORD = '%s'",
+            this.username, this.password));
+
+    this.logger.info(
+        String.format("Generated Role with login %s %s", this.username, this.password));
+
+    childCluster.close();
+
+    childCluster =
+        PathStorePrivilegedCluster.getChildInstance(
+            this.username, this.password, this.ip, this.port);
+    childSession = childCluster.connect();
+
+    childSession.execute("DROP ROLE cassandra");
+
+    this.logger.info("Dropped role cassandra");
+
+    childCluster.close();
   }
 
   @Override
