@@ -48,12 +48,14 @@ public class SetupCredentials implements ICommand {
             this.ip,
             this.port));
 
+    System.out.println("Before");
     PathStorePrivilegedCluster childCluster =
         PathStorePrivilegedCluster.getChildInstance(
             Constants.DEFAULT_CASSANDRA_USERNAME,
             Constants.DEFAULT_CASSANDRA_PASSWORD,
             this.ip,
             this.port);
+    System.out.println("After");
     Session childSession = childCluster.connect();
 
     // load new child role and delete old role.
