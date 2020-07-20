@@ -4,7 +4,8 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.system.PathStorePrivilegedCluster;
 
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -23,7 +24,7 @@ public final class CredentialInfo {
     return instance;
   }
 
-  private final Map<Integer, Credential> credentials;
+  private final ConcurrentMap<Integer, Credential> credentials;
 
   private final Session privSession = PathStorePrivilegedCluster.getInstance().connect();
 
@@ -31,18 +32,20 @@ public final class CredentialInfo {
     this.credentials = this.load();
   }
 
-  private Map<Integer, Credential> load() {
-    return StreamSupport.stream(
-            this.privSession
-                .execute(QueryBuilder.select().all().from("local_keyspace", "auth"))
-                .spliterator(),
-            true)
-        .map(Credential::buildFromRow)
-        .collect(Collectors.toMap(credential -> credential.node_id, Function.identity()));
+  private ConcurrentMap<Integer, Credential> load() {
+    return new ConcurrentHashMap<>(
+        StreamSupport.stream(
+                this.privSession
+                    .execute(QueryBuilder.select().all().from("local_keyspace", "auth"))
+                    .spliterator(),
+                true)
+            .map(Credential::buildFromRow)
+            .collect(
+                Collectors.toConcurrentMap(credential -> credential.node_id, Function.identity())));
   }
 
   // will only work on server side because of pathstore.authentication restriction of user accounts
-  public synchronized void add(final int nodeId, final String username, final String password) {
+  public void add(final int nodeId, final String username, final String password) {
     this.privSession.execute(
         QueryBuilder.insertInto("local_keyspace", "auth")
             .value("node_id", nodeId)
@@ -52,6 +55,8 @@ public final class CredentialInfo {
     System.out.println(String.format("Added %d %s %s", nodeId, username, password));
 
     this.credentials.put(nodeId, new Credential(nodeId, username, password));
+
+    System.out.println(this.credentials);
   }
 
   // may return null
