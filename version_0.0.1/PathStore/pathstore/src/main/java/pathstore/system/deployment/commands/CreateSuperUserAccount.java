@@ -31,37 +31,41 @@ public class CreateSuperUserAccount implements ICommand {
 
   @Override
   public void execute() {
-    PathStorePrivilegedCluster childCluster =
-        PathStorePrivilegedCluster.getChildInstance(
-            Constants.DEFAULT_CASSANDRA_USERNAME,
-            Constants.DEFAULT_CASSANDRA_PASSWORD,
-            this.ip,
-            this.port);
+    try {
+      PathStorePrivilegedCluster childCluster =
+          PathStorePrivilegedCluster.getChildInstance(
+              Constants.DEFAULT_CASSANDRA_USERNAME,
+              Constants.DEFAULT_CASSANDRA_PASSWORD,
+              this.ip,
+              this.port);
 
-    Session childSession = childCluster.connect();
+      Session childSession = childCluster.connect();
 
-    // load new child role and delete old role.
+      // load new child role and delete old role.
 
-    childSession.execute(
-        String.format(
-            "CREATE ROLE %s WITH SUPERUSER = true AND LOGIN = true and PASSWORD = '%s'",
-            this.username, this.password));
+      childSession.execute(
+          String.format(
+              "CREATE ROLE %s WITH SUPERUSER = true AND LOGIN = true and PASSWORD = '%s'",
+              this.username, this.password));
 
-    this.logger.info(
-        String.format("Generated Role with login %s %s", this.username, this.password));
+      this.logger.info(
+          String.format("Generated Role with login %s %s", this.username, this.password));
 
-    childCluster.close();
+      childCluster.close();
 
-    childCluster =
-        PathStorePrivilegedCluster.getChildInstance(
-            this.username, this.password, this.ip, this.port);
-    childSession = childCluster.connect();
+      childCluster =
+          PathStorePrivilegedCluster.getChildInstance(
+              this.username, this.password, this.ip, this.port);
+      childSession = childCluster.connect();
 
-    childSession.execute(String.format("DROP ROLE %s", "cassandra"));
+      childSession.execute("DROP ROLE cassandra");
 
-    this.logger.info("Dropped role cassandra");
+      this.logger.info("Dropped role cassandra");
 
-    childCluster.close();
+      childCluster.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   @Override
