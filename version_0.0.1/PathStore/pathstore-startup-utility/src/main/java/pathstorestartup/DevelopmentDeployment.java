@@ -283,7 +283,7 @@ public class DevelopmentDeployment {
         .writeCredentialsToChildNode(
             new Credential(1, childDaemonUsername, childDaemonPassword),
             childSuperuserUsername,
-            childDaemonPassword,
+            childSuperuserPassword,
             ip,
             cassandraPort)
         .startImageAndWait(
