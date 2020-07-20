@@ -1,10 +1,9 @@
 package pathstore.system.deployment.commands;
 
-import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.Session;
-import pathstore.common.PathStoreProperties;
-import pathstore.system.PathStorePrivilegedCluster;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.authentication.Credential;
+import pathstore.system.PathStorePrivilegedCluster;
 
 public class WriteCredentialsToChildNode implements ICommand {
   private final Credential credentialsToWrite;
@@ -40,7 +39,7 @@ public class WriteCredentialsToChildNode implements ICommand {
 
     childSession.execute(
         QueryBuilder.insertInto("local_keyspace", "auth")
-            .value("node_id", PathStoreProperties.getInstance().NodeID)
+            .value("node_id", this.credentialsToWrite.node_id)
             .value("username", this.credentialsToWrite.username)
             .value("password", this.credentialsToWrite.password));
 

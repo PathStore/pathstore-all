@@ -185,8 +185,8 @@ public class DevelopmentDeployment {
           System.out.println(command);
           command.execute();
         }
-      } catch (CommandError error) {
-        System.err.println(error.errorMessage);
+      } catch (Exception e) {
+        e.printStackTrace();
         System.exit(-1);
       } finally {
         sshUtil.disconnect();
