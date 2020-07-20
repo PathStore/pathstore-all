@@ -27,23 +27,18 @@ public class ClusterCache<T> {
   public T getInstance(final Credential credential, final String ip, final int port) {
     T object = this.cache.get(credential);
 
-    try {
-
-      if (object == null) {
-        System.out.println(
-            String.format(
-                "Creating new connection with username: %s and ip: %s", credential.username, ip));
-        object =
-            this.buildFunction.apply(
-                credential, createCluster(ip, port, credential.username, credential.password));
-        this.cache.put(credential, object);
-      } else {
-        System.out.println(
-            String.format(
-                "Using original connection with username: %s and ip: %s", credential.username, ip));
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
+    if (object == null) {
+      System.out.println(
+          String.format(
+              "Creating new connection with username: %s and ip: %s", credential.username, ip));
+      object =
+          this.buildFunction.apply(
+              credential, createCluster(ip, port, credential.username, credential.password));
+      this.cache.put(credential, object);
+    } else {
+      System.out.println(
+          String.format(
+              "Using original connection with username: %s and ip: %s", credential.username, ip));
     }
 
     return object;

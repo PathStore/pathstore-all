@@ -212,6 +212,7 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
 
         this.logger.error("Deployment failed");
         this.logger.error(commandError.errorMessage);
+        commandError.printStackTrace();
         PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.FAILED);
 
       } finally {
@@ -219,8 +220,8 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
       }
 
     } catch (JSchException e) { // the connection information given is not valid
-
       this.logger.error("Could not connect to new node");
+      e.printStackTrace();
       PathStoreDeploymentUtils.updateState(entry, DeploymentProcessStatus.FAILED);
     }
   }
