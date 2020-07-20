@@ -17,9 +17,6 @@
  */
 package pathstore.system;
 
-import java.rmi.registry.Registry;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.server.UnicastRemoteObject;
 import com.datastax.driver.core.Session;
 import pathstore.common.*;
 import pathstore.common.logger.PathStoreLogger;
@@ -32,6 +29,10 @@ import pathstore.system.schemaFSM.PathStoreMasterSchemaServer;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
 import pathstore.util.SchemaInfo;
+
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 public class PathStoreServerImpl {
 
@@ -89,8 +90,9 @@ public class PathStoreServerImpl {
         logger.info("Application keyspace not detected, attempting to load");
         PathStoreSchemaLoaderUtils.loadApplicationSchema(local);
         SchemaInfo.getInstance().loadKeyspace(Constants.PATHSTORE_APPLICATIONS);
-        PathStoreDeploymentUtils.writeTaskDone(local, 1);
       } else logger.info("Application keyspace already loaded");
+
+      PathStoreDeploymentUtils.writeTaskDone(local, 1);
 
       logger.info("Application keyspace successfully loaded");
 

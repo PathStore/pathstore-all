@@ -1,11 +1,8 @@
 package pathstore.system.schemaFSM;
 
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import pathstore.common.Constants;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
 import java.util.stream.Stream;
 
 /** This is a utility class for the schema loader */
@@ -431,5 +428,19 @@ public class PathStoreSchemaLoaderUtils {
    */
   public static Stream<String> parseSchema(final String schema) {
     return Arrays.stream(schema.split(";")).map(String::trim).filter(i -> i.length() > 0);
+  }
+
+  /**
+   * Function to grant select / insert / update / delete / truncate on a keyspace to a user account
+   *
+   * @param session must be a super user session
+   * @param keyspace keyspace to grant on
+   * @param user user to give permissions to
+   */
+  public static void giveAccessToKeyspace(
+      final Session session, final String keyspace, final String user) {
+    session.execute(String.format("GRANT SELECT ON KEYSPACE %s TO %s", keyspace, user));
+
+    session.execute(String.format("GRANT MODIFY ON KEYSPACE %s TO %S", keyspace, user));
   }
 }

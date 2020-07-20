@@ -2,11 +2,13 @@ package pathstorestartup;
 
 import com.jcraft.jsch.JSchException;
 import org.apache.commons.text.RandomStringGenerator;
+import pathstore.authentication.Credential;
 import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
 import pathstore.system.deployment.utilities.DeploymentConstants;
 import pathstore.system.deployment.utilities.SSHUtil;
+import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstorestartup.commands.FinalizeRootInstallation;
 import pathstorestartup.constants.BootstrapDeploymentConstants;
 import pathstorestartup.constants.BootstrapDeploymentBuilder;
@@ -214,6 +216,14 @@ public class DevelopmentDeployment {
       final String childSuperuserPassword,
       final FinalizeRootInstallation finalizeRootInstallation) {
 
+    String childDaemonUsername = Constants.PATHSTORE_DAEMON_USERNAME;
+    String childDaemonPassword =
+        new RandomStringGenerator.Builder()
+            .withinRange('0', 'z')
+            .filteredBy(LETTERS, DIGITS)
+            .build()
+            .generate(10);
+
     return new BootstrapDeploymentBuilder(sshUtil)
         .initBootstrap()
         .init()
@@ -248,7 +258,34 @@ public class DevelopmentDeployment {
             ip, cassandraPort, rmiRegistryPort, childSuperuserUsername, childSuperuserPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
+        .loadKeyspace(
+            childSuperuserUsername,
+            childSuperuserPassword,
+            ip,
+            cassandraPort,
+            PathStoreSchemaLoaderUtils::loadLocalKeyspace,
+            "local_keyspace")
+        .loadKeyspace(
+            childSuperuserUsername,
+            childSuperuserPassword,
+            ip,
+            cassandraPort,
+            PathStoreSchemaLoaderUtils::loadApplicationSchema,
+            Constants.PATHSTORE_APPLICATIONS)
         .createSuperUserAccount(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
+        .createDaemonAccount(
+            childSuperuserUsername,
+            childDaemonPassword,
+            ip,
+            cassandraPort,
+            childDaemonUsername,
+            childDaemonPassword)
+        .writeCredentialsToChildNode(
+            new Credential(1, childDaemonUsername, childDaemonPassword),
+            childSuperuserUsername,
+            childDaemonPassword,
+            ip,
+            cassandraPort)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
             new WaitForPathStore(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort))

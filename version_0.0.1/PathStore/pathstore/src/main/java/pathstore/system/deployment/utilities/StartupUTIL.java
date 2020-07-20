@@ -1,6 +1,7 @@
 package pathstore.system.deployment.utilities;
 
 import org.apache.commons.text.RandomStringGenerator;
+import pathstore.authentication.CredentialInfo;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.Role;
@@ -131,8 +132,14 @@ public class StartupUTIL {
             childDaemonUsername,
             childDaemonPassword)
         .writeChildAccountToCassandra(nodeID, childDaemonUsername, childDaemonPassword)
-        .writeParentCredentialsToChild(
-            PathStoreProperties.getInstance().credential, // TODO: Change to daemon account
+        .writeCredentialsToChildNode( // Writes parent credentials to child node
+            CredentialInfo.getInstance().getCredential(PathStoreProperties.getInstance().NodeID),
+            childSuperuserUsername,
+            childSuperuserPassword,
+            ip,
+            cassandraPort)
+        .writeCredentialsToChildNode( // Writes daemon account to child node
+            CredentialInfo.getInstance().getCredential(nodeID),
             childSuperuserUsername,
             childSuperuserPassword,
             ip,
