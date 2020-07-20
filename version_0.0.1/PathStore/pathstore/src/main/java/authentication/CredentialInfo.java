@@ -42,14 +42,12 @@ public final class CredentialInfo {
   }
 
   // will only work on server side because of authentication restriction of user accounts
-  public void add(final int nodeId, final String username, final String password) {
-    PathStorePrivilegedCluster.getInstance()
-        .connect()
-        .execute(
-            QueryBuilder.insertInto("local_keyspace", "auth")
-                .value("node_id", nodeId)
-                .value("username", username)
-                .value("password", password));
+  public synchronized void add(final int nodeId, final String username, final String password) {
+    this.privSession.execute(
+        QueryBuilder.insertInto("local_keyspace", "auth")
+            .value("node_id", nodeId)
+            .value("username", username)
+            .value("password", password));
 
     this.credentials.put(nodeId, new Credential(nodeId, username, password));
   }

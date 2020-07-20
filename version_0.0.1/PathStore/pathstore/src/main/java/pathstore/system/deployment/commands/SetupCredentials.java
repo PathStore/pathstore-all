@@ -60,6 +60,8 @@ public class SetupCredentials implements ICommand {
             "CREATE ROLE %s WITH SUPERUSER = true AND LOGIN = true and PASSWORD = '%s'",
             this.username, this.password);
 
+    System.out.println(command);
+
     childSession.execute(command);
 
     this.logger.info(
