@@ -55,14 +55,10 @@ public class SetupCredentials implements ICommand {
 
     // load new child role and delete old role.
 
-    String command =
+    childSession.execute(
         String.format(
             "CREATE ROLE %s WITH SUPERUSER = true AND LOGIN = true and PASSWORD = '%s'",
-            this.username, this.password);
-
-    System.out.println(command);
-
-    childSession.execute(command);
+            this.username, this.password));
 
     this.logger.info(
         String.format("Generated Role with login %s %s", this.username, this.password));

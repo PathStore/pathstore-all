@@ -9,7 +9,9 @@ import pathstore.system.deployment.commands.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Random;
+
+import static org.apache.commons.text.CharacterPredicates.LETTERS;
+import static org.apache.commons.text.CharacterPredicates.DIGITS;
 
 /** Things related to cassandra for startup that can't rely on pathstore properties file */
 public class StartupUTIL {
@@ -63,7 +65,11 @@ public class StartupUTIL {
 
     String childSuperuserUsername = Constants.PATHSTORE_SUPERUSER_USERNAME;
     String childSuperuserPassword =
-        new RandomStringGenerator.Builder().withinRange(33, 45).build().generate(10); // temp length
+        new RandomStringGenerator.Builder()
+            .withinRange('0', 'z')
+            .filteredBy(LETTERS, DIGITS)
+            .build()
+            .generate(10);
 
     return new DeploymentBuilder<>(sshUtil)
         .init()
