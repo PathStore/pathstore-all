@@ -47,11 +47,7 @@ public class SetupCredentials implements ICommand {
             this.ip,
             this.port);
 
-    System.out.println("Got cluster");
-
     Session childSession = childCluster.connect();
-
-    System.out.println("Got client");
 
     // load new child role and delete old role.
 
