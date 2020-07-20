@@ -48,6 +48,7 @@ public class WriteCredentialsToChildNode implements ICommand {
 
   @Override
   public String toString() {
-    return "Writing parent credentials to child cassandra";
+    return String.format(
+        "Writing account with username %s to child node", this.credentialsToWrite.username);
   }
 }
