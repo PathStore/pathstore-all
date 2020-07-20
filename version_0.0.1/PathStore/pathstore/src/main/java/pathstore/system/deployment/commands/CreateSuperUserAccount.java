@@ -35,7 +35,7 @@ public class CreateSuperUserAccount implements ICommand {
     this.logger.info("Waiting for super user delay period to end");
 
     try {
-      Thread.sleep(10 * 60);
+      Thread.sleep(10 * 1000);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
