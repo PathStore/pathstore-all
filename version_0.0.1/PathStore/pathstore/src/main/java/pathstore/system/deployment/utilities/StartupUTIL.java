@@ -99,13 +99,15 @@ public class StartupUTIL {
             childSuperuserPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
-        .writeUserAccountToChild(
+        .createSuperUserAccount(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
+        .writeChildSuperUserAccountToCassandra(
+            nodeID, childSuperuserUsername, childSuperuserPassword)
+        .writeParentCredentialsToChild(
             PathStoreProperties.getInstance().credential,
             childSuperuserUsername,
             childSuperuserPassword,
             ip,
             cassandraPort)
-        .writeChildUserAccountToCassandra(nodeID, childSuperuserUsername, childSuperuserPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
             new WaitForPathStore(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort))

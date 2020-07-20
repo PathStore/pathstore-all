@@ -1,6 +1,6 @@
 package pathstore.util;
 
-import authentication.Credential;
+import pathstore.authentication.Credential;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.SocketOptions;
@@ -42,7 +42,7 @@ public class ClusterCache<T> {
   }
 
   /**
-   * Create a cluster that uses authentication
+   * Create a cluster that uses pathstore.authentication
    *
    * @param ip ip to connect to
    * @param port port to connect to

@@ -17,7 +17,7 @@
  */
 package pathstore.client;
 
-import authentication.Credential;
+import pathstore.authentication.Credential;
 import pathstore.common.PathStoreProperties;
 
 import com.datastax.driver.core.Cluster;

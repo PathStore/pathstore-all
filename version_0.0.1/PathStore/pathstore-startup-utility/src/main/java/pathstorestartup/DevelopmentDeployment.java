@@ -1,6 +1,8 @@
 package pathstorestartup;
 
 import com.jcraft.jsch.JSchException;
+import org.apache.commons.text.RandomStringGenerator;
+import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
 import pathstore.system.deployment.utilities.DeploymentConstants;
@@ -12,6 +14,8 @@ import pathstorestartup.constants.BootstrapDeploymentBuilder;
 import java.util.List;
 import java.util.Scanner;
 
+import static org.apache.commons.text.CharacterPredicates.DIGITS;
+import static org.apache.commons.text.CharacterPredicates.LETTERS;
 import static pathstorestartup.constants.BootstrapDeploymentConstants.DEVELOPMENT_BUILDER.*;
 
 /**
@@ -188,6 +192,14 @@ public class DevelopmentDeployment {
       final int rmiRegistryPort,
       final FinalizeRootInstallation finalizeRootInstallation) {
 
+    String childSuperuserUsername = Constants.PATHSTORE_SUPERUSER_USERNAME;
+    String childSuperuserPassword =
+        new RandomStringGenerator.Builder()
+            .withinRange('0', 'z')
+            .filteredBy(LETTERS, DIGITS)
+            .build()
+            .generate(10);
+
     return new BootstrapDeploymentBuilder(sshUtil)
         .initBootstrap()
         .init()
@@ -216,15 +228,16 @@ public class DevelopmentDeployment {
             cassandraPort,
             BootstrapDeploymentConstants.LOCAL_TEMP_PROPERTIES_FILE,
             DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
-            "cassandra",
-            "cassandra")
-        .generateWebsiteProperties(ip, cassandraPort, rmiRegistryPort, "cassandra", "cassandra")
+            childSuperuserUsername,
+            childSuperuserPassword)
+        .generateWebsiteProperties(
+            ip, cassandraPort, rmiRegistryPort, childSuperuserUsername, childSuperuserPassword)
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN,
-            new WaitForCassandra("cassandra", "cassandra", ip, cassandraPort))
+            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
+        .createSuperUserAccount(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
-            new WaitForPathStore("cassandra", "cassandra", ip, cassandraPort))
+            new WaitForPathStore(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort))
         .startImageAndWait(
             BootstrapDeploymentConstants.RUN_COMMANDS.PATHSTORE_ADMIN_PANEL_RUN, null)
         .custom(finalizeRootInstallation)

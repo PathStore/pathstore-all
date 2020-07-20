@@ -1,6 +1,6 @@
 package pathstore.system.deployment.utilities;
 
-import authentication.Credential;
+import pathstore.authentication.Credential;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
 
@@ -183,19 +183,26 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
     return (T) this;
   }
 
-  public T writeChildUserAccountToCassandra(
-      final int childNodeId, final String username, final String password) {
-    this.commands.add(new WriteChildCredential(childNodeId, username, password));
+  public T createSuperUserAccount(
+      final String username, final String password, final String ip, final int port) {
+    this.commands.add(new CreateSuperUserAccount(username, password, ip, port));
     return (T) this;
   }
 
-  public T writeUserAccountToChild(
-      final Credential currentNodeCred,
+  public T writeParentCredentialsToChild(
+      final Credential parentCredentials,
       final String username,
       final String password,
       final String ip,
       final int port) {
-    this.commands.add(new SetupCredentials(currentNodeCred, username, password, ip, port));
+    this.commands.add(
+        new WriteParentCredentialsToChild(parentCredentials, username, password, ip, port));
+    return (T) this;
+  }
+
+  public T writeChildSuperUserAccountToCassandra(
+      final int childNodeId, final String username, final String password) {
+    this.commands.add(new WriteChildSuperUserAccountToCassandra(childNodeId, username, password));
     return (T) this;
   }
 

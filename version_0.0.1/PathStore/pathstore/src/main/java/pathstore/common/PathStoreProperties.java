@@ -17,7 +17,7 @@
  */
 package pathstore.common;
 
-import authentication.Credential;
+import pathstore.authentication.Credential;
 
 import java.io.FileInputStream;
 import java.util.Properties;
