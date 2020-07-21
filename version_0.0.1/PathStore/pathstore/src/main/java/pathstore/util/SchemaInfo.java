@@ -17,13 +17,8 @@
  */
 package pathstore.util;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import io.netty.util.internal.ConcurrentSet;
 import pathstore.common.Constants;
@@ -31,8 +26,12 @@ import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.PathStorePrivilegedCluster;
 
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * The purpose of this class is to represent the keyspace system_schema in memory for usage
@@ -61,7 +60,8 @@ public class SchemaInfo {
   /** @return instance of this class (there will only ever be one) */
   public static synchronized SchemaInfo getInstance() {
     if (SchemaInfo.instance == null)
-      SchemaInfo.instance = new SchemaInfo(PathStorePrivilegedCluster.getInstance().connect());
+      SchemaInfo.instance =
+          new SchemaInfo(PathStorePrivilegedCluster.getSuperUserInstance().connect());
     return SchemaInfo.instance;
   }
 

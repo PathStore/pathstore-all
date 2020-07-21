@@ -176,12 +176,26 @@ public class PathStoreSlaveSchemaServer implements Runnable {
    */
   private void installApplication(final String keyspace, final String augmentedSchema) {
 
-    PathStoreSchemaLoaderUtils.parseSchema(augmentedSchema)
-        .forEach(PathStorePrivilegedCluster.getInstance().connect()::execute);
+    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+
+    PathStoreSchemaLoaderUtils.parseSchema(augmentedSchema).forEach(superUserSession::execute);
+
+    this.logger.info(String.format("Application loaded %s", keyspace));
 
     // after keyspace is loaded we need to inform the schemainfo class that a new keyspace has been
     // installed
     SchemaInfo.getInstance().loadKeyspace(keyspace);
+
+    this.logger.info(String.format("Schema info loaded for keyspace %s", keyspace));
+
+    // grant permissions to daemon account on the write
+    PathStoreSchemaLoaderUtils.grantAccessToKeyspace(
+        superUserSession, keyspace, Constants.PATHSTORE_DAEMON_USERNAME);
+
+    this.logger.info(
+        String.format(
+            "Granted permission on keyspace %s to user %s",
+            keyspace, Constants.PATHSTORE_DAEMON_USERNAME));
 
     Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
     update
@@ -193,8 +207,6 @@ public class PathStoreSlaveSchemaServer implements Runnable {
                 ProccessStatus.INSTALLED.toString()));
 
     this.session.execute(update);
-
-    logger.info("Application loaded " + keyspace);
   }
 
   /**
@@ -206,13 +218,28 @@ public class PathStoreSlaveSchemaServer implements Runnable {
    */
   private void removeApplication(final String keyspace) {
 
+    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+
     // force push here
 
+    PathStoreSchemaLoaderUtils.revokeAccessToKeyspace(
+        superUserSession, keyspace, Constants.PATHSTORE_DAEMON_USERNAME);
+
+    this.logger.info(
+        String.format(
+            "Revoked access to keyspace %s to %s", keyspace, Constants.PATHSTORE_DAEMON_USERNAME));
+
     SchemaInfo.getInstance().removeKeyspace(keyspace);
+
+    this.logger.info(String.format("Schema info removed for keyspace %s", keyspace));
+
     QueryCache.getInstance().remove(keyspace);
-    PathStorePrivilegedCluster.getInstance()
-        .connect()
-        .execute("drop keyspace if exists " + keyspace);
+
+    this.logger.info(String.format("Removed cache entries for keyspace %s", keyspace));
+
+    superUserSession.execute("drop keyspace if exists " + keyspace);
+
+    this.logger.info(String.format("Removed keyspace %s", keyspace));
 
     Delete delete =
         QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
@@ -222,6 +249,6 @@ public class PathStoreSlaveSchemaServer implements Runnable {
 
     this.session.execute(delete);
 
-    logger.info("Application removed " + keyspace);
+    this.logger.info("Application removed " + keyspace);
   }
 }

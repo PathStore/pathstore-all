@@ -41,7 +41,7 @@ public class ForcePush implements ICommand {
 
     PathStorePushServer.push(
         child,
-        PathStorePrivilegedCluster.getInstance().connect(),
+        PathStorePrivilegedCluster.getDaemonInstance().connect(),
         new SchemaInfo(child),
         this.nodeId);
 

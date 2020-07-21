@@ -34,7 +34,7 @@ import com.datastax.driver.core.Row;
 /** TODO: Comment */
 public class PathStoreIterator implements Iterator<Row> {
 
-  private static final Session priv = PathStorePrivilegedCluster.getInstance().connect();
+  private static final Session priv = PathStorePrivilegedCluster.getDaemonInstance().connect();
 
   private final Iterator<Row> iter;
   private final String keyspace;

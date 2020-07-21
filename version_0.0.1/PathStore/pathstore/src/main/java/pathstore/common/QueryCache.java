@@ -403,7 +403,7 @@ public class QueryCache {
             select.where(clause);
 
 
-        Session local = PathStorePrivilegedCluster.getInstance().connect();
+        Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
 
         try {
 
@@ -418,7 +418,7 @@ public class QueryCache {
 
             int batchSize = 0;
 
-            PathStorePrivilegedCluster cluster = PathStorePrivilegedCluster.getInstance();
+            PathStorePrivilegedCluster cluster = PathStorePrivilegedCluster.getDaemonInstance();
 
             String primary = cluster.getMetadata().getKeyspace(keyspace).getTable(table).getPrimaryKey().get(0).getName();
 
@@ -512,7 +512,7 @@ public class QueryCache {
 
     private void fetchData(QueryCacheEntry entry, UUID deltaID) {
         Session parent = PathStorePrivilegedCluster.getParentInstance().connect();
-        Session local = PathStorePrivilegedCluster.getInstance().connect();
+        Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
 
         try {
             String table = deltaID != null ? "view_" + entry.table : entry.table;

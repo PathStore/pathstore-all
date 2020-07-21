@@ -37,7 +37,14 @@ public class PathStorePrivilegedCluster {
 
   private final Session session;
 
-  public static synchronized PathStorePrivilegedCluster getInstance() {
+  public static synchronized PathStorePrivilegedCluster getSuperUserInstance() {
+    return clusterCache.getInstance(
+        CredentialInfo.getInstance().getCredential(PathStoreProperties.getInstance().NodeID),
+        PathStoreProperties.getInstance().CassandraIP,
+        PathStoreProperties.getInstance().CassandraPort);
+  }
+
+  public static synchronized PathStorePrivilegedCluster getDaemonInstance() {
     return clusterCache.getInstance(
         PathStoreProperties.getInstance().credential,
         PathStoreProperties.getInstance().CassandraIP,

@@ -286,7 +286,7 @@ public class PathStoreSession implements Session {
   public static Select InsertToSelect(final Insert ins) {
     Select slct = QueryBuilder.select().all().from(ins.getKeyspace() + "." + ins.getTable());
     List<ColumnMetadata> pkl =
-        PathStorePrivilegedCluster.getInstance()
+        PathStorePrivilegedCluster.getDaemonInstance()
             .getMetadata()
             .getKeyspace(ins.getKeyspace())
             .getTable(ins.getTable())

@@ -21,6 +21,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.SocketOptions;
 import pathstore.authentication.Credential;
+import pathstore.authentication.CredentialInfo;
 import pathstore.common.PathStoreProperties;
 import pathstore.util.ClusterCache;
 
@@ -31,7 +32,7 @@ public class PathStoreCluster {
 
   public static synchronized PathStoreCluster getInstance() {
     return clusterCache.getInstance(
-        PathStoreProperties.getInstance().credential,
+        CredentialInfo.getInstance().getCredential(PathStoreProperties.getInstance().NodeID),
         PathStoreProperties.getInstance().CassandraIP,
         PathStoreProperties.getInstance().CassandraPort);
   }

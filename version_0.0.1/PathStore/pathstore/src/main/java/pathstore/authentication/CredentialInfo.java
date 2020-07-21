@@ -25,7 +25,7 @@ public final class CredentialInfo {
 
   private final ConcurrentMap<Integer, Credential> credentials;
 
-  private final Session privSession = PathStorePrivilegedCluster.getInstance().connect();
+  private final Session privSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
 
   private CredentialInfo() {
     this.credentials = this.load();

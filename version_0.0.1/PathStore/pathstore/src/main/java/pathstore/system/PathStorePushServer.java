@@ -162,7 +162,7 @@ public class PathStorePushServer implements Runnable {
     logger.info("Spawned pathstore push server thread");
 
     Session parent = PathStorePrivilegedCluster.getParentInstance().connect();
-    Session local = PathStorePrivilegedCluster.getInstance().connect();
+    Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
 
     while (true) {
       try {

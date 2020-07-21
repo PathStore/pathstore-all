@@ -437,10 +437,24 @@ public class PathStoreSchemaLoaderUtils {
    * @param keyspace keyspace to grant on
    * @param user user to give permissions to
    */
-  public static void giveAccessToKeyspace(
+  public static void grantAccessToKeyspace(
       final Session session, final String keyspace, final String user) {
     session.execute(String.format("GRANT SELECT ON KEYSPACE %s TO %s", keyspace, user));
 
     session.execute(String.format("GRANT MODIFY ON KEYSPACE %s TO %S", keyspace, user));
+  }
+
+  /**
+   * Function to revoke select / insert / update / delete / truncate on a keyspace to a user account
+   *
+   * @param session must be a super user session
+   * @param keyspace keyspace to grant on
+   * @param user user to give permissions to
+   */
+  public static void revokeAccessToKeyspace(
+      final Session session, final String keyspace, final String user) {
+    session.execute(String.format("REVOKE SELECT ON KEYSPACE %s TO %s", keyspace, user));
+
+    session.execute(String.format("REVOKE MODIFY ON KEYSPACE %s TO %S", keyspace, user));
   }
 }

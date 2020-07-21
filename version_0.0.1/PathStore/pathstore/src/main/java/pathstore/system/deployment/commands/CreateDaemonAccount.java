@@ -46,7 +46,7 @@ public class CreateDaemonAccount implements ICommand {
             "CREATE ROLE %s WITH SUPERUSER = false AND LOGIN = true and PASSWORD = '%s'",
             this.daemonUsername, this.daemonPassword));
 
-    PathStoreSchemaLoaderUtils.giveAccessToKeyspace(
+    PathStoreSchemaLoaderUtils.grantAccessToKeyspace(
         childSession, Constants.PATHSTORE_APPLICATIONS, this.daemonUsername);
 
     childCluster.close();
