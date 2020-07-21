@@ -61,7 +61,11 @@ public class PathStoreServerImpl {
 
       Session local = PathStorePrivilegedCluster.getSuperUserInstance().connect();
 
-      logger.info("Connected");
+      logger.info("Super User connection was initialized successfully");
+
+      PathStorePrivilegedCluster.getDaemonInstance().connect();
+
+      logger.info("Daemon connection was initialized successfully");
 
       PathStoreServer stub =
           (PathStoreServer)

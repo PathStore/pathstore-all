@@ -29,19 +29,19 @@ public class DeleteNodeHistory implements ICommand {
   /** Logger to display what is occuring */
   private final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(DeleteNodeHistory.class);
 
-  /** Node id if the parent node (the node running this application) */
-  private final int parentNodeId;
-
   /** Child node id who is being removed */
   private final int newNodeId;
 
+  /** Node id if the parent node (the node running this application) */
+  private final int parentNodeId;
+
   /**
-   * @param parentNodeId {@link #parentNodeId}
    * @param newNodeId {@link #newNodeId}
+   * @param parentNodeId {@link #parentNodeId}
    */
-  public DeleteNodeHistory(final int parentNodeId, final int newNodeId) {
-    this.parentNodeId = parentNodeId;
+  public DeleteNodeHistory(final int newNodeId, final int parentNodeId) {
     this.newNodeId = newNodeId;
+    this.parentNodeId = parentNodeId;
   }
 
   /**
