@@ -37,8 +37,6 @@ public class ForcePush implements ICommand {
   public void execute() {
     Session child = this.cluster.connect();
 
-    this.logger.info("Successfully connected to child cassandra");
-
     PathStorePushServer.push(
         child,
         PathStorePrivilegedCluster.getDaemonInstance().connect(),

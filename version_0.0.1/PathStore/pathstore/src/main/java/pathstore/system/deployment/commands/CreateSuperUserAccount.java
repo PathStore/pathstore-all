@@ -1,13 +1,12 @@
 package pathstore.system.deployment.commands;
 
-import com.datastax.driver.core.Session;
+import pathstore.authentication.AuthenticationUtil;
 import pathstore.common.Constants;
 import pathstore.common.logger.PathStoreLogger;
 import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.PathStorePrivilegedCluster;
 
 // assumed cassandra has started up
-// TODO: Load new child role and delete cassandra role
 public class CreateSuperUserAccount implements ICommand {
 
   private final PathStoreLogger logger =
@@ -47,15 +46,11 @@ public class CreateSuperUserAccount implements ICommand {
             this.ip,
             this.port);
 
-    Session childSession = childCluster.connect();
-
     // load new child role and delete old role.
 
-    childSession.execute(
-        String.format(
-            "CREATE ROLE %s WITH SUPERUSER = true AND LOGIN = true and PASSWORD = '%s'",
-            this.username, this.password));
+    AuthenticationUtil.createRole(childCluster.connect(), this.username, true, true, this.password);
 
+    // TODO: Remove, this is temporary
     this.logger.info(
         String.format("Generated Role with login %s %s", this.username, this.password));
 
@@ -64,11 +59,10 @@ public class CreateSuperUserAccount implements ICommand {
     childCluster =
         PathStorePrivilegedCluster.getChildInstance(
             this.username, this.password, this.ip, this.port);
-    childSession = childCluster.connect();
 
-    childSession.execute("DROP ROLE cassandra");
+    AuthenticationUtil.dropRole(childCluster.connect(), Constants.DEFAULT_CASSANDRA_USERNAME);
 
-    this.logger.info("Dropped role cassandra");
+    this.logger.info(String.format("Dropped role %s", Constants.DEFAULT_CASSANDRA_USERNAME));
 
     childCluster.close();
   }

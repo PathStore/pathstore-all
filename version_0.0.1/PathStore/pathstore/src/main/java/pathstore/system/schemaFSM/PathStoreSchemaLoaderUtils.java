@@ -429,32 +429,4 @@ public class PathStoreSchemaLoaderUtils {
   public static Stream<String> parseSchema(final String schema) {
     return Arrays.stream(schema.split(";")).map(String::trim).filter(i -> i.length() > 0);
   }
-
-  /**
-   * Function to grant select / insert / update / delete / truncate on a keyspace to a user account
-   *
-   * @param session must be a super user session
-   * @param keyspace keyspace to grant on
-   * @param user user to give permissions to
-   */
-  public static void grantAccessToKeyspace(
-      final Session session, final String keyspace, final String user) {
-    session.execute(String.format("GRANT SELECT ON KEYSPACE %s TO %s", keyspace, user));
-
-    session.execute(String.format("GRANT MODIFY ON KEYSPACE %s TO %S", keyspace, user));
-  }
-
-  /**
-   * Function to revoke select / insert / update / delete / truncate on a keyspace to a user account
-   *
-   * @param session must be a super user session
-   * @param keyspace keyspace to grant on
-   * @param user user to give permissions to
-   */
-  public static void revokeAccessToKeyspace(
-      final Session session, final String keyspace, final String user) {
-    session.execute(String.format("REVOKE SELECT ON KEYSPACE %s FROM %s", keyspace, user));
-
-    session.execute(String.format("REVOKE MODIFY ON KEYSPACE %s FROM %s", keyspace, user));
-  }
 }

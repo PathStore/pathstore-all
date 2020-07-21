@@ -6,6 +6,7 @@ import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
+import pathstore.authentication.AuthenticationUtil;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
@@ -186,10 +187,8 @@ public class PathStoreSlaveSchemaServer implements Runnable {
     // installed
     SchemaInfo.getInstance().loadKeyspace(keyspace);
 
-    this.logger.info(String.format("Schema info loaded for keyspace %s", keyspace));
-
     // grant permissions to daemon account on the write
-    PathStoreSchemaLoaderUtils.grantAccessToKeyspace(
+    AuthenticationUtil.grantAccessToKeyspace(
         superUserSession, keyspace, Constants.PATHSTORE_DAEMON_USERNAME);
 
     this.logger.info(
@@ -222,7 +221,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
 
     // force push here
 
-    PathStoreSchemaLoaderUtils.revokeAccessToKeyspace(
+    AuthenticationUtil.revokeAccessToKeyspace(
         superUserSession, keyspace, Constants.PATHSTORE_DAEMON_USERNAME);
 
     this.logger.info(
@@ -230,8 +229,6 @@ public class PathStoreSlaveSchemaServer implements Runnable {
             "Revoked access to keyspace %s to %s", keyspace, Constants.PATHSTORE_DAEMON_USERNAME));
 
     SchemaInfo.getInstance().removeKeyspace(keyspace);
-
-    this.logger.info(String.format("Schema info removed for keyspace %s", keyspace));
 
     QueryCache.getInstance().remove(keyspace);
 

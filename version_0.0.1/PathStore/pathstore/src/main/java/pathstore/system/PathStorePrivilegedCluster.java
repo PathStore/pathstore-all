@@ -31,12 +31,6 @@ public class PathStorePrivilegedCluster {
   private static final ClusterCache<PathStorePrivilegedCluster> clusterCache =
       new ClusterCache<>(PathStorePrivilegedCluster::new);
 
-  private final Credential credential;
-
-  private final Cluster cluster;
-
-  private final Session session;
-
   public static synchronized PathStorePrivilegedCluster getSuperUserInstance() {
     return clusterCache.getInstance(
         PathStoreProperties.getInstance().credential,
@@ -70,6 +64,12 @@ public class PathStorePrivilegedCluster {
       final String username, final String password, final String ip, final int port) {
     return clusterCache.getInstance(new Credential(-1, username, password), ip, port);
   }
+
+  private final Credential credential;
+
+  private final Cluster cluster;
+
+  private final Session session;
 
   public PathStorePrivilegedCluster(final Credential credential, final Cluster cluster) {
     this.credential = credential;

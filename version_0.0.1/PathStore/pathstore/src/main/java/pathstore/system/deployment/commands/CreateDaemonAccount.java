@@ -1,9 +1,9 @@
 package pathstore.system.deployment.commands;
 
 import com.datastax.driver.core.Session;
+import pathstore.authentication.AuthenticationUtil;
 import pathstore.common.Constants;
 import pathstore.system.PathStorePrivilegedCluster;
-import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 
 public class CreateDaemonAccount implements ICommand {
   private final String username;
@@ -41,12 +41,10 @@ public class CreateDaemonAccount implements ICommand {
 
     Session childSession = childCluster.connect();
 
-    childSession.execute(
-        String.format(
-            "CREATE ROLE %s WITH SUPERUSER = false AND LOGIN = true and PASSWORD = '%s'",
-            this.daemonUsername, this.daemonPassword));
+    AuthenticationUtil.createRole(
+        childSession, this.daemonUsername, false, true, this.daemonPassword);
 
-    PathStoreSchemaLoaderUtils.grantAccessToKeyspace(
+    AuthenticationUtil.grantAccessToKeyspace(
         childSession, Constants.PATHSTORE_APPLICATIONS, this.daemonUsername);
 
     childCluster.close();
@@ -54,6 +52,6 @@ public class CreateDaemonAccount implements ICommand {
 
   @Override
   public String toString() {
-    return "Create daemon account for child";
+    return "Creating daemon account for child";
   }
 }
