@@ -59,7 +59,7 @@ public class PathStoreServerImpl {
 
       logger.info("Initial connect to database");
 
-      Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
+      Session local = PathStorePrivilegedCluster.getSuperUserInstance().connect();
 
       logger.info("Connected");
 
