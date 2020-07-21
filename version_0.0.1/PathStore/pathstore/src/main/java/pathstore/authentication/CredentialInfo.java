@@ -4,7 +4,6 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.system.PathStorePrivilegedCluster;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -33,15 +32,13 @@ public final class CredentialInfo {
   }
 
   private ConcurrentMap<Integer, Credential> load() {
-    return new ConcurrentHashMap<>(
-        StreamSupport.stream(
-                this.privSession
-                    .execute(QueryBuilder.select().all().from("local_keyspace", "auth"))
-                    .spliterator(),
-                true)
-            .map(Credential::buildFromRow)
-            .collect(
-                Collectors.toConcurrentMap(credential -> credential.node_id, Function.identity())));
+    return StreamSupport.stream(
+            this.privSession
+                .execute(QueryBuilder.select().all().from("local_keyspace", "auth"))
+                .spliterator(),
+            true)
+        .map(Credential::buildFromRow)
+        .collect(Collectors.toConcurrentMap(credential -> credential.node_id, Function.identity()));
   }
 
   // will only work on server side because of pathstore.authentication restriction of user accounts
@@ -52,11 +49,7 @@ public final class CredentialInfo {
             .value("username", username)
             .value("password", password));
 
-    System.out.println(String.format("Added %d %s %s", nodeId, username, password));
-
     this.credentials.put(nodeId, new Credential(nodeId, username, password));
-
-    System.out.println(this.credentials);
   }
 
   // may return null

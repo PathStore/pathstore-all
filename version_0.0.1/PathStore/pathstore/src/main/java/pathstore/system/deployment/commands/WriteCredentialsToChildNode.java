@@ -3,10 +3,11 @@ package pathstore.system.deployment.commands;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.authentication.Credential;
+import pathstore.authentication.CredentialInfo;
 import pathstore.system.PathStorePrivilegedCluster;
 
 public class WriteCredentialsToChildNode implements ICommand {
-  private final Credential credentialsToWrite;
+  private final int nodeid;
 
   private final String username;
 
@@ -17,12 +18,12 @@ public class WriteCredentialsToChildNode implements ICommand {
   private final int port;
 
   public WriteCredentialsToChildNode(
-      final Credential credentialsToWrite,
+      final int nodeid,
       final String username,
       final String password,
       final String ip,
       final int port) {
-    this.credentialsToWrite = credentialsToWrite;
+    this.nodeid = nodeid;
     this.username = username;
     this.password = password;
     this.ip = ip;
@@ -31,12 +32,7 @@ public class WriteCredentialsToChildNode implements ICommand {
 
   @Override
   public void execute() {
-    System.out.println(
-        credentialsToWrite.node_id
-            + " "
-            + credentialsToWrite.username
-            + " "
-            + credentialsToWrite.password);
+    Credential credential = CredentialInfo.getInstance().getCredential(this.nodeid);
 
     PathStorePrivilegedCluster childCluster =
         PathStorePrivilegedCluster.getChildInstance(
@@ -46,9 +42,9 @@ public class WriteCredentialsToChildNode implements ICommand {
 
     childSession.execute(
         QueryBuilder.insertInto("local_keyspace", "auth")
-            .value("node_id", this.credentialsToWrite.node_id)
-            .value("username", this.credentialsToWrite.username)
-            .value("password", this.credentialsToWrite.password));
+            .value("node_id", credential.node_id)
+            .value("username", credential.username)
+            .value("password", credential.password));
 
     childCluster.close();
   }
@@ -56,6 +52,7 @@ public class WriteCredentialsToChildNode implements ICommand {
   @Override
   public String toString() {
     return String.format(
-        "Writing account with username %s to child node", this.credentialsToWrite.username);
+        "Writing account with username %s to child node",
+        CredentialInfo.getInstance().getCredential(this.nodeid).username);
   }
 }

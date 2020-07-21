@@ -192,13 +192,12 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   }
 
   public T writeCredentialsToChildNode(
-      final Credential credentialsToWrite,
+      final int nodeId,
       final String username,
       final String password,
       final String ip,
       final int port) {
-    this.commands.add(
-        new WriteCredentialsToChildNode(credentialsToWrite, username, password, ip, port));
+    this.commands.add(new WriteCredentialsToChildNode(nodeId, username, password, ip, port));
     return (T) this;
   }
 
