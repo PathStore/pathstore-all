@@ -1,7 +1,6 @@
 package pathstore.system.deployment.utilities;
 
 import com.datastax.driver.core.Session;
-import pathstore.authentication.Credential;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
 
@@ -228,6 +227,11 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
       final String keyspaceName) {
     this.commands.add(
         new LoadKeyspace(username, password, ip, port, loadKeyspaceFunction, keyspaceName));
+    return (T) this;
+  }
+
+  public T removeLocalCredential(final int nodeId) {
+    this.commands.add(new RemoveLocalCredential(nodeId));
     return (T) this;
   }
 

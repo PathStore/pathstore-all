@@ -131,17 +131,9 @@ public class StartupUTIL {
             childDaemonPassword)
         .writeChildAccountToCassandra(nodeID, childDaemonUsername, childDaemonPassword)
         .writeCredentialsToChildNode( // Writes parent credentials to child node
-            parentNodeId,
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort)
+            parentNodeId, childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
         .writeCredentialsToChildNode( // Writes daemon account to child node
-            nodeID,
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort)
+            nodeID, childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
             new WaitForPathStore(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort))
@@ -157,6 +149,7 @@ public class StartupUTIL {
   public static List<ICommand> initUnDeploymentList(
       final SSHUtil sshUtil, final String ip, final int cassandraPort, final int newNodeId) {
     return new DeploymentBuilder<>(sshUtil)
+        .removeLocalCredential(newNodeId)
         .remove(new ForcePush(newNodeId, ip, cassandraPort))
         .build();
   }

@@ -52,6 +52,20 @@ public final class CredentialInfo {
     this.credentials.put(nodeId, new Credential(nodeId, username, password));
   }
 
+  // only works if the node id already exists in memory
+  public void remove(final int nodeId) {
+    Credential credential = this.getCredential(nodeId);
+
+    if (credential == null) return;
+
+    this.credentials.remove(nodeId);
+
+    this.privSession.execute(
+        QueryBuilder.delete()
+            .from("local_keyspace", "auth")
+            .where(QueryBuilder.eq("node_id", nodeId)));
+  }
+
   // may return null
   public Credential getCredential(final int node_id) {
     return this.credentials.get(node_id);

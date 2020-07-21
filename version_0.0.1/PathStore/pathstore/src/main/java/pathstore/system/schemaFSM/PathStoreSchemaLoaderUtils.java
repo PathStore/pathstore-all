@@ -453,8 +453,8 @@ public class PathStoreSchemaLoaderUtils {
    */
   public static void revokeAccessToKeyspace(
       final Session session, final String keyspace, final String user) {
-    session.execute(String.format("REVOKE SELECT ON KEYSPACE %s TO %s", keyspace, user));
+    session.execute(String.format("REVOKE SELECT ON KEYSPACE %s FROM %s", keyspace, user));
 
-    session.execute(String.format("REVOKE MODIFY ON KEYSPACE %s TO %S", keyspace, user));
+    session.execute(String.format("REVOKE MODIFY ON KEYSPACE %s FROM %S", keyspace, user));
   }
 }
