@@ -147,10 +147,15 @@ public class StartupUTIL {
    * @return list of removal commands
    */
   public static List<ICommand> initUnDeploymentList(
-      final SSHUtil sshUtil, final String ip, final int cassandraPort, final int newNodeId) {
+      final SSHUtil sshUtil,
+      final String ip,
+      final int cassandraPort,
+      final int newNodeId,
+      final int parentNodeId) {
     return new DeploymentBuilder<>(sshUtil)
         .removeLocalCredential(newNodeId)
         .remove(new ForcePush(newNodeId, ip, cassandraPort))
+        .deleteNodeHistory(newNodeId, parentNodeId)
         .build();
   }
 }

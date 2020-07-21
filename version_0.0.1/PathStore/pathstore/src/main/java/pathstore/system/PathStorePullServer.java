@@ -17,26 +17,16 @@
  */
 package pathstore.system;
 
-import java.util.HashMap;
-import java.util.List;
-
 import com.datastax.driver.core.querybuilder.Clause;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import pathstore.common.Constants;
+import org.apache.commons.cli.*;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
 import pathstore.common.QueryCacheEntry;
-import pathstore.common.logger.PathStoreLogger;
-import pathstore.common.logger.PathStoreLoggerFactory;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
+
+import java.util.HashMap;
+import java.util.List;
 
 /** TODO: Comment */
 public class PathStorePullServer implements Runnable {

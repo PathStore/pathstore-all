@@ -1,4 +1,4 @@
-package pathstore.common.logger;
+package pathstore.system.logging;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

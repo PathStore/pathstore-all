@@ -6,9 +6,6 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
-import pathstore.common.logger.PathStoreLogger;
-import pathstore.common.logger.PathStoreLoggerFactory;
-import pathstore.common.logger.PathStoreLoggerMessage;
 import pathstore.system.deployment.utilities.DeploymentConstants;
 
 import java.io.*;

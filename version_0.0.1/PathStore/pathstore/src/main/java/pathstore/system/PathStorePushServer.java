@@ -37,8 +37,8 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 
 import pathstore.common.PathStoreProperties;
-import pathstore.common.logger.PathStoreLogger;
-import pathstore.common.logger.PathStoreLoggerFactory;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 import pathstore.util.SchemaInfo.Table;

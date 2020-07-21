@@ -12,8 +12,8 @@ import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreThreadManager;
 import pathstore.common.QueryCache;
-import pathstore.common.logger.PathStoreLogger;
-import pathstore.common.logger.PathStoreLoggerFactory;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.util.SchemaInfo;
 

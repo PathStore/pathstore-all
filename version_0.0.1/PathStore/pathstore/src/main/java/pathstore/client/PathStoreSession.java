@@ -17,37 +17,22 @@
  */
 package pathstore.client;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.datastax.driver.core.*;
+import com.datastax.driver.core.querybuilder.*;
+import com.datastax.driver.core.querybuilder.Update.Assignments;
+import com.google.common.util.concurrent.ListenableFuture;
 import pathstore.common.QueryCache;
-import pathstore.common.logger.PathStoreLogger;
-import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.exception.InvalidKeyspaceException;
 import pathstore.exception.InvalidStatementTypeException;
 import pathstore.exception.PathMigrateAlreadyGoneException;
 import pathstore.exception.PathStoreRemoteException;
 import pathstore.system.PathStorePrivilegedCluster;
-
-import com.datastax.driver.core.CloseFuture;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ColumnMetadata;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.RegularStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.querybuilder.Assignment;
-import com.datastax.driver.core.querybuilder.Clause;
-import com.datastax.driver.core.querybuilder.Delete;
-import com.datastax.driver.core.querybuilder.Insert;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
-import com.datastax.driver.core.querybuilder.Update;
-import com.datastax.driver.core.querybuilder.Update.Assignments;
-import com.google.common.util.concurrent.ListenableFuture;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class PathStoreSession implements Session {
 

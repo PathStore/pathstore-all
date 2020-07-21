@@ -2,8 +2,8 @@ package pathstore.system.deployment.commands;
 
 import pathstore.authentication.AuthenticationUtil;
 import pathstore.common.Constants;
-import pathstore.common.logger.PathStoreLogger;
-import pathstore.common.logger.PathStoreLoggerFactory;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.system.PathStorePrivilegedCluster;
 
 // assumed cassandra has started up

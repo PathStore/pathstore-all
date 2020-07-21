@@ -235,6 +235,11 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
     return (T) this;
   }
 
+  public T deleteNodeHistory(final int newNodeId, final int parentNodeId) {
+    this.commands.add(new DeleteNodeHistory(newNodeId, parentNodeId));
+    return (T) this;
+  }
+
   /**
    * This function will run some command remotely to start a container and then pass a wait object
    * to wait to determine if the process inside the container has successfully started up

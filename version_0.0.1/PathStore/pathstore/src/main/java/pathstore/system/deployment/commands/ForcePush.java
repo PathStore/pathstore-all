@@ -1,8 +1,8 @@
 package pathstore.system.deployment.commands;
 
 import com.datastax.driver.core.Session;
-import pathstore.common.logger.PathStoreLogger;
-import pathstore.common.logger.PathStoreLoggerFactory;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.PathStorePushServer;
 import pathstore.util.SchemaInfo;

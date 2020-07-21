@@ -1,4 +1,4 @@
-package pathstore.common.logger;
+package pathstore.system.logging;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

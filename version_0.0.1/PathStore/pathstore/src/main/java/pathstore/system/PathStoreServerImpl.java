@@ -19,8 +19,8 @@ package pathstore.system;
 
 import com.datastax.driver.core.Session;
 import pathstore.common.*;
-import pathstore.common.logger.PathStoreLogger;
-import pathstore.common.logger.PathStoreLoggerFactory;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
 import pathstore.system.deployment.deploymentFSM.PathStoreMasterDeploymentServer;
 import pathstore.system.deployment.deploymentFSM.PathStoreSlaveDeploymentServer;

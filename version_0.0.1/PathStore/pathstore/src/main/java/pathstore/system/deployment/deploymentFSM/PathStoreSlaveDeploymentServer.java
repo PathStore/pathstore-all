@@ -2,7 +2,6 @@ package pathstore.system.deployment.deploymentFSM;
 
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.jcraft.jsch.JSchException;
@@ -11,18 +10,17 @@ import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreThreadManager;
 import pathstore.common.Role;
-import pathstore.common.logger.LoggerLevel;
-import pathstore.common.logger.PathStoreLogger;
-import pathstore.common.logger.PathStoreLoggerFactory;
 import pathstore.system.deployment.commands.CommandError;
 import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstore.system.deployment.utilities.StartupUTIL;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
 
 import java.util.UUID;
 
-import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.SERVER_UUID;
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 import static pathstore.common.Constants.SERVERS_COLUMNS.*;
 
 /**
@@ -257,95 +255,11 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
       try {
 
         for (ICommand command :
-            StartupUTIL.initUnDeploymentList(sshUtil, ip, cassandraPort, entry.newNodeId)) {
+            StartupUTIL.initUnDeploymentList(sshUtil, ip, cassandraPort, entry.newNodeId, entry.parentNodeId)) {
           this.logger.info(
               PathStoreDeploymentUtils.formatParallelMessages(entry.newNodeId, command.toString()));
           command.execute();
         }
-
-        this.logger.info(
-            String.format("Deleting Available log dates and logs for node %d", entry.newNodeId));
-
-        Select getAvailableLogDates =
-            QueryBuilder.select()
-                .all()
-                .from(Constants.PATHSTORE_APPLICATIONS, Constants.AVAILABLE_LOG_DATES);
-        getAvailableLogDates.where(
-            QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId));
-
-        for (Row availableLogDateRow : this.session.execute(getAvailableLogDates)) {
-
-          // Delete date record for available dates
-          Delete availableLogDatesDelete =
-              QueryBuilder.delete()
-                  .from(Constants.PATHSTORE_APPLICATIONS, Constants.AVAILABLE_LOG_DATES);
-
-          String date = availableLogDateRow.getString(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE);
-
-          availableLogDatesDelete
-              .where(
-                  QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.NODE_ID, entry.newNodeId))
-              .and(QueryBuilder.eq(Constants.AVAILABLE_LOG_DATES_COLUMNS.DATE, date));
-
-          this.session.execute(availableLogDatesDelete);
-
-          // For all log levels delete all logs with the given date above
-          for (LoggerLevel level : LoggerLevel.values()) {
-            Select getLogs =
-                QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
-            getLogs
-                .where(QueryBuilder.eq(Constants.LOGS_COLUMNS.NODE_ID, entry.newNodeId))
-                .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.DATE, date))
-                .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, level.toString()));
-
-            for (Row logRow : this.session.execute(getLogs)) {
-              Delete logDelete =
-                  QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);
-              logDelete
-                  .where(QueryBuilder.eq(Constants.LOGS_COLUMNS.NODE_ID, entry.newNodeId))
-                  .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.DATE, date))
-                  .and(QueryBuilder.eq(Constants.LOGS_COLUMNS.LOG_LEVEL, level.toString()))
-                  .and(
-                      QueryBuilder.eq(
-                          Constants.LOGS_COLUMNS.COUNT,
-                          logRow.getInt(Constants.LOGS_COLUMNS.COUNT)));
-
-              this.session.execute(logDelete);
-            }
-          }
-        }
-
-        this.logger.info(
-            String.format("Deleting node schema records for node %d", entry.newNodeId));
-
-        Select nodeSchemas =
-            QueryBuilder.select()
-                .all()
-                .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-        nodeSchemas.where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.newNodeId));
-
-        for (Row row : this.session.execute(nodeSchemas)) {
-          Delete nodeSchemaDelete =
-              QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-          nodeSchemaDelete
-              .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.newNodeId))
-              .and(
-                  QueryBuilder.eq(
-                      Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME,
-                      row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME)));
-
-          this.session.execute(nodeSchemaDelete);
-        }
-
-        this.logger.info(String.format("Deleting deployment record for node %d", entry.newNodeId));
-
-        Delete deploymentDelete =
-            QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
-        deploymentDelete
-            .where(QueryBuilder.eq(PARENT_NODE_ID, entry.parentNodeId))
-            .and(QueryBuilder.eq(NEW_NODE_ID, entry.newNodeId));
-
-        this.session.execute(deploymentDelete);
 
         this.logger.info(String.format("Successfully un-deployed node %d", entry.newNodeId));
 
