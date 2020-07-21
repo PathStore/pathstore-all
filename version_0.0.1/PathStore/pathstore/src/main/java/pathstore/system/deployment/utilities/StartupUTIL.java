@@ -1,9 +1,7 @@
 package pathstore.system.deployment.utilities;
 
 import org.apache.commons.text.RandomStringGenerator;
-import pathstore.authentication.CredentialInfo;
 import pathstore.common.Constants;
-import pathstore.common.PathStoreProperties;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
@@ -12,8 +10,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import static org.apache.commons.text.CharacterPredicates.LETTERS;
 import static org.apache.commons.text.CharacterPredicates.DIGITS;
+import static org.apache.commons.text.CharacterPredicates.LETTERS;
 
 /** Things related to cassandra for startup that can't rely on pathstore properties file */
 public class StartupUTIL {
@@ -133,13 +131,13 @@ public class StartupUTIL {
             childDaemonPassword)
         .writeChildAccountToCassandra(nodeID, childDaemonUsername, childDaemonPassword)
         .writeCredentialsToChildNode( // Writes parent credentials to child node
-            CredentialInfo.getInstance().getCredential(PathStoreProperties.getInstance().NodeID),
+            parentNodeId,
             childSuperuserUsername,
             childSuperuserPassword,
             ip,
             cassandraPort)
         .writeCredentialsToChildNode( // Writes daemon account to child node
-            CredentialInfo.getInstance().getCredential(nodeID),
+            nodeID,
             childSuperuserUsername,
             childSuperuserPassword,
             ip,
