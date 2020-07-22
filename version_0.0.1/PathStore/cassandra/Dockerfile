@@ -8,4 +8,4 @@ WORKDIR /program
 
 RUN ls -l 
 
-CMD ["./bin/cassandra", "-f", "-R"]
+CMD ["./bin/cassandra", "-f", "-R", "-Dcassandra.superuser_setup_delay_ms=0"]

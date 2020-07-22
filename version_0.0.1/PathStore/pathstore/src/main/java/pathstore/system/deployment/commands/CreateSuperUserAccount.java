@@ -30,15 +30,6 @@ public class CreateSuperUserAccount implements ICommand {
 
   @Override
   public void execute() {
-
-    this.logger.info("Waiting for super user delay period to end");
-
-    try {
-      Thread.sleep(10 * 1000);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-
     PathStorePrivilegedCluster childCluster =
         PathStorePrivilegedCluster.getChildInstance(
             Constants.DEFAULT_CASSANDRA_USERNAME,
