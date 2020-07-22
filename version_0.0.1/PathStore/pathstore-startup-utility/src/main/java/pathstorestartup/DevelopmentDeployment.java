@@ -293,6 +293,13 @@ public class DevelopmentDeployment {
             childDaemonUsername,
             childDaemonPassword,
             false)
+        .grantDaemonPermissions(
+            childSuperuserUsername,
+            childSuperuserPassword,
+            ip,
+            cassandraPort,
+            childDaemonUsername,
+            Constants.PATHSTORE_APPLICATIONS)
         .writeCredentialsToRootNodeBootstrap(
             childSuperuserUsername,
             childSuperuserPassword,
