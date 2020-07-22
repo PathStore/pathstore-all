@@ -107,7 +107,20 @@ public class StartupUTIL {
             childSuperuserPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
-        .createSuperUserAccount(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
+        .creatRole(
+            Constants.DEFAULT_CASSANDRA_USERNAME,
+            Constants.DEFAULT_CASSANDRA_PASSWORD,
+            ip,
+            cassandraPort,
+            childSuperuserUsername,
+            childSuperuserPassword,
+            true)
+        .dropRole(
+            childSuperuserUsername,
+            childSuperuserPassword,
+            ip,
+            cassandraPort,
+            Constants.DEFAULT_CASSANDRA_USERNAME)
         .loadKeyspace(
             childSuperuserUsername,
             childSuperuserPassword,
@@ -122,13 +135,21 @@ public class StartupUTIL {
             cassandraPort,
             PathStoreSchemaLoaderUtils::loadApplicationSchema,
             Constants.PATHSTORE_APPLICATIONS)
-        .createDaemonAccount(
+        .creatRole(
             childSuperuserUsername,
             childSuperuserPassword,
             ip,
             cassandraPort,
             childDaemonUsername,
-            childDaemonPassword)
+            childDaemonPassword,
+            false)
+        .grantDaemonPermissions(
+            childSuperuserUsername,
+            childSuperuserPassword,
+            ip,
+            cassandraPort,
+            childDaemonUsername,
+            Constants.PATHSTORE_APPLICATIONS)
         .writeChildAccountToCassandra(nodeID, childDaemonUsername, childDaemonPassword)
         .writeCredentialsToChildNode( // Writes parent credentials to child node
             parentNodeId, childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)

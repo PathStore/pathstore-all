@@ -184,9 +184,41 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
     return (T) this;
   }
 
-  public T createSuperUserAccount(
-      final String username, final String password, final String ip, final int port) {
-    this.commands.add(new CreateSuperUserAccount(username, password, ip, port));
+  public T creatRole(
+      final String connectionUsername,
+      final String connectionPassword,
+      final String ip,
+      final int port,
+      final String roleName,
+      final String rolePassword,
+      final boolean isSuperUser) {
+    this.commands.add(
+        new CreateRole(
+            connectionUsername, connectionPassword, ip, port, roleName, rolePassword, isSuperUser));
+    return (T) this;
+  }
+
+  public T dropRole(
+      final String connectionUsername,
+      final String connectionPassword,
+      final String ip,
+      final int port,
+      final String roleName) {
+    this.commands.add(new DropRole(connectionUsername, connectionPassword, ip, port, roleName));
+    return (T) this;
+  }
+
+  public T grantDaemonPermissions(
+      final String connectionUsername,
+      final String connectionPassword,
+      final String ip,
+      final int port,
+      final String roleName,
+      final String keyspace) {
+    this.commands.add(
+        new GrantDaemonPermissions(
+            connectionUsername, connectionPassword, ip, port, roleName, keyspace));
+
     return (T) this;
   }
 
