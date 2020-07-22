@@ -1,6 +1,7 @@
 package pathstore.system.deployment.utilities;
 
 import org.apache.commons.text.RandomStringGenerator;
+import pathstore.authentication.CredentialInfo;
 import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
@@ -150,11 +151,21 @@ public class StartupUTIL {
             cassandraPort,
             childDaemonUsername,
             Constants.PATHSTORE_APPLICATIONS)
+        .createRole(
+            childSuperuserUsername,
+            childSuperuserPassword,
+            ip,
+            cassandraPort,
+            CredentialInfo.getInstance().getCredential(-1).username,
+            CredentialInfo.getInstance().getCredential(-1).password,
+            true)
         .writeChildAccountToCassandra(nodeID, childDaemonUsername, childDaemonPassword)
         .writeCredentialsToChildNode( // Writes parent credentials to child node
             parentNodeId, childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
         .writeCredentialsToChildNode( // Writes daemon account to child node
             nodeID, childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
+        .writeCredentialsToChildNode( // Writes network admin account
+            -1, childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
             new WaitForPathStore(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort))

@@ -150,6 +150,12 @@ public class DevelopmentDeployment {
     int rmiPort =
         Utils.askQuestionWithInvalidResponseInteger(
             this.scanner, BootstrapDeploymentConstants.RMI_PORT_PROMPT, null);
+    String networkAdminUsername =
+        Utils.askQuestionWithInvalidResponse(
+            this.scanner, BootstrapDeploymentConstants.NETWORK_ADMIN_USERNAME_PROMPT, null);
+    String networkAdminPassword =
+        Utils.askQuestionWithInvalidResponse(
+            this.scanner, BootstrapDeploymentConstants.NETWORK_ADMIN_PASSWORD_PROMPT, null);
 
     try {
       SSHUtil sshUtil = new SSHUtil(ip, username, password, sshPort);
@@ -172,6 +178,8 @@ public class DevelopmentDeployment {
                 rmiPort,
                 childSuperuserUsername,
                 childSuperuserPassword,
+                networkAdminUsername,
+                networkAdminPassword,
                 new FinalizeRootInstallation(
                     childSuperuserUsername,
                     childSuperuserPassword,
@@ -204,6 +212,8 @@ public class DevelopmentDeployment {
    * @param childSuperuserUsername new super user username {@link
    *     Constants#PATHSTORE_SUPERUSER_USERNAME}
    * @param childSuperuserPassword new super user password
+   * @param networkAdminUsername network admin username
+   * @param networkAdminPassword network admin password
    * @param finalizeRootInstallation finalization object to occur at the end of deployment
    * @return list of deployment commands to execute
    */
@@ -213,6 +223,8 @@ public class DevelopmentDeployment {
       final int rmiRegistryPort,
       final String childSuperuserUsername,
       final String childSuperuserPassword,
+      final String networkAdminUsername,
+      final String networkAdminPassword,
       final FinalizeRootInstallation finalizeRootInstallation) {
 
     String childDaemonUsername = Constants.PATHSTORE_DAEMON_USERNAME;
@@ -300,6 +312,14 @@ public class DevelopmentDeployment {
             cassandraPort,
             childDaemonUsername,
             Constants.PATHSTORE_APPLICATIONS)
+        .createRole(
+            childSuperuserUsername,
+            childSuperuserPassword,
+            ip,
+            cassandraPort,
+            networkAdminUsername,
+            networkAdminPassword,
+            true)
         .writeCredentialsToRootNodeBootstrap(
             childSuperuserUsername,
             childSuperuserPassword,
@@ -308,6 +328,14 @@ public class DevelopmentDeployment {
             1,
             childDaemonUsername,
             childDaemonPassword)
+        .writeCredentialsToRootNodeBootstrap(
+            childSuperuserUsername,
+            childSuperuserPassword,
+            ip,
+            cassandraPort,
+            -1,
+            networkAdminUsername,
+            networkAdminPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
             new WaitForPathStore(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort))

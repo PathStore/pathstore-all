@@ -26,6 +26,8 @@ public class BootstrapDeploymentConstants {
   public static final String PASSWORD_PROMPT = "Password: ";
   public static final String SSH_PORT_PROMPT = "SSH port: ";
   public static final String RMI_PORT_PROMPT = "RMI port (if unsure enter 1099): ";
+  public static final String NETWORK_ADMIN_USERNAME_PROMPT = "Network Admin Username: ";
+  public static final String NETWORK_ADMIN_PASSWORD_PROMPT = "Network Admin Password: ";
   public static final String COULD_NOT_CONNECT =
       "Could not connect to the server with the provided credentials please try again or quit with ctrl-c";
 

@@ -18,13 +18,14 @@
 package pathstore.system;
 
 import com.datastax.driver.core.Session;
+import pathstore.authentication.CredentialInfo;
 import pathstore.common.*;
-import pathstore.system.logging.PathStoreLogger;
-import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
 import pathstore.system.deployment.deploymentFSM.PathStoreMasterDeploymentServer;
 import pathstore.system.deployment.deploymentFSM.PathStoreSlaveDeploymentServer;
+import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerDaemon;
+import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.system.schemaFSM.PathStoreMasterSchemaServer;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
@@ -57,11 +58,17 @@ public class PathStoreServerImpl {
 
       logger.debug(String.format("Properties info:\n%s", PathStoreProperties.getInstance()));
 
-      logger.info("Initial connect to database");
+      if (PathStoreProperties.getInstance().credential != null)
+        logger.info("Loaded super user account successfully");
+      else logger.error("Couldn't load super user account");
 
       Session local = PathStorePrivilegedCluster.getSuperUserInstance().connect();
 
       logger.info("Super User connection was initialized successfully");
+
+      if (CredentialInfo.getInstance().getCredential(PathStoreProperties.getInstance().NodeID)
+          != null) logger.info("Loaded daemon account successfully");
+      else logger.error("Couldn't load daemon account");
 
       PathStorePrivilegedCluster.getDaemonInstance().connect();
 
