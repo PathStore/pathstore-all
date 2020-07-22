@@ -294,7 +294,7 @@ public class DevelopmentDeployment {
             childDaemonPassword,
             false)
         .writeCredentialsToRootNodeBootstrap(
-            childDaemonUsername,
+            childSuperuserUsername,
             childSuperuserPassword,
             ip,
             cassandraPort,
