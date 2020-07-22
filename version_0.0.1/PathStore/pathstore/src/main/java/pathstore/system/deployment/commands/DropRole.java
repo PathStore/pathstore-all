@@ -44,4 +44,9 @@ public class DropRole implements ICommand {
 
     childCluster.close();
   }
+
+  @Override
+  public String toString() {
+    return String.format("Dropping role with name %s", this.roleName);
+  }
 }

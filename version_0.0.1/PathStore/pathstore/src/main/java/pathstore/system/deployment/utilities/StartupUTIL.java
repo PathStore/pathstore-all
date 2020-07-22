@@ -107,7 +107,7 @@ public class StartupUTIL {
             childSuperuserPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
-        .creatRole(
+        .createRole(
             Constants.DEFAULT_CASSANDRA_USERNAME,
             Constants.DEFAULT_CASSANDRA_PASSWORD,
             ip,
@@ -135,7 +135,7 @@ public class StartupUTIL {
             cassandraPort,
             PathStoreSchemaLoaderUtils::loadApplicationSchema,
             Constants.PATHSTORE_APPLICATIONS)
-        .creatRole(
+        .createRole(
             childSuperuserUsername,
             childSuperuserPassword,
             ip,

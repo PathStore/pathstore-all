@@ -42,4 +42,10 @@ public class GrantDaemonPermissions implements ICommand {
 
     childCluster.close();
   }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "Granting read and write access on keyspace %s to role %s", this.keyspace, this.roleName);
+  }
 }

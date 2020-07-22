@@ -4,6 +4,7 @@ import pathstore.system.deployment.commands.*;
 import pathstore.system.deployment.utilities.DeploymentBuilder;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstorestartup.commands.CreateWebsitePropertiesFile;
+import pathstorestartup.commands.WriteCredentialsToRootNodeBootstrap;
 
 /**
  * Deployment functions specific to the startup utility
@@ -12,6 +13,7 @@ import pathstorestartup.commands.CreateWebsitePropertiesFile;
  */
 public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeploymentBuilder> {
 
+  /** @param remoteHostConnect root node connection */
   public BootstrapDeploymentBuilder(final SSHUtil remoteHostConnect) {
     super(remoteHostConnect);
   }
@@ -48,6 +50,8 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
    * @param ip ip of the root node
    * @param cassandraPort cassandra port of the root node
    * @param rmiPort rmi port of the root node
+   * @param username super user username for root node
+   * @param password super user password for root node
    */
   public BootstrapDeploymentBuilder generateWebsiteProperties(
       final String ip,
@@ -73,6 +77,39 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
 
     this.commands.add(
         new RemoveGeneratedPropertiesFile(BootstrapDeploymentConstants.LOCAL_TEMP_PROPERTIES_FILE));
+
+    return this;
+  }
+
+  /**
+   * This function is used to a record to the root nodes local_keyspace.auth table
+   *
+   * @param connectionUsername username to connect (super user account)
+   * @param connectionPassword password to connection
+   * @param ip ip to connect to
+   * @param port port to connect to
+   * @param nodeIdToWrite node id to write
+   * @param usernameToWrite username to write for root node
+   * @param passwordToWrite password to write for root node
+   * @return this
+   */
+  public BootstrapDeploymentBuilder writeCredentialsToRootNodeBootstrap(
+      final String connectionUsername,
+      final String connectionPassword,
+      final String ip,
+      final int port,
+      final int nodeIdToWrite,
+      final String usernameToWrite,
+      final String passwordToWrite) {
+    this.commands.add(
+        new WriteCredentialsToRootNodeBootstrap(
+            connectionUsername,
+            connectionPassword,
+            ip,
+            port,
+            nodeIdToWrite,
+            usernameToWrite,
+            passwordToWrite));
 
     return this;
   }

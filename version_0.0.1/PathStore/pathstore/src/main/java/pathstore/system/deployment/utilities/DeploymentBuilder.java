@@ -184,7 +184,7 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
     return (T) this;
   }
 
-  public T creatRole(
+  public T createRole(
       final String connectionUsername,
       final String connectionPassword,
       final String ip,
@@ -235,18 +235,6 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   public T writeChildAccountToCassandra(
       final int childNodeId, final String username, final String password) {
     this.commands.add(new WriteChildCredentialsToCassandra(childNodeId, username, password));
-    return (T) this;
-  }
-
-  public T createDaemonAccount(
-      final String username,
-      final String password,
-      final String ip,
-      final int port,
-      final String daemonUsername,
-      final String daemonPassword) {
-    this.commands.add(
-        new CreateDaemonAccount(username, password, ip, port, daemonUsername, daemonPassword));
     return (T) this;
   }
 

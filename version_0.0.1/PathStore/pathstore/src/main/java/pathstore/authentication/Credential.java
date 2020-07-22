@@ -1,6 +1,8 @@
 package pathstore.authentication;
 
 import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
 
 import java.util.Objects;
 
@@ -19,6 +21,18 @@ public final class Credential {
   public static Credential buildFromRow(final Row row) {
     return new Credential(
         row.getInt("node_id"), row.getString("username"), row.getString("password"));
+  }
+
+  public static Credential writeCredentialToRow(
+      final Session session, final Credential credential) {
+    if (session != null && credential != null)
+      session.execute(
+          QueryBuilder.insertInto("local_keyspace", "auth")
+              .value("node_id", credential.node_id)
+              .value("username", credential.username)
+              .value("password", credential.password));
+
+    return credential;
   }
 
   @Override

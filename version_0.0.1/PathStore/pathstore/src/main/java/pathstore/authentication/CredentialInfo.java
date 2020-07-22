@@ -43,13 +43,10 @@ public final class CredentialInfo {
 
   // will only work on server side because of pathstore.authentication restriction of user accounts
   public void add(final int nodeId, final String username, final String password) {
-    this.privSession.execute(
-        QueryBuilder.insertInto("local_keyspace", "auth")
-            .value("node_id", nodeId)
-            .value("username", username)
-            .value("password", password));
-
-    this.credentials.put(nodeId, new Credential(nodeId, username, password));
+    this.credentials.put(
+        nodeId,
+        Credential.writeCredentialToRow(
+            this.privSession, new Credential(nodeId, username, password)));
   }
 
   // only works if the node id already exists in memory

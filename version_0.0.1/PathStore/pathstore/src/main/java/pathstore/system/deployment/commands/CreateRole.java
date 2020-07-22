@@ -53,7 +53,7 @@ public class CreateRole implements ICommand {
 
     // TODO: Remove, this is temporary
     this.logger.info(
-        String.format("Generated Role with login %s %s", this.roleName, this.roleName));
+        String.format("Generated Role with login %s %s", this.roleName, this.rolePassword));
 
     childCluster.close();
   }
