@@ -9,11 +9,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-/**
- * This class is used to load pathstore.authentication credentials for the parent process, for the
- * administrator account and for all children nodes created by this process. The connection
- * information for this given node is written in the properties file to bootstrap this process
- */
 public final class CredentialInfo {
 
   private static CredentialInfo instance = null;
@@ -41,7 +36,6 @@ public final class CredentialInfo {
         .collect(Collectors.toConcurrentMap(credential -> credential.node_id, Function.identity()));
   }
 
-  // will only work on server side because of pathstore.authentication restriction of user accounts
   public void add(final int nodeId, final String username, final String password) {
     this.credentials.put(
         nodeId,
@@ -49,7 +43,6 @@ public final class CredentialInfo {
             this.privSession, new Credential(nodeId, username, password)));
   }
 
-  // only works if the node id already exists in memory
   public void remove(final int nodeId) {
     Credential credential = this.getCredential(nodeId);
 

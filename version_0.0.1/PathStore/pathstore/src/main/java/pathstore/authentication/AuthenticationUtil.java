@@ -1,6 +1,10 @@
 package pathstore.authentication;
 
 import com.datastax.driver.core.Session;
+import org.apache.commons.text.RandomStringGenerator;
+
+import static org.apache.commons.text.CharacterPredicates.DIGITS;
+import static org.apache.commons.text.CharacterPredicates.LETTERS;
 
 /**
  * This class is used to modify roles and grant / revoke permissions from a role.
@@ -8,6 +12,19 @@ import com.datastax.driver.core.Session;
  * @see CredentialInfo
  */
 public class AuthenticationUtil {
+
+  /**
+   * This function is used to generate an alpha numeric password of size 100
+   *
+   * @return random alpha number password of size 100
+   */
+  public static String generateAlphaNumericPassword() {
+    return new RandomStringGenerator.Builder()
+        .withinRange('0', 'z')
+        .filteredBy(LETTERS, DIGITS)
+        .build()
+        .generate(100);
+  }
 
   /**
    * This function is used to create a role on a cassandra cluster

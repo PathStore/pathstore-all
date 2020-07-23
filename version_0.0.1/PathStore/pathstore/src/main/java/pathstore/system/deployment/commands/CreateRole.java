@@ -2,12 +2,8 @@ package pathstore.system.deployment.commands;
 
 import pathstore.authentication.AuthenticationUtil;
 import pathstore.system.PathStorePrivilegedCluster;
-import pathstore.system.logging.PathStoreLogger;
-import pathstore.system.logging.PathStoreLoggerFactory;
 
 public class CreateRole implements ICommand {
-
-  private final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(CreateRole.class);
 
   private final String connectionUsername;
 
@@ -47,13 +43,8 @@ public class CreateRole implements ICommand {
             this.connectionUsername, this.connectionPassword, this.ip, this.port);
 
     // load new child role and delete old role.
-
     AuthenticationUtil.createRole(
         childCluster.connect(), this.roleName, this.isSuperUser, true, this.rolePassword);
-
-    // TODO: Remove, this is temporary
-    this.logger.info(
-        String.format("Generated Role with login %s %s", this.roleName, this.rolePassword));
 
     childCluster.close();
   }

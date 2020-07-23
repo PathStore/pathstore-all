@@ -1,6 +1,6 @@
 package pathstore.system.deployment.utilities;
 
-import org.apache.commons.text.RandomStringGenerator;
+import pathstore.authentication.AuthenticationUtil;
 import pathstore.authentication.CredentialInfo;
 import pathstore.common.Constants;
 import pathstore.common.Role;
@@ -10,9 +10,6 @@ import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-
-import static org.apache.commons.text.CharacterPredicates.DIGITS;
-import static org.apache.commons.text.CharacterPredicates.LETTERS;
 
 /** Things related to cassandra for startup that can't rely on pathstore properties file */
 public class StartupUTIL {
@@ -65,20 +62,10 @@ public class StartupUTIL {
       final int cassandraParentPort) {
 
     String childSuperuserUsername = Constants.PATHSTORE_SUPERUSER_USERNAME;
-    String childSuperuserPassword =
-        new RandomStringGenerator.Builder()
-            .withinRange('0', 'z')
-            .filteredBy(LETTERS, DIGITS)
-            .build()
-            .generate(10);
+    String childSuperuserPassword = AuthenticationUtil.generateAlphaNumericPassword();
 
     String childDaemonUsername = Constants.PATHSTORE_DAEMON_USERNAME;
-    String childDaemonPassword =
-        new RandomStringGenerator.Builder()
-            .withinRange('0', 'z')
-            .filteredBy(LETTERS, DIGITS)
-            .build()
-            .generate(10);
+    String childDaemonPassword = AuthenticationUtil.generateAlphaNumericPassword();
 
     return new DeploymentBuilder<>(sshUtil)
         .init()
