@@ -42,6 +42,8 @@ public class CreateRole implements ICommand {
         PathStorePrivilegedCluster.getChildInstance(
             this.connectionUsername, this.connectionPassword, this.ip, this.port);
 
+    System.out.println(String.format("Creating account %s %s", this.roleName, this.rolePassword));
+
     // load new child role and delete old role.
     AuthenticationUtil.createRole(
         childCluster.connect(), this.roleName, this.isSuperUser, true, this.rolePassword);

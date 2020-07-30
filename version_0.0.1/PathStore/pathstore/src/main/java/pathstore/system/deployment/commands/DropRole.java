@@ -34,6 +34,12 @@ public class DropRole implements ICommand {
 
   @Override
   public void execute() {
+
+    System.out.println(
+        String.format(
+            "Connecting with %s %s %s %d",
+            this.connectionUsername, this.connectionPassword, this.ip, this.port));
+
     PathStorePrivilegedCluster childCluster =
         PathStorePrivilegedCluster.getChildInstance(
             this.connectionUsername, this.connectionPassword, this.ip, this.port);
