@@ -46,7 +46,7 @@ public class DropRole implements ICommand {
 
     AuthenticationUtil.dropRole(childCluster.connect(), this.roleName);
 
-    this.logger.info(String.format("Dropped role %s", this.roleName));
+    this.logger.info(String.format("Dropped role %s for ip %s", this.roleName, this.ip));
 
     childCluster.close();
   }

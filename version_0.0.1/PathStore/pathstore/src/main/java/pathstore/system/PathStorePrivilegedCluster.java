@@ -17,14 +17,16 @@
  */
 package pathstore.system;
 
-import pathstore.authentication.Credential;
-import pathstore.authentication.CredentialInfo;
-import pathstore.common.PathStoreProperties;
-
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
+import pathstore.authentication.Credential;
+import pathstore.authentication.CredentialInfo;
+import pathstore.common.PathStoreProperties;
 import pathstore.util.ClusterCache;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class PathStorePrivilegedCluster {
 
@@ -62,7 +64,20 @@ public class PathStorePrivilegedCluster {
   // used during deployment
   public static synchronized PathStorePrivilegedCluster getChildInstance(
       final String username, final String password, final String ip, final int port) {
-    return clusterCache.getInstance(new Credential(-1, username, password), ip, port);
+    return clusterCache.getInstance(new Credential(ipToInt(ip), username, password), ip, port);
+  }
+
+  private static int ipToInt(final String ip) {
+    try {
+      int result = 0;
+
+      for (byte b : InetAddress.getByName(ip).getAddress()) result = result << 8 | (b & 0xFF);
+
+      return result;
+    } catch (UnknownHostException e) {
+      e.printStackTrace();
+    }
+    return -1;
   }
 
   private final Credential credential;
