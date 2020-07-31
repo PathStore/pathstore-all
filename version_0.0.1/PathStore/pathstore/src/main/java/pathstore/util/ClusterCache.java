@@ -1,13 +1,13 @@
 package pathstore.util;
 
-import pathstore.authentication.Credential;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.SocketOptions;
+import pathstore.authentication.Credential;
 import pathstore.system.PathStorePrivilegedCluster;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * This class is used by {@link pathstore.client.PathStoreCluster} and {@link
@@ -16,7 +16,7 @@ import java.util.Map;
  * @param <T>
  */
 public class ClusterCache<T> {
-  private final Map<Credential, T> cache = new HashMap<>();
+  private final ConcurrentMap<Credential, T> cache = new ConcurrentHashMap<>();
 
   private final DoubleConsumerFunction<Credential, Cluster, T> buildFunction;
 

@@ -47,6 +47,6 @@ public final class Credential {
 
   @Override
   public int hashCode() {
-    return Objects.hash(node_id, username, password);
+    return Objects.hash(this.node_id, this.username, this.password);
   }
 }

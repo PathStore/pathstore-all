@@ -62,7 +62,7 @@ public class PathStorePrivilegedCluster {
   }
 
   // used during deployment
-  public static synchronized PathStorePrivilegedCluster getChildInstance(
+  public static PathStorePrivilegedCluster getChildInstance(
       final String username, final String password, final String ip, final int port) {
     return clusterCache.getInstance(new Credential(ipToInt(ip), username, password), ip, port);
   }
