@@ -33,21 +33,21 @@ public class PathStorePrivilegedCluster {
   private static final ClusterCache<PathStorePrivilegedCluster> clusterCache =
       new ClusterCache<>(PathStorePrivilegedCluster::new);
 
-  public static synchronized PathStorePrivilegedCluster getSuperUserInstance() {
+  public static PathStorePrivilegedCluster getSuperUserInstance() {
     return clusterCache.getInstance(
         PathStoreProperties.getInstance().credential,
         PathStoreProperties.getInstance().CassandraIP,
         PathStoreProperties.getInstance().CassandraPort);
   }
 
-  public static synchronized PathStorePrivilegedCluster getDaemonInstance() {
+  public static PathStorePrivilegedCluster getDaemonInstance() {
     return clusterCache.getInstance(
         CredentialInfo.getInstance().getCredential(PathStoreProperties.getInstance().NodeID),
         PathStoreProperties.getInstance().CassandraIP,
         PathStoreProperties.getInstance().CassandraPort);
   }
 
-  public static synchronized PathStorePrivilegedCluster getParentInstance() {
+  public static PathStorePrivilegedCluster getParentInstance() {
     return clusterCache.getInstance(
         CredentialInfo.getInstance().getCredential(PathStoreProperties.getInstance().ParentID),
         PathStoreProperties.getInstance().CassandraParentIP,
@@ -55,7 +55,7 @@ public class PathStorePrivilegedCluster {
   }
 
   // Query ip and port of child node? Seems to be easier. For now we will leave it without
-  public static synchronized PathStorePrivilegedCluster getChildInstance(
+  public static PathStorePrivilegedCluster getChildInstance(
       final int childNodeId, final String ip, final int port) {
     return clusterCache.getInstance(
         CredentialInfo.getInstance().getCredential(childNodeId), ip, port);
