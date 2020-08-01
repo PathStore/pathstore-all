@@ -174,6 +174,14 @@ public final class Constants {
     public static final String LOG = "log";
   }
 
+  public static final String APPLICATION_CREDENTIALS = "application_credentials";
+
+  public static final class APPLICATION_CREDENTIALS_COLUMNS {
+    public static final String KEYSPACE_NAME = "keyspace_name";
+    public static final String USERNAME = "username";
+    public static final String PASSWORD = "password";
+  }
+
   public static final String APPS = "apps";
 
   public static final class APPS_COLUMNS {
