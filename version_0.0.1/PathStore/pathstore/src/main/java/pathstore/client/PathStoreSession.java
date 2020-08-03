@@ -102,7 +102,8 @@ public class PathStoreSession implements Session {
     // hossein here:
     statement.setFetchSize(1000);
 
-    return new PathStoreResultSet(this.session.execute(statement), keyspace, table, false);
+    return new PathStoreResultSet(
+        this.session, this.session.execute(statement), keyspace, table, false);
   }
 
   public ResultSet execute(final Statement statement) {
@@ -225,7 +226,7 @@ public class PathStoreSession implements Session {
 
     ResultSet set = this.session.execute(statement);
 
-    return new PathStoreResultSet(set, keyspace, table, allowFiltering);
+    return new PathStoreResultSet(this.session, set, keyspace, table, allowFiltering);
   }
 
   private void printDifference(final List<Clause> original, final List<Clause> stripped) {

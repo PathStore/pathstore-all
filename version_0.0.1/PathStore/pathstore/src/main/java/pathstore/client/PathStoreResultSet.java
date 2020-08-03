@@ -17,28 +17,28 @@
  */
 package pathstore.client;
 
+import com.datastax.driver.core.*;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import java.util.Iterator;
 import java.util.List;
-
-import com.datastax.driver.core.ColumnDefinitions;
-import com.datastax.driver.core.ExecutionInfo;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.google.common.util.concurrent.ListenableFuture;
 
 /** TODO: Comment */
 public class PathStoreResultSet implements ResultSet {
 
+  private final Session session;
   private final ResultSet resultSet;
   private final String keyspace;
   private final String table;
   private final boolean allowFiltering;
 
   public PathStoreResultSet(
+      final Session session,
       final ResultSet resultSet,
       final String keyspace,
       final String table,
       final boolean allowFiltering) {
+    this.session = session;
     this.resultSet = resultSet;
     this.keyspace = keyspace;
     this.table = table;
@@ -73,7 +73,7 @@ public class PathStoreResultSet implements ResultSet {
   public Iterator<Row> iterator() {
     // TODO Auto-generated method stub
     return new PathStoreIterator(
-        this.resultSet.iterator(), this.keyspace, this.table, this.allowFiltering);
+        this.session, this.resultSet.iterator(), this.keyspace, this.table, this.allowFiltering);
   }
 
   public ExecutionInfo getExecutionInfo() {

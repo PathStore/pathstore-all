@@ -17,25 +17,22 @@
  */
 package pathstore.client;
 
-import java.util.Collection;
-import java.util.Iterator;
-
+import com.datastax.driver.core.ArrayBackedRow;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.common.Constants;
-import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 
-import com.datastax.driver.core.ArrayBackedRow;
-import com.datastax.driver.core.Row;
+import java.util.Collection;
+import java.util.Iterator;
 
 /** TODO: Comment */
 public class PathStoreIterator implements Iterator<Row> {
 
-  private static final Session priv = PathStorePrivilegedCluster.getDaemonInstance().connect();
-
+  private final Session session;
   private final Iterator<Row> iter;
   private final String keyspace;
   private final String table;
@@ -46,10 +43,12 @@ public class PathStoreIterator implements Iterator<Row> {
   private ArrayBackedRow row = null;
 
   public PathStoreIterator(
+      final Session session,
       final Iterator<Row> iter,
       final String keyspace,
       final String table,
       final boolean allowFiltering) {
+    this.session = session;
     this.iter = iter;
     this.keyspace = keyspace;
     this.table = table;
@@ -142,7 +141,7 @@ public class PathStoreIterator implements Iterator<Row> {
             Constants.PATHSTORE_COLUMNS.PATHSTORE_VERSION,
             row.getUUID(Constants.PATHSTORE_COLUMNS.PATHSTORE_VERSION)));
 
-    return priv.execute(checkForNewerRows).one() != null;
+    return this.session.execute(checkForNewerRows).one() != null;
   }
 
   // TODO: Re add removal of pathstore hidden columns
