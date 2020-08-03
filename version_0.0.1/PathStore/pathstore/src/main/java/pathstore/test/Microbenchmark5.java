@@ -20,19 +20,9 @@ package pathstore.test;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
@@ -54,7 +44,7 @@ public class Microbenchmark5 {
 		//p1.RMIRegistryIP=p1.CassandraIP;
 		//PathStoreCluster cluster = new PathStoreCluster(p1);
 
-		PathStoreCluster cluster = PathStoreCluster.getInstance();
+		PathStoreCluster cluster = PathStoreCluster.getDaemonInstance();
 		Session sessionReader = cluster.connect();
 
 		for(int i=0; i<1;i++)

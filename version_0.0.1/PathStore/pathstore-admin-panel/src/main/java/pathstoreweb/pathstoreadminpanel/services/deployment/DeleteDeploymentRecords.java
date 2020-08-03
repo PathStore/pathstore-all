@@ -50,7 +50,7 @@ public class DeleteDeploymentRecords implements IService {
   /** Write all records to the database */
   private void delete() {
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     for (DeploymentRecord entry : payload.records) {
 

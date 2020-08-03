@@ -31,7 +31,7 @@ public class GetApplications implements IService {
    * @return list of available applications
    */
   private List<Application> getApplications() {
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     Select queryApplications =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);

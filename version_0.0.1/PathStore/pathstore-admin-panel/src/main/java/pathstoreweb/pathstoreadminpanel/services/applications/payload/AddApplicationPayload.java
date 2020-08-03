@@ -73,7 +73,7 @@ public final class AddApplicationPayload extends ValidatedPayload {
 
     String[] errors = {IMPROPER_APPLICATION_NAME_FORM, null};
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     // (2)
     if (this.applicationName.startsWith("pathstore_")) errors[0] = null;

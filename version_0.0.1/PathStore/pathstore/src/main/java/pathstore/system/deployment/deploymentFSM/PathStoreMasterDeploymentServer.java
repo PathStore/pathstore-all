@@ -31,7 +31,7 @@ public class PathStoreMasterDeploymentServer implements Runnable {
       PathStoreLoggerFactory.getLogger(PathStoreMasterDeploymentServer.class);
 
   /** Session used to interact with pathstore */
-  private final Session session = PathStoreCluster.getInstance().connect();
+  private final Session session = PathStoreCluster.getDaemonInstance().connect();
 
   /**
    * This daemon will transition rows that are WAITING_DEPLOYMENT to DEPLOYING. The steps are:

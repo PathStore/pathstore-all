@@ -63,7 +63,7 @@ public final class AddDeploymentRecordPayload extends ValidatedPayload {
     // (3)
     if (nodeIdSet.size() != this.records.size()) errors[1] = NODE_ID_DUPLICATES;
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     // (4) & (5) & (6)
     Select deploymentSelect =

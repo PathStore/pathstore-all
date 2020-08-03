@@ -42,7 +42,7 @@ public class AddServer implements IService {
   /** Write insert up to the table */
   private void writeServerRecord() {
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     Insert insert =
         QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS)

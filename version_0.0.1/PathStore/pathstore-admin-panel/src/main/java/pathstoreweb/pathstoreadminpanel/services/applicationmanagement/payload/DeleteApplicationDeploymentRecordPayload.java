@@ -44,7 +44,7 @@ public class DeleteApplicationDeploymentRecordPayload extends ValidatedPayload {
     if (records.stream().map(i -> i.keyspaceName).distinct().count() != 1)
       return new String[] {TO_MANY_KEYSPACES};
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     Select queryAllDeployment =
         QueryBuilder.select().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);

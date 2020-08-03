@@ -43,7 +43,7 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
   private static final int cassandraPort = 9052;
 
   /** Session used to interact with pathstore */
-  private final Session session = PathStoreCluster.getInstance().connect();
+  private final Session session = PathStoreCluster.getDaemonInstance().connect();
 
   /** Node id so you don't need to query the properties file every run */
   private final int nodeId = PathStoreProperties.getInstance().NodeID;

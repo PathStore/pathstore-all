@@ -69,7 +69,7 @@ public final class AddServerPayload extends ValidatedPayload {
 
     String[] errors = {null, null, null};
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     // (2) & (3)
     Select serverSelectAll =

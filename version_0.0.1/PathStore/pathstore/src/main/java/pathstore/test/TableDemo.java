@@ -56,7 +56,6 @@ package pathstore.test;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -220,7 +219,7 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
 
         public void insertRecords() {
 
-            PathStoreCluster cluster = PathStoreCluster.getInstance();
+            PathStoreCluster cluster = PathStoreCluster.getDaemonInstance();
             Session session = cluster.connect();
 
             for (int x = 0; x < data.length; x++) {
@@ -245,7 +244,7 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
         }
 
         public void updateRecord(int x, int y) {
-            PathStoreCluster cluster = PathStoreCluster.getInstance();
+            PathStoreCluster cluster = PathStoreCluster.getDaemonInstance();
             Session session = cluster.connect();
             Update update = QueryBuilder.update("pathstore_demo", "users");
 
@@ -267,7 +266,7 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
         }
 
         public void deleteRecord(int x) {
-            PathStoreCluster cluster = PathStoreCluster.getInstance();
+            PathStoreCluster cluster = PathStoreCluster.getDaemonInstance();
             Session session = cluster.connect();
 
             Delete delete = QueryBuilder.delete().from("pathstore_demo", "users");
@@ -279,7 +278,7 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
 
 
         public void loadModel() {
-            PathStoreCluster cluster = PathStoreCluster.getInstance();
+            PathStoreCluster cluster = PathStoreCluster.getDaemonInstance();
             Session session = cluster.connect();
 
             Select select = QueryBuilder.select().all().from("pathstore_demo", "users");
@@ -495,7 +494,7 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        PathStoreCluster cluster = PathStoreCluster.getInstance();
+        PathStoreCluster cluster = PathStoreCluster.getDaemonInstance();
         Session session = cluster.connect();
         Random rand = new Random();
 

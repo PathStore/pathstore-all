@@ -22,7 +22,7 @@ import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID;
  * @see pathstore.system.schemaFSM.PathStoreSlaveSchemaServer
  * @see pathstore.system.schemaFSM.PathStoreMasterSchemaServer
  * @implNote This is only to be run on the server side as it uses {@link
- *     PathStoreCluster#getInstance()}. This function does not connect to the child node at any
+ *     PathStoreCluster#getDaemonInstance()}. This function does not connect to the child node at any
  *     point.
  */
 public class DeleteNodeHistory implements ICommand {
@@ -50,7 +50,7 @@ public class DeleteNodeHistory implements ICommand {
    */
   @Override
   public void execute() {
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getDaemonInstance().connect();
 
     this.logger.info(
         String.format("Deleting Available log dates and logs for node %d", this.newNodeId));

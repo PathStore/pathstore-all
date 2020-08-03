@@ -27,7 +27,7 @@ import pathstore.client.PathStoreCluster;
  * working properly.
  */
 public class SecondaryIndexTest {
-  private static final Session psSession = PathStoreCluster.getInstance().connect();
+  private static final Session psSession = PathStoreCluster.getDaemonInstance().connect();
 
   public static void main(String[] args) {
 

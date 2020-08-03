@@ -27,7 +27,7 @@ public class GetAvailableLogDates implements IService {
   /** @return parsed response from database. The select statement filters based on the payload */
   private Map<Integer, List<String>> getAvailableLogDates() {
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     Select selectAll =
         QueryBuilder.select()

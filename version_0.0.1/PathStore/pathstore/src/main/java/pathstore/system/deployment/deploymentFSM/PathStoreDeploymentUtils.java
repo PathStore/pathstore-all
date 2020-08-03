@@ -35,7 +35,7 @@ public class PathStoreDeploymentUtils {
    */
   public static void updateState(
       final DeploymentEntry entry, final DeploymentProcessStatus status) {
-    Session clientSession = PathStoreCluster.getInstance().connect();
+    Session clientSession = PathStoreCluster.getDaemonInstance().connect();
 
     Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
     update

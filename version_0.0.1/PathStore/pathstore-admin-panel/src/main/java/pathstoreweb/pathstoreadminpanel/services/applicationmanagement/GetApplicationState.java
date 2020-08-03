@@ -16,9 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * TODO: Maybe only include states that aren't current at the {@link ProccessStatus#REMOVED} state
- *
- * <p>TODO: Maybe use a map from nodeid, to linked list of states
+ * TODO: Maybe use a map from nodeid, to linked list of states
  *
  * <p>This is the Application State service. It queries all nodes and what state they are in for
  * each application if applicable
@@ -44,7 +42,7 @@ public class GetApplicationState implements IService {
    */
   @SuppressWarnings("ALL")
   private List<NodeSchemaEntry> getApplicationStates() {
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     Select queryAllNodeSchemas =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);

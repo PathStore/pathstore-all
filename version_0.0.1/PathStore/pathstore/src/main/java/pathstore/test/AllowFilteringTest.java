@@ -21,7 +21,7 @@ import pathstore.common.Constants;
 public class AllowFilteringTest {
   public static void main(String[] args) {
 
-    Session psSession = PathStoreCluster.getInstance().connect();
+    Session psSession = PathStoreCluster.getDaemonInstance().connect();
 
     Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
     select.where(QueryBuilder.eq("process_status", args[0]));

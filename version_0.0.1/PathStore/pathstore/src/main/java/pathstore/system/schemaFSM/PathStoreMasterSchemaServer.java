@@ -30,7 +30,7 @@ public class PathStoreMasterSchemaServer implements Runnable {
       PathStoreLoggerFactory.getLogger(PathStoreMasterSchemaServer.class);
 
   /** Session used to interact with pathstore */
-  private final Session session = PathStoreCluster.getInstance().connect();
+  private final Session session = PathStoreCluster.getDaemonInstance().connect();
 
   /**
    * TODO: Removal

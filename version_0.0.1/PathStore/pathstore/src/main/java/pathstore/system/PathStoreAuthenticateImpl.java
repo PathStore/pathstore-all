@@ -17,21 +17,9 @@
  ***********/
 package pathstore.system;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.rmi.AlreadyBoundException;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -99,7 +87,7 @@ public class PathStoreAuthenticateImpl implements PathStoreAuthenticate {
 
         } else {
 
-            PathStoreSession s = PathStoreCluster.getInstance().connect();
+            PathStoreSession s = PathStoreCluster.getDaemonInstance().connect();
 
             Select slct = QueryBuilder.select().from("pathstore_applications", "session");
             slct.where(QueryBuilder.eq("sid", sid));
@@ -132,7 +120,7 @@ public class PathStoreAuthenticateImpl implements PathStoreAuthenticate {
     }
 
     public String getUser(String sid) {
-        PathStoreSession s = PathStoreCluster.getInstance().connect();
+        PathStoreSession s = PathStoreCluster.getDaemonInstance().connect();
 
         Select slct = QueryBuilder.select().from("pathstore_applications", "session");
         slct.where(QueryBuilder.eq("sid", sid));
@@ -146,7 +134,7 @@ public class PathStoreAuthenticateImpl implements PathStoreAuthenticate {
 
 
     public boolean isAuthenticated(String sid) {
-        PathStoreSession s = PathStoreCluster.getInstance().connect();
+        PathStoreSession s = PathStoreCluster.getDaemonInstance().connect();
 
         Select slct = QueryBuilder.select().from("pathstore_applications", "session");
         slct.where(QueryBuilder.eq("sid", sid));

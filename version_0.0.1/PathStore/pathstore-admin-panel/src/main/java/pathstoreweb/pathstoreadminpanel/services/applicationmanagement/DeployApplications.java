@@ -37,7 +37,7 @@ public class DeployApplications implements IService {
 
   /** Writes all records to the table with WAITING_INSTALL status */
   private void writeRecords() {
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     for (ApplicationRecord record : this.payload.records) {
 

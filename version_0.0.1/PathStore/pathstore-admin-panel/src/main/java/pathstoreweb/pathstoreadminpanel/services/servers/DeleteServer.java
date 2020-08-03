@@ -43,7 +43,7 @@ public class DeleteServer implements IService {
   /** Simply deletes the server record from the table based on what uuid was passed */
   private void deleteServer() {
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     Delete delete = QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
     delete.where(

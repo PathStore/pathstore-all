@@ -40,7 +40,7 @@ public class UpdateDeploymentRecord implements IService {
 
   /** Updates the given record to the status of deploying */
   private void update() {
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
     update

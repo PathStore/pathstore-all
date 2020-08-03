@@ -63,7 +63,7 @@ public final class GetLogRecordsPayload extends ValidatedPayload {
 
     String[] errors = {INVALID_NODE_ID, INVALID_DATE, null};
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     // (2)
     Select deploymentSelect =

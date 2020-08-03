@@ -33,7 +33,7 @@ public class PathStoreLoggerDaemon extends Thread {
   private String currentDate;
 
   public PathStoreLoggerDaemon() {
-    this.session = PathStoreCluster.getInstance().connect();
+    this.session = PathStoreCluster.getDaemonInstance().connect();
 
     this.currentDate = this.getAndSetDate();
   }

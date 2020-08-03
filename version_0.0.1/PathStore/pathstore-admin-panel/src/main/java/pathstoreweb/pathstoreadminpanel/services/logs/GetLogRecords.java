@@ -40,7 +40,7 @@ public class GetLogRecords implements IService {
    * @return list of messages filtered by {@link #payload} properties
    */
   private List<String> getLogs() {
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     Select selectFilteredLogs =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);

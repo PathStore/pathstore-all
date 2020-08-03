@@ -38,7 +38,7 @@ public class UnDeployApplications implements IService {
 
   /** Writes all records to the table with the WAITING_REMOVE status */
   private void writeRecords() {
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     for (ApplicationRecord record : this.payload.records) {
       Insert insert =

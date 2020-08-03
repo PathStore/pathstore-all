@@ -4,6 +4,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.springframework.http.ResponseEntity;
+import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
@@ -86,18 +87,18 @@ public class AddApplication implements IService {
 
   /** This function is used to write the master password to the application credentials table */
   private void writeMasterPassword() {
-    Session session = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
-    session.execute(
+    Insert insert =
         QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.APPLICATION_CREDENTIALS)
             .value(
                 Constants.APPLICATION_CREDENTIALS_COLUMNS.KEYSPACE_NAME,
                 this.addApplicationPayload.applicationName)
             .value(
                 Constants.APPLICATION_CREDENTIALS_COLUMNS.PASSWORD,
-                this.addApplicationPayload.masterPassword)
-            .value(Constants.PATHSTORE_COLUMNS.PATHSTORE_VERSION, QueryBuilder.now())
-            .value(Constants.PATHSTORE_COLUMNS.PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now()));
+                this.addApplicationPayload.masterPassword);
+
+    session.execute(insert);
   }
 
   /**

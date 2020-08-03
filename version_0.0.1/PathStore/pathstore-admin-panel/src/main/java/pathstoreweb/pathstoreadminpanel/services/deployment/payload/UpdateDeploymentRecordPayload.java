@@ -33,7 +33,7 @@ public final class UpdateDeploymentRecordPayload extends ValidatedPayload {
 
     String[] errors = {INVALID_FAILED_ENTRY};
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     // (1)
     Select select =

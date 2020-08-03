@@ -37,7 +37,7 @@ public class GetDeploymentRecords implements IService {
    */
   private List<DeploymentEntry> getRecords() {
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     Select queryAllRecords =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);

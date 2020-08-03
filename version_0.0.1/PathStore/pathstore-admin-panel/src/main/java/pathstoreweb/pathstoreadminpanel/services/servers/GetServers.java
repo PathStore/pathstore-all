@@ -32,7 +32,7 @@ public class GetServers implements IService {
 
     LinkedList<Server> listOfServers = new LinkedList<>();
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
     Select queryAllServers =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
 

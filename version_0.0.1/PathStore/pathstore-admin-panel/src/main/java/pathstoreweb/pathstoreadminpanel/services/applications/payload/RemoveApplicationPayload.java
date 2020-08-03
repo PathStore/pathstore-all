@@ -38,7 +38,7 @@ public class RemoveApplicationPayload extends ValidatedPayload {
 
     String[] errors = {APPLICATION_DOESNT_EXIST, null};
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     // (2)
     Select appsSelect =

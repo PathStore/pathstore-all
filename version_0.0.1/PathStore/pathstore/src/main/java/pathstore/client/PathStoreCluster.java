@@ -30,7 +30,14 @@ public class PathStoreCluster {
   private static final ClusterCache<PathStoreCluster> clusterCache =
       new ClusterCache<>(PathStoreCluster::new);
 
-  public static synchronized PathStoreCluster getInstance() {
+  public static PathStoreCluster getSuperUserInstance() {
+    return clusterCache.getInstance(
+        PathStoreProperties.getInstance().credential,
+        PathStoreProperties.getInstance().CassandraIP,
+        PathStoreProperties.getInstance().CassandraPort);
+  }
+
+  public static PathStoreCluster getDaemonInstance() {
     return clusterCache.getInstance(
         CredentialInfo.getInstance().getCredential(PathStoreProperties.getInstance().NodeID),
         PathStoreProperties.getInstance().CassandraIP,

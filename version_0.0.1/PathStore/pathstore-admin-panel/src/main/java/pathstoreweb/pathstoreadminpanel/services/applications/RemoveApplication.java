@@ -38,7 +38,7 @@ public class RemoveApplication implements IService {
 
   /** Delete the given application record from the table */
   private void removeApplication() {
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     Delete removeApp = QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);
     removeApp.where(

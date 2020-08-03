@@ -26,7 +26,7 @@ public class CLIDemo {
 
     @Override
     public void run() {
-      PathStoreCluster pathStoreCluster = PathStoreCluster.getInstance();
+      PathStoreCluster pathStoreCluster = PathStoreCluster.getDaemonInstance();
       Session session = pathStoreCluster.connect();
       Scanner sc = new Scanner(System.in);
       while (this.run) {

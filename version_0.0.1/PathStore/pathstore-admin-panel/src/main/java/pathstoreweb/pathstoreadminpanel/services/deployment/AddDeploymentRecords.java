@@ -51,7 +51,7 @@ public class AddDeploymentRecords implements IService {
    */
   private List<DeploymentEntry> writeEntries() {
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     LinkedList<DeploymentEntry> linkedList = new LinkedList<>();
 

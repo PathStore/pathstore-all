@@ -38,7 +38,7 @@ public class UpdateServer implements IService {
   /** Set all rows with values from website as there is no need to make a read and then a select */
   private void updateServer() {
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
 

@@ -44,7 +44,7 @@ public class DeleteDeploymentRecordPayload extends ValidatedPayload {
     Map<Integer, DeploymentRecord> mapFromIdToRecord =
         this.records.stream().collect(Collectors.toMap(k -> k.newNodeId, Function.identity()));
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     Select deploymentQuery =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);

@@ -25,7 +25,7 @@ public class ClientAuthenticationUtil {
    * @return true if loaded else false
    */
   public static boolean isApplicationNotLoaded(final String applicationName) {
-    Session pathStoreSession = PathStoreCluster.getInstance().connect();
+    Session pathStoreSession = PathStoreCluster.getDaemonInstance().connect();
 
     Select queryNodeSchemasTable =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
@@ -53,7 +53,7 @@ public class ClientAuthenticationUtil {
    */
   public static boolean isComboInvalid(final String applicationName, final String password) {
 
-    Session pathStoreSession = PathStoreCluster.getInstance().connect();
+    Session pathStoreSession = PathStoreCluster.getDaemonInstance().connect();
 
     Select queryCombo =
         QueryBuilder.select()

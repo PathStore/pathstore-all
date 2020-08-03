@@ -25,17 +25,14 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 
 import pathstore.client.PathStoreCluster;
-import pathstore.client.PathStoreResultSet;
 import pathstore.common.PathStoreProperties;
 
 public class Microbenchmark1 {
@@ -85,7 +82,7 @@ public class Microbenchmark1 {
 		//PathStoreProperties p1 = new PathStoreProperties();
 		//p1.CassandraIP="10.70.20.7";
 		//p1.RMIRegistryIP=p1.CassandraIP;
-		PathStoreCluster cluster = PathStoreCluster.getInstance();
+		PathStoreCluster cluster = PathStoreCluster.getDaemonInstance();
 		Session session = cluster.connect();
 
 //		PathStoreProperties p2 = new PathStoreProperties();

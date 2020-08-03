@@ -86,7 +86,7 @@ public final class UpdateServerPayload extends ValidatedPayload {
 
     String[] errors = {SERVER_UUID_DOESNT_EXIST, null, null, null, null};
 
-    Session session = PathStoreCluster.getInstance().connect();
+    Session session = PathStoreCluster.getSuperUserInstance().connect();
 
     // (2) & (3) & (4)
     Select serverSelect =
