@@ -1,13 +1,13 @@
 package pathstore.system;
 
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import pathstore.authentication.AuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCache;
 import pathstore.exception.PathMigrateAlreadyGoneException;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
@@ -18,7 +18,8 @@ import java.util.UUID;
  *     there is a corresponding {@link #unRegisterApplication(String, String, String)}
  */
 public class PathStoreServerImplRMI implements PathStoreServer {
-  private final Logger logger = LoggerFactory.getLogger(PathStoreServerImplRMI.class);
+  private final PathStoreLogger logger =
+      PathStoreLoggerFactory.getLogger(PathStoreServerImplRMI.class);
 
   /** Static instance so that it doesn't get gc'd */
   private static PathStoreServerImplRMI instance;
