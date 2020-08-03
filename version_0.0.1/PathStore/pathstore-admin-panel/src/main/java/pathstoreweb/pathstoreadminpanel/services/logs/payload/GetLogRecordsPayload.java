@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.common.logger.LoggerLevel;
+import pathstore.system.logging.LoggerLevel;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
 import java.util.Arrays;

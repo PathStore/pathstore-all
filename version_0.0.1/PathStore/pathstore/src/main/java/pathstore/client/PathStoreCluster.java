@@ -37,13 +37,6 @@ public class PathStoreCluster {
         PathStoreProperties.getInstance().CassandraPort);
   }
 
-  public static synchronized PathStoreCluster getInstance(final Credential credential) {
-    return clusterCache.getInstance(
-        credential,
-        PathStoreProperties.getInstance().CassandraIP,
-        PathStoreProperties.getInstance().CassandraPort);
-  }
-
   private final Credential credential;
 
   private final Cluster cluster;

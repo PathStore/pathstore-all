@@ -32,9 +32,9 @@
     <dependencies>
 
         <dependency>
-            <groupId>com.opencsv</groupId>
-            <artifactId>opencsv</artifactId>
-            <version>4.1</version>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>LATEST</version>
         </dependency>
 
         <dependency>
@@ -233,6 +233,22 @@
                                 </transformer>
                             </transformers>
                             <finalName>secondary_index_test</finalName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>build-fourth</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>pathstore.test.ClientAuthenticationTest</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>client_auth_test</finalName>
                         </configuration>
                     </execution>
                 </executions>

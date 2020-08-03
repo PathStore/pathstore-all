@@ -42,10 +42,12 @@ export const ApplicationCreation: FunctionComponent = () => {
 
         const applicationName = event.target.elements.application.value.trim();
 
+        const masterPassword = event.target.elements.password.value.trim();
+
         if (submissionErrorModal.show) {
 
-            if (applicationName.trim() === "" || file == null) {
-                submissionErrorModal.show("You must submit an application and upload a schema");
+            if (applicationName === "" || file == null || masterPassword === "") {
+                submissionErrorModal.show("You must submit an application, password, and upload a schema");
                 return;
             }
 
@@ -53,6 +55,7 @@ export const ApplicationCreation: FunctionComponent = () => {
 
             formData.append("application_name", applicationName);
             formData.append("applicationSchema", file);
+            formData.append("master_password", masterPassword);
 
             if (loadingModal.show && loadingModal.close && errorModal.show) {
                 loadingModal.show();
@@ -86,6 +89,13 @@ export const ApplicationCreation: FunctionComponent = () => {
                 <Form.Text>
                     Make sure your application name starts with 'pathstore_' and your cql file / keyspace name
                     matches the application name
+                </Form.Text>
+            </Form.Group>
+            <Form.Group controlId="password">
+                <Form.Label>Application Name</Form.Label>
+                <Form.Control type="plaintext" placeholder="Enter master password here"/>
+                <Form.Text>
+                    This password will be used to allow your clients to connect to a pathstore node.
                 </Form.Text>
             </Form.Group>
             <Form.Group>

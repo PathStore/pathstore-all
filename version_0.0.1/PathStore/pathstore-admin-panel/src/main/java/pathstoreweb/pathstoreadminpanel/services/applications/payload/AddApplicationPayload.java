@@ -29,14 +29,18 @@ public final class AddApplicationPayload extends ValidatedPayload {
   /** Schema file to load */
   private MultipartFile applicationSchema;
 
+  /** Master password for application */
+  public final String masterPassword;
+
   /**
    * The multipart file is not in the constructor because spring requires a setter for it (Doesn't
    * make any sense)
    *
    * @param application_name {@link #applicationName}
    */
-  public AddApplicationPayload(final String application_name) {
+  public AddApplicationPayload(final String application_name, final String master_password) {
     this.applicationName = application_name;
+    this.masterPassword = master_password;
   }
 
   /** @param applicationSchema passed by the spring http request handler */
@@ -64,7 +68,7 @@ public final class AddApplicationPayload extends ValidatedPayload {
   protected String[] calculateErrors() {
 
     // (1)
-    if (this.bulkNullCheck(this.applicationName, this.applicationSchema))
+    if (this.bulkNullCheck(this.applicationName, this.applicationSchema, this.masterPassword))
       return new String[] {WRONG_SUBMISSION_FORMAT};
 
     String[] errors = {IMPROPER_APPLICATION_NAME_FORM, null};

@@ -51,7 +51,7 @@ public class ClusterCache<T> {
    * @return connected cluster (potentially throws {@link
    *     com.datastax.driver.core.exceptions.NoHostAvailableException})
    */
-  private static Cluster createCluster(
+  public static Cluster createCluster(
       final String ip, final int port, final String username, final String password) {
     return new Cluster.Builder()
         .addContactPoints(ip)

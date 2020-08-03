@@ -65,6 +65,21 @@
               <finalName>secondary_index_test</finalName>
             </configuration>
           </execution>
+          <execution>
+            <id>build-fourth</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer>
+                  <mainClass>pathstore.test.ClientAuthenticationTest</mainClass>
+                </transformer>
+              </transformers>
+              <finalName>client_auth_test</finalName>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
     </plugins>

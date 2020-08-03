@@ -17,22 +17,18 @@
  */
 package pathstore.client;
 
-import java.io.IOException;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
-import pathstore.common.Timer;
 import pathstore.exception.PathMigrateAlreadyGoneException;
 import pathstore.exception.PathStoreRemoteException;
+
+import java.io.IOException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.util.Optional;
+import java.util.UUID;
 
 /** TODO: Comment */
 public class PathStoreServerClient {
@@ -83,7 +79,6 @@ public class PathStoreServerClient {
     } catch (Exception e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
-      System.out.println(e);
       throw new PathStoreRemoteException();
     }
   }
@@ -129,5 +124,25 @@ public class PathStoreServerClient {
       e.printStackTrace();
       throw new PathStoreRemoteException();
     }
+  }
+
+  public Optional<String> registerApplication(final String applicationName, final String password) {
+    try {
+      return Optional.ofNullable(this.stub.registerApplication(applicationName, password));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return Optional.empty();
+  }
+
+  public Optional<String> unRegisterApplication(
+      final String applicationName, final String clientUsername, final String clientPassword) {
+    try {
+      return Optional.ofNullable(
+          this.stub.unRegisterApplication(applicationName, clientUsername, clientPassword));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return Optional.empty();
   }
 }

@@ -36,7 +36,7 @@ public class AddApplication implements IService {
   /** @param payload {@link #addApplicationPayload} */
   public AddApplication(final AddApplicationPayload payload) {
     this.addApplicationPayload = payload;
-    this.session = PathStorePrivilegedCluster.getInstance().connect();
+    this.session = PathStorePrivilegedCluster.getSuperUserInstance().connect();
     this.schemaInfo = SchemaInfo.getInstance();
   }
 
@@ -74,6 +74,7 @@ public class AddApplication implements IService {
   public ResponseEntity<String> response() {
     try {
       this.loadSchemas(this.getUserPassSchema());
+      this.writeMasterPassword();
     } catch (Exception e) {
       this.schemaInfo.removeKeyspace(this.addApplicationPayload.applicationName);
       e.printStackTrace();
@@ -81,6 +82,22 @@ public class AddApplication implements IService {
     }
 
     return new AddApplicationFormatter(this.addApplicationPayload.applicationName).format();
+  }
+
+  /** This function is used to write the master password to the application credentials table */
+  private void writeMasterPassword() {
+    Session session = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+
+    session.execute(
+        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.APPLICATION_CREDENTIALS)
+            .value(
+                Constants.APPLICATION_CREDENTIALS_COLUMNS.KEYSPACE_NAME,
+                this.addApplicationPayload.applicationName)
+            .value(
+                Constants.APPLICATION_CREDENTIALS_COLUMNS.PASSWORD,
+                this.addApplicationPayload.masterPassword)
+            .value(Constants.PATHSTORE_COLUMNS.PATHSTORE_VERSION, QueryBuilder.now())
+            .value(Constants.PATHSTORE_COLUMNS.PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now()));
   }
 
   /**
@@ -117,7 +134,7 @@ public class AddApplication implements IService {
 
       insertApplicationSchema(
           this.addApplicationPayload.applicationName,
-          PathStorePrivilegedCluster.getInstance()
+          PathStorePrivilegedCluster.getSuperUserInstance()
               .getMetadata()
               .getKeyspace(table.keyspace_name)
               .exportAsString());

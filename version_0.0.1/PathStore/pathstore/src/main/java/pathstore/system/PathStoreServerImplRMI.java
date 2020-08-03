@@ -1,7 +1,10 @@
 package pathstore.system;
 
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pathstore.authentication.AuthenticationUtil;
+import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCache;
 import pathstore.exception.PathMigrateAlreadyGoneException;
@@ -10,7 +13,10 @@ import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.UUID;
 
-/** TODO: Comment */
+/**
+ * @implNote We assume that forever every distinct {@link #registerApplication(String, String)}
+ *     there is a corresponding {@link #unRegisterApplication(String, String, String)}
+ */
 public class PathStoreServerImplRMI implements PathStoreServer {
   private final Logger logger = LoggerFactory.getLogger(PathStoreServerImplRMI.class);
 
@@ -80,5 +86,80 @@ public class PathStoreServerImplRMI implements PathStoreServer {
     } catch (ClassNotFoundException | IOException e) {
       throw new RemoteException(e.getMessage());
     }
+  }
+
+  /**
+   * @param applicationName application name to register client for
+   * @param password application password. This must be valid in comparison to the password given on
+   *     application registration or after altering
+   * @return JSON String up to 3 params, status, username, password. Response must check status
+   *     before username and password as those fields may not exist
+   * @see pathstore.client.PathStoreClientAuthenticatedCluster
+   */
+  @Override
+  public String registerApplication(final String applicationName, final String password) {
+    logger.info(
+        String.format("Register application credentials for application %s", applicationName));
+
+    if (ClientAuthenticationUtil.isApplicationNotLoaded(applicationName)) {
+      logger.info(
+          String.format(
+              "Registration of application credentials for application %s has failed as the provided application name is not loaded on the give node",
+              applicationName));
+      return new JSONObject().put("status", "invalid").toString();
+    }
+
+    if (ClientAuthenticationUtil.isComboInvalid(applicationName, password)) {
+      logger.info(
+          String.format(
+              "Registration of application credentials for application %s has failed as the provided credentials do not match the master application credentials",
+              applicationName));
+      return new JSONObject().put("status", "invalid").toString();
+    }
+
+    String clientUsername, clientPassword;
+
+    clientUsername = AuthenticationUtil.generateAlphaNumericPassword();
+    clientPassword = AuthenticationUtil.generateAlphaNumericPassword();
+
+    ClientAuthenticationUtil.createClientAccount(applicationName, clientUsername, clientPassword);
+
+    return new JSONObject()
+        .put("status", "valid")
+        .put("username", clientUsername)
+        .put("password", clientPassword)
+        .toString();
+  }
+
+  /**
+   * This function is used to unregister a client application
+   *
+   * @param applicationName application name
+   * @param clientUsername clientUsername generated from register call
+   * @param clientPassword clientPassword generated from register call
+   * @return status: {invalid, valid}
+   * @implNote Assumes that {@link #registerApplication(String, String)} was called with the same
+   *     parameters before this function was called.
+   * @see pathstore.client.PathStoreClientAuthenticatedCluster
+   */
+  @Override
+  public String unRegisterApplication(
+      final String applicationName, final String clientUsername, final String clientPassword) {
+
+    logger.info(
+        String.format("Unregistering application credential for application %s", applicationName));
+
+    if (ClientAuthenticationUtil.isClientAccountInvalidInLocalTable(
+        applicationName, clientUsername, clientPassword)) {
+      logger.info(
+          String.format(
+              "Unregistering of application credentials for application %s has failed as the provided credentials do not match any registered credentials",
+              applicationName));
+      return new JSONObject().put("status", "invalid").toString();
+    }
+
+    ClientAuthenticationUtil.deleteClientAccount(applicationName, clientUsername, clientPassword);
+
+    return new JSONObject().put("status", "valid").toString();
   }
 }

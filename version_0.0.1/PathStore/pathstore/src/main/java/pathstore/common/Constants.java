@@ -178,7 +178,6 @@ public final class Constants {
 
   public static final class APPLICATION_CREDENTIALS_COLUMNS {
     public static final String KEYSPACE_NAME = "keyspace_name";
-    public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
   }
 
