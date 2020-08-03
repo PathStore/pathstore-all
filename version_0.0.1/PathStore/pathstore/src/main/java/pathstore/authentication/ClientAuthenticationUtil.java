@@ -86,7 +86,7 @@ public class ClientAuthenticationUtil {
 
     superUserSession.execute(
         QueryBuilder.insertInto("local_keyspace", "client_auth")
-            .value("keyspace", applicationName)
+            .value("keyspace_name", applicationName)
             .value("username", clientUsername)
             .value("password", clientPassword));
   }
@@ -110,7 +110,7 @@ public class ClientAuthenticationUtil {
             QueryBuilder.select()
                 .all()
                 .from("local_keyspace", "client_auth")
-                .where(QueryBuilder.eq("keyspace", applicationName))))
+                .where(QueryBuilder.eq("keyspace_name", applicationName))))
       if (row.getString("username").equals(clientUsername)
           && row.getString("password").equals(clientPassword)) return false;
 
@@ -132,7 +132,7 @@ public class ClientAuthenticationUtil {
     superUserSession.execute(
         QueryBuilder.delete()
             .from("local_keyspace", "client_auth")
-            .where(QueryBuilder.eq("keyspace", applicationName))
+            .where(QueryBuilder.eq("keyspace_name", applicationName))
             .and(QueryBuilder.eq("username", clientUsername))
             .and(QueryBuilder.eq("password", clientPassword)));
 
