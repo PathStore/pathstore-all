@@ -10,6 +10,8 @@ import pathstore.common.PathStoreProperties;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.schemaFSM.ProccessStatus;
 
+import java.util.Optional;
+
 /**
  * This util function encompasses all functions required to register and unregister a temporary
  * client application account.
@@ -69,6 +71,26 @@ public class ClientAuthenticationUtil {
   }
 
   /**
+   * This function is used to get an exiting client account from the client auth table, if it exists
+   *
+   * @param applicationName application name given
+   * @return optional credential. If it doesn't exist returns empty
+   */
+  public static Optional<Credential> getExistingClientAccount(final String applicationName) {
+    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+
+    for (Row row :
+        superUserSession.execute(
+            QueryBuilder.select()
+                .all()
+                .from("local_keyspace", "client_auth")
+                .where(QueryBuilder.eq("keyspace_name", applicationName))))
+      return Optional.of(new Credential(-1, row.getString("username"), row.getString("password")));
+
+    return Optional.empty();
+  }
+
+  /**
    * This function is used to create a temporary role on cassandra for a given application. It will
    * also store this information in the local client_auth table for later reference.
    *
@@ -91,47 +113,26 @@ public class ClientAuthenticationUtil {
   }
 
   /**
-   * This function is used to validate {@link
-   * pathstore.system.PathStoreServerImplRMI#unRegisterApplication(String, String, String)}
-   * parameters. As if they pass an invalid tuple there is nothing more to do.
-   *
-   * @param applicationName application name the combo is associated with
-   * @param clientUsername username given when registered
-   * @param clientPassword password given when registered
-   * @return false if the tuple is valid, else true.
-   */
-  public static boolean isClientAccountInvalidInLocalTable(
-      final String applicationName, final String clientUsername, final String clientPassword) {
-    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
-
-    for (Row row :
-        superUserSession.execute(QueryBuilder.select().all().from("local_keyspace", "client_auth")))
-      if (row.getString("keyspace_name").equals(applicationName)
-          && row.getString("username").equals(clientUsername)
-          && row.getString("password").equals(clientPassword)) return false;
-
-    return true;
-  }
-
-  /**
    * This function is used to drop a client account from the local database. It also removes it from
    * the client_auth table
    *
    * @param applicationName application name
-   * @param clientUsername username given when registered
-   * @param clientPassword password given when registered
+   * @return true if a deletion occurred else false
    */
-  public static void deleteClientAccount(
-      final String applicationName, final String clientUsername, final String clientPassword) {
+  public static boolean deleteClientAccount(final String applicationName) {
     Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
 
-    superUserSession.execute(
-        QueryBuilder.delete()
-            .from("local_keyspace", "client_auth")
-            .where(QueryBuilder.eq("keyspace_name", applicationName))
-            .and(QueryBuilder.eq("username", clientUsername))
-            .and(QueryBuilder.eq("password", clientPassword)));
+    Optional<Credential> optionalCredential = getExistingClientAccount(applicationName);
 
-    AuthenticationUtil.dropRole(superUserSession, clientUsername);
+    if (optionalCredential.isPresent()) {
+      superUserSession.execute(
+          QueryBuilder.delete()
+              .from("local_keyspace", "client_auth")
+              .where(QueryBuilder.eq("keyspace_name", applicationName)));
+
+      AuthenticationUtil.dropRole(superUserSession, optionalCredential.get().username);
+    }
+
+    return optionalCredential.isPresent();
   }
 }

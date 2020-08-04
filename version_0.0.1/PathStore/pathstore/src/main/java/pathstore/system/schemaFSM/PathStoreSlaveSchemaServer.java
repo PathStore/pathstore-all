@@ -7,6 +7,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
 import pathstore.authentication.AuthenticationUtil;
+import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
@@ -233,6 +234,9 @@ public class PathStoreSlaveSchemaServer implements Runnable {
     QueryCache.getInstance().remove(keyspace);
 
     this.logger.info(String.format("Removed cache entries for keyspace %s", keyspace));
+
+    if (ClientAuthenticationUtil.deleteClientAccount(keyspace))
+      this.logger.info(String.format("Removed temporary client account for keyspace %s", keyspace));
 
     superUserSession.execute("drop keyspace if exists " + keyspace);
 

@@ -134,15 +134,4 @@ public class PathStoreServerClient {
     }
     return Optional.empty();
   }
-
-  public Optional<String> unRegisterApplication(
-      final String applicationName, final String clientUsername, final String clientPassword) {
-    try {
-      return Optional.ofNullable(
-          this.stub.unRegisterApplication(applicationName, clientUsername, clientPassword));
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-    return Optional.empty();
-  }
 }

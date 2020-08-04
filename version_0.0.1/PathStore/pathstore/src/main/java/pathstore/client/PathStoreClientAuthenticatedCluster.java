@@ -43,9 +43,7 @@ public class PathStoreClientAuthenticatedCluster {
         if (responseObject.getString("status").equals("valid"))
           instance =
               new PathStoreClientAuthenticatedCluster(
-                  applicationName,
-                  responseObject.getString("username"),
-                  responseObject.getString("password"));
+                  responseObject.getString("username"), responseObject.getString("password"));
         else throw new Exception("Login Credentials are invalid");
       } else throw new Exception("Response is not present");
     }
@@ -66,9 +64,6 @@ public class PathStoreClientAuthenticatedCluster {
         "Instance is not yet initialized you must call PathStoreClientAuthenticatedCluster#initInstance first");
   }
 
-  /** Application name used */
-  private final String applicationName;
-
   /** Username provided on registration */
   private final String clientUsername;
 
@@ -82,17 +77,15 @@ public class PathStoreClientAuthenticatedCluster {
   private final Session session;
 
   /**
-   * @param applicationName {@link #applicationName}
    * @param clientUsername {@link #clientUsername}
    * @param clientPassword {@link #clientPassword}
    */
   private PathStoreClientAuthenticatedCluster(
-      final String applicationName, final String clientUsername, final String clientPassword) {
+      final String clientUsername, final String clientPassword) {
 
     System.out.println(
         String.format("Connecting with credentials %s %s", clientUsername, clientPassword));
 
-    this.applicationName = applicationName;
     this.clientUsername = clientUsername;
     this.clientPassword = clientPassword;
 
@@ -111,15 +104,9 @@ public class PathStoreClientAuthenticatedCluster {
     return this.session;
   }
 
-  /**
-   * This function is used to close the connection with the local node. It will close the session,
-   * cluster
-   */
+  /** Close session and cluster */
   public void close() {
     this.session.close();
     this.cluster.close();
-
-    PathStoreServerClient.getInstance()
-        .unRegisterApplication(this.applicationName, this.clientUsername, this.clientPassword);
   }
 }

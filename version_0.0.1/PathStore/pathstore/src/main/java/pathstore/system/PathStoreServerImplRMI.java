@@ -3,6 +3,7 @@ package pathstore.system;
 import org.json.JSONObject;
 import pathstore.authentication.AuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
+import pathstore.authentication.Credential;
 import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCache;
 import pathstore.exception.PathMigrateAlreadyGoneException;
@@ -11,12 +12,9 @@ import pathstore.system.logging.PathStoreLoggerFactory;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.util.Optional;
 import java.util.UUID;
 
-/**
- * @implNote We assume that forever every distinct {@link #registerApplication(String, String)}
- *     there is a corresponding {@link #unRegisterApplication(String, String, String)}
- */
 public class PathStoreServerImplRMI implements PathStoreServer {
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStoreServerImplRMI.class);
@@ -120,49 +118,27 @@ public class PathStoreServerImplRMI implements PathStoreServer {
       return new JSONObject().put("status", "invalid").toString();
     }
 
+    Optional<Credential> optionalExistingCredential =
+        ClientAuthenticationUtil.getExistingClientAccount(applicationName);
+
     String clientUsername, clientPassword;
 
-    clientUsername = AuthenticationUtil.generateAlphaNumericPassword().toLowerCase();
-    clientPassword = AuthenticationUtil.generateAlphaNumericPassword();
+    if (optionalExistingCredential.isPresent()) {
+      Credential existingCredential = optionalExistingCredential.get();
 
-    ClientAuthenticationUtil.createClientAccount(applicationName, clientUsername, clientPassword);
+      clientUsername = existingCredential.username;
+      clientPassword = existingCredential.password;
+    } else {
+      clientUsername = AuthenticationUtil.generateAlphaNumericPassword().toLowerCase();
+      clientPassword = AuthenticationUtil.generateAlphaNumericPassword();
+
+      ClientAuthenticationUtil.createClientAccount(applicationName, clientUsername, clientPassword);
+    }
 
     return new JSONObject()
         .put("status", "valid")
         .put("username", clientUsername)
         .put("password", clientPassword)
         .toString();
-  }
-
-  /**
-   * This function is used to unregister a client application
-   *
-   * @param applicationName application name
-   * @param clientUsername clientUsername generated from register call
-   * @param clientPassword clientPassword generated from register call
-   * @return status: {invalid, valid}
-   * @implNote Assumes that {@link #registerApplication(String, String)} was called with the same
-   *     parameters before this function was called.
-   * @see pathstore.client.PathStoreClientAuthenticatedCluster
-   */
-  @Override
-  public String unRegisterApplication(
-      final String applicationName, final String clientUsername, final String clientPassword) {
-
-    logger.info(
-        String.format("Unregistering application credential for application %s", applicationName));
-
-    if (ClientAuthenticationUtil.isClientAccountInvalidInLocalTable(
-        applicationName, clientUsername, clientPassword)) {
-      logger.info(
-          String.format(
-              "Unregistering of application credentials for application %s has failed as the provided credentials do not match any registered credentials",
-              applicationName));
-      return new JSONObject().put("status", "invalid").toString();
-    }
-
-    ClientAuthenticationUtil.deleteClientAccount(applicationName, clientUsername, clientPassword);
-
-    return new JSONObject().put("status", "valid").toString();
   }
 }

@@ -36,8 +36,4 @@ public interface PathStoreServer extends Remote {
 
   String registerApplication(final String applicationName, final String password)
       throws RemoteException;
-
-  String unRegisterApplication(
-      final String applicationName, final String clientUsername, final String clientPassword)
-      throws RemoteException;
 }

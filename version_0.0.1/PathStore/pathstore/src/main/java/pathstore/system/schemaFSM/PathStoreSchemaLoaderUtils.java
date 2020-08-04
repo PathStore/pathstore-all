@@ -475,7 +475,7 @@ public class PathStoreSchemaLoaderUtils {
             + "    keyspace_name text,\n"
             + "    username text,\n"
             + "    password text,\n"
-            + "    PRIMARY KEY ((keyspace_name, username, password))\n"
+            + "    PRIMARY KEY (keyspace_name)\n"
             + ") WITH read_repair_chance = 0.0\n"
             + "   AND dclocal_read_repair_chance = 0.1\n"
             + "   AND gc_grace_seconds = 864000\n"
