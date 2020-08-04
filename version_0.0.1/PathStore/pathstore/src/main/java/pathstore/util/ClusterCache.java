@@ -42,7 +42,7 @@ public class ClusterCache<T> {
   }
 
   /**
-   * Create a cluster that uses pathstore.authentication
+   * Create a cluster connection
    *
    * @param ip ip to connect to
    * @param port port to connect to

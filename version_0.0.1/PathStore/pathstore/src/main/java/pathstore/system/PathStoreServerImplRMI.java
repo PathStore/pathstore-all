@@ -120,7 +120,7 @@ public class PathStoreServerImplRMI implements PathStoreServer {
 
     String clientUsername, clientPassword;
 
-    clientUsername = AuthenticationUtil.generateAlphaNumericPassword();
+    clientUsername = AuthenticationUtil.generateAlphaNumericPassword().toLowerCase();
     clientPassword = AuthenticationUtil.generateAlphaNumericPassword();
 
     ClientAuthenticationUtil.createClientAccount(applicationName, clientUsername, clientPassword);
