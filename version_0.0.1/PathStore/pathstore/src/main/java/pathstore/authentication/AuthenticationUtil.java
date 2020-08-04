@@ -24,7 +24,7 @@ public class AuthenticationUtil {
             .withinRange('0', 'z')
             .filteredBy(LETTERS, DIGITS)
             .build()
-            .generate(100);
+            .generate(5);
   }
 
   /**
