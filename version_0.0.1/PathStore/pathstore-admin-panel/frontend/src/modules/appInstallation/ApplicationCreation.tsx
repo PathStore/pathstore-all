@@ -92,8 +92,8 @@ export const ApplicationCreation: FunctionComponent = () => {
                 </Form.Text>
             </Form.Group>
             <Form.Group controlId="password">
-                <Form.Label>Application Name</Form.Label>
-                <Form.Control type="plaintext" placeholder="Enter master password here"/>
+                <Form.Label>Master Password</Form.Label>
+                <Form.Control type="password" placeholder="Enter master password here"/>
                 <Form.Text>
                     This password will be used to allow your clients to connect to a pathstore node.
                 </Form.Text>

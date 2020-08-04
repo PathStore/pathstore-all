@@ -45,5 +45,14 @@ public class RemoveApplication implements IService {
         QueryBuilder.eq(Constants.APPS_COLUMNS.KEYSPACE_NAME, this.payload.applicationName));
 
     session.execute(removeApp);
+
+    Delete removeMasterPassword =
+        QueryBuilder.delete()
+            .from(Constants.PATHSTORE_APPLICATIONS, Constants.APPLICATION_CREDENTIALS);
+    removeMasterPassword.where(
+        QueryBuilder.eq(
+            Constants.APPLICATION_CREDENTIALS_COLUMNS.KEYSPACE_NAME, this.payload.applicationName));
+
+    session.execute(removeMasterPassword);
   }
 }
