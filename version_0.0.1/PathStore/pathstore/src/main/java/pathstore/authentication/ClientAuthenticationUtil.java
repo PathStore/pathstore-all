@@ -105,12 +105,9 @@ public class ClientAuthenticationUtil {
     Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
 
     for (Row row :
-        superUserSession.execute(
-            QueryBuilder.select()
-                .all()
-                .from("local_keyspace", "client_auth")
-                .where(QueryBuilder.eq("keyspace_name", applicationName))))
-      if (row.getString("username").equals(clientUsername)
+        superUserSession.execute(QueryBuilder.select().all().from("local_keyspace", "client_auth")))
+      if (row.getString("keyspace_name").equals(applicationName)
+          && row.getString("username").equals(clientUsername)
           && row.getString("password").equals(clientPassword)) return false;
 
     return true;
