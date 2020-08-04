@@ -30,15 +30,14 @@ public class ClientAuthenticationUtil {
     Select queryNodeSchemasTable =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
-    queryNodeSchemasTable
-        .where(
-            QueryBuilder.eq(
-                Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID))
-        .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, applicationName));
+    queryNodeSchemasTable.where(
+        QueryBuilder.eq(
+            Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID));
 
     for (Row row : pathStoreSession.execute(queryNodeSchemasTable))
-      if (ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS))
-          == ProccessStatus.INSTALLED) return false;
+      if (row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME).equals(applicationName))
+        if (ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS))
+            == ProccessStatus.INSTALLED) return false;
 
     return true;
   }

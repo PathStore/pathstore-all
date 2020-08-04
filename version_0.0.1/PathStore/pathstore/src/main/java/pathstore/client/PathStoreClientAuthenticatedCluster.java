@@ -88,6 +88,10 @@ public class PathStoreClientAuthenticatedCluster {
    */
   private PathStoreClientAuthenticatedCluster(
       final String applicationName, final String clientUsername, final String clientPassword) {
+
+    System.out.println(
+        String.format("Connecting with credentials %s %s", clientUsername, clientPassword));
+
     this.applicationName = applicationName;
     this.clientUsername = clientUsername;
     this.clientPassword = clientPassword;
@@ -96,8 +100,8 @@ public class PathStoreClientAuthenticatedCluster {
         ClusterCache.createCluster(
             PathStoreProperties.getInstance().CassandraIP,
             PathStoreProperties.getInstance().CassandraPort,
-            clientUsername,
-            clientPassword);
+            this.clientUsername,
+            this.clientPassword);
 
     this.session = new PathStoreSession(this.cluster);
   }
