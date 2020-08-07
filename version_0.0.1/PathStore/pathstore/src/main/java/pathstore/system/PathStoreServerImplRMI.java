@@ -33,9 +33,6 @@ public class PathStoreServerImplRMI implements PathStoreServer {
       String user, String keyspace, String table, byte[] clauses, int limit)
       throws RemoteException, PathMigrateAlreadyGoneException {
 
-    // System.out.println("In addUserCommandEntry " + user + ":"+ keyspace + ":" + table + " " +
-    // clauses);
-
     try {
       QueryCache.getInstance().updateDeviceCommandCache(user, keyspace, table, clauses, limit);
     } catch (Exception e) {
@@ -49,8 +46,6 @@ public class PathStoreServerImplRMI implements PathStoreServer {
 
   public String addQueryEntry(String keyspace, String table, byte[] clauses, int limit)
       throws RemoteException {
-    logger.info("In addQueryEntry " + keyspace + ":" + table + " " + clauses);
-
     long d = System.nanoTime();
     try {
       QueryCache.getInstance().updateCache(keyspace, table, clauses, limit);
@@ -67,18 +62,6 @@ public class PathStoreServerImplRMI implements PathStoreServer {
   public UUID createQueryDelta(
       String keyspace, String table, byte[] clauses, UUID parentTimestamp, int nodeID, int limit)
       throws RemoteException {
-    logger.info(
-        "In createQueryDelta "
-            + keyspace
-            + ":"
-            + table
-            + " "
-            + clauses
-            + " pts:"
-            + parentTimestamp.timestamp()
-            + " "
-            + nodeID);
-
     try {
       return QueryCache.getInstance()
           .createDelta(keyspace, table, clauses, parentTimestamp, nodeID, limit);
