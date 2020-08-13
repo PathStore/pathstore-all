@@ -23,15 +23,34 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.util.Iterator;
 import java.util.List;
 
-/** TODO: Comment */
+/**
+ * This result set is used to extend the regular result set to allow for log compression using
+ * {@link PathStoreIterator}
+ */
 public class PathStoreResultSet implements ResultSet {
 
+  /** Session to execute additional queries in the iterator class */
   private final Session session;
+
+  /** Response from database */
   private final ResultSet resultSet;
+
+  /** Keyspace original query was on */
   private final String keyspace;
+
+  /** Table original query was on */
   private final String table;
+
+  /** If the query could break the log (allow filtering clause or secondary index column clause) */
   private final boolean allowFiltering;
 
+  /**
+   * @param session {@link #session}
+   * @param resultSet {@link #resultSet}
+   * @param keyspace {@link #keyspace}
+   * @param table {@link #table}
+   * @param allowFiltering {@link #allowFiltering}
+   */
   public PathStoreResultSet(
       final Session session,
       final ResultSet resultSet,

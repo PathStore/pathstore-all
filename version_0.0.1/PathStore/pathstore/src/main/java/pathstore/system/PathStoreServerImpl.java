@@ -18,7 +18,7 @@
 package pathstore.system;
 
 import com.datastax.driver.core.Session;
-import pathstore.authentication.CredentialInfo;
+import pathstore.authentication.CredentialCache;
 import pathstore.common.*;
 import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
 import pathstore.system.deployment.deploymentFSM.PathStoreMasterDeploymentServer;
@@ -66,7 +66,7 @@ public class PathStoreServerImpl {
 
       logger.info("Super User connection was initialized successfully");
 
-      if (CredentialInfo.getInstance().getCredential(PathStoreProperties.getInstance().NodeID)
+      if (CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().NodeID)
           != null) logger.info("Loaded daemon account successfully");
       else logger.error("Couldn't load daemon account");
 

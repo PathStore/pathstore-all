@@ -184,6 +184,18 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
     return (T) this;
   }
 
+  /**
+   * Create a role on the child node
+   *
+   * @param connectionUsername username to connect
+   * @param connectionPassword password to connect
+   * @param ip ip of child
+   * @param port port of child
+   * @param roleName role to create
+   * @param rolePassword role password
+   * @param isSuperUser whether the user is a super user or not
+   * @return this
+   */
   public T createRole(
       final String connectionUsername,
       final String connectionPassword,
@@ -198,6 +210,16 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
     return (T) this;
   }
 
+  /**
+   * Drop a role on the child node
+   *
+   * @param connectionUsername username to connect
+   * @param connectionPassword password to connect
+   * @param ip ip of child
+   * @param port port of child
+   * @param roleName role to drop
+   * @return this
+   */
   public T dropRole(
       final String connectionUsername,
       final String connectionPassword,
@@ -208,7 +230,18 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
     return (T) this;
   }
 
-  public T grantDaemonPermissions(
+  /**
+   * Grant read and write access on a keyspace to a role on the child
+   *
+   * @param connectionUsername username to connect
+   * @param connectionPassword password to connect
+   * @param ip ip of child
+   * @param port port of child
+   * @param roleName role name to grant to
+   * @param keyspace keyspace to grant on
+   * @return this
+   */
+  public T grantReadAndWriteAccess(
       final String connectionUsername,
       final String connectionPassword,
       final String ip,
@@ -216,45 +249,89 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
       final String roleName,
       final String keyspace) {
     this.commands.add(
-        new GrantDaemonPermissions(
+        new GrantReadAndWriteAccess(
             connectionUsername, connectionPassword, ip, port, roleName, keyspace));
 
     return (T) this;
   }
 
+  /**
+   * Write a credential to the child local_keyspace.auth table
+   *
+   * @param nodeId node id to get credentials from
+   * @param connectionUsername username to connect with
+   * @param connectionPassword password to connect with
+   * @param ip ip of child
+   * @param port port of child
+   * @return this
+   */
   public T writeCredentialsToChildNode(
       final int nodeId,
-      final String username,
-      final String password,
+      final String connectionUsername,
+      final String connectionPassword,
       final String ip,
       final int port) {
-    this.commands.add(new WriteCredentialsToChildNode(nodeId, username, password, ip, port));
+    this.commands.add(
+        new WriteCredentialsToChildNode(nodeId, connectionUsername, connectionPassword, ip, port));
     return (T) this;
   }
 
+  /**
+   * Write a the child daemon account to the local node cassandra instance
+   *
+   * @param childNodeId child node id
+   * @param username daemon username of child
+   * @param password daemon password of child
+   * @return this
+   */
   public T writeChildAccountToCassandra(
       final int childNodeId, final String username, final String password) {
     this.commands.add(new WriteChildCredentialsToCassandra(childNodeId, username, password));
     return (T) this;
   }
 
+  /**
+   * Load a keyspace on the child node
+   *
+   * @param connectionUsername username to connect with
+   * @param connectionPassword password to connect with
+   * @param ip ip of child
+   * @param port child port
+   * @param loadKeyspaceFunction function that consumes a session object to load the keyspace
+   * @param keyspaceName keyspace name
+   * @return this
+   */
   public T loadKeyspace(
-      final String username,
-      final String password,
+      final String connectionUsername,
+      final String connectionPassword,
       final String ip,
       final int port,
       final Consumer<Session> loadKeyspaceFunction,
       final String keyspaceName) {
     this.commands.add(
-        new LoadKeyspace(username, password, ip, port, loadKeyspaceFunction, keyspaceName));
+        new LoadKeyspace(
+            connectionUsername, connectionPassword, ip, port, loadKeyspaceFunction, keyspaceName));
     return (T) this;
   }
 
+  /**
+   * Remove a credential from the local nodes local_keyspace.auth table
+   *
+   * @param nodeId node id to remove (As it must already be in the credential cache)
+   * @return this
+   */
   public T removeLocalCredential(final int nodeId) {
     this.commands.add(new RemoveLocalCredential(nodeId));
     return (T) this;
   }
 
+  /**
+   * Delete a nodes history on un-deployment
+   *
+   * @param newNodeId node id (child node)
+   * @param parentNodeId parent node id (current node)
+   * @return this
+   */
   public T deleteNodeHistory(final int newNodeId, final int parentNodeId) {
     this.commands.add(new DeleteNodeHistory(newNodeId, parentNodeId));
     return (T) this;

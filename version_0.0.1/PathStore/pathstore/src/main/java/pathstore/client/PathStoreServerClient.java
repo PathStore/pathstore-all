@@ -30,7 +30,7 @@ import java.rmi.registry.Registry;
 import java.util.Optional;
 import java.util.UUID;
 
-/** TODO: Comment */
+/** Will comment this class when merger occurs to grpc */
 public class PathStoreServerClient {
 
   private static PathStoreServerClient instance = null;

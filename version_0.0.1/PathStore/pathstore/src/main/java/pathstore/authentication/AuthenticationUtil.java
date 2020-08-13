@@ -9,7 +9,7 @@ import static org.apache.commons.text.CharacterPredicates.LETTERS;
 /**
  * This class is used to modify roles and grant / revoke permissions from a role.
  *
- * @see CredentialInfo
+ * @see CredentialCache
  */
 public class AuthenticationUtil {
 

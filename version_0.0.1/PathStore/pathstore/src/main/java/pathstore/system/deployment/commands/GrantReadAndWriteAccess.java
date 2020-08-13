@@ -8,7 +8,7 @@ import pathstore.system.PathStorePrivilegedCluster;
  *
  * @apiNote the role name must exist and the keyspace must already exist as no validity check occurs
  */
-public class GrantDaemonPermissions implements ICommand {
+public class GrantReadAndWriteAccess implements ICommand {
 
   /**
    * Login username for cassandra, this role must be capable of granting role permissions (most
@@ -39,7 +39,7 @@ public class GrantDaemonPermissions implements ICommand {
    * @param roleName {@link #roleName}
    * @param keyspace {@link #keyspace}
    */
-  public GrantDaemonPermissions(
+  public GrantReadAndWriteAccess(
       final String connectionUsername,
       final String connectionPassword,
       final String ip,

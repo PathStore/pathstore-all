@@ -29,19 +29,43 @@ import pathstore.util.SchemaInfo.Column;
 import java.util.Collection;
 import java.util.Iterator;
 
-/** TODO: Comment */
+/** This class is responsible for log compression of cassandra responses */
 public class PathStoreIterator implements Iterator<Row> {
 
+  /**
+   * Session to connect to. This is because additional database queries will be required if the
+   * original select query contained an allow filtering clause or references a secondary index
+   */
   private final Session session;
+
+  /** iterator from result set */
   private final Iterator<Row> iter;
+
+  /** What keyspace was the query performed on */
   private final String keyspace;
+
+  /** What table was the query performed on */
   private final String table;
+
+  /**
+   * Can the query potentially break our log structure (Does it contain an allow filtering clause or
+   * is it using a secondary index)
+   */
   private final boolean allowFiltering;
 
-  // internal rows for iterator transitions
+  /** Next row for comparison */
   private ArrayBackedRow row_next = null;
+
+  /** Current row for comparison */
   private ArrayBackedRow row = null;
 
+  /**
+   * @param session {@link #session}
+   * @param iter {@link #iter}
+   * @param keyspace {@link #keyspace}
+   * @param table {@link #table}
+   * @param allowFiltering {@link #allowFiltering}
+   */
   public PathStoreIterator(
       final Session session,
       final Iterator<Row> iter,
@@ -55,6 +79,11 @@ public class PathStoreIterator implements Iterator<Row> {
     this.allowFiltering = allowFiltering;
   }
 
+  /**
+   * This function is used to determine if there is a next row to iterator over.
+   *
+   * @return true or false, based on if {@link #row} is null or not
+   */
   @Override
   public boolean hasNext() {
 
@@ -79,6 +108,7 @@ public class PathStoreIterator implements Iterator<Row> {
       this.row_next = (ArrayBackedRow) this.iter.next();
     }
 
+    // handle if a row is out dated
     if (this.allowFiltering && this.hasNewerRows(this.row)) {
       this.row = null;
       return this.hasNext();
@@ -87,13 +117,23 @@ public class PathStoreIterator implements Iterator<Row> {
     return this.row != null;
   }
 
-  // TODO: Confirm the only two states pathstore_deleted can be are true and null (there may be a
-  // chance it is false)
+  /**
+   * Determines if a row is deleted or node
+   *
+   * @param row row from {@link #hasNext()}
+   * @return true or false
+   */
   private boolean is_deleted(final ArrayBackedRow row) {
-    Object value = row.getObject("pathstore_deleted");
-    return value != null;
+    return row.getBool("pathstore_deleted");
   }
 
+  /**
+   * Determine if two rows have the same primary key
+   *
+   * @param row row 1 to compare
+   * @param row_next row 2 to compare
+   * @return true if same primary key else false
+   */
   private boolean same_key(final ArrayBackedRow row, final ArrayBackedRow row_next) {
     Collection<Column> columns =
         SchemaInfo.getInstance().getTableColumns(this.keyspace, this.table);
@@ -111,6 +151,12 @@ public class PathStoreIterator implements Iterator<Row> {
     return true;
   }
 
+  /**
+   * Merge two rows together if a given row is a partial write (update)
+   *
+   * @param row row 1
+   * @param row_next row 2
+   */
   private void merge(final ArrayBackedRow row, final ArrayBackedRow row_next) {
     int num_columns = Math.max(row.metadata.asList().size(), row_next.metadata.asList().size());
 
@@ -118,6 +164,14 @@ public class PathStoreIterator implements Iterator<Row> {
       if (row.data.get(x) == null) row.data.set(x, row_next.data.get(x));
   }
 
+  /**
+   * This function is used to determine if a row has a newer version
+   *
+   * @param row row to check
+   * @return false if the row is valid to return to the user, else true if the row is out dated
+   * @implNote This only gets called if the log may be broken (allow filtering clause or secondary
+   *     index in query)
+   */
   private boolean hasNewerRows(final ArrayBackedRow row) {
 
     if (row == null) return false;
@@ -144,7 +198,13 @@ public class PathStoreIterator implements Iterator<Row> {
     return this.session.execute(checkForNewerRows).one() != null;
   }
 
-  // TODO: Re add removal of pathstore hidden columns
+  /**
+   * TODO: Re add removal of pathstore hidden columns
+   *
+   * <p>This will return the next row and update the internal row
+   *
+   * @return row to user
+   */
   @Override
   public Row next() {
 
@@ -163,6 +223,7 @@ public class PathStoreIterator implements Iterator<Row> {
     return tempRow;
   }
 
+  /** Remove from iterator */
   @Override
   public void remove() {
     this.iter.remove();

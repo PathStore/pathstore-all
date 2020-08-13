@@ -21,15 +21,31 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.SocketOptions;
 import pathstore.authentication.Credential;
-import pathstore.authentication.CredentialInfo;
+import pathstore.authentication.CredentialCache;
 import pathstore.common.PathStoreProperties;
 import pathstore.util.ClusterCache;
 
+/**
+ * This class represents a connection to the database with log compression.
+ *
+ * <p>This connection should be used if you plan to read or write data in the pathstore context.
+ * This is specifically used for daemons that utilize pathstore to control how the system works. An
+ * example of this is the {@link pathstore.system.schemaFSM.PathStoreSlaveSchemaServer}
+ *
+ * <p>All authentication is determined by the {@link CredentialCache}
+ */
 public class PathStoreCluster {
 
+  /** Cache of pathstore cluster objects based on credential */
   private static final ClusterCache<PathStoreCluster> clusterCache =
       new ClusterCache<>(PathStoreCluster::new);
 
+  /**
+   * This will return the a pathstore cluster with super user privileges if being used on a node. As
+   * the credentials provided in the properties file will have super user access.
+   *
+   * @return super user privileged pathstore cluster
+   */
   public static PathStoreCluster getSuperUserInstance() {
     return clusterCache.getInstance(
         PathStoreProperties.getInstance().credential,
@@ -37,19 +53,32 @@ public class PathStoreCluster {
         PathStoreProperties.getInstance().CassandraPort);
   }
 
+  /**
+   * This will get the credential information from the credential cache with the current node id.
+   *
+   * @return daemon user privileged pathstore cluster
+   * @see CredentialCache
+   */
   public static PathStoreCluster getDaemonInstance() {
     return clusterCache.getInstance(
-        CredentialInfo.getInstance().getCredential(PathStoreProperties.getInstance().NodeID),
+        CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().NodeID),
         PathStoreProperties.getInstance().CassandraIP,
         PathStoreProperties.getInstance().CassandraPort);
   }
 
+  /** Credential object used to create the cluster, this is only used for disconnection */
   private final Credential credential;
 
+  /** Cluster object, used to close the cluster */
   private final Cluster cluster;
 
+  /** PathStoreSession, used to compress the responses from the database */
   private final PathStoreSession session;
 
+  /**
+   * @param credential {@link #credential}
+   * @param cluster {@link #cluster}
+   */
   public PathStoreCluster(final Credential credential, final Cluster cluster) {
     this.credential = credential;
     this.cluster = cluster;
@@ -76,10 +105,15 @@ public class PathStoreCluster {
     session = new PathStoreSession(this.cluster);
   }
 
+  /** @return ps session */
   public PathStoreSession connect() {
     return this.session;
   }
 
+  /**
+   * This should be used to disconnect the cluster. Once this is called the object you have will be
+   * disconnected.
+   */
   public void close() {
     this.session.close();
     this.cluster.close();

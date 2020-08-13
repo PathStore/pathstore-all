@@ -1,20 +1,37 @@
 package pathstore.system.deployment.commands;
 
 import pathstore.authentication.Credential;
-import pathstore.authentication.CredentialInfo;
+import pathstore.authentication.CredentialCache;
 import pathstore.system.PathStorePrivilegedCluster;
 
+/**
+ * This command is used to write the current node's daemon account to the child node's
+ * local_keyspace.auth table so they can access the parent node's cassandra during push and pull
+ * operations
+ */
 public class WriteCredentialsToChildNode implements ICommand {
+  /** current node id */
   private final int nodeid;
 
+  /** Username to connect to child with */
   private final String connectionUsername;
 
+  /** Password to connect to child with */
   private final String connectionPassword;
 
+  /** Child ip */
   private final String ip;
 
+  /** Child port */
   private final int port;
 
+  /**
+   * @param nodeid {@link #nodeid}
+   * @param connectionUsername {@link #connectionUsername}
+   * @param connectionPassword {@link #connectionPassword}
+   * @param ip {@link #ip}
+   * @param port {@link #port}
+   */
   public WriteCredentialsToChildNode(
       final int nodeid,
       final String connectionUsername,
@@ -28,6 +45,7 @@ public class WriteCredentialsToChildNode implements ICommand {
     this.port = port;
   }
 
+  /** Connect to the child node, write the credentials to that node, and close the cluster */
   @Override
   public void execute() {
     PathStorePrivilegedCluster childCluster =
@@ -35,15 +53,16 @@ public class WriteCredentialsToChildNode implements ICommand {
             this.connectionUsername, this.connectionPassword, this.ip, this.port);
 
     Credential.writeCredentialToRow(
-        childCluster.connect(), CredentialInfo.getInstance().getCredential(this.nodeid));
+        childCluster.connect(), CredentialCache.getInstance().getCredential(this.nodeid));
 
     childCluster.close();
   }
 
+  /** @return command inform message */
   @Override
   public String toString() {
     return String.format(
         "Writing account with username %s to child node",
-        CredentialInfo.getInstance().getCredential(this.nodeid).username);
+        CredentialCache.getInstance().getCredential(this.nodeid).username);
   }
 }

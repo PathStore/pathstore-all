@@ -16,14 +16,26 @@ import java.util.concurrent.ConcurrentMap;
  * @param <T>
  */
 public class ClusterCache<T> {
+  /** Where clusters are cached */
   private final ConcurrentMap<Credential, T> cache = new ConcurrentHashMap<>();
 
+  /** How to build a cluster not present in the cache */
   private final DoubleConsumerFunction<Credential, Cluster, T> buildFunction;
 
+  /** @param buildFunction {@link #buildFunction} */
   public ClusterCache(final DoubleConsumerFunction<Credential, Cluster, T> buildFunction) {
     this.buildFunction = buildFunction;
   }
 
+  /**
+   * This function is used to gather a cluster from the cache, if not already present it will create
+   * one, store it, and return it. Else it will just return the existing cluster
+   *
+   * @param credential credential object
+   * @param ip ip of server
+   * @param port port of server
+   * @return cluster object
+   */
   public T getInstance(final Credential credential, final String ip, final int port) {
     T object = this.cache.get(credential);
 
@@ -37,6 +49,7 @@ public class ClusterCache<T> {
     return object;
   }
 
+  /** @param credential credential to remove from cluster */
   public void remove(final Credential credential) {
     this.cache.remove(credential);
   }

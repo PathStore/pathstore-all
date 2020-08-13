@@ -34,15 +34,20 @@ import pathstore.util.SchemaInfo;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/** This class is used to execute queries onto the database and adhere to the log structure */
 public class PathStoreSession implements Session {
 
+  /** Logger */
   private static final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStoreSession.class);
 
+  /** Raw session used to execute queries */
   private final Session session;
 
+  // TODO: Remove
   boolean useColumn = false; // temporary
 
+  /** @param cluster cluster to create session */
   public PathStoreSession(final Cluster cluster) {
     this.session = cluster.connect();
   }
@@ -60,8 +65,7 @@ public class PathStoreSession implements Session {
   }
 
   public ResultSet execute(final String query) {
-    if (query.toLowerCase().contains("local_".toLowerCase())) return this.session.execute(query);
-    else throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException();
   }
 
   public ResultSet execute(final String query, final Object... values) {
@@ -117,6 +121,8 @@ public class PathStoreSession implements Session {
 
   public ResultSet executeNomral(Statement statement, final String device)
       throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
+    // TODO: Check if statement throws errors
+
     String keyspace = statement.getKeyspace();
     String table = "";
     boolean allowFiltering = false;
