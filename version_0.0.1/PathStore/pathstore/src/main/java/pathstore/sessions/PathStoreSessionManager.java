@@ -61,7 +61,7 @@ public class PathStoreSessionManager {
    * This function is used to dump all session tokens to a file. This should be used when you plan
    * to kill a client and move it to a new destination node
    */
-  public void dumpToFile() {
+  public void dumpToFile(final String fileName) {
     // TODO:
   }
 

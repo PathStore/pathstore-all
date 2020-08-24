@@ -87,7 +87,7 @@ public class PathStoreSession implements Session {
 
     // Myles: Temporary to test session management
     if (sessionToken == null) {
-      sessionToken = PathStoreSessionManager.getInstance().getKeyspaceToken("test-session");
+      sessionToken = PathStoreSessionManager.getInstance().getTableToken("test-session");
     }
 
     // TODO: Check if statement throws errors
