@@ -17,26 +17,19 @@
  ***********/
 package pathstore.common;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.util.*;
-
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.*;
 import pathstore.client.PathStoreServerClient;
-import pathstore.exception.PathMigrateAlreadyGoneException;
-import pathstore.exception.PathStoreRemoteException;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.Batch;
-import com.datastax.driver.core.querybuilder.Clause;
-import com.datastax.driver.core.querybuilder.Insert;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.*;
 
 /**
  * This class is responsible for storing queries that have already been made.
@@ -46,12 +39,6 @@ public class QueryCache {
 
     final HashMap<String, HashMap<String, List<QueryCacheEntry>>> entries = new HashMap<>();
 
-    //device, keyspace, table, clauses
-    /**
-     * TODO: Devices aren't being used currently.
-     */
-    final HashMap<String, HashMap<String, HashMap<String, List<QueryCacheEntry>>>> deviceCommands = new HashMap<>();
-
     public void remove(final String keyspace){
         entries.remove(keyspace);
     }
@@ -59,10 +46,6 @@ public class QueryCache {
 
     public HashMap<String, HashMap<String, List<QueryCacheEntry>>> getEntries() {
         return entries;
-    }
-
-    public HashMap<String, HashMap<String, HashMap<String, List<QueryCacheEntry>>>> getDeviceCommands() {
-        return deviceCommands;
     }
 
     static private QueryCache instance = null;
@@ -91,71 +74,6 @@ public class QueryCache {
                     entries.get(keyspace).put(table, new ArrayList<>());
             }
         }
-    }
-
-    private void addDeviceId(String device) {
-        //Hossein
-        if (!deviceCommands.containsKey(device)) {
-            synchronized (deviceCommands) {
-                if (!deviceCommands.containsKey(device))
-                    deviceCommands.put(device, new HashMap<>());
-            }
-        }
-    }
-
-
-    private void addKeySpaceForDevice(String device, String keyspace) {
-        addDeviceId(device);
-        //Hossein
-        if (!deviceCommands.get(device).containsKey(keyspace)) {
-            synchronized (deviceCommands) {
-                if (!deviceCommands.get(device).containsKey(keyspace))
-                    deviceCommands.get(device).put(keyspace, new HashMap<>());
-            }
-        }
-    }
-
-    private void addTableForDeviceKeyspace(String device, String keyspace, String table) {
-        addKeySpaceForDevice(device, keyspace);
-        //Hossein
-        if (!deviceCommands.get(device).get(keyspace).containsKey(table)) {
-            synchronized (deviceCommands) {
-                if (!deviceCommands.get(device).get(keyspace).containsKey(table))
-                    deviceCommands.get(device).get(keyspace).put(table, new ArrayList<>());
-            }
-        }
-    }
-
-    //called by children
-    public QueryCacheEntry updateDeviceCommandCache(String device, String keyspace, String table, byte[] clausesSerialized, int limit) throws IOException, ClassNotFoundException, PathMigrateAlreadyGoneException {
-        ByteArrayInputStream bytesIn = new ByteArrayInputStream(clausesSerialized);
-        ObjectInputStream ois = new ObjectInputStream(bytesIn);
-        List<Clause> clauses = (List<Clause>) ois.readObject();
-
-        QueryCacheEntry entry = getEntryFromDeviceCache(device, keyspace, table, clauses, limit);
-
-        if (entry == null)
-            entry = addEntryToDeviceCommands(device, keyspace, table, clauses, clausesSerialized, limit);
-
-        entry.waitUntilReady();
-
-        return entry;
-
-    }
-
-    public QueryCacheEntry updateDeviceCommandCache(String device, String keyspace, String table, List<Clause> clauses, int limit) throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
-
-        QueryCacheEntry entry = null;
-        if ((PathStoreProperties.getInstance().role != Role.CLIENT))
-            entry = getEntryFromDeviceCache(device, keyspace, table, clauses, limit);
-
-        if (entry == null)
-            entry = addEntryToDeviceCommands(device, keyspace, table, clauses, null, limit);
-
-        //entry.waitUntilReady();
-
-        return entry;
-
     }
 
 
@@ -235,89 +153,6 @@ public class QueryCache {
                     return e;
 
         return null;
-    }
-
-
-    private QueryCacheEntry getEntryFromDeviceCache(String deviceId, String keyspace, String table, List<Clause> clauses, int limit) {
-
-        HashMap<String, HashMap<String, List<QueryCacheEntry>>> keyspaceMap = deviceCommands.get(deviceId);
-        if (keyspaceMap == null)
-            return null;
-
-        HashMap<String, List<QueryCacheEntry>> tableMap = keyspaceMap.get(keyspace);
-
-        if (tableMap == null)
-            return null;
-
-        List<QueryCacheEntry> entryList = tableMap.get(table);
-        if (entryList == null)
-            return null;
-
-        for (QueryCacheEntry e : entryList)
-            if (e.isSame(clauses))
-                if (e.limit == -1 || e.limit > limit) //we already have a bigger query so don't add this one
-                    return e;
-
-        return null;
-    }
-
-
-    private QueryCacheEntry addEntryToDeviceCommands(String device, String keyspace, String table, List<Clause> clauses, byte[] clausesSerialized, int limit) throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
-
-        boolean deviceHere = true;
-        if (!deviceHere)
-            throw new PathMigrateAlreadyGoneException();
-
-        addTableForDeviceKeyspace(device, keyspace, table);
-
-        HashMap<String, List<QueryCacheEntry>> tableMap = deviceCommands.get(device).get(keyspace);
-        List<QueryCacheEntry> entryList = tableMap.get(table);
-
-        QueryCacheEntry newEntry = new QueryCacheEntry(keyspace, table, clauses, limit);
-        if (clausesSerialized != null)
-            newEntry.setClausesSerialized(clausesSerialized);
-
-
-        synchronized (entryList) {
-            for (QueryCacheEntry entry : entryList) {
-                if (entry.isSame(clauses)) {
-                    if (entry.limit == newEntry.limit)
-                        return entry;
-                    else if (entry.limit == -1 && newEntry.limit > 0) {
-                        newEntry.isCovered = entry;
-                        entry.covers.add(newEntry);
-                    } else if (entry.limit > 0 && newEntry.limit > 0 && entry.limit < newEntry.limit) {
-                        entry.isCovered = newEntry;
-                        newEntry.covers.add(entry);
-                    }
-                }
-
-                if (newEntry.isCovered == null && entry.isSuperSet(clauses)) {
-                    newEntry.isCovered = entry;
-                    entry.covers.add(newEntry);
-                }
-
-                if (entry.isCovered == null && entry.isSubSet(clauses)) {
-                    entry.isCovered = newEntry;
-                    newEntry.covers.add(entry);
-                }
-            }
-            if (PathStoreProperties.getInstance().role != Role.CLIENT)
-                entryList.add(newEntry);
-        }
-
-        try {
-            if (PathStoreProperties.getInstance().role == Role.CLIENT)
-                PathStoreServerClient.getInstance().addCommandEntry(device, newEntry);
-            //}
-            //catch( Exception E) {
-            //	throw E;
-        } finally {
-            newEntry.setReady();
-        }
-
-        return newEntry;
-
     }
 
 
@@ -595,79 +430,4 @@ public class QueryCache {
         }
 
     }
-
-
-    //Hossein: this is used in migration
-    public ArrayList<CommandEntryReply> reconsolidateWithNeighbor(ArrayList<CommandEntryReply> replies) throws IOException {
-        ArrayList<CommandEntryReply> result = new ArrayList<>();
-        // TODO Auto-generated method stub
-        for (CommandEntryReply rr : replies) {
-            //rr.convertClauses();
-            //System.out.println("reconsolidateWithNeighbor: " + rr.getKeyspace() + " " + rr.getTable() + "  " + rr.getConverted());
-            ByteArrayInputStream bytesIn = new ByteArrayInputStream(rr.getClauses());
-            ObjectInputStream ois;
-            List<Clause> clauses = null;
-            try {
-                ois = new ObjectInputStream(bytesIn);
-                clauses = (List<Clause>) ois.readObject();
-            } catch (IOException | ClassNotFoundException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-
-            if (rr.getKeyspace().equals("pathstore_applications") && rr.getTable().equals("session")) {
-                updateCache(rr.getKeyspace(), rr.getTable(), clauses, rr.limit);
-                continue;
-            }
-            //QueryCacheEntry QCentry = QueryCache.getInstance().getEntry(rr.getKeyspace(), rr.getTable(), clauses);
-
-
-            HashMap<String, List<QueryCacheEntry>> tables = getEntries().get(rr.getKeyspace());
-            if (tables == null)
-                continue;
-            List<QueryCacheEntry> entries = tables.get(rr.getTable());
-            if (entries == null)
-                continue;
-            //System.out.println("consolidating ... " + rr.getKeyspace() + "." + rr.getTable());
-
-            QueryCacheEntry fromSource = new QueryCacheEntry(rr.getKeyspace(), rr.getTable(), clauses, rr.getLimit());
-
-            for (QueryCacheEntry qce : entries) {
-                long d = System.nanoTime();
-                if (qce.isSame(clauses)) //if the same query exists, fetch delta from parent, no need to look further
-                {
-                    if ((fromSource.limit == -1 && qce.limit > -1)
-                            || (fromSource.limit > qce.limit)) {
-                        //fetchDelta(fromSource);
-                        result.add(rr);
-                        //System.out.println("fetch delta " + qce.keyspace + " " + qce.table +  " " + qce.clauses+  "took: " + Timer.getTime(d));
-                        continue;
-                    }
-                    //fetchDelta(qce);
-                    byte[] cl = qce.getClausesSerialized();
-                    result.add(new CommandEntryReply(qce.keyspace, rr.sid, qce.table, cl, qce.limit));
-
-                    break;
-                    //System.out.println("fetch delta " + qce.keyspace + " " + qce.table +  " " + qce.clauses+  "took: " + Timer.getTime(d));
-                } else if (qce.isSubSet(clauses)) // if a subset query exists, fetch delta on the query
-                {
-                    //fetchDelta(qce);
-                    byte[] cl = qce.getClausesSerialized();
-                    result.add(new CommandEntryReply(qce.keyspace, rr.sid, qce.table, cl, qce.limit));
-                } else if (qce.isSuperSet(clauses)) // if a
-                {
-                    //fetchDelta(fromSource);
-                    result.add(rr);
-                }
-                //System.out.println("fetch delta " + qce.keyspace + " " + qce.table +  " " + qce.clauses+  "took: " + Timer.getTime(d));
-
-            }
-            //System.out.println("result size that I need to fetch from parent: " + result.size());
-            updateDeviceCommandCache(rr.getSid(), rr.getKeyspace(), rr.getTable(), clauses, rr.getLimit());
-        }
-        return result;
-
-    }
-
-
 }

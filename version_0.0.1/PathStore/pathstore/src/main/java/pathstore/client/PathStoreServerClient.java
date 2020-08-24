@@ -21,10 +21,8 @@ import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
-import pathstore.exception.PathMigrateAlreadyGoneException;
 import pathstore.exception.PathStoreRemoteException;
 
-import java.io.IOException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Optional;
@@ -81,33 +79,6 @@ public class PathStoreServerClient {
       e.printStackTrace();
       throw new PathStoreRemoteException();
     }
-  }
-
-  public void addCommandEntry(String device, QueryCacheEntry entry)
-      throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
-    // try {
-    String result;
-    try {
-      result =
-          stub.addUserCommandEntry(
-              device,
-              entry.getKeyspace(),
-              entry.getTable(),
-              entry.getClausesSerialized(),
-              entry.limit);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-      if (e.getMessage().equals("PathMigrateAlreadyGoneException"))
-        throw new PathMigrateAlreadyGoneException();
-      else throw new PathStoreRemoteException();
-    } catch (PathMigrateAlreadyGoneException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-      throw new PathMigrateAlreadyGoneException();
-    }
-
-    result = "";
   }
 
   public UUID cretateQueryDelta(QueryCacheEntry entry) {

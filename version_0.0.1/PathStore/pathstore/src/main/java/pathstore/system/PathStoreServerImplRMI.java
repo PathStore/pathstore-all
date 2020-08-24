@@ -6,7 +6,6 @@ import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.authentication.Credential;
 import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCache;
-import pathstore.exception.PathMigrateAlreadyGoneException;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
@@ -26,22 +25,6 @@ public class PathStoreServerImplRMI implements PathStoreServer {
   public static PathStoreServerImplRMI getInstance() {
     if (instance == null) instance = new PathStoreServerImplRMI();
     return instance;
-  }
-
-  @Override // child calls this (maybe client or child node)
-  public String addUserCommandEntry(
-      String user, String keyspace, String table, byte[] clauses, int limit)
-      throws RemoteException, PathMigrateAlreadyGoneException {
-
-    try {
-      QueryCache.getInstance().updateDeviceCommandCache(user, keyspace, table, clauses, limit);
-    } catch (Exception e) {
-      if (e instanceof PathMigrateAlreadyGoneException)
-        throw new RemoteException("PathMigrateAlreadyGoneException");
-      else throw new RemoteException(e.getMessage());
-    }
-
-    return "server says hello! in user command entry";
   }
 
   public String addQueryEntry(String keyspace, String table, byte[] clauses, int limit)

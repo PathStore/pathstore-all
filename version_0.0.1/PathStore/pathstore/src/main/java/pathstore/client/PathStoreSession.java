@@ -76,50 +76,16 @@ public class PathStoreSession implements Session {
     throw new UnsupportedOperationException();
   }
 
-  public ResultSet executeLocal(final Statement statement, final String device) {
-    String keyspace = statement.getKeyspace();
-    String table = "";
-    if (statement instanceof Select) {
-      Select select = (Select) statement;
-      table = select.getTable();
-    } else if (statement instanceof Insert) {
-      Insert insert = (Insert) statement;
-
-      table = insert.getTable();
-
-      if (!table.startsWith("local_")) {
-        insert.value("pathstore_version", QueryBuilder.now());
-        insert.value("pathstore_parent_timestamp", QueryBuilder.now());
-        insert.value("pathstore_dirty", false);
-
-        if (device != null) {
-          if (useColumn) insert.value("pathstore_insert_sid", device);
-          // or
-          else
-            QueryCache.getInstance()
-                .updateDeviceCommandCache(
-                    device, keyspace, table, InsertToSelect(insert).where().getClauses(), -1);
-        }
-      }
-    }
-
-    // hossein here:
-    statement.setFetchSize(1000);
-
-    return new PathStoreResultSet(
-        this.session, this.session.execute(statement), keyspace, table, false);
-  }
-
   public ResultSet execute(final Statement statement) {
-    return executeNomral(statement, null);
+    return executeNormal(statement, null);
   }
 
   public ResultSet execute(final Statement statement, final String device)
       throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
-    return executeNomral(statement, device);
+    return executeNormal(statement, device);
   }
 
-  public ResultSet executeNomral(Statement statement, final String device)
+  public ResultSet executeNormal(Statement statement, final String device)
       throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
     // TODO: Check if statement throws errors
 
@@ -163,15 +129,6 @@ public class PathStoreSession implements Session {
         insert.value("pathstore_version", QueryBuilder.now());
         insert.value("pathstore_parent_timestamp", QueryBuilder.now());
         insert.value("pathstore_dirty", true);
-
-        if (device != null) {
-          if (useColumn) insert.value("pathstore_insert_sid", device);
-          // or
-          else
-            QueryCache.getInstance()
-                .updateDeviceCommandCache(
-                    device, keyspace, table, InsertToSelect(insert).where().getClauses(), -1);
-        }
       }
     } else if (statement instanceof Delete) {
       Delete delete = (Delete) statement;

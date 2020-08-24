@@ -17,8 +17,6 @@
  */
 package pathstore.common;
 
-import pathstore.exception.PathMigrateAlreadyGoneException;
-
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.UUID;
@@ -26,9 +24,6 @@ import java.util.UUID;
 public interface PathStoreServer extends Remote {
   String addQueryEntry(String keyspace, String table, byte[] clauses, int limit)
       throws RemoteException;
-
-  String addUserCommandEntry(String user, String keyspace, String table, byte[] clauses, int limit)
-      throws RemoteException, PathMigrateAlreadyGoneException;
 
   UUID createQueryDelta(
       String keyspace, String table, byte[] clauses, UUID parentTimestamp, int nodeID, int limit)
