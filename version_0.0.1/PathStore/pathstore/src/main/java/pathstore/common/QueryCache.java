@@ -1,20 +1,20 @@
-/**********
+/**
+ * ********
  *
- * Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
+ * <p>Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * <p>Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  *
- ***********/
+ * <p>*********
+ */
 package pathstore.common;
 
 import com.datastax.driver.core.ResultSet;
@@ -32,402 +32,364 @@ import java.io.ObjectInputStream;
 import java.util.*;
 
 /**
- * This class is responsible for storing queries that have already been made.
- * This is to allow for quicker fetching of data.
+ * This class is responsible for storing queries that have already been made. This is to allow for
+ * quicker fetching of data.
  */
 public class QueryCache {
 
-    final HashMap<String, HashMap<String, List<QueryCacheEntry>>> entries = new HashMap<>();
+  final HashMap<String, HashMap<String, List<QueryCacheEntry>>> entries = new HashMap<>();
 
-    public void remove(final String keyspace){
-        entries.remove(keyspace);
+  public void remove(final String keyspace) {
+    entries.remove(keyspace);
+  }
+
+  public HashMap<String, HashMap<String, List<QueryCacheEntry>>> getEntries() {
+    return entries;
+  }
+
+  private static QueryCache instance = null;
+
+  public static QueryCache getInstance() {
+    if (QueryCache.instance == null) QueryCache.instance = new QueryCache();
+    return QueryCache.instance;
+  }
+
+  private void addKeyspace(String keyspace) {
+    if (!entries.containsKey(keyspace)) {
+      synchronized (entries) {
+        if (!entries.containsKey(keyspace)) entries.put(keyspace, new HashMap<>());
+      }
     }
+  }
 
-
-    public HashMap<String, HashMap<String, List<QueryCacheEntry>>> getEntries() {
-        return entries;
+  private void addTable(String keyspace, String table) {
+    addKeyspace(keyspace);
+    if (!entries.get(keyspace).containsKey(table)) {
+      synchronized (entries.get(keyspace)) {
+        if (!entries.get(keyspace).containsKey(table))
+          entries.get(keyspace).put(table, new ArrayList<>());
+      }
     }
+  }
 
-    static private QueryCache instance = null;
+  // called by child
+  public QueryCacheEntry updateCache(
+      String keyspace, String table, byte[] clausesSerialized, int limit)
+      throws ClassNotFoundException, IOException {
 
-    static public QueryCache getInstance() {
-        if (QueryCache.instance == null)
-            QueryCache.instance = new QueryCache();
-        return QueryCache.instance;
-    }
+    ByteArrayInputStream bytesIn = new ByteArrayInputStream(clausesSerialized);
+    ObjectInputStream ois = new ObjectInputStream(bytesIn);
+    List<Clause> clauses = (List<Clause>) ois.readObject();
 
-    private void addKeyspace(String keyspace) {
-        if (!entries.containsKey(keyspace)) {
-            synchronized (entries) {
-                if (!entries.containsKey(keyspace))
-                    entries.put(keyspace, new HashMap<>());
-            }
-        }
-    }
+    QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
+    if (entry == null) entry = addEntry(keyspace, table, clauses, clausesSerialized, false, limit);
 
-    private void addTable(String keyspace, String table) {
-        addKeyspace(keyspace);
-        if (!entries.get(keyspace).containsKey(table)) {
-            synchronized (entries.get(keyspace)) {
-                if (!entries.get(keyspace).containsKey(table))
-                    entries.get(keyspace).put(table, new ArrayList<>());
-            }
-        }
-    }
+    entry.waitUntilReady();
 
+    return entry;
+  }
 
-    //called by child
-    public QueryCacheEntry updateCache(String keyspace, String table, byte[] clausesSerialized, int limit) throws ClassNotFoundException, IOException {
+  // executed on client
+  public QueryCacheEntry updateCache(
+      String keyspace, String table, List<Clause> clauses, int limit) {
+    QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
-        ByteArrayInputStream bytesIn = new ByteArrayInputStream(clausesSerialized);
-        ObjectInputStream ois = new ObjectInputStream(bytesIn);
-        List<Clause> clauses = (List<Clause>) ois.readObject();
+    if (entry == null) entry = addEntry(keyspace, table, clauses, null, false, limit);
 
-        QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
+    entry.waitUntilReady();
 
-        if (entry == null)
-            entry = addEntry(keyspace, table, clauses, clausesSerialized, false, limit);
+    return entry;
+  }
 
-        entry.waitUntilReady();
+  // Only called for migration
+  public QueryCacheEntry updateCacheByMigration(
+      String keyspace, String table, List<Clause> clauses, int limit) {
+    QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
-        return entry;
-    }
+    if (entry == null) entry = addEntry(keyspace, table, clauses, null, true, limit);
 
+    // entry.waitUntilReady();
+    return entry;
+  }
 
-    //executed on client
-    public QueryCacheEntry updateCache(String keyspace, String table, List<Clause> clauses, int limit) {
-        QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
+  // Hossein here making this public
+  public QueryCacheEntry getEntry(String keyspace, String table, List<Clause> clauses, int limit) {
+    HashMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
+    if (tableMap == null) return null;
 
-        if (entry == null)
-            entry = addEntry(keyspace, table, clauses, null, false, limit);
+    List<QueryCacheEntry> entryList = tableMap.get(table);
+    if (entryList == null) return null;
 
-        entry.waitUntilReady();
+    for (QueryCacheEntry e : entryList)
+      if (e.isSame(clauses))
+        if (e.limit == -1
+            || e.limit > limit) // we already have a bigger query so don't add this one
+        return e;
 
-        return entry;
+    return null;
+  }
 
-    }
+  private QueryCacheEntry addEntry(
+      String keyspace,
+      String table,
+      List<Clause> clauses,
+      byte[] clausesSerialized,
+      boolean fromMigration,
+      int limit) {
 
-    //Only called for migration
-    public QueryCacheEntry updateCacheByMigration(String keyspace, String table, List<Clause> clauses, int limit) {
-        QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
+    addTable(keyspace, table);
 
-        if (entry == null)
-            entry = addEntry(keyspace, table, clauses, null, true, limit);
+    HashMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
+    List<QueryCacheEntry> entryList = tableMap.get(table);
 
-        //entry.waitUntilReady();
-        return entry;
-    }
-//
-//	//Only called for migration
-//	public QueryCacheEntry updateCacheByMigrationAll(ArrayList<CommandEntryReply> replies) {
-//		ArrayList<QueryCacheEntry> results = new ArrayList<>();
-//		for (CommandEntryReply r : replies)
-//		{
-//
-//			QueryCacheEntry entry = getEntry(r.getKeyspace(), r.getTable(), r.getConverted(), r.getLimit());
-//
-//			if (entry == null)
-//				results.add(entry);
-//		}
-//
-//		addEntries(results);
-//
-//		//entry.waitUntilReady();
-//	}
+    QueryCacheEntry newEntry = new QueryCacheEntry(keyspace, table, clauses, limit);
+    if (clausesSerialized != null) newEntry.setClausesSerialized(clausesSerialized);
 
-
-    //Hossein here making this public
-    public QueryCacheEntry getEntry(String keyspace, String table, List<Clause> clauses, int limit) {
-        HashMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
-        if (tableMap == null)
-            return null;
-
-        List<QueryCacheEntry> entryList = tableMap.get(table);
-        if (entryList == null)
-            return null;
-
-        for (QueryCacheEntry e : entryList)
-            if (e.isSame(clauses))
-                if (e.limit == -1 || e.limit > limit) //we already have a bigger query so don't add this one
-                    return e;
-
-        return null;
-    }
-
-
-    private QueryCacheEntry addEntry(String keyspace, String table, List<Clause> clauses, byte[] clausesSerialized, boolean fromMigration, int limit) {
-
-        addTable(keyspace, table);
-
-        HashMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
-        List<QueryCacheEntry> entryList = tableMap.get(table);
-
-        QueryCacheEntry newEntry = new QueryCacheEntry(keyspace, table, clauses, limit);
-        if (clausesSerialized != null)
-            newEntry.setClausesSerialized(clausesSerialized);
-
-        synchronized (entryList) {
-            for (QueryCacheEntry entry : entryList) {
-                if (entry.isSame(clauses)) {
-                    if (entry.limit == newEntry.limit)
-                        return entry;
-                    else if (entry.limit == -1 && newEntry.limit > 0) {
-                        newEntry.isCovered = entry;
-                        entry.covers.add(newEntry);
-                    } else if (entry.limit > 0 && newEntry.limit > 0 && entry.limit < newEntry.limit) {
-                        entry.isCovered = newEntry;
-                        newEntry.covers.add(entry);
-                    }
-                }
-
-                if (newEntry.isCovered == null && entry.isSuperSet(clauses)) {
-                    newEntry.isCovered = entry;
-                    entry.covers.add(newEntry);
-                }
-
-                if (entry.isCovered == null && entry.isSubSet(clauses)) {
-                    entry.isCovered = newEntry;
-                    newEntry.covers.add(entry);
-                }
-            }
-
-            entryList.add(newEntry);
+    synchronized (entryList) {
+      for (QueryCacheEntry entry : entryList) {
+        if (entry.isSame(clauses)) {
+          if (entry.limit == newEntry.limit) return entry;
+          else if (entry.limit == -1 && newEntry.limit > 0) {
+            newEntry.isCovered = entry;
+            entry.covers.add(newEntry);
+          } else if (entry.limit > 0 && newEntry.limit > 0 && entry.limit < newEntry.limit) {
+            entry.isCovered = newEntry;
+            newEntry.covers.add(entry);
+          }
         }
 
-
-        // TODO add entry to DB (of your parent)
-        try {
-
-            if (PathStoreProperties.getInstance().role != Role.ROOTSERVER && newEntry.isCovered == null) {
-
-                if (!fromMigration)
-                    PathStoreServerClient.getInstance().addQueryEntry(newEntry);
-                //Hossein: don't update your parents query cache (for now)
-
-
-                if (PathStoreProperties.getInstance().role == Role.SERVER && !fromMigration) {
-                    fetchDelta(newEntry);
-                }
-            }
-        } finally {
-            newEntry.setReady();
+        if (newEntry.isCovered == null && entry.isSuperSet(clauses)) {
+          newEntry.isCovered = entry;
+          entry.covers.add(newEntry);
         }
 
+        if (entry.isCovered == null && entry.isSubSet(clauses)) {
+          entry.isCovered = newEntry;
+          newEntry.covers.add(entry);
+        }
+      }
 
-        return newEntry;
-
+      entryList.add(newEntry);
     }
 
+    // TODO add entry to DB (of your parent)
+    try {
 
-    public UUID createDelta(String keyspace, String table, byte[] clausesSerialized, UUID parentTimestamp, int nodeID, int limit) throws IOException, ClassNotFoundException {
-        ByteArrayInputStream bytesIn = new ByteArrayInputStream(clausesSerialized);
-        ObjectInputStream ois = new ObjectInputStream(bytesIn);
-        @SuppressWarnings("unchecked")
-        List<Clause> clauses = (List<Clause>) ois.readObject();
+      if (PathStoreProperties.getInstance().role != Role.ROOTSERVER && newEntry.isCovered == null) {
 
-        UUID deltaID = UUID.randomUUID();
+        if (!fromMigration) PathStoreServerClient.getInstance().addQueryEntry(newEntry);
+        // Hossein: don't update your parents query cache (for now)
 
-        if (limit == -1)
-            limit = Integer.MAX_VALUE;
+        if (PathStoreProperties.getInstance().role == Role.SERVER && !fromMigration) {
+          fetchDelta(newEntry);
+        }
+      }
+    } finally {
+      newEntry.setReady();
+    }
 
-        Select select = QueryBuilder.select().all().from(keyspace, table);
-        select.allowFiltering();
+    return newEntry;
+  }
 
-        for (Clause clause : clauses)
-            select.where(clause);
+  public UUID createDelta(
+      String keyspace,
+      String table,
+      byte[] clausesSerialized,
+      UUID parentTimestamp,
+      int nodeID,
+      int limit)
+      throws IOException, ClassNotFoundException {
+    ByteArrayInputStream bytesIn = new ByteArrayInputStream(clausesSerialized);
+    ObjectInputStream ois = new ObjectInputStream(bytesIn);
+    @SuppressWarnings("unchecked")
+    List<Clause> clauses = (List<Clause>) ois.readObject();
 
+    UUID deltaID = UUID.randomUUID();
 
-        Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
+    if (limit == -1) limit = Integer.MAX_VALUE;
 
-        try {
+    Select select = QueryBuilder.select().all().from(keyspace, table);
+    select.allowFiltering();
 
-            //hossein here:
-            select.setFetchSize(1000);
+    for (Clause clause : clauses) select.where(clause);
 
-            ResultSet results = local.execute(select);
+    Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
 
-            Collection<Column> columns = SchemaInfo.getInstance().getTableColumns(keyspace, table);
+    try {
 
-            Batch batch = QueryBuilder.batch();
+      // hossein here:
+      select.setFetchSize(1000);
 
-            int batchSize = 0;
+      ResultSet results = local.execute(select);
 
-            PathStorePrivilegedCluster cluster = PathStorePrivilegedCluster.getDaemonInstance();
+      Collection<Column> columns = SchemaInfo.getInstance().getTableColumns(keyspace, table);
 
-            String primary = cluster.getMetadata().getKeyspace(keyspace).getTable(table).getPrimaryKey().get(0).getName();
+      Batch batch = QueryBuilder.batch();
 
-            Object previousKey = null;
-            Object currentKey = null;
-            int count = -1;
+      int batchSize = 0;
 
-            int totalRowsChanged = 0;
-            for (Row row : results) {
-                currentKey = row.getObject(primary);
-                if (!currentKey.equals(previousKey))
-                    count++;
-                if (count >= limit)
-                    break;
+      PathStorePrivilegedCluster cluster = PathStorePrivilegedCluster.getDaemonInstance();
 
-                //probable bug ... changed && to || and >= to <=
-                // Myles: This should be removed as when a node gets removed this will cause the child node not to repull 'old' data
-                if (row.getInt("pathstore_node") == nodeID ||
-                        row.getUUID("pathstore_parent_timestamp").timestamp() <= parentTimestamp.timestamp())
-                    continue;
+      String primary =
+          cluster
+              .getMetadata()
+              .getKeyspace(keyspace)
+              .getTable(table)
+              .getPrimaryKey()
+              .get(0)
+              .getName();
 
+      Object previousKey = null;
+      Object currentKey = null;
+      int count = -1;
 
-                totalRowsChanged++;
-                Insert insert = QueryBuilder.insertInto(keyspace, "view_" + table);
+      int totalRowsChanged = 0;
+      for (Row row : results) {
+        currentKey = row.getObject(primary);
+        if (!currentKey.equals(previousKey)) count++;
+        if (count >= limit) break;
 
-                insert.value("pathstore_view_id", deltaID);
+        if (row.getInt("pathstore_node") == nodeID
+            || row.getUUID("pathstore_parent_timestamp").timestamp() <= parentTimestamp.timestamp())
+          continue;
 
-                //Hossein
-                for (Column column : columns) {
-                    if (!row.isNull(column.column_name)
-                            && column.column_name.compareTo("pathstore_dirty") != 0
-                            && column.column_name.compareTo("pathstore_insert_sid") != 0)
-                        insert.value(column.column_name, row.getObject(column.column_name));
-                }
+        totalRowsChanged++;
+        Insert insert = QueryBuilder.insertInto(keyspace, "view_" + table);
 
-                String statement = insert.toString();
+        insert.value("pathstore_view_id", deltaID);
 
-                if (statement.length() > PathStoreProperties.getInstance().MaxBatchSize)
-                    local.execute(insert);
-
-                else {
-                    if (batchSize + statement.length() > PathStoreProperties.getInstance().MaxBatchSize) {
-                        local.execute(batch);
-                        batch = QueryBuilder.batch();
-                        batchSize = 0;
-                    }
-                    batch.add(insert);
-                    batchSize += statement.length();
-                }
-            }
-            if (batchSize > 0)
-                local.execute(batch);
-
-            if (totalRowsChanged == 0)
-                return null;
-
-
-            return deltaID;
-        } finally {
-            //local.close();
+        // Hossein
+        for (Column column : columns) {
+          if (!row.isNull(column.column_name)
+              && column.column_name.compareTo("pathstore_dirty") != 0
+              && column.column_name.compareTo("pathstore_insert_sid") != 0)
+            insert.value(column.column_name, row.getObject(column.column_name));
         }
 
-    }
+        String statement = insert.toString();
 
-
-    public void fetchDelta(QueryCacheEntry entry) {
-        UUID deltaId = null;
-        long d = System.nanoTime();
-
-//		System.out.println("     inside fetch delta " + entry.keyspace + " " + entry.table);
-
-        if (entry.getParentTimeStamp() != null) {
-
-            deltaId = PathStoreServerClient.getInstance().cretateQueryDelta(entry);
-            if (deltaId == null) {
-//				System.out.println("no change, return");
-                return;
-            }
-//			System.out.println(" creating queryDelta took: " +Timer.getTime(d));
+        if (statement.length() > PathStoreProperties.getInstance().MaxBatchSize)
+          local.execute(insert);
+        else {
+          if (batchSize + statement.length() > PathStoreProperties.getInstance().MaxBatchSize) {
+            local.execute(batch);
+            batch = QueryBuilder.batch();
+            batchSize = 0;
+          }
+          batch.add(insert);
+          batchSize += statement.length();
         }
+      }
+      if (batchSize > 0) local.execute(batch);
 
-        fetchData(entry, deltaId);
-//		System.out.println(" after querydelta took: " +Timer.getTime(d));
+      if (totalRowsChanged == 0) return null;
+
+      return deltaID;
+    } finally {
+      // local.close();
+    }
+  }
+
+  public void fetchDelta(QueryCacheEntry entry) {
+    UUID deltaId = null;
+    long d = System.nanoTime();
+
+    //		System.out.println("     inside fetch delta " + entry.keyspace + " " + entry.table);
+
+    if (entry.getParentTimeStamp() != null) {
+
+      deltaId = PathStoreServerClient.getInstance().cretateQueryDelta(entry);
+      if (deltaId == null) {
+        //				System.out.println("no change, return");
+        return;
+      }
+      //			System.out.println(" creating queryDelta took: " +Timer.getTime(d));
     }
 
+    fetchData(entry, deltaId);
+    //		System.out.println(" after querydelta took: " +Timer.getTime(d));
+  }
 
-    private void fetchData(QueryCacheEntry entry) {
-        fetchData(entry, null);
-    }
+  private void fetchData(QueryCacheEntry entry, UUID deltaID) {
+    Session parent = PathStorePrivilegedCluster.getParentInstance().connect();
+    Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
 
+    String table = deltaID != null ? "view_" + entry.table : entry.table;
 
-    private void fetchData(QueryCacheEntry entry, UUID deltaID) {
-        Session parent = PathStorePrivilegedCluster.getParentInstance().connect();
-        Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
+    Select select = QueryBuilder.select().all().from(entry.keyspace, table);
 
-        try {
-            String table = deltaID != null ? "view_" + entry.table : entry.table;
+    select.allowFiltering();
 
-            Select select = QueryBuilder.select().all().from(entry.keyspace, table);
+    if (deltaID != null) select.where(QueryBuilder.eq("pathstore_view_id", deltaID));
 
-            select.allowFiltering();
+    for (Clause clause : entry.clauses) select.where(clause);
 
-            if (deltaID != null)
-                select.where(QueryBuilder.eq("pathstore_view_id", deltaID));
+    // hossein here again
+    select.setFetchSize(1000);
 
-            for (Clause clause : entry.clauses)
-                select.where(clause);
+    ResultSet results = parent.execute(select);
 
-            //hossein here again
-            select.setFetchSize(1000);
+    Collection<Column> columns =
+        SchemaInfo.getInstance().getTableColumns(entry.keyspace, entry.table);
 
-            ResultSet results = parent.execute(select);
+    Batch batch = QueryBuilder.batch();
 
-            Collection<Column> columns = SchemaInfo.getInstance().getTableColumns(entry.keyspace, entry.table);
+    int batchSize = 0;
 
-            Batch batch = QueryBuilder.batch();
+    UUID highest_timestamp = null;
 
-            int batchSize = 0;
+    // check this
+    for (Row row : results) {
 
-            UUID highest_timestamp = null;
+      Insert insert = QueryBuilder.insertInto(entry.keyspace, entry.table);
 
+      for (Column column : columns) {
+        if (column.column_name.compareTo("pathstore_parent_timestamp") == 0) {
+          UUID row_timestamp = row.getUUID("pathstore_parent_timestamp");
 
-            //check this
-            for (Row row : results) {
+          if (highest_timestamp == null
+              || highest_timestamp.timestamp() < row_timestamp.timestamp())
+            highest_timestamp = row_timestamp;
 
-                Insert insert = QueryBuilder.insertInto(entry.keyspace, entry.table);
-
-                for (Column column : columns) {
-                    if (column.column_name.compareTo("pathstore_parent_timestamp") == 0) {
-                        UUID row_timestamp = row.getUUID("pathstore_parent_timestamp");
-
-                        if (highest_timestamp == null || highest_timestamp.timestamp() < row_timestamp.timestamp())
-                            highest_timestamp = row_timestamp;
-
-                        insert.value("pathstore_parent_timestamp", QueryBuilder.now());
-                    } else {
-                        try {
-                            if (column.column_name.compareTo("pathstore_insert_sid") != 0 && column.column_name.compareTo("pathstore_dirty") != 0
-                                    && !row.isNull(column.column_name))
-                                insert.value(column.column_name, row.getObject(column.column_name));
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            System.err.println(" some error here: entry.keyspace entry.table" + entry.keyspace + " " + entry.table);
-                        }
-                    }
-                }
-
-                String statement = insert.toString();
-
-                if (statement.length() > PathStoreProperties.getInstance().MaxBatchSize)
-                    local.execute(insert);
-                else {
-                    if (batchSize + statement.length() > PathStoreProperties.getInstance().MaxBatchSize) {
-                        local.execute(batch);
-                        batch = QueryBuilder.batch();
-                        batchSize = 0;
-                    }
-                    batch.add(insert);
-                    batchSize += statement.length();
-                }
-            }
-            if (batchSize > 0)
-                local.execute(batch);
-
-
-            UUID entry_timestamp = entry.getParentTimeStamp();
-
-            assert (entry_timestamp == null || entry_timestamp.timestamp() < highest_timestamp.timestamp());
-
-            entry.setParentTimeStamp(highest_timestamp);
-        } finally {
-            //local.close();
-            //parent.close();
+          insert.value("pathstore_parent_timestamp", QueryBuilder.now());
+        } else {
+          try {
+            if (column.column_name.compareTo("pathstore_insert_sid") != 0
+                && column.column_name.compareTo("pathstore_dirty") != 0
+                && !row.isNull(column.column_name))
+              insert.value(column.column_name, row.getObject(column.column_name));
+          } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println(
+                " some error here: entry.keyspace entry.table"
+                    + entry.keyspace
+                    + " "
+                    + entry.table);
+          }
         }
+      }
 
+      String statement = insert.toString();
+
+      if (statement.length() > PathStoreProperties.getInstance().MaxBatchSize)
+        local.execute(insert);
+      else {
+        if (batchSize + statement.length() > PathStoreProperties.getInstance().MaxBatchSize) {
+          local.execute(batch);
+          batch = QueryBuilder.batch();
+          batchSize = 0;
+        }
+        batch.add(insert);
+        batchSize += statement.length();
+      }
     }
+    if (batchSize > 0) local.execute(batch);
+
+    UUID entry_timestamp = entry.getParentTimeStamp();
+
+    assert (entry_timestamp == null || entry_timestamp.timestamp() < highest_timestamp.timestamp());
+
+    entry.setParentTimeStamp(highest_timestamp);
+  }
 }

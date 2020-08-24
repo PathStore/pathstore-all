@@ -24,9 +24,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import pathstore.common.QueryCache;
 import pathstore.exception.InvalidKeyspaceException;
 import pathstore.exception.InvalidStatementTypeException;
-import pathstore.exception.PathMigrateAlreadyGoneException;
 import pathstore.exception.PathStoreRemoteException;
-import pathstore.system.PathStorePrivilegedCluster;
+import pathstore.sessions.PathStoreSessionManager;
+import pathstore.sessions.SessionToken;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
@@ -43,9 +43,6 @@ public class PathStoreSession implements Session {
 
   /** Raw session used to execute queries */
   private final Session session;
-
-  // TODO: Remove
-  boolean useColumn = false; // temporary
 
   /** @param cluster cluster to create session */
   public PathStoreSession(final Cluster cluster) {
@@ -80,13 +77,19 @@ public class PathStoreSession implements Session {
     return executeNormal(statement, null);
   }
 
-  public ResultSet execute(final Statement statement, final String device)
-      throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
-    return executeNormal(statement, device);
+  public ResultSet execute(final Statement statement, final SessionToken sessionToken)
+      throws PathStoreRemoteException {
+    return executeNormal(statement, sessionToken);
   }
 
-  public ResultSet executeNormal(Statement statement, final String device)
-      throws PathMigrateAlreadyGoneException, PathStoreRemoteException {
+  public ResultSet executeNormal(Statement statement, SessionToken sessionToken)
+      throws PathStoreRemoteException {
+
+    // Myles: Temporary to test session management
+    if (sessionToken == null) {
+      sessionToken = PathStoreSessionManager.getInstance().getKeyspaceToken("test-session");
+    }
+
     // TODO: Check if statement throws errors
 
     String keyspace = statement.getKeyspace();
@@ -114,11 +117,6 @@ public class PathStoreSession implements Session {
         this.printDifference(original, strippedClauses);
 
         QueryCache.getInstance().updateCache(keyspace, table, strippedClauses, -1);
-
-        /*
-        if (device != null)
-          QueryCache.getInstance().updateDeviceCommandCache(device, keyspace, table, clauses, l);
-         */
       }
     } else if (statement instanceof Insert) {
       Insert insert = (Insert) statement;
@@ -184,6 +182,19 @@ public class PathStoreSession implements Session {
       }
     } else throw new InvalidStatementTypeException();
 
+    // Update session token if present to include either the table or keyspace depending on session
+    // type
+    if (sessionToken != null) {
+      switch (sessionToken.sessionType) {
+        case KEYSPACE:
+          sessionToken.addEntry(keyspace);
+          break;
+        case TABLE:
+          sessionToken.addEntry(String.format("%s.%s", keyspace, table));
+          break;
+      }
+    }
+
     // hossein here:
     statement.setFetchSize(1000);
 
@@ -224,36 +235,8 @@ public class PathStoreSession implements Session {
         : Collections.emptyList();
   }
 
-  /**
-   * TODO: Explain TODO: This function is only used when executing queries with a device in mind but
-   * those aren't used.
-   *
-   * @param ins insert statement
-   * @return select?
-   */
-  // Hossein
-  public static Select InsertToSelect(final Insert ins) {
-    Select slct = QueryBuilder.select().all().from(ins.getKeyspace() + "." + ins.getTable());
-    List<ColumnMetadata> pkl =
-        PathStorePrivilegedCluster.getDaemonInstance()
-            .getMetadata()
-            .getKeyspace(ins.getKeyspace())
-            .getTable(ins.getTable())
-            .getPrimaryKey();
-    String pk = pkl.get(0).getName();
-    for (int i = 0; i < ins.getNamesArrayList().size(); i++) {
-      String name = (String) ins.getNamesArrayList().get(i);
-      if (pk.equals(name)) {
-        slct.where(QueryBuilder.eq(name, ins.getValuesArrayList().get(i)));
-      }
-    }
-    return slct;
-  }
-
   public ResultSetFuture executeAsync(final String query) {
-    if (query.toLowerCase().contains("local_".toLowerCase()))
-      return this.session.executeAsync(query);
-    else throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException();
   }
 
   public ResultSetFuture executeAsync(String query, Object... values) {
