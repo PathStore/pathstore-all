@@ -25,7 +25,6 @@ import pathstore.common.QueryCache;
 import pathstore.exception.InvalidKeyspaceException;
 import pathstore.exception.InvalidStatementTypeException;
 import pathstore.exception.PathStoreRemoteException;
-import pathstore.sessions.PathStoreSessionManager;
 import pathstore.sessions.SessionToken;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
@@ -84,11 +83,6 @@ public class PathStoreSession implements Session {
 
   public ResultSet executeNormal(Statement statement, SessionToken sessionToken)
       throws PathStoreRemoteException {
-
-    // Myles: Temporary to test session management
-    if (sessionToken == null) {
-      sessionToken = PathStoreSessionManager.getInstance().getTableToken("test-session");
-    }
 
     // TODO: Check if statement throws errors
 
