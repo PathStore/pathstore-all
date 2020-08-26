@@ -37,6 +37,15 @@ public class SessionToken {
   private final Set<String> data;
 
   /**
+   * This boolean is used only in memory to denote if the stoken has been check pointed with the
+   * local node at least once to confirm it does not need to be migrated
+   */
+  private boolean hasBeenValidated;
+
+  /**
+   * hasBeenValidated is set to true as this constructor is called when generated a fresh session
+   * token for the given node.
+   *
    * @param sourceNode {@link #sourceNode}
    * @param sessionName {@link #sessionName}
    * @param sessionType {@link #sessionType}
@@ -48,10 +57,15 @@ public class SessionToken {
     this.sessionName = sessionName;
     this.sessionType = sessionType;
     this.data = new HashSet<>();
+    this.hasBeenValidated = true;
   }
 
   /**
    * This constructor is used for building a session token object from a json string
+   *
+   * <p>hasBeenValidated is set to false as the session token was loaded in via a json string
+   * implying it was loaded in from a file thus we can not guarantee the given session token was
+   * generated on this node and potentially needs migration
    *
    * @param sessionUUID session uuid
    * @param sourceNode where the data originated from
@@ -70,14 +84,27 @@ public class SessionToken {
     this.sessionName = sessionName;
     this.sessionType = sessionType;
     this.data = data;
+    this.hasBeenValidated = false;
   }
 
   /**
+   * TODO: Add validity checks with schema info Keyspace: %s, table: %s.%s
+   *
    * @param entry entry to add to data list
-   * @apiNote Assumes validity of either a keyspace.table name or a keyspace name
    */
   public void addEntry(final String entry) {
     this.data.add(entry);
+  }
+
+  /** @return if this token has been validated or not */
+  public boolean hasBeenValidated() {
+    return this.hasBeenValidated;
+  }
+
+  /** Called once the session token has been validated by the local node */
+  public void isValidated() {
+    this.hasBeenValidated = true;
+    System.out.println(String.format("Validated session token with name %s", this.sessionName));
   }
 
   /**

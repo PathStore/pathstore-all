@@ -23,6 +23,7 @@ import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
 import pathstore.exception.PathStoreRemoteException;
 
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Optional;
@@ -59,7 +60,6 @@ public class PathStoreServerClient {
       stub = (PathStoreServer) registry.lookup("PathStoreServer");
       System.out.println("creating new stub to parent");
     } catch (Exception e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
       throw new PathStoreRemoteException();
     }
@@ -104,5 +104,14 @@ public class PathStoreServerClient {
       e.printStackTrace();
     }
     return Optional.empty();
+  }
+
+  public int getLocalNodeId() {
+    try {
+      return this.stub.getLocalNodeId();
+    } catch (RemoteException e) {
+      e.printStackTrace();
+    }
+    return -1;
   }
 }

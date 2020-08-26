@@ -100,6 +100,11 @@ public class PathStoreSession implements Session {
 
       if (!table.startsWith("local_")) {
 
+        if (sessionToken != null && !sessionToken.hasBeenValidated()) {
+          // TODO: Validate token and migrate if needed
+          sessionToken.isValidated();
+        }
+
         List<Clause> original = select.where().getClauses();
 
         int originalSize = original.size();

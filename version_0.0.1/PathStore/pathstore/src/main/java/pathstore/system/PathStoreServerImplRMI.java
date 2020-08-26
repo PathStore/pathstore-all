@@ -4,6 +4,7 @@ import org.json.JSONObject;
 import pathstore.authentication.AuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.authentication.Credential;
+import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCache;
 import pathstore.system.logging.PathStoreLogger;
@@ -106,5 +107,16 @@ public class PathStoreServerImplRMI implements PathStoreServer {
         .put("username", clientUsername)
         .put("password", clientPassword)
         .toString();
+  }
+
+  /**
+   * This function is used to gather the node of the local node for node_source in a session token.
+   * Only called once by {@link pathstore.sessions.PathStoreSessionManager#init(String)}
+   *
+   * @return local node id
+   */
+  @Override
+  public int getLocalNodeId() {
+    return PathStoreProperties.getInstance().NodeID;
   }
 }

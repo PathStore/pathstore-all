@@ -1,6 +1,6 @@
 package pathstore.sessions;
 
-import pathstore.common.PathStoreProperties;
+import pathstore.client.PathStoreServerClient;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * used to when an application will migrate from one node to another.
  *
  * <p>TODO: Handle registration of sessions with local node to handle (n_s -> n_d1 -> n_d2)
+ *
+ * <p>TODO: Pull local node id on init as clients are not required to know the node id on connection
  */
 public class PathStoreSessionManager {
 
@@ -46,6 +48,12 @@ public class PathStoreSessionManager {
   private final String sessionFile;
 
   /**
+   * Gathered from {@link PathStoreServerClient#getLocalNodeId()}. This is used to denote the source
+   * node and is used for migration purposes
+   */
+  private final int localNodeId;
+
+  /**
    * Store all sessions that are keyspace based tokens (when migrated all data within a keyspace is
    * transferred)
    */
@@ -58,6 +66,11 @@ public class PathStoreSessionManager {
    */
   private PathStoreSessionManager(final String sessionFile) {
     this.sessionFile = sessionFile;
+    this.localNodeId = PathStoreServerClient.getInstance().getLocalNodeId();
+
+    if (this.localNodeId == -1)
+      logger.error("local node id has returned -1, sessions created will not be migrated");
+
     this.loadFromFile();
   }
 
@@ -183,9 +196,7 @@ public class PathStoreSessionManager {
     SessionToken token = this.sessionStore.get(transformedSessionName);
 
     if (token == null) {
-      SessionToken temp =
-          new SessionToken(
-              PathStoreProperties.getInstance().NodeID, transformedSessionName, sessionType);
+      SessionToken temp = new SessionToken(this.localNodeId, transformedSessionName, sessionType);
       this.sessionStore.put(transformedSessionName, temp);
       token = temp;
     }
