@@ -41,7 +41,8 @@ public class PathStoreClientAuthenticatedCluster {
         JSONObject responseObject = new JSONObject(response.get());
         System.out.println(responseObject.toString());
         if (responseObject.getString("status").equals("valid")) {
-          SchemaInfo schemaInfo = PathStoreServerClient.getInstance().getSchemaInfo();
+          SchemaInfo schemaInfo =
+              PathStoreServerClient.getInstance().getSchemaInfo(applicationName);
 
           if (schemaInfo == null) throw new Exception("Could not get schema info from local node");
 

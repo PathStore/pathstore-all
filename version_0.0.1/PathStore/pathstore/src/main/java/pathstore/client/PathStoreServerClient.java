@@ -98,9 +98,9 @@ public class PathStoreServerClient {
     }
   }
 
-  public SchemaInfo getSchemaInfo() {
+  public SchemaInfo getSchemaInfo(final String keyspace) {
     try {
-      return this.stub.getSchemaInfo();
+      return this.stub.getSchemaInfo(keyspace);
     } catch (RemoteException e) {
       e.printStackTrace();
     }

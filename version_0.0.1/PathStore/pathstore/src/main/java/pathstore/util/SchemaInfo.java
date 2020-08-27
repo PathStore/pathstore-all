@@ -1,4 +1,4 @@
-/**
+/*
  * ********
  *
  * <p>Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
@@ -22,15 +22,17 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import io.netty.util.internal.ConcurrentSet;
 import pathstore.common.Constants;
+import pathstore.common.PathStoreServer;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
-import pathstore.system.PathStorePrivilegedCluster;
 
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -83,7 +85,7 @@ public class SchemaInfo implements Serializable {
   private static final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(SchemaInfo.class);
 
   /** Set of keyspace names that have been loaded in */
-  private final Set<String> keyspacesLoaded = new ConcurrentSet<>();
+  private final Set<String> keyspacesLoaded;
 
   /**
    * Map is defined as tableMap: keyspace_name -> table_name -> table object
@@ -93,8 +95,7 @@ public class SchemaInfo implements Serializable {
    * @see #getTableIndexes(String, String)
    * @see #loadKeyspace(String)
    */
-  private final ConcurrentMap<String, ConcurrentMap<String, Table>> tableMap =
-      new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, ConcurrentMap<String, Table>> tableMap;
 
   /**
    * Map is defined as columnInfo: keyspace_name -> table object -> collection of column objects
@@ -103,8 +104,7 @@ public class SchemaInfo implements Serializable {
    * @see #getTableColumns(String, String)
    * @see #loadKeyspace(String)
    */
-  private final ConcurrentMap<String, ConcurrentMap<Table, Collection<Column>>> columnInfo =
-      new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, ConcurrentMap<Table, Collection<Column>>> columnInfo;
 
   /**
    * Map is defined as partitionColumnNames: keyspace_name -> table object -> collection of
@@ -115,7 +115,7 @@ public class SchemaInfo implements Serializable {
    * @see #loadKeyspace(String)
    */
   private final ConcurrentMap<String, ConcurrentMap<Table, Collection<String>>>
-      partitionColumnNames = new ConcurrentHashMap<>();
+      partitionColumnNames;
 
   /**
    * Map is defined as clusterColumnNames: keyspace_name -> table object -> collection of cluster
@@ -125,8 +125,7 @@ public class SchemaInfo implements Serializable {
    * @see #getClusterColumnNames(String, String)
    * @see #loadKeyspace(String)
    */
-  private final ConcurrentMap<String, ConcurrentMap<Table, Collection<String>>> clusterColumnNames =
-      new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, ConcurrentMap<Table, Collection<String>>> clusterColumnNames;
 
   /**
    * Map is defined as indexInfo: keyspace_name -> table object -> collection of index objects
@@ -134,8 +133,7 @@ public class SchemaInfo implements Serializable {
    * @see #getTableIndexes(Table)
    * @see #loadKeyspace(String)
    */
-  private final ConcurrentMap<String, ConcurrentMap<Table, Collection<Index>>> indexInfo =
-      new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, ConcurrentMap<Table, Collection<Index>>> indexInfo;
 
   /**
    * Map is defined as typeInfo: keyspace_name -> collection of types for that keyspace
@@ -144,7 +142,7 @@ public class SchemaInfo implements Serializable {
    * @see #getKeyspaceTypes(String)
    * @see #loadKeyspace(String)
    */
-  private final ConcurrentMap<String, Collection<Type>> typeInfo = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, Collection<Type>> typeInfo;
 
   /** @see PathStorePrivilegedCluster */
   private final transient Session session;
@@ -154,8 +152,85 @@ public class SchemaInfo implements Serializable {
    *     connection.
    */
   public SchemaInfo(final Session session) {
+    this.keyspacesLoaded = new ConcurrentSet<>();
+    this.tableMap = new ConcurrentHashMap<>();
+    this.columnInfo = new ConcurrentHashMap<>();
+    this.partitionColumnNames = new ConcurrentHashMap<>();
+    this.clusterColumnNames = new ConcurrentHashMap<>();
+    this.indexInfo = new ConcurrentHashMap<>();
+    this.typeInfo = new ConcurrentHashMap<>();
     this.session = session;
     this.loadSchemas();
+  }
+
+  /**
+   * This constructor is used to build a partition of the schema info class.
+   *
+   * @param keyspacesLoaded singleton set of one keyspace
+   * @param tableMap all tables for the passed keyspace
+   * @param columnInfo column info for the singleton keyspace
+   * @param partitionColumnNames partition column names for the passed keyspace
+   * @param clusterColumnNames cluster column names for the passed keyspace
+   * @param indexInfo index info for the keyspace
+   * @param typeInfo type info for the keyspace
+   * @see #getSchemaPartition(String)
+   */
+  private SchemaInfo(
+      final Set<String> keyspacesLoaded,
+      final ConcurrentMap<String, ConcurrentMap<String, Table>> tableMap,
+      final ConcurrentMap<String, ConcurrentMap<Table, Collection<Column>>> columnInfo,
+      final ConcurrentMap<String, ConcurrentMap<Table, Collection<String>>> partitionColumnNames,
+      final ConcurrentMap<String, ConcurrentMap<Table, Collection<String>>> clusterColumnNames,
+      final ConcurrentMap<String, ConcurrentMap<Table, Collection<Index>>> indexInfo,
+      final ConcurrentMap<String, Collection<Type>> typeInfo) {
+    this.session = null;
+    this.keyspacesLoaded = keyspacesLoaded;
+    this.tableMap = tableMap;
+    this.columnInfo = columnInfo;
+    this.partitionColumnNames = partitionColumnNames;
+    this.clusterColumnNames = clusterColumnNames;
+    this.indexInfo = indexInfo;
+    this.typeInfo = typeInfo;
+  }
+
+  /**
+   * This function is used to produce a new schema info object for a partition of the data based on
+   * a keyspace
+   *
+   * @param keyspace keyspace to partition by
+   * @return new schema info object if the keyspace passed is valid.
+   * @see PathStoreServer#getSchemaInfo(String)
+   */
+  public SchemaInfo getSchemaPartition(final String keyspace) {
+    if (this.keyspacesLoaded.contains(keyspace)) {
+      Set<String> keyspacesLoaded = new HashSet<>();
+      keyspacesLoaded.add(keyspace);
+
+      Predicate<Map.Entry<String, ?>> filterByKeyspace = entry -> entry.getKey().equals(keyspace);
+
+      return new SchemaInfo(
+          keyspacesLoaded,
+          this.tableMap.entrySet().stream()
+              .filter(filterByKeyspace)
+              .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue)),
+          this.columnInfo.entrySet().stream()
+              .filter(filterByKeyspace)
+              .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue)),
+          this.partitionColumnNames.entrySet().stream()
+              .filter(filterByKeyspace)
+              .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue)),
+          this.clusterColumnNames.entrySet().stream()
+              .filter(filterByKeyspace)
+              .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue)),
+          this.indexInfo.entrySet().stream()
+              .filter(filterByKeyspace)
+              .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue)),
+          this.typeInfo.entrySet().stream()
+              .filter(filterByKeyspace)
+              .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
+
+    return null;
   }
 
   // publicly accessible functions
@@ -245,9 +320,7 @@ public class SchemaInfo implements Serializable {
   }
 
   /**
-   * TODO: (Myles) Is validation (null check) needed here?
-   *
-   * <p>This function will give you a set of table objects based on a keyspace
+   * This function will give you a set of table objects based on a keyspace
    *
    * @param keyspace keyspace of interest. Assumed valid.
    * @return collection of table objects associated with a given keyspace
@@ -372,16 +445,17 @@ public class SchemaInfo implements Serializable {
    * @see pathstore.system.PathStoreServerImpl
    */
   private void loadSchemas() {
-    StreamSupport.stream(
-            this.session
-                .execute(
-                    QueryBuilder.select(Constants.KEYSPACES_COLUMNS.KEYSPACE_NAME)
-                        .from(Constants.SYSTEM_SCHEMA, Constants.KEYSPACES))
-                .spliterator(),
-            true)
-        .map(row -> row.getString(Constants.KEYSPACES_COLUMNS.KEYSPACE_NAME))
-        .filter(keyspace -> keyspace.startsWith(Constants.PATHSTORE_PREFIX))
-        .forEach(this::loadKeyspace);
+    if (this.session != null)
+      StreamSupport.stream(
+              this.session
+                  .execute(
+                      QueryBuilder.select(Constants.KEYSPACES_COLUMNS.KEYSPACE_NAME)
+                          .from(Constants.SYSTEM_SCHEMA, Constants.KEYSPACES))
+                  .spliterator(),
+              true)
+          .map(row -> row.getString(Constants.KEYSPACES_COLUMNS.KEYSPACE_NAME))
+          .filter(keyspace -> keyspace.startsWith(Constants.PATHSTORE_PREFIX))
+          .forEach(this::loadKeyspace);
   }
 
   /**
@@ -392,18 +466,21 @@ public class SchemaInfo implements Serializable {
    * @return map from table_name -> table object for all tables that reside within a given keyspace.
    */
   private ConcurrentMap<String, Table> loadTableCollectionsForKeyspace(final String keyspaceName) {
-    return StreamSupport.stream(
-            this.session
-                .execute(
-                    QueryBuilder.select()
-                        .all()
-                        .from(Constants.SYSTEM_SCHEMA, Constants.TABLES)
-                        .where(
-                            QueryBuilder.eq(Constants.TABLES_COLUMNS.KEYSPACE_NAME, keyspaceName)))
-                .spliterator(),
-            true)
-        .map(Table::buildFromRow)
-        .collect(Collectors.toConcurrentMap(table -> table.table_name, Function.identity()));
+    return this.session != null
+        ? StreamSupport.stream(
+                this.session
+                    .execute(
+                        QueryBuilder.select()
+                            .all()
+                            .from(Constants.SYSTEM_SCHEMA, Constants.TABLES)
+                            .where(
+                                QueryBuilder.eq(
+                                    Constants.TABLES_COLUMNS.KEYSPACE_NAME, keyspaceName)))
+                    .spliterator(),
+                true)
+            .map(Table::buildFromRow)
+            .collect(Collectors.toConcurrentMap(table -> table.table_name, Function.identity()))
+        : null;
   }
 
   /**
@@ -528,17 +605,20 @@ public class SchemaInfo implements Serializable {
      *     processing to improve the processing time of each row.
      */
     public static Collection<Type> buildFromKeyspace(final Session session, final String keyspace) {
-      return StreamSupport.stream(
-              session
-                  .execute(
-                      QueryBuilder.select()
-                          .all()
-                          .from(Constants.SYSTEM_SCHEMA, Constants.TYPES)
-                          .where(QueryBuilder.eq(Constants.TYPES_COLUMNS.KEYSPACE_NAME, keyspace)))
-                  .spliterator(),
-              true)
-          .map(Type::buildFromRow)
-          .collect(Collectors.toSet());
+      return session != null
+          ? StreamSupport.stream(
+                  session
+                      .execute(
+                          QueryBuilder.select()
+                              .all()
+                              .from(Constants.SYSTEM_SCHEMA, Constants.TYPES)
+                              .where(
+                                  QueryBuilder.eq(Constants.TYPES_COLUMNS.KEYSPACE_NAME, keyspace)))
+                      .spliterator(),
+                  true)
+              .map(Type::buildFromRow)
+              .collect(Collectors.toSet())
+          : null;
     }
 
     /**
@@ -613,22 +693,24 @@ public class SchemaInfo implements Serializable {
      *     processing to improve the processing time of each row.
      */
     public static Collection<Index> buildFromTable(final Session session, final Table table) {
-      return StreamSupport.stream(
-              session
-                  .execute(
-                      QueryBuilder.select()
-                          .all()
-                          .from(Constants.SYSTEM_SCHEMA, Constants.INDEXES)
-                          .where(
-                              QueryBuilder.eq(
-                                  Constants.INDEXES_COLUMNS.KEYSPACE_NAME, table.keyspace_name))
-                          .and(
-                              QueryBuilder.eq(
-                                  Constants.INDEXES_COLUMNS.TABLE_NAME, table.table_name)))
-                  .spliterator(),
-              true)
-          .map(Index::buildFromRow)
-          .collect(Collectors.toSet());
+      return session != null
+          ? StreamSupport.stream(
+                  session
+                      .execute(
+                          QueryBuilder.select()
+                              .all()
+                              .from(Constants.SYSTEM_SCHEMA, Constants.INDEXES)
+                              .where(
+                                  QueryBuilder.eq(
+                                      Constants.INDEXES_COLUMNS.KEYSPACE_NAME, table.keyspace_name))
+                              .and(
+                                  QueryBuilder.eq(
+                                      Constants.INDEXES_COLUMNS.TABLE_NAME, table.table_name)))
+                      .spliterator(),
+                  true)
+              .map(Index::buildFromRow)
+              .collect(Collectors.toSet())
+          : null;
     }
 
     /**
@@ -728,22 +810,24 @@ public class SchemaInfo implements Serializable {
      *     processing to improve the processing time of each row.
      */
     public static Collection<Column> buildFromTable(final Session session, final Table table) {
-      return StreamSupport.stream(
-              session
-                  .execute(
-                      QueryBuilder.select()
-                          .all()
-                          .from(Constants.SYSTEM_SCHEMA, Constants.COLUMNS)
-                          .where(
-                              QueryBuilder.eq(
-                                  Constants.COLUMNS_COLUMNS.KEYSPACE_NAME, table.keyspace_name))
-                          .and(
-                              QueryBuilder.eq(
-                                  Constants.COLUMNS_COLUMNS.TABLE_NAME, table.table_name)))
-                  .spliterator(),
-              true)
-          .map(Column::buildFromRow)
-          .collect(Collectors.toSet());
+      return session != null
+          ? StreamSupport.stream(
+                  session
+                      .execute(
+                          QueryBuilder.select()
+                              .all()
+                              .from(Constants.SYSTEM_SCHEMA, Constants.COLUMNS)
+                              .where(
+                                  QueryBuilder.eq(
+                                      Constants.COLUMNS_COLUMNS.KEYSPACE_NAME, table.keyspace_name))
+                              .and(
+                                  QueryBuilder.eq(
+                                      Constants.COLUMNS_COLUMNS.TABLE_NAME, table.table_name)))
+                      .spliterator(),
+                  true)
+              .map(Column::buildFromRow)
+              .collect(Collectors.toSet())
+          : null;
     }
 
     /**
