@@ -22,6 +22,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * This result set is used to extend the regular result set to allow for log compression using
@@ -106,8 +110,16 @@ public class PathStoreResultSet implements ResultSet {
   }
 
   public Row one() {
-    // TODO Auto-generated method stub
     return resultSet.one();
+  }
+
+  public boolean empty() {
+    return !this.iterator().hasNext();
+  }
+
+  public Stream<Row> stream() {
+    return StreamSupport.stream(
+        Spliterators.spliteratorUnknownSize(this.iterator(), Spliterator.ORDERED), false);
   }
 
   public ColumnDefinitions getColumnDefinitions() {

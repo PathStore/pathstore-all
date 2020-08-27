@@ -51,7 +51,7 @@ public class PathStoreSessionManager {
    * Gathered from {@link PathStoreServerClient#getLocalNodeId()}. This is used to denote the source
    * node and is used for migration purposes
    */
-  private final int localNodeId;
+  public final int localNodeId;
 
   /**
    * Store all sessions that are keyspace based tokens (when migrated all data within a keyspace is
@@ -94,6 +94,15 @@ public class PathStoreSessionManager {
    */
   public SessionToken getTableToken(final String sessionName) {
     return getOrGenerateToken(sessionName, SessionType.TABLE);
+  }
+
+  /**
+   * This function is used to remove a session token from the session store.
+   *
+   * @param sessionTokenName session Token name to remove from the session store
+   */
+  public void removeToken(final String sessionTokenName) {
+    this.sessionStore.remove(sessionTokenName);
   }
 
   /**
@@ -164,7 +173,7 @@ public class PathStoreSessionManager {
       String tokenJsonString;
       while ((tokenJsonString = sessionFileReader.readLine()) != null) {
         SessionToken tempToken = SessionToken.buildFromJsonString(tokenJsonString);
-        this.sessionStore.put(tempToken.sessionName, tempToken);
+        if (tempToken != null) this.sessionStore.put(tempToken.sessionName, tempToken);
       }
 
       sessionFileReader.close();

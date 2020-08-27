@@ -106,6 +106,15 @@ public class PathStoreServerClient {
     return Optional.empty();
   }
 
+  public boolean validateSession(final String sessionJsonString) {
+    try {
+      return this.stub.validateSession(sessionJsonString);
+    } catch (RemoteException e) {
+      e.printStackTrace();
+    }
+    return false;
+  }
+
   public int getLocalNodeId() {
     try {
       return this.stub.getLocalNodeId();

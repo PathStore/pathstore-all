@@ -32,5 +32,7 @@ public interface PathStoreServer extends Remote {
   String registerApplication(final String applicationName, final String password)
       throws RemoteException;
 
+  boolean validateSession(final String sessionJsonString) throws RemoteException;
+
   int getLocalNodeId() throws RemoteException;
 }

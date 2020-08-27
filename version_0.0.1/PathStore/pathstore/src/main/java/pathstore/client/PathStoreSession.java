@@ -25,6 +25,7 @@ import pathstore.common.QueryCache;
 import pathstore.exception.InvalidKeyspaceException;
 import pathstore.exception.InvalidStatementTypeException;
 import pathstore.exception.PathStoreRemoteException;
+import pathstore.sessions.PathStoreSessionManager;
 import pathstore.sessions.SessionToken;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
@@ -72,7 +73,7 @@ public class PathStoreSession implements Session {
     throw new UnsupportedOperationException();
   }
 
-  public ResultSet execute(final Statement statement) {
+  public PathStoreResultSet execute(final Statement statement) {
     return executeNormal(statement, null);
   }
 
@@ -81,7 +82,7 @@ public class PathStoreSession implements Session {
     return executeNormal(statement, sessionToken);
   }
 
-  public ResultSet executeNormal(Statement statement, SessionToken sessionToken)
+  private PathStoreResultSet executeNormal(Statement statement, SessionToken sessionToken)
       throws PathStoreRemoteException {
 
     // TODO: Check if statement throws errors
@@ -100,10 +101,7 @@ public class PathStoreSession implements Session {
 
       if (!table.startsWith("local_")) {
 
-        if (sessionToken != null && !sessionToken.hasBeenValidated()) {
-          // TODO: Validate token and migrate if needed
-          sessionToken.isValidated();
-        }
+        this.handleSession(sessionToken);
 
         List<Clause> original = select.where().getClauses();
 
@@ -200,6 +198,31 @@ public class PathStoreSession implements Session {
     ResultSet set = this.session.execute(statement);
 
     return new PathStoreResultSet(this.session, set, keyspace, table, allowFiltering);
+  }
+
+  /**
+   * This function is used to handle a session from the {@link #executeNormal(Statement,
+   * SessionToken)} function.
+   *
+   * <p>If the session passed hasn't been validated (its been loaded in from the sessions file and
+   * hasn't been used yet) the session will be validated with the local node. If the session has a
+   * different source node then the local node and is valid, the data from the original source node
+   * will be migrated to this node. Once that is complete the source node for the session will be
+   * changed.
+   *
+   * <p>If the session is invalid it will be removed from the local session manager.
+   *
+   * @param sessionToken session token from execute normal
+   */
+  private void handleSession(final SessionToken sessionToken) {
+    if (sessionToken != null && !sessionToken.hasBeenValidated())
+      if (PathStoreServerClient.getInstance().validateSession(sessionToken.exportToJson())) {
+        logger.info(String.format("Session is valid %s", sessionToken.sessionName));
+        sessionToken.isValidated(PathStoreSessionManager.getInstance().localNodeId);
+      } else {
+        logger.info(String.format("Session is invalid %s", sessionToken.sessionName));
+        PathStoreSessionManager.getInstance().removeToken(sessionToken.sessionName);
+      }
   }
 
   private void printDifference(final List<Clause> original, final List<Clause> stripped) {

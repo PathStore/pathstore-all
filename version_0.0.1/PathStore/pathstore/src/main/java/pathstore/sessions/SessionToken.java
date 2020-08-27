@@ -17,7 +17,7 @@ public class SessionToken {
   public final UUID sessionUUID;
 
   /** Where the session was originally. */
-  public final int sourceNode;
+  public int sourceNode;
 
   /** Name of session */
   public final String sessionName;
@@ -88,12 +88,20 @@ public class SessionToken {
   }
 
   /**
-   * TODO: Add validity checks with schema info Keyspace: %s, table: %s.%s
-   *
    * @param entry entry to add to data list
+   * @implNote Validity check is done during migration, not during insertion.
    */
   public void addEntry(final String entry) {
     this.data.add(entry);
+  }
+
+  /**
+   * Used for validity check to determine if all inserted data is valid
+   *
+   * @return {@link #data}
+   */
+  public Collection<String> getData() {
+    return this.data;
   }
 
   /** @return if this token has been validated or not */
@@ -101,9 +109,17 @@ public class SessionToken {
     return this.hasBeenValidated;
   }
 
-  /** Called once the session token has been validated by the local node */
-  public void isValidated() {
+  /**
+   * This function is used to update the validity of a session. It is also required to pass a new
+   * source node id. This may be the original source node already existing, but if the source node
+   * is a new node, as in the session has been migrated the source node must be updated for future
+   * migrations
+   *
+   * @param newSourceNode source node to update to.
+   */
+  public void isValidated(final int newSourceNode) {
     this.hasBeenValidated = true;
+    this.sourceNode = newSourceNode;
     System.out.println(String.format("Validated session token with name %s", this.sessionName));
   }
 
@@ -134,21 +150,25 @@ public class SessionToken {
 
   /**
    * @param sessionTokenString session Token json string
-   * @return generated session token object
-   * @apiNote No validity check is performed on the string. Please ensure the file you're reading
-   *     from was produced by {@link PathStoreSessionManager#close()}
+   * @return generated session token object or null if all keys aren't present
    */
-  protected static SessionToken buildFromJsonString(final String sessionTokenString) {
+  public static SessionToken buildFromJsonString(final String sessionTokenString) {
     JSONObject sessionObject = new JSONObject(sessionTokenString);
 
-    return new SessionToken(
-        UUID.fromString(sessionObject.getString("sessionUUID")),
-        sessionObject.getInt("sourceNode"),
-        sessionObject.getString("sessionName"),
-        SessionType.valueOf(sessionObject.getString("sessionType")),
-        new HashSet<>(
-            sessionObject.getJSONArray("data").toList().stream()
-                .map(Objects::toString)
-                .collect(Collectors.toSet())));
+    return sessionObject.has("sessionUUID")
+            && sessionObject.has("sourceNode")
+            && sessionObject.has("sessionName")
+            && sessionObject.has("sessionType")
+            && sessionObject.has("data")
+        ? new SessionToken(
+            UUID.fromString(sessionObject.getString("sessionUUID")),
+            sessionObject.getInt("sourceNode"),
+            sessionObject.getString("sessionName"),
+            SessionType.valueOf(sessionObject.getString("sessionType")),
+            new HashSet<>(
+                sessionObject.getJSONArray("data").toList().stream()
+                    .map(Objects::toString)
+                    .collect(Collectors.toSet())))
+        : null;
   }
 }
