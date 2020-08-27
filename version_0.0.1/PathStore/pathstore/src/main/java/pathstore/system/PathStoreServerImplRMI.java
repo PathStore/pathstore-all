@@ -204,7 +204,7 @@ public class PathStoreServerImplRMI implements PathStoreServer {
 
         // force pull all of K or T of session from N_A to NodeID
 
-        return false;
+        return true;
       }
 
       return true;
@@ -250,14 +250,19 @@ public class PathStoreServerImplRMI implements PathStoreServer {
    */
   private int lca(final int sourceNode, final int destinationNode) {
 
+    Select allDeployedNodes =
+        QueryBuilder.select()
+            .all()
+            .from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT)
+            .allowFiltering();
+    allDeployedNodes.where(
+        QueryBuilder.eq(
+            Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS,
+            DeploymentProcessStatus.DEPLOYED.toString()));
+
     // build child -> parent set from db.
     Map<Integer, Integer> childToParentMap =
-        PathStoreCluster.getDaemonInstance().connect()
-            .execute(
-                QueryBuilder.select()
-                    .all()
-                    .from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT))
-            .stream()
+        PathStoreCluster.getDaemonInstance().connect().execute(allDeployedNodes).stream()
             .collect(
                 Collectors.toMap(
                     row -> row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID),
