@@ -166,7 +166,8 @@ public class PathStoreServerImplRMI implements PathStoreServer {
           .where(QueryBuilder.eq(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID, sessionToken.sourceNode))
           .and(
               QueryBuilder.eq(
-                  Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS, DeploymentProcessStatus.DEPLOYED));
+                  Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS,
+                  DeploymentProcessStatus.DEPLOYED.toString()));
 
       selectNodeId.allowFiltering();
 
