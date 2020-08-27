@@ -117,6 +117,11 @@ public class PathStoreServerImplRMI implements PathStoreServer {
         .toString();
   }
 
+  @Override
+  public SchemaInfo getSchemaInfo() {
+    return SchemaInfo.getInstance();
+  }
+
   /**
    * This function is used to validate a session.
    *

@@ -1,10 +1,10 @@
 package pathstore.client;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
 import org.json.JSONObject;
 import pathstore.common.PathStoreProperties;
 import pathstore.util.ClusterCache;
+import pathstore.util.SchemaInfo;
 
 import java.util.Optional;
 
@@ -40,11 +40,16 @@ public class PathStoreClientAuthenticatedCluster {
       if (response.isPresent()) {
         JSONObject responseObject = new JSONObject(response.get());
         System.out.println(responseObject.toString());
-        if (responseObject.getString("status").equals("valid"))
+        if (responseObject.getString("status").equals("valid")) {
+          SchemaInfo schemaInfo = PathStoreServerClient.getInstance().getSchemaInfo();
+
+          if (schemaInfo == null) throw new Exception("Could not get schema info from local node");
+
+          SchemaInfo.setInstance(schemaInfo);
           instance =
               new PathStoreClientAuthenticatedCluster(
                   responseObject.getString("username"), responseObject.getString("password"));
-        else throw new Exception("Login Credentials are invalid");
+        } else throw new Exception("Login Credentials are invalid");
       } else throw new Exception("Response is not present");
     }
     return instance;
@@ -74,7 +79,7 @@ public class PathStoreClientAuthenticatedCluster {
   private final Cluster cluster;
 
   /** PathStoreSession created using cluster */
-  private final Session session;
+  private final PathStoreSession session;
 
   /**
    * @param clientUsername {@link #clientUsername}
@@ -100,7 +105,7 @@ public class PathStoreClientAuthenticatedCluster {
   }
 
   /** @return local node db session */
-  public Session connect() {
+  public PathStoreSession connect() {
     return this.session;
   }
 

@@ -22,6 +22,7 @@ import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
 import pathstore.exception.PathStoreRemoteException;
+import pathstore.util.SchemaInfo;
 
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -95,6 +96,15 @@ public class PathStoreServerClient {
       e.printStackTrace();
       throw new PathStoreRemoteException();
     }
+  }
+
+  public SchemaInfo getSchemaInfo() {
+    try {
+      return this.stub.getSchemaInfo();
+    } catch (RemoteException e) {
+      e.printStackTrace();
+    }
+    return null;
   }
 
   public Optional<String> registerApplication(final String applicationName, final String password) {

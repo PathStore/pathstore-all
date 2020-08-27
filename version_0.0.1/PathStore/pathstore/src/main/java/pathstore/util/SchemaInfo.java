@@ -26,6 +26,7 @@ import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.system.PathStorePrivilegedCluster;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -53,9 +54,18 @@ import java.util.stream.StreamSupport;
  *     along with all associated constants must be checked to make sure they match the format
  *     described in the newer Cassandra version.
  */
-public class SchemaInfo {
+public class SchemaInfo implements Serializable {
   /** Factory instance of this class */
   private static SchemaInfo instance = null;
+
+  /**
+   * This function is used on the client side to use their local nodes schema info.
+   *
+   * @param schemaInfo schema info from local node
+   */
+  public static synchronized void setInstance(final SchemaInfo schemaInfo) {
+    instance = schemaInfo;
+  }
 
   /** @return instance of this class (there will only ever be one) */
   public static synchronized SchemaInfo getInstance() {

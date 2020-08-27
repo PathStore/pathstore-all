@@ -17,6 +17,8 @@
  */
 package pathstore.common;
 
+import pathstore.util.SchemaInfo;
+
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.UUID;
@@ -31,6 +33,8 @@ public interface PathStoreServer extends Remote {
 
   String registerApplication(final String applicationName, final String password)
       throws RemoteException;
+
+  SchemaInfo getSchemaInfo() throws RemoteException;
 
   boolean validateSession(final String sessionJsonString) throws RemoteException;
 
