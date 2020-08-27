@@ -147,7 +147,7 @@ public class SchemaInfo implements Serializable {
   private final ConcurrentMap<String, Collection<Type>> typeInfo = new ConcurrentHashMap<>();
 
   /** @see PathStorePrivilegedCluster */
-  private final Session session;
+  private final transient Session session;
 
   /**
    * @param session must be a raw connection to a cassandra database. Not a pathstore wrapped
@@ -487,7 +487,7 @@ public class SchemaInfo implements Serializable {
    *     field_type
    * @see SchemaInfo#loadKeyspace(String)
    */
-  public static class Type implements Serializable{
+  public static class Type implements Serializable {
     /** keyspace name the type is associated with */
     public final String keyspace_name;
 
@@ -771,7 +771,7 @@ public class SchemaInfo implements Serializable {
    *
    * @see SchemaInfo#loadKeyspace(String)
    */
-  public static class Table implements Serializable{
+  public static class Table implements Serializable {
     /** Keyspace name where the table exists */
     public final String keyspace_name;
 
