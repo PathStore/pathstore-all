@@ -117,6 +117,7 @@ public class PathStoreServerImplRMI implements PathStoreServer {
         .toString();
   }
 
+  // TODO: Make it so that you can get a portion of the schema info (only for an application)
   @Override
   public SchemaInfo getSchemaInfo() {
     return SchemaInfo.getInstance();
