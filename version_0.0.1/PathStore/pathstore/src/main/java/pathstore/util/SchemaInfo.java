@@ -989,5 +989,56 @@ public class SchemaInfo implements Serializable {
           row.getDouble(Constants.TABLES_COLUMNS.READ_REPAIR_CHANCE),
           row.getString(Constants.TABLES_COLUMNS.SPECULATIVE_RETRY));
     }
+
+    /** @return display info on table */
+    @Override
+    public String toString() {
+      return "Table{"
+          + "keyspace_name='"
+          + keyspace_name
+          + '\''
+          + ", table_name='"
+          + table_name
+          + '\''
+          + ", bloom_filter_fp_chance="
+          + bloom_filter_fp_chance
+          + ", caching="
+          + caching
+          + ", cdc="
+          + cdc
+          + ", comment='"
+          + comment
+          + '\''
+          + ", compaction="
+          + compaction
+          + ", compression="
+          + compression
+          + ", crc_check_chance="
+          + crc_check_chance
+          + ", dclocal_read_repair_chance="
+          + dclocal_read_repair_chance
+          + ", default_time_to_live="
+          + default_time_to_live
+          + ", extensions="
+          + extensions
+          + ", flags="
+          + flags
+          + ", gc_grace_seconds="
+          + gc_grace_seconds
+          + ", id="
+          + id
+          + ", max_index_interval="
+          + max_index_interval
+          + ", memtable_flush_period_in_ms="
+          + memtable_flush_period_in_ms
+          + ", min_index_interval="
+          + min_index_interval
+          + ", read_repair_chance="
+          + read_repair_chance
+          + ", speculative_retry='"
+          + speculative_retry
+          + '\''
+          + '}';
+    }
   }
 }

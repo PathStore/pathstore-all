@@ -176,7 +176,9 @@ public class PathStoreServerImplRMI implements PathStoreServer {
                   DeploymentProcessStatus.DEPLOYED.toString()));
 
       selectNodeId.allowFiltering();
-      if (PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId).empty()) return false;
+
+      if (PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId).empty())
+        return false;
 
       // validity check of data
       switch (sessionToken.sessionType) {
@@ -284,6 +286,8 @@ public class PathStoreServerImplRMI implements PathStoreServer {
    */
   @Override
   public void forcePush(final List<SchemaInfo.Table> tablesToPush, final int lca) {
+    System.out.println(
+        String.format("force push called with lca %d and tables: %s", lca, tablesToPush));
     int nodeId = PathStoreProperties.getInstance().NodeID;
     if (nodeId != lca) {
       logger.info(
