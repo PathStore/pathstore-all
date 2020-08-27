@@ -990,6 +990,65 @@ public class SchemaInfo implements Serializable {
           row.getString(Constants.TABLES_COLUMNS.SPECULATIVE_RETRY));
     }
 
+    /**
+     * Compare an object to this table
+     *
+     * @param o object to compare to
+     * @return true if equals else false
+     */
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      Table table = (Table) o;
+      return Double.compare(table.bloom_filter_fp_chance, this.bloom_filter_fp_chance) == 0
+          && this.cdc == table.cdc
+          && Double.compare(table.crc_check_chance, this.crc_check_chance) == 0
+          && Double.compare(table.dclocal_read_repair_chance, this.dclocal_read_repair_chance) == 0
+          && this.default_time_to_live == table.default_time_to_live
+          && this.gc_grace_seconds == table.gc_grace_seconds
+          && this.max_index_interval == table.max_index_interval
+          && this.memtable_flush_period_in_ms == table.memtable_flush_period_in_ms
+          && this.min_index_interval == table.min_index_interval
+          && Double.compare(table.read_repair_chance, this.read_repair_chance) == 0
+          && Objects.equals(this.keyspace_name, table.keyspace_name)
+          && Objects.equals(this.table_name, table.table_name)
+          && Objects.equals(this.caching, table.caching)
+          && Objects.equals(this.comment, table.comment)
+          && Objects.equals(this.compaction, table.compaction)
+          && Objects.equals(this.compression, table.compression)
+          && Objects.equals(this.extensions, table.extensions)
+          && Objects.equals(this.flags, table.flags)
+          && Objects.equals(this.id, table.id)
+          && Objects.equals(this.speculative_retry, table.speculative_retry);
+    }
+
+    /** @return hash of this object */
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          this.keyspace_name,
+          this.table_name,
+          this.bloom_filter_fp_chance,
+          this.caching,
+          this.cdc,
+          this.comment,
+          this.compaction,
+          this.compression,
+          this.crc_check_chance,
+          this.dclocal_read_repair_chance,
+          this.default_time_to_live,
+          this.extensions,
+          this.flags,
+          this.gc_grace_seconds,
+          this.id,
+          this.max_index_interval,
+          this.memtable_flush_period_in_ms,
+          this.min_index_interval,
+          this.read_repair_chance,
+          this.speculative_retry);
+    }
+
     /** @return display info on table */
     @Override
     public String toString() {
