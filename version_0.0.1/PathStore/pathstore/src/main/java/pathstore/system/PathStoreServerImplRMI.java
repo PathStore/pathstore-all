@@ -8,7 +8,6 @@ import pathstore.authentication.AuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.authentication.Credential;
 import pathstore.client.PathStoreCluster;
-import pathstore.client.PathStoreResultSet;
 import pathstore.client.PathStoreServerClient;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
@@ -177,11 +176,7 @@ public class PathStoreServerImplRMI implements PathStoreServer {
                   DeploymentProcessStatus.DEPLOYED.toString()));
 
       selectNodeId.allowFiltering();
-
-      PathStoreResultSet sourceNodeDeploymentRecordResultSet =
-          PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId);
-
-      if (sourceNodeDeploymentRecordResultSet.empty()) return false;
+      if (PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId).empty()) return false;
 
       // validity check of data
       switch (sessionToken.sessionType) {
@@ -216,7 +211,9 @@ public class PathStoreServerImplRMI implements PathStoreServer {
           Select querySourceNodeAddress =
               QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
 
-          Optional<Row> deploymentRow = sourceNodeDeploymentRecordResultSet.stream().findFirst();
+          Optional<Row> deploymentRow =
+              PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId).stream()
+                  .findFirst();
 
           if (!deploymentRow.isPresent())
             throw new RuntimeException("Could not get deployment row for source node");
