@@ -17,31 +17,20 @@
  */
 package pathstore.system;
 
-import java.util.Collection;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.Batch;
-import com.datastax.driver.core.querybuilder.Delete;
-import com.datastax.driver.core.querybuilder.Insert;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
-
+import com.datastax.driver.core.querybuilder.*;
+import org.apache.commons.cli.*;
 import pathstore.common.PathStoreProperties;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 import pathstore.util.SchemaInfo.Table;
+
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 /** TODO: Comment */
 public class PathStorePushServer implements Runnable {
@@ -82,72 +71,73 @@ public class PathStorePushServer implements Runnable {
   }
 
   public static void push(
-      final Session local, final Session parent, final SchemaInfo schemaInfo, final int nodeid) {
+      final Collection<Table> tables,
+      final Session local,
+      final Session parent,
+      final SchemaInfo schemaInfo,
+      final int nodeid) {
     try {
-      for (String keyspace : schemaInfo.getLoadedKeyspaces()) {
-        for (Table table : schemaInfo.getTablesFromKeyspace(keyspace)) {
-          if (table.table_name.startsWith("view_") || table.table_name.startsWith("local_"))
-            continue;
+      for (Table table : tables) {
+        if (table.table_name.startsWith("view_") || table.table_name.startsWith("local_")) continue;
 
-          Select select = QueryBuilder.select().all().from(keyspace, table.table_name);
-          select.where(QueryBuilder.eq("pathstore_dirty", true));
+        Select select = QueryBuilder.select().all().from(table.keyspace_name, table.table_name);
+        select.where(QueryBuilder.eq("pathstore_dirty", true));
 
-          ResultSet results = local.execute(select);
+        ResultSet results = local.execute(select);
 
-          Collection<Column> columns = schemaInfo.getTableColumns(table);
+        Collection<Column> columns = schemaInfo.getTableColumns(table);
 
-          Batch insertBatch = QueryBuilder.batch();
-          Batch deleteBatch = QueryBuilder.batch();
+        Batch insertBatch = QueryBuilder.batch();
+        Batch deleteBatch = QueryBuilder.batch();
 
-          int insertBatchSize = 0;
-          int deleteBatchSize = 0;
+        int insertBatchSize = 0;
+        int deleteBatchSize = 0;
 
-          for (Row row : results) {
+        for (Row row : results) {
 
-            Insert insert = createInsert(row, keyspace, table.table_name, columns, nodeid);
-            Delete delete = createDelete(row, keyspace, table.table_name, columns);
+          Insert insert = createInsert(row, table.keyspace_name, table.table_name, columns, nodeid);
+          Delete delete = createDelete(row, table.keyspace_name, table.table_name, columns);
 
-            String str_insert = insert.toString();
-            String str_delete = delete.toString();
+          String str_insert = insert.toString();
+          String str_delete = delete.toString();
 
-            // System.out.println("insert: " + str_insert );
+          // System.out.println("insert: " + str_insert );
 
-            if (str_insert.length() > PathStoreProperties.getInstance().MaxBatchSize
-                || str_delete.length() > PathStoreProperties.getInstance().MaxBatchSize) {
+          if (str_insert.length() > PathStoreProperties.getInstance().MaxBatchSize
+              || str_delete.length() > PathStoreProperties.getInstance().MaxBatchSize) {
+            // logger.debug("Executing parent insert and local delete");
+            parent.execute(insert);
+            local.execute(delete);
+          } else {
+            if (insertBatchSize + str_insert.length()
+                    > PathStoreProperties.getInstance().MaxBatchSize
+                || deleteBatchSize + str_delete.length()
+                    > PathStoreProperties.getInstance().MaxBatchSize) {
               // logger.debug("Executing parent insert and local delete");
-              parent.execute(insert);
-              local.execute(delete);
-            } else {
-              if (insertBatchSize + str_insert.length()
-                      > PathStoreProperties.getInstance().MaxBatchSize
-                  || deleteBatchSize + str_delete.length()
-                      > PathStoreProperties.getInstance().MaxBatchSize) {
-                // logger.debug("Executing parent insert and local delete");
-                parent.execute(insertBatch);
-                local.execute(deleteBatch);
-
-                insertBatch = QueryBuilder.batch();
-                deleteBatch = QueryBuilder.batch();
-
-                insertBatchSize = 0;
-                deleteBatchSize = 0;
-              }
-              // System.out.println("adding: " + insert);
-
-              insertBatch.add(insert);
-              insertBatchSize += str_insert.length();
-
-              deleteBatch.add(delete);
-              deleteBatchSize += str_delete.length();
-            }
-          }
-          if (insertBatchSize > 0) {
-            try {
               parent.execute(insertBatch);
               local.execute(deleteBatch);
-            } catch (Exception e) {
-              logger.error(e);
+
+              insertBatch = QueryBuilder.batch();
+              deleteBatch = QueryBuilder.batch();
+
+              insertBatchSize = 0;
+              deleteBatchSize = 0;
             }
+            // System.out.println("adding: " + insert);
+
+            insertBatch.add(insert);
+            insertBatchSize += str_insert.length();
+
+            deleteBatch.add(delete);
+            deleteBatchSize += str_delete.length();
+          }
+        }
+        if (insertBatchSize > 0) {
+          try {
+            parent.execute(insertBatch);
+            local.execute(deleteBatch);
+          } catch (Exception e) {
+            logger.error(e);
           }
         }
       }
@@ -161,18 +151,31 @@ public class PathStorePushServer implements Runnable {
   public synchronized void run() {
     logger.info("Spawned pathstore push server thread");
 
-    Session parent = PathStorePrivilegedCluster.getParentInstance().connect();
     Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
+    Session parent = PathStorePrivilegedCluster.getParentInstance().connect();
 
     while (true) {
       try {
-        push(local, parent, SchemaInfo.getInstance(), PathStoreProperties.getInstance().NodeID);
+        push(
+            buildCollectionOfTablesFromSchemaInfo(SchemaInfo.getInstance()),
+            local,
+            parent,
+            SchemaInfo.getInstance(),
+            PathStoreProperties.getInstance().NodeID);
         Thread.sleep(PathStoreProperties.getInstance().PushSleep);
       } catch (InterruptedException e) {
         System.err.println("PathStorePushServer exception: " + e.toString());
         e.printStackTrace();
       }
     }
+  }
+
+  public static Collection<Table> buildCollectionOfTablesFromSchemaInfo(
+      final SchemaInfo schemaInfo) {
+    return schemaInfo.getLoadedKeyspaces().stream()
+        .map(schemaInfo::getTablesFromKeyspace)
+        .flatMap(Collection::stream)
+        .collect(Collectors.toSet());
   }
 
   private static void parseCommandLineArguments(String args[]) {

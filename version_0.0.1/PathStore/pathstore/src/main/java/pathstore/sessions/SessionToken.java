@@ -3,6 +3,7 @@ package pathstore.sessions;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -11,7 +12,7 @@ import java.util.stream.Collectors;
  * PathStoreSessionManager} and the user should not concern themselves with this class other then
  * the json dump that the session manager provides for migration of terminated clients
  */
-public class SessionToken {
+public class SessionToken implements Serializable {
 
   /** Random uuid for session */
   public final UUID sessionUUID;

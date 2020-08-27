@@ -17,10 +17,12 @@
  */
 package pathstore.common;
 
+import pathstore.sessions.SessionToken;
 import pathstore.util.SchemaInfo;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.List;
 import java.util.UUID;
 
 public interface PathStoreServer extends Remote {
@@ -36,7 +38,9 @@ public interface PathStoreServer extends Remote {
 
   SchemaInfo getSchemaInfo(final String keyspace) throws RemoteException;
 
-  boolean validateSession(final String sessionJsonString) throws RemoteException;
+  boolean validateSession(final SessionToken sessionToken) throws RemoteException;
+
+  void forcePush(final List<SchemaInfo.Table> tablesToPush, final int lca) throws RemoteException;
 
   int getLocalNodeId() throws RemoteException;
 }

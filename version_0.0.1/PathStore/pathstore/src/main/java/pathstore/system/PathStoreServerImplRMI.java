@@ -1,6 +1,6 @@
 package pathstore.system;
 
-import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import org.json.JSONObject;
@@ -8,6 +8,8 @@ import pathstore.authentication.AuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.authentication.Credential;
 import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreResultSet;
+import pathstore.client.PathStoreServerClient;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreServer;
@@ -117,7 +119,15 @@ public class PathStoreServerImplRMI implements PathStoreServer {
         .toString();
   }
 
-  // TODO: Make it so that you can get a portion of the schema info (only for an application)
+  /**
+   * This function is used by {@link
+   * pathstore.client.PathStoreClientAuthenticatedCluster#initInstance(String, String)} to load a
+   * schema info for the client node.
+   *
+   * @param keyspace application associated with the client
+   * @return schemainfo solely on that application
+   * @see SchemaInfo#getSchemaPartition(String)
+   */
   @Override
   public SchemaInfo getSchemaInfo(final String keyspace) {
     return SchemaInfo.getInstance().getSchemaPartition(keyspace);
@@ -147,14 +157,11 @@ public class PathStoreServerImplRMI implements PathStoreServer {
    *
    * <p>Migration is then complete
    *
-   * @param sessionJsonString session json passed from {@link
-   *     pathstore.client.PathStoreSession#execute(Statement, SessionToken)}
+   * @param sessionToken from client
    * @return true if the session is valid, false if not valid
    */
   @Override
-  public boolean validateSession(final String sessionJsonString) {
-
-    SessionToken sessionToken = SessionToken.buildFromJsonString(sessionJsonString);
+  public boolean validateSession(final SessionToken sessionToken) {
 
     if (sessionToken != null) {
 
@@ -171,8 +178,10 @@ public class PathStoreServerImplRMI implements PathStoreServer {
 
       selectNodeId.allowFiltering();
 
-      if (PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId).empty())
-        return false;
+      PathStoreResultSet sourceNodeDeploymentRecordResultSet =
+          PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId);
+
+      if (sourceNodeDeploymentRecordResultSet.empty()) return false;
 
       // validity check of data
       switch (sessionToken.sessionType) {
@@ -200,17 +209,100 @@ public class PathStoreServerImplRMI implements PathStoreServer {
                 "LCA of (%d, %d) is %d",
                 sessionToken.sourceNode, PathStoreProperties.getInstance().NodeID, lca));
 
-        // force push all of K or T of session from sourceNode to N_A
+        // force push all of K or T of session from sourceNode to lca if the sourceNode isn't the
+        // lca
+        if (sessionToken.sourceNode != lca) {
+
+          Select querySourceNodeAddress =
+              QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
+
+          Optional<Row> deploymentRow = sourceNodeDeploymentRecordResultSet.stream().findFirst();
+
+          if (!deploymentRow.isPresent())
+            throw new RuntimeException("Could not get deployment row for source node");
+
+          querySourceNodeAddress.where(
+              QueryBuilder.eq(
+                  Constants.SERVERS_COLUMNS.SERVER_UUID,
+                  deploymentRow.get().getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID)));
+
+          Optional<Row> optionalServerRow =
+              PathStoreCluster.getDaemonInstance().connect().execute(querySourceNodeAddress)
+                  .stream()
+                  .findFirst();
+
+          if (!optionalServerRow.isPresent())
+            throw new RuntimeException("Could not get server row for source node");
+
+          Row serverRow = optionalServerRow.get();
+
+          PathStoreServerClient sourceNode =
+              PathStoreServerClient.getCustom(
+                  serverRow.getString(Constants.SERVERS_COLUMNS.IP),
+                  serverRow.getInt(Constants.SERVERS_COLUMNS.RMI_PORT));
+
+          switch (sessionToken.sessionType) {
+            case KEYSPACE:
+              sourceNode.forcePush(
+                  sessionToken.getData().stream()
+                      .map(keyspace -> SchemaInfo.getInstance().getTablesFromKeyspace(keyspace))
+                      .flatMap(Collection::stream)
+                      .collect(Collectors.toList()),
+                  lca);
+              break;
+            case TABLE:
+              sourceNode.forcePush(
+                  sessionToken.getData().stream()
+                      .map(
+                          entry -> {
+                            int locationOfPeriod = entry.indexOf('.');
+                            return SchemaInfo.getInstance()
+                                .getTableFromKeyspaceAndTableName(
+                                    entry.substring(0, locationOfPeriod),
+                                    entry.substring(locationOfPeriod + 1));
+                          })
+                      .collect(Collectors.toList()),
+                  lca);
+              break;
+          }
+        }
 
         // force pull all of K or T of session from N_A to NodeID
-
-        return true;
       }
-
       return true;
     }
-
     return false;
+  }
+
+  /**
+   * This function is used to force push all data to the parent node recursively up to a node.
+   *
+   * <p>This is only used to migrate a session from one node to another.
+   *
+   * <p>This will recursively push data from n_s to lca. Once lca is hit, it will not push anymore
+   * as the data is where it needs to be
+   *
+   * @param tablesToPush
+   * @param lca
+   */
+  @Override
+  public void forcePush(final List<SchemaInfo.Table> tablesToPush, final int lca) {
+    int nodeId = PathStoreProperties.getInstance().NodeID;
+    if (nodeId != lca) {
+      logger.info(
+          String.format(
+              "Performing a force push for session data on node %d with lca of %d", nodeId, lca));
+      PathStorePushServer.push(
+          tablesToPush,
+          PathStorePrivilegedCluster.getDaemonInstance().connect(),
+          PathStorePrivilegedCluster.getParentInstance().connect(),
+          SchemaInfo.getInstance(),
+          nodeId);
+
+      PathStoreServerClient.getInstance().forcePush(tablesToPush, lca);
+    } else {
+      logger.info(String.format("LCA has been hit with nodeid %d", lca));
+    }
   }
 
   /**

@@ -22,11 +22,13 @@ import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
 import pathstore.exception.PathStoreRemoteException;
+import pathstore.sessions.SessionToken;
 import pathstore.util.SchemaInfo;
 
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,12 +37,26 @@ public class PathStoreServerClient {
 
   private static PathStoreServerClient instance = null;
 
-  private PathStoreServer stub;
+  private final PathStoreServer stub;
 
   public static synchronized PathStoreServerClient getInstance() {
     if (PathStoreServerClient.instance == null)
       PathStoreServerClient.instance = new PathStoreServerClient();
     return PathStoreServerClient.instance;
+  }
+
+  public static PathStoreServerClient getCustom(final String ip, final int port) {
+    return new PathStoreServerClient(ip, port);
+  }
+
+  public PathStoreServerClient(final String ip, final int port) {
+    try {
+      Registry registry = LocateRegistry.getRegistry(ip, port);
+      this.stub = (PathStoreServer) registry.lookup("PathStoreServer");
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new PathStoreRemoteException();
+    }
   }
 
   public PathStoreServerClient() {
@@ -116,13 +132,21 @@ public class PathStoreServerClient {
     return Optional.empty();
   }
 
-  public boolean validateSession(final String sessionJsonString) {
+  public boolean validateSession(final SessionToken sessionToken) {
     try {
-      return this.stub.validateSession(sessionJsonString);
+      return this.stub.validateSession(sessionToken);
     } catch (RemoteException e) {
       e.printStackTrace();
     }
     return false;
+  }
+
+  public void forcePush(final List<SchemaInfo.Table> tablesToPush, final int lca) {
+    try {
+      this.stub.forcePush(tablesToPush, lca);
+    } catch (RemoteException e) {
+      e.printStackTrace();
+    }
   }
 
   public int getLocalNodeId() {

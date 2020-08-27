@@ -330,6 +330,17 @@ public class SchemaInfo implements Serializable {
   }
 
   /**
+   * This function will get you a table object from a keyspace and table name.
+   *
+   * @param keyspace keyspace name
+   * @param table table name
+   * @return table object or null if non-existent
+   */
+  public Table getTableFromKeyspaceAndTableName(final String keyspace, final String table) {
+    return this.tableMap.get(keyspace).get(table);
+  }
+
+  /**
    * This function is used to retrieve a set of column objects based on a keyspace and table name.
    *
    * @param keyspace keyspace name

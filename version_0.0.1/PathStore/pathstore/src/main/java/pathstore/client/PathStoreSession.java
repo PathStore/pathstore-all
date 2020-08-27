@@ -216,7 +216,7 @@ public class PathStoreSession implements Session {
    */
   private void handleSession(final SessionToken sessionToken) {
     if (sessionToken != null && !sessionToken.hasBeenValidated())
-      if (PathStoreServerClient.getInstance().validateSession(sessionToken.exportToJson())) {
+      if (PathStoreServerClient.getInstance().validateSession(sessionToken)) {
         logger.info(String.format("Session is valid %s", sessionToken.sessionName));
         sessionToken.isValidated(PathStoreSessionManager.getInstance().localNodeId);
       } else {

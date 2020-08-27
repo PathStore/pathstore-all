@@ -7,6 +7,8 @@ import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.PathStorePushServer;
 import pathstore.util.SchemaInfo;
 
+import java.util.Collection;
+
 /** This command is used to force push all dirty data from a client on shutdown */
 public class ForcePush implements ICommand {
 
@@ -31,16 +33,19 @@ public class ForcePush implements ICommand {
 
   /**
    * Connect to the child, and create a connection to the local database. Then call {@link
-   * PathStorePushServer#push(Session, Session, SchemaInfo, int)} to force push all data
+   * PathStorePushServer#push(Collection, Session, Session, SchemaInfo, int)} to force push all data
    */
   @Override
   public void execute() {
     Session child = this.cluster.connect();
 
+    SchemaInfo childSchemaInfo = new SchemaInfo(child);
+
     PathStorePushServer.push(
+        PathStorePushServer.buildCollectionOfTablesFromSchemaInfo(childSchemaInfo),
         child,
         PathStorePrivilegedCluster.getDaemonInstance().connect(),
-        new SchemaInfo(child),
+        childSchemaInfo,
         this.nodeId);
 
     this.cluster.close();
