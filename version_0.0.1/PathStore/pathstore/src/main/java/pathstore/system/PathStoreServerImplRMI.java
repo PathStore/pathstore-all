@@ -256,16 +256,20 @@ public class PathStoreServerImplRMI implements PathStoreServer {
           sourceNode.forcePush(sessionToken, lca);
         }
 
-        // force pull all of K or T of session from N_A to NodeID
-        Collection<SchemaInfo.Table> tablesToPull =
-            PathStorePushServer.buildCollectionFromSessionToken(sessionToken);
+        // force pull all of K or T of session from N_A to NodeID iff n_d isn't LCA
+        if (PathStoreProperties.getInstance().NodeID != lca) {
 
-        if (tablesToPull == null)
-          throw new RuntimeException("Could not generate tables for sessionToken");
+          Collection<SchemaInfo.Table> tablesToPull =
+              PathStorePushServer.buildCollectionFromSessionToken(sessionToken);
 
-        for (SchemaInfo.Table table : tablesToPull)
-          QueryCache.getInstance()
-              .updateCache(table.keyspace_name, table.table_name, Collections.emptyList(), -1, lca);
+          if (tablesToPull == null)
+            throw new RuntimeException("Could not generate tables for sessionToken");
+
+          for (SchemaInfo.Table table : tablesToPull)
+            QueryCache.getInstance()
+                .updateCache(
+                    table.keyspace_name, table.table_name, Collections.emptyList(), -1, lca);
+        }
       }
       return true;
     }
