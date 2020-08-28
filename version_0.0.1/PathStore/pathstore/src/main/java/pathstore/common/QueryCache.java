@@ -87,7 +87,9 @@ public class QueryCache {
 
     QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit, lca);
 
-    if (entry == null) entry = addEntry(keyspace, table, clauses, clausesSerialized, limit, lca);
+    if (entry != null) entry.lca = lca;
+    if (entry == null || entry.lca != -1)
+      entry = addEntry(keyspace, table, clauses, clausesSerialized, limit, lca);
 
     entry.waitUntilReady();
 
@@ -99,7 +101,9 @@ public class QueryCache {
       String keyspace, String table, List<Clause> clauses, int limit, int lca) {
     QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit, lca);
 
-    if (entry == null) entry = addEntry(keyspace, table, clauses, null, limit, lca);
+    if (entry != null) entry.lca = lca;
+    if (entry == null || entry.lca != -1)
+      entry = addEntry(keyspace, table, clauses, null, limit, lca);
 
     entry.waitUntilReady();
 
@@ -109,8 +113,6 @@ public class QueryCache {
   // Hossein here making this public
   public QueryCacheEntry getEntry(
       String keyspace, String table, List<Clause> clauses, int limit, int lca) {
-
-    if (lca != -1) return null;
 
     HashMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
     if (tableMap == null) return null;
@@ -122,7 +124,7 @@ public class QueryCache {
       if (e.isSame(clauses))
         if (e.limit == -1
             || e.limit > limit) // we already have a bigger query so don't add this one
-        return e;
+        if (e.lca == lca) return e;
 
     return null;
   }
