@@ -23,6 +23,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.*;
 import org.apache.commons.cli.*;
 import pathstore.common.PathStoreProperties;
+import pathstore.sessions.SessionToken;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
@@ -176,6 +177,28 @@ public class PathStorePushServer implements Runnable {
         .map(schemaInfo::getTablesFromKeyspace)
         .flatMap(Collection::stream)
         .collect(Collectors.toSet());
+  }
+
+  public static Collection<Table> buildCollectionFromSessionToken(final SessionToken sessionToken) {
+    switch (sessionToken.sessionType) {
+      case KEYSPACE:
+        return sessionToken.getData().stream()
+            .map(keyspace -> SchemaInfo.getInstance().getTablesFromKeyspace(keyspace))
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
+      case TABLE:
+        return sessionToken.getData().stream()
+            .map(
+                entry -> {
+                  int locationOfPeriod = entry.indexOf('.');
+                  return SchemaInfo.getInstance()
+                      .getTableFromKeyspaceAndTableName(
+                          entry.substring(0, locationOfPeriod),
+                          entry.substring(locationOfPeriod + 1));
+                })
+            .collect(Collectors.toList());
+    }
+    return null;
   }
 
   private static void parseCommandLineArguments(String args[]) {

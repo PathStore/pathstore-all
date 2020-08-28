@@ -28,7 +28,6 @@ import pathstore.util.SchemaInfo;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -141,9 +140,9 @@ public class PathStoreServerClient {
     return false;
   }
 
-  public void forcePush(final List<SchemaInfo.Table> tablesToPush, final int lca) {
+  public void forcePush(final SessionToken sessionToken, final int lca) {
     try {
-      this.stub.forcePush(tablesToPush, lca);
+      this.stub.forcePush(sessionToken, lca);
     } catch (RemoteException e) {
       e.printStackTrace();
     }

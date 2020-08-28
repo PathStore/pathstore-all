@@ -359,9 +359,6 @@ public class SchemaInfo implements Serializable {
    * @return list of column objects or an empty set if none are present
    */
   public Collection<Column> getTableColumns(final Table table) {
-    System.out.println(table.keyspace_name);
-    System.out.println(this.columnInfo.keySet());
-    System.out.println(this.columnInfo.get(table.keyspace_name).keySet());
     return Optional.of(this.columnInfo.get(table.keyspace_name).get(table))
         .orElse(Collections.emptySet());
   }

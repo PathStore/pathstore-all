@@ -240,30 +240,7 @@ public class PathStoreServerImplRMI implements PathStoreServer {
                   serverRow.getString(Constants.SERVERS_COLUMNS.IP),
                   serverRow.getInt(Constants.SERVERS_COLUMNS.RMI_PORT));
 
-          switch (sessionToken.sessionType) {
-            case KEYSPACE:
-              sourceNode.forcePush(
-                  sessionToken.getData().stream()
-                      .map(keyspace -> SchemaInfo.getInstance().getTablesFromKeyspace(keyspace))
-                      .flatMap(Collection::stream)
-                      .collect(Collectors.toList()),
-                  lca);
-              break;
-            case TABLE:
-              sourceNode.forcePush(
-                  sessionToken.getData().stream()
-                      .map(
-                          entry -> {
-                            int locationOfPeriod = entry.indexOf('.');
-                            return SchemaInfo.getInstance()
-                                .getTableFromKeyspaceAndTableName(
-                                    entry.substring(0, locationOfPeriod),
-                                    entry.substring(locationOfPeriod + 1));
-                          })
-                      .collect(Collectors.toList()),
-                  lca);
-              break;
-          }
+          sourceNode.forcePush(sessionToken, lca);
         }
 
         // force pull all of K or T of session from N_A to NodeID
@@ -281,26 +258,24 @@ public class PathStoreServerImplRMI implements PathStoreServer {
    * <p>This will recursively push data from n_s to lca. Once lca is hit, it will not push anymore
    * as the data is where it needs to be
    *
-   * @param tablesToPush
+   * @param sessionToken
    * @param lca
    */
   @Override
-  public void forcePush(final List<SchemaInfo.Table> tablesToPush, final int lca) {
-    System.out.println(
-        String.format("force push called with lca %d and tables: %s", lca, tablesToPush));
+  public void forcePush(final SessionToken sessionToken, final int lca) {
     int nodeId = PathStoreProperties.getInstance().NodeID;
     if (nodeId != lca) {
       logger.info(
           String.format(
               "Performing a force push for session data on node %d with lca of %d", nodeId, lca));
       PathStorePushServer.push(
-          tablesToPush,
+          PathStorePushServer.buildCollectionFromSessionToken(sessionToken),
           PathStorePrivilegedCluster.getDaemonInstance().connect(),
           PathStorePrivilegedCluster.getParentInstance().connect(),
           SchemaInfo.getInstance(),
           nodeId);
 
-      PathStoreServerClient.getInstance().forcePush(tablesToPush, lca);
+      PathStoreServerClient.getInstance().forcePush(sessionToken, lca);
     } else {
       logger.info(String.format("LCA has been hit with nodeid %d", lca));
     }
