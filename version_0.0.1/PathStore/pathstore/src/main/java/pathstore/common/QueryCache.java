@@ -23,6 +23,8 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.*;
 import pathstore.client.PathStoreServerClient;
 import pathstore.system.PathStorePrivilegedCluster;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 
@@ -36,6 +38,8 @@ import java.util.*;
  * quicker fetching of data.
  */
 public class QueryCache {
+
+  private final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(QueryCache.class);
 
   final HashMap<String, HashMap<String, List<QueryCacheEntry>>> entries = new HashMap<>();
 
@@ -74,16 +78,16 @@ public class QueryCache {
 
   // called by child
   public QueryCacheEntry updateCache(
-      String keyspace, String table, byte[] clausesSerialized, int limit)
+      String keyspace, String table, byte[] clausesSerialized, int limit, int lca)
       throws ClassNotFoundException, IOException {
 
     ByteArrayInputStream bytesIn = new ByteArrayInputStream(clausesSerialized);
     ObjectInputStream ois = new ObjectInputStream(bytesIn);
     List<Clause> clauses = (List<Clause>) ois.readObject();
 
-    QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
+    QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit, lca);
 
-    if (entry == null) entry = addEntry(keyspace, table, clauses, clausesSerialized, false, limit);
+    if (entry == null) entry = addEntry(keyspace, table, clauses, clausesSerialized, limit, lca);
 
     entry.waitUntilReady();
 
@@ -92,29 +96,22 @@ public class QueryCache {
 
   // executed on client
   public QueryCacheEntry updateCache(
-      String keyspace, String table, List<Clause> clauses, int limit) {
-    QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
+      String keyspace, String table, List<Clause> clauses, int limit, int lca) {
+    QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit, lca);
 
-    if (entry == null) entry = addEntry(keyspace, table, clauses, null, false, limit);
+    if (entry == null) entry = addEntry(keyspace, table, clauses, null, limit, lca);
 
     entry.waitUntilReady();
 
     return entry;
   }
 
-  // Only called for migration
-  public QueryCacheEntry updateCacheByMigration(
-      String keyspace, String table, List<Clause> clauses, int limit) {
-    QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
-
-    if (entry == null) entry = addEntry(keyspace, table, clauses, null, true, limit);
-
-    // entry.waitUntilReady();
-    return entry;
-  }
-
   // Hossein here making this public
-  public QueryCacheEntry getEntry(String keyspace, String table, List<Clause> clauses, int limit) {
+  public QueryCacheEntry getEntry(
+      String keyspace, String table, List<Clause> clauses, int limit, int lca) {
+
+    if (lca != -1) return null;
+
     HashMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
     if (tableMap == null) return null;
 
@@ -135,15 +132,15 @@ public class QueryCache {
       String table,
       List<Clause> clauses,
       byte[] clausesSerialized,
-      boolean fromMigration,
-      int limit) {
+      int limit,
+      int lca) {
 
     addTable(keyspace, table);
 
     HashMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
     List<QueryCacheEntry> entryList = tableMap.get(table);
 
-    QueryCacheEntry newEntry = new QueryCacheEntry(keyspace, table, clauses, limit);
+    QueryCacheEntry newEntry = new QueryCacheEntry(keyspace, table, clauses, limit, lca);
     if (clausesSerialized != null) newEntry.setClausesSerialized(clausesSerialized);
 
     synchronized (entryList) {
@@ -176,12 +173,18 @@ public class QueryCache {
     // TODO add entry to DB (of your parent)
     try {
 
-      if (PathStoreProperties.getInstance().role != Role.ROOTSERVER && newEntry.isCovered == null) {
+      if (PathStoreProperties.getInstance().role != Role.ROOTSERVER
+          && (newEntry.isCovered == null || lca != -1)) {
 
-        if (!fromMigration) PathStoreServerClient.getInstance().addQueryEntry(newEntry);
+        if (lca != -1) logger.info(String.format("Adding parent entry for lca %d", lca));
+
+        PathStoreServerClient.getInstance().addQueryEntry(newEntry);
+
         // Hossein: don't update your parents query cache (for now)
 
-        if (PathStoreProperties.getInstance().role == Role.SERVER && !fromMigration) {
+        if (PathStoreProperties.getInstance().role == Role.SERVER) {
+          if (lca != -1) logger.info(String.format("Fetching data for lca %d", lca));
+
           fetchDelta(newEntry);
         }
       }

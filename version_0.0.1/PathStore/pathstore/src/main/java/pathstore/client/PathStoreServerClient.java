@@ -87,7 +87,11 @@ public class PathStoreServerClient {
 
       String result =
           stub.addQueryEntry(
-              entry.getKeyspace(), entry.getTable(), entry.getClausesSerialized(), entry.limit);
+              entry.getKeyspace(),
+              entry.getTable(),
+              entry.getClausesSerialized(),
+              entry.limit,
+              entry.lca);
       // System.out.println("time took to add to parent: " + Timer.getTime(t));
       result = "";
     } catch (Exception e) {

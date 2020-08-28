@@ -37,11 +37,24 @@ public class PathStoreServerImplRMI implements PathStoreServer {
     return instance;
   }
 
-  public String addQueryEntry(String keyspace, String table, byte[] clauses, int limit)
+  public String addQueryEntry(String keyspace, String table, byte[] clauses, int limit, int lca)
       throws RemoteException {
+
+    if (lca != -1) {
+      logger.info(
+          String.format("Called parent to pull for lca %d on table %s.%s", lca, keyspace, table));
+
+      if (lca == PathStoreProperties.getInstance().NodeID) {
+        logger.info("LCA Hit for recursive force pull");
+        return null;
+      } else {
+        logger.info("LCA Still not hit");
+      }
+    }
+
     long d = System.nanoTime();
     try {
-      QueryCache.getInstance().updateCache(keyspace, table, clauses, limit);
+      QueryCache.getInstance().updateCache(keyspace, table, clauses, limit, lca);
       //			System.out.println("^^^^^^^^^^^^^^^^ time to reply took: " + Timer.getTime(d));
 
     } catch (ClassNotFoundException | IOException e) {
@@ -244,6 +257,15 @@ public class PathStoreServerImplRMI implements PathStoreServer {
         }
 
         // force pull all of K or T of session from N_A to NodeID
+        Collection<SchemaInfo.Table> tablesToPull =
+            PathStorePushServer.buildCollectionFromSessionToken(sessionToken);
+
+        if (tablesToPull == null)
+          throw new RuntimeException("Could not generate tables for sessionToken");
+
+        for (SchemaInfo.Table table : tablesToPull)
+          QueryCache.getInstance()
+              .updateCache(table.keyspace_name, table.table_name, Collections.emptyList(), -1, lca);
       }
       return true;
     }

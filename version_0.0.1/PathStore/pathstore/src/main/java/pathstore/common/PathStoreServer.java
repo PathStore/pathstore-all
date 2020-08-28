@@ -25,7 +25,7 @@ import java.rmi.RemoteException;
 import java.util.UUID;
 
 public interface PathStoreServer extends Remote {
-  String addQueryEntry(String keyspace, String table, byte[] clauses, int limit)
+  String addQueryEntry(String keyspace, String table, byte[] clauses, int limit, int lca)
       throws RemoteException;
 
   UUID createQueryDelta(
