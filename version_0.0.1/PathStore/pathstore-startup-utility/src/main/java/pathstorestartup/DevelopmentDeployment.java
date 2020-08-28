@@ -130,7 +130,7 @@ public class DevelopmentDeployment {
    * This function will prompt the user for the connection information to a server and ask for the
    * rmi port to start the root server with
    *
-   * @see #initList(SSHUtil, String, int, String, String, String, String, FinalizeRootInstallation) 
+   * @see #initList(SSHUtil, String, int, String, String, String, String, FinalizeRootInstallation)
    * @see FinalizeRootInstallation
    */
   private void deploy() {
@@ -305,7 +305,7 @@ public class DevelopmentDeployment {
             childDaemonUsername,
             childDaemonPassword,
             false)
-        .grantDaemonPermissions(
+        .grantReadAndWriteAccess(
             childSuperuserUsername,
             childSuperuserPassword,
             ip,
