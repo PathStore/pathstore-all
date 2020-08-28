@@ -37,7 +37,7 @@ public class QueryCacheEntry {
   private boolean ready = false;
   private UUID parentTimeStamp = null;
   public int limit;
-  public final int lca;
+  public int lca;
 
   public QueryCacheEntry(
       String keyspace, String table, List<Clause> clauses, int limit, final int lca) {

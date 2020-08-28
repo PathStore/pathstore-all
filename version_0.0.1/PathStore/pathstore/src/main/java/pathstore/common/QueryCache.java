@@ -188,6 +188,10 @@ public class QueryCache {
           fetchDelta(newEntry);
         }
       }
+
+      // This is so that the entry can exist within the query cache after session migration has
+      // occurred as normal
+      if (newEntry.lca != -1) newEntry.lca = -1;
     } finally {
       newEntry.setReady();
     }
