@@ -267,7 +267,8 @@ public class PathStoreServerImplRMI implements PathStoreServer {
     if (nodeId != lca) {
       logger.info(
           String.format(
-              "Performing a force push for session data on node %d with lca of %d", nodeId, lca));
+              "Performing a force push for session data on node %d with session name %s with lca of %d",
+              nodeId, sessionToken.sessionName, lca));
       PathStorePushServer.push(
           PathStorePushServer.buildCollectionFromSessionToken(sessionToken),
           PathStorePrivilegedCluster.getDaemonInstance().connect(),
@@ -277,7 +278,10 @@ public class PathStoreServerImplRMI implements PathStoreServer {
 
       PathStoreServerClient.getInstance().forcePush(sessionToken, lca);
     } else {
-      logger.info(String.format("LCA has been hit with nodeid %d", lca));
+      logger.info(
+          String.format(
+              "LCA has been hit with nodeid %d and session name %s",
+              lca, sessionToken.sessionName));
     }
   }
 

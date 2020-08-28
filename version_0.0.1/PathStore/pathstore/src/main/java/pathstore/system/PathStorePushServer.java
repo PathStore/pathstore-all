@@ -179,6 +179,13 @@ public class PathStorePushServer implements Runnable {
         .collect(Collectors.toSet());
   }
 
+  /**
+   * This function is used to build a collection of tables from a session token. It will built this
+   * set differently depending on the granularity of the session
+   *
+   * @param sessionToken session token
+   * @return collection of tables for that session to push
+   */
   public static Collection<Table> buildCollectionFromSessionToken(final SessionToken sessionToken) {
     switch (sessionToken.sessionType) {
       case KEYSPACE:
@@ -198,6 +205,9 @@ public class PathStorePushServer implements Runnable {
                 })
             .collect(Collectors.toList());
     }
+    logger.error(
+        String.format(
+            "Could not build the set of tables for session token %s", sessionToken.sessionName));
     return null;
   }
 
