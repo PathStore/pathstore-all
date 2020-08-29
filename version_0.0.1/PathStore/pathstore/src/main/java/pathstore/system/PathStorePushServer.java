@@ -176,6 +176,7 @@ public class PathStorePushServer implements Runnable {
     return schemaInfo.getLoadedKeyspaces().stream()
         .map(schemaInfo::getTablesFromKeyspace)
         .flatMap(Collection::stream)
+        .filter(table -> !table.table_name.startsWith("view_"))
         .collect(Collectors.toSet());
   }
 
@@ -192,6 +193,7 @@ public class PathStorePushServer implements Runnable {
         return sessionToken.getData().stream()
             .map(keyspace -> SchemaInfo.getInstance().getTablesFromKeyspace(keyspace))
             .flatMap(Collection::stream)
+            .filter(table -> !table.table_name.startsWith("view_"))
             .collect(Collectors.toList());
       case TABLE:
         return sessionToken.getData().stream()
@@ -203,6 +205,7 @@ public class PathStorePushServer implements Runnable {
                           entry.substring(0, locationOfPeriod),
                           entry.substring(locationOfPeriod + 1));
                 })
+            .filter(table -> !table.table_name.startsWith("view_"))
             .collect(Collectors.toList());
     }
     logger.error(
