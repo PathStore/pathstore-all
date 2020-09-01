@@ -9,10 +9,7 @@ import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.authentication.Credential;
 import pathstore.client.PathStoreCluster;
 import pathstore.client.PathStoreServerClient;
-import pathstore.common.Constants;
-import pathstore.common.PathStoreProperties;
-import pathstore.common.PathStoreServer;
-import pathstore.common.QueryCache;
+import pathstore.common.*;
 import pathstore.sessions.SessionToken;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
 import pathstore.system.logging.PathStoreLogger;
@@ -219,42 +216,38 @@ public class PathStoreServerImplRMI implements PathStoreServer {
                 "LCA of (%d, %d) is %d",
                 sessionToken.sourceNode, PathStoreProperties.getInstance().NodeID, lca));
 
+        Select querySourceNodeAddress =
+            QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
+
+        Optional<Row> deploymentRow =
+            PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId).stream()
+                .findFirst();
+
+        if (!deploymentRow.isPresent())
+          throw new RuntimeException("Could not get deployment row for source node");
+
+        querySourceNodeAddress.where(
+            QueryBuilder.eq(
+                Constants.SERVERS_COLUMNS.SERVER_UUID,
+                deploymentRow.get().getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID)));
+
+        Optional<Row> optionalServerRow =
+            PathStoreCluster.getDaemonInstance().connect().execute(querySourceNodeAddress).stream()
+                .findFirst();
+
+        if (!optionalServerRow.isPresent())
+          throw new RuntimeException("Could not get server row for source node");
+
+        Row serverRow = optionalServerRow.get();
+
+        PathStoreServerClient sourceNode =
+            PathStoreServerClient.getCustom(
+                serverRow.getString(Constants.SERVERS_COLUMNS.IP),
+                serverRow.getInt(Constants.SERVERS_COLUMNS.RMI_PORT));
+
         // force push all of K or T of session from sourceNode to lca if the sourceNode isn't the
         // lca
-        if (sessionToken.sourceNode != lca) {
-
-          Select querySourceNodeAddress =
-              QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
-
-          Optional<Row> deploymentRow =
-              PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId).stream()
-                  .findFirst();
-
-          if (!deploymentRow.isPresent())
-            throw new RuntimeException("Could not get deployment row for source node");
-
-          querySourceNodeAddress.where(
-              QueryBuilder.eq(
-                  Constants.SERVERS_COLUMNS.SERVER_UUID,
-                  deploymentRow.get().getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID)));
-
-          Optional<Row> optionalServerRow =
-              PathStoreCluster.getDaemonInstance().connect().execute(querySourceNodeAddress)
-                  .stream()
-                  .findFirst();
-
-          if (!optionalServerRow.isPresent())
-            throw new RuntimeException("Could not get server row for source node");
-
-          Row serverRow = optionalServerRow.get();
-
-          PathStoreServerClient sourceNode =
-              PathStoreServerClient.getCustom(
-                  serverRow.getString(Constants.SERVERS_COLUMNS.IP),
-                  serverRow.getInt(Constants.SERVERS_COLUMNS.RMI_PORT));
-
-          sourceNode.forcePush(sessionToken, lca);
-        }
+        if (sessionToken.sourceNode != lca) sourceNode.forcePush(sessionToken, lca);
 
         // force pull all of K or T of session from N_A to NodeID iff n_d isn't LCA
         if (PathStoreProperties.getInstance().NodeID != lca) {
@@ -265,15 +258,32 @@ public class PathStoreServerImplRMI implements PathStoreServer {
           if (tablesToPull == null)
             throw new RuntimeException("Could not generate tables for sessionToken");
 
+
+          // TODO: Don't make a rmi call for every table, make one bulk call
           for (SchemaInfo.Table table : tablesToPull)
-            QueryCache.getInstance()
-                .updateCache(
-                    table.keyspace_name, table.table_name, Collections.emptyList(), -1, lca);
+            for (QueryCacheEntry entry :
+                sourceNode.getCacheEntriesFromTable(table.keyspace_name, table.table_name))
+              QueryCache.getInstance()
+                  .updateCache(entry.keyspace, entry.keyspace, entry.clauses, entry.limit, lca);
         }
       }
       return true;
     }
     return false;
+  }
+
+  /**
+   * This function is used to gather all the entries from a node based on a table.
+   *
+   * <p>This is used for session consistency
+   *
+   * @param keyspace keyspace to get
+   * @param table table to get
+   * @return
+   */
+  @Override
+  public List<QueryCacheEntry> getCacheEntriesFromTable(final String keyspace, final String table) {
+    return QueryCache.getInstance().getEntriesByTable(keyspace, table);
   }
 
   /**

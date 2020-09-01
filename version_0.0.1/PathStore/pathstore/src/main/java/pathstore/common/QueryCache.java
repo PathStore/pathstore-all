@@ -58,6 +58,10 @@ public class QueryCache {
     return QueryCache.instance;
   }
 
+  public List<QueryCacheEntry> getEntriesByTable(final String keyspace, final String table) {
+    return this.entries.get(keyspace).get(table);
+  }
+
   private void addKeyspace(String keyspace) {
     if (!entries.containsKey(keyspace)) {
       synchronized (entries) {
@@ -85,11 +89,11 @@ public class QueryCache {
     ObjectInputStream ois = new ObjectInputStream(bytesIn);
     List<Clause> clauses = (List<Clause>) ois.readObject();
 
-    QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit, lca);
+    QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
     if (entry != null) entry.lca = lca;
-    if (entry == null || entry.lca != -1)
-      entry = addEntry(keyspace, table, clauses, clausesSerialized, limit, lca);
+
+    if (entry == null) entry = addEntry(keyspace, table, clauses, clausesSerialized, limit, lca);
 
     entry.waitUntilReady();
 
@@ -99,20 +103,21 @@ public class QueryCache {
   // executed on client
   public QueryCacheEntry updateCache(
       String keyspace, String table, List<Clause> clauses, int limit, int lca) {
-    QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit, lca);
+    QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
     if (entry != null) entry.lca = lca;
-    if (entry == null || entry.lca != -1)
-      entry = addEntry(keyspace, table, clauses, null, limit, lca);
+
+    if (entry == null) entry = addEntry(keyspace, table, clauses, null, limit, lca);
+    else if (lca != -1)
+      this.processEntry(
+          entry); // if the entry is already present and the lca is set inform the parent.
 
     entry.waitUntilReady();
 
     return entry;
   }
 
-  // Hossein here making this public
-  public QueryCacheEntry getEntry(
-      String keyspace, String table, List<Clause> clauses, int limit, int lca) {
+  public QueryCacheEntry getEntry(String keyspace, String table, List<Clause> clauses, int limit) {
 
     HashMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
     if (tableMap == null) return null;
@@ -124,7 +129,7 @@ public class QueryCache {
       if (e.isSame(clauses))
         if (e.limit == -1
             || e.limit > limit) // we already have a bigger query so don't add this one
-        if (e.lca == lca) return e;
+        return e;
 
     return null;
   }
@@ -172,9 +177,23 @@ public class QueryCache {
       entryList.add(newEntry);
     }
 
+    if (lca != -1)
+      logger.info(
+          String.format(
+              "Entry added for keyspace %s and table %s with caluses %s",
+              keyspace, table, clauses));
+
+    return this.processEntry(newEntry);
+  }
+
+  private QueryCacheEntry processEntry(final QueryCacheEntry newEntry) {
+
+    final int lca = newEntry.lca;
+
     // TODO add entry to DB (of your parent)
     try {
 
+      // If the entry isn't covered or the lca value is set
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER
           && (newEntry.isCovered == null || lca != -1)) {
 
@@ -302,22 +321,17 @@ public class QueryCache {
 
   public void fetchDelta(QueryCacheEntry entry) {
     UUID deltaId = null;
-    long d = System.nanoTime();
-
-    //		System.out.println("     inside fetch delta " + entry.keyspace + " " + entry.table);
 
     if (entry.getParentTimeStamp() != null) {
-
       deltaId = PathStoreServerClient.getInstance().cretateQueryDelta(entry);
-      if (deltaId == null) {
-        //				System.out.println("no change, return");
-        return;
-      }
-      //			System.out.println(" creating queryDelta took: " +Timer.getTime(d));
+      if (deltaId == null) return;
     }
 
+    if (entry.lca != -1)
+      logger.info(
+          String.format("fetching Delta for with deltaId %s with lca %d", deltaId, entry.lca));
+
     fetchData(entry, deltaId);
-    //		System.out.println(" after querydelta took: " +Timer.getTime(d));
   }
 
   private void fetchData(QueryCacheEntry entry, UUID deltaID) {
@@ -325,6 +339,9 @@ public class QueryCache {
     Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
 
     String table = deltaID != null ? "view_" + entry.table : entry.table;
+
+    if (entry.lca != -1)
+      logger.info(String.format("Fetching data for deltaId %s on table %s", deltaID, table));
 
     Select select = QueryBuilder.select().all().from(entry.keyspace, table);
 

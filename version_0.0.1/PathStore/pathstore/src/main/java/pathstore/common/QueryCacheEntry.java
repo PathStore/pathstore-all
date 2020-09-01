@@ -22,22 +22,23 @@ import com.datastax.driver.core.querybuilder.Clause;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 /** TODO: Comment */
-public class QueryCacheEntry {
-  String keyspace;
-  String table;
-  List<Clause> clauses;
-  byte[] clausesSerialized = null;
-  QueryCacheEntry isCovered = null;
-  List<QueryCacheEntry> covers = null;
-  private boolean ready = false;
-  private UUID parentTimeStamp = null;
-  public int limit;
-  public int lca;
+public class QueryCacheEntry implements Serializable {
+  public final String keyspace;
+  public final String table;
+  public final List<Clause> clauses;
+  transient byte[] clausesSerialized = null;
+  transient QueryCacheEntry isCovered = null;
+  transient List<QueryCacheEntry> covers = null;
+  private transient boolean ready = false;
+  private transient UUID parentTimeStamp = null;
+  public transient int limit;
+  public transient int lca;
 
   public QueryCacheEntry(
       String keyspace, String table, List<Clause> clauses, int limit, final int lca) {
@@ -107,30 +108,6 @@ public class QueryCacheEntry {
 
   public void setParentTimeStamp(UUID parentTimeStamp) {
     this.parentTimeStamp = parentTimeStamp;
-  }
-
-  public String getKeyspace() {
-    return keyspace;
-  }
-
-  public void setKeyspace(String keyspace) {
-    this.keyspace = keyspace;
-  }
-
-  public String getTable() {
-    return table;
-  }
-
-  public void setTable(String table) {
-    this.table = table;
-  }
-
-  public List<Clause> getClauses() {
-    return clauses;
-  }
-
-  public void setClauses(List<Clause> clauses) {
-    this.clauses = clauses;
   }
 
   public byte[] getClausesSerialized() throws IOException {

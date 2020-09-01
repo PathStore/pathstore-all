@@ -28,6 +28,8 @@ import pathstore.util.SchemaInfo;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -87,11 +89,7 @@ public class PathStoreServerClient {
 
       String result =
           stub.addQueryEntry(
-              entry.getKeyspace(),
-              entry.getTable(),
-              entry.getClausesSerialized(),
-              entry.limit,
-              entry.lca);
+              entry.keyspace, entry.table, entry.getClausesSerialized(), entry.limit, entry.lca);
       // System.out.println("time took to add to parent: " + Timer.getTime(t));
       result = "";
     } catch (Exception e) {
@@ -104,8 +102,8 @@ public class PathStoreServerClient {
   public UUID cretateQueryDelta(QueryCacheEntry entry) {
     try {
       return stub.createQueryDelta(
-          entry.getKeyspace(),
-          entry.getTable(),
+          entry.keyspace,
+          entry.table,
           entry.getClausesSerialized(),
           entry.getParentTimeStamp(),
           PathStoreProperties.getInstance().NodeID,
@@ -142,6 +140,15 @@ public class PathStoreServerClient {
       e.printStackTrace();
     }
     return false;
+  }
+
+  public List<QueryCacheEntry> getCacheEntriesFromTable(final String keyspace, final String table) {
+    try {
+      return this.stub.getCacheEntriesFromTable(keyspace, table);
+    } catch (RemoteException e) {
+      e.printStackTrace();
+    }
+    return Collections.emptyList();
   }
 
   public void forcePush(final SessionToken sessionToken, final int lca) {
