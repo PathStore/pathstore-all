@@ -250,22 +250,21 @@ public class PathStoreServerImplRMI implements PathStoreServer {
         if (sessionToken.sourceNode != lca) sourceNode.forcePush(sessionToken, lca);
 
         // force pull all of K or T of session from N_A to NodeID iff n_d isn't LCA
-        if (PathStoreProperties.getInstance().NodeID != lca) {
-
-          Collection<SchemaInfo.Table> tablesToPull =
-              PathStorePushServer.buildCollectionFromSessionToken(sessionToken);
-
-          if (tablesToPull == null)
-            throw new RuntimeException("Could not generate tables for sessionToken");
-
-
-          // TODO: Don't make a rmi call for every table, make one bulk call
-          for (SchemaInfo.Table table : tablesToPull)
-            for (QueryCacheEntry entry :
-                sourceNode.getCacheEntriesFromTable(table.keyspace_name, table.table_name))
-              QueryCache.getInstance()
-                  .updateCache(entry.keyspace, entry.keyspace, entry.clauses, entry.limit, lca);
-        }
+//        if (PathStoreProperties.getInstance().NodeID != lca) {
+//
+//          Collection<SchemaInfo.Table> tablesToPull =
+//              PathStorePushServer.buildCollectionFromSessionToken(sessionToken);
+//
+//          if (tablesToPull == null)
+//            throw new RuntimeException("Could not generate tables for sessionToken");
+//
+//          // TODO: Don't make a rmi call for every table, make one bulk call
+//          for (SchemaInfo.Table table : tablesToPull)
+//            for (QueryCacheEntry entry :
+//                sourceNode.getCacheEntriesFromTable(table.keyspace_name, table.table_name))
+//              QueryCache.getInstance()
+//                  .updateCache(entry.keyspace, entry.keyspace, entry.clauses, entry.limit, lca);
+//        }
       }
       return true;
     }

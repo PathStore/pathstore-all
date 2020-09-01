@@ -91,8 +91,6 @@ public class QueryCache {
 
     QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
-    if (entry != null) entry.lca = lca;
-
     if (entry == null) entry = addEntry(keyspace, table, clauses, clausesSerialized, limit, lca);
 
     entry.waitUntilReady();
@@ -105,12 +103,7 @@ public class QueryCache {
       String keyspace, String table, List<Clause> clauses, int limit, int lca) {
     QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
-    if (entry != null) entry.lca = lca;
-
     if (entry == null) entry = addEntry(keyspace, table, clauses, null, limit, lca);
-    else if (lca != -1)
-      this.processEntry(
-          entry); // if the entry is already present and the lca is set inform the parent.
 
     entry.waitUntilReady();
 
@@ -177,12 +170,6 @@ public class QueryCache {
       entryList.add(newEntry);
     }
 
-    if (lca != -1)
-      logger.info(
-          String.format(
-              "Entry added for keyspace %s and table %s with caluses %s",
-              keyspace, table, clauses));
-
     return this.processEntry(newEntry);
   }
 
@@ -194,25 +181,16 @@ public class QueryCache {
     try {
 
       // If the entry isn't covered or the lca value is set
-      if (PathStoreProperties.getInstance().role != Role.ROOTSERVER
-          && (newEntry.isCovered == null || lca != -1)) {
-
-        if (lca != -1) logger.info(String.format("Adding parent entry for lca %d", lca));
+      if (PathStoreProperties.getInstance().role != Role.ROOTSERVER && newEntry.isCovered == null) {
 
         PathStoreServerClient.getInstance().addQueryEntry(newEntry);
 
         // Hossein: don't update your parents query cache (for now)
 
         if (PathStoreProperties.getInstance().role == Role.SERVER) {
-          if (lca != -1) logger.info(String.format("Fetching data for lca %d", lca));
-
           fetchDelta(newEntry);
         }
       }
-
-      // This is so that the entry can exist within the query cache after session migration has
-      // occurred as normal
-      if (newEntry.lca != -1) newEntry.lca = -1;
     } finally {
       newEntry.setReady();
     }
@@ -327,10 +305,6 @@ public class QueryCache {
       if (deltaId == null) return;
     }
 
-    if (entry.lca != -1)
-      logger.info(
-          String.format("fetching Delta for with deltaId %s with lca %d", deltaId, entry.lca));
-
     fetchData(entry, deltaId);
   }
 
@@ -339,9 +313,6 @@ public class QueryCache {
     Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
 
     String table = deltaID != null ? "view_" + entry.table : entry.table;
-
-    if (entry.lca != -1)
-      logger.info(String.format("Fetching data for deltaId %s on table %s", deltaID, table));
 
     Select select = QueryBuilder.select().all().from(entry.keyspace, table);
 
