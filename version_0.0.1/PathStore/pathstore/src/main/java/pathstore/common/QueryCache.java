@@ -73,7 +73,20 @@ public class QueryCache {
   }
 
   public Collection<QueryCacheEntry> getEntries(final SchemaInfo.Table table) {
-    return this.entries.get(table.keyspace_name).get(table.table_name);
+    // if table is null return empty list
+    if (table == null) return Collections.emptyList();
+
+    // get values from keyspace
+    HashMap<String, List<QueryCacheEntry>> tableMap = this.entries.get(table.keyspace_name);
+
+    // if the keyspace doesn't exist return empty list
+    if (tableMap == null) return Collections.emptyList();
+
+    // get entries by table
+    List<QueryCacheEntry> entries = tableMap.get(table.table_name);
+
+    // if non-null return entries else return empty list
+    return entries != null ? entries : Collections.emptyList();
   }
 
   // called by child

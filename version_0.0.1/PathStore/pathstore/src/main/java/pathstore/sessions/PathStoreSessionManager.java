@@ -5,8 +5,8 @@ import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
 import java.io.*;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * This class is to be used on the client side to store their session tokens in a file which can be
@@ -57,7 +57,7 @@ public class PathStoreSessionManager {
    * Store all sessions that are keyspace based tokens (when migrated all data within a keyspace is
    * transferred)
    */
-  private final Map<String, SessionToken> sessionStore = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, SessionToken> sessionStore = new ConcurrentHashMap<>();
 
   /**
    * Loads all session tokens in from the given file (if present)
