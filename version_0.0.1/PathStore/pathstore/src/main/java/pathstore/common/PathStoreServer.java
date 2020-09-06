@@ -22,11 +22,10 @@ import pathstore.util.SchemaInfo;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.List;
 import java.util.UUID;
 
 public interface PathStoreServer extends Remote {
-  String addQueryEntry(String keyspace, String table, byte[] clauses, int limit, int lca)
+  String updateCache(String keyspace, String table, byte[] clauses, int limit)
       throws RemoteException;
 
   UUID createQueryDelta(
@@ -40,10 +39,9 @@ public interface PathStoreServer extends Remote {
 
   boolean validateSession(final SessionToken sessionToken) throws RemoteException;
 
-  List<QueryCacheEntry> getCacheEntriesFromTable(final String keyspace, final String table)
-      throws RemoteException;
-
   void forcePush(final SessionToken sessionToken, final int lca) throws RemoteException;
+
+  void forceSynchronize(final SessionToken sessionToken, final int lca) throws RemoteException;
 
   int getLocalNodeId() throws RemoteException;
 }

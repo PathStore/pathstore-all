@@ -113,7 +113,7 @@ public class PathStoreSession implements Session {
 
         this.printDifference(original, strippedClauses);
 
-        QueryCache.getInstance().updateCache(keyspace, table, strippedClauses, -1, -1);
+        QueryCache.getInstance().updateCache(keyspace, table, strippedClauses, -1);
       }
     } else if (statement instanceof Insert) {
       Insert insert = (Insert) statement;

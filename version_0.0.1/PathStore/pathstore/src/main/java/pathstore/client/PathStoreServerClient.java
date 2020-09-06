@@ -28,8 +28,6 @@ import pathstore.util.SchemaInfo;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -83,13 +81,12 @@ public class PathStoreServerClient {
     }
   }
 
-  public void addQueryEntry(QueryCacheEntry entry) {
+  public void updateCache(QueryCacheEntry entry) {
     try {
       long t = System.nanoTime();
 
       String result =
-          stub.addQueryEntry(
-              entry.keyspace, entry.table, entry.getClausesSerialized(), entry.limit, entry.lca);
+          stub.updateCache(entry.keyspace, entry.table, entry.getClausesSerialized(), entry.limit);
       // System.out.println("time took to add to parent: " + Timer.getTime(t));
       result = "";
     } catch (Exception e) {
@@ -99,7 +96,7 @@ public class PathStoreServerClient {
     }
   }
 
-  public UUID cretateQueryDelta(QueryCacheEntry entry) {
+  public UUID createQueryDelta(QueryCacheEntry entry) {
     try {
       return stub.createQueryDelta(
           entry.keyspace,
@@ -142,18 +139,17 @@ public class PathStoreServerClient {
     return false;
   }
 
-  public List<QueryCacheEntry> getCacheEntriesFromTable(final String keyspace, final String table) {
-    try {
-      return this.stub.getCacheEntriesFromTable(keyspace, table);
-    } catch (RemoteException e) {
-      e.printStackTrace();
-    }
-    return Collections.emptyList();
-  }
-
   public void forcePush(final SessionToken sessionToken, final int lca) {
     try {
       this.stub.forcePush(sessionToken, lca);
+    } catch (RemoteException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void forceSynchronize(final SessionToken sessionToken, final int lca) {
+    try {
+      this.stub.forceSynchronize(sessionToken, lca);
     } catch (RemoteException e) {
       e.printStackTrace();
     }

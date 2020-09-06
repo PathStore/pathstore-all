@@ -23,8 +23,6 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.*;
 import pathstore.client.PathStoreServerClient;
 import pathstore.system.PathStorePrivilegedCluster;
-import pathstore.system.logging.PathStoreLogger;
-import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 
@@ -39,9 +37,7 @@ import java.util.*;
  */
 public class QueryCache {
 
-  private final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(QueryCache.class);
-
-  final HashMap<String, HashMap<String, List<QueryCacheEntry>>> entries = new HashMap<>();
+  private final HashMap<String, HashMap<String, List<QueryCacheEntry>>> entries = new HashMap<>();
 
   public void remove(final String keyspace) {
     entries.remove(keyspace);
@@ -56,10 +52,6 @@ public class QueryCache {
   public static QueryCache getInstance() {
     if (QueryCache.instance == null) QueryCache.instance = new QueryCache();
     return QueryCache.instance;
-  }
-
-  public List<QueryCacheEntry> getEntriesByTable(final String keyspace, final String table) {
-    return this.entries.get(keyspace).get(table);
   }
 
   private void addKeyspace(String keyspace) {
@@ -80,9 +72,13 @@ public class QueryCache {
     }
   }
 
+  public Collection<QueryCacheEntry> getEntries(final SchemaInfo.Table table) {
+    return this.entries.get(table.keyspace_name).get(table.table_name);
+  }
+
   // called by child
   public QueryCacheEntry updateCache(
-      String keyspace, String table, byte[] clausesSerialized, int limit, int lca)
+      String keyspace, String table, byte[] clausesSerialized, int limit)
       throws ClassNotFoundException, IOException {
 
     ByteArrayInputStream bytesIn = new ByteArrayInputStream(clausesSerialized);
@@ -91,25 +87,44 @@ public class QueryCache {
 
     QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
-    if (entry == null) entry = addEntry(keyspace, table, clauses, clausesSerialized, limit, lca);
+    if (entry == null) entry = addEntry(keyspace, table, clauses, clausesSerialized, limit);
 
     entry.waitUntilReady();
 
     return entry;
   }
 
-  // executed on client
+  /**
+   * This function is used to update the cache when an incoming select statement comes in.
+   *
+   * <p>This function is called by the client.
+   *
+   * @param keyspace keyspace of the query
+   * @param table table of the query
+   * @param clauses where statements for the query
+   * @param limit return limit
+   * @return entry created.
+   */
   public QueryCacheEntry updateCache(
-      String keyspace, String table, List<Clause> clauses, int limit, int lca) {
+      String keyspace, String table, List<Clause> clauses, int limit) {
     QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
-    if (entry == null) entry = addEntry(keyspace, table, clauses, null, limit, lca);
+    if (entry == null) entry = addEntry(keyspace, table, clauses, null, limit);
 
     entry.waitUntilReady();
 
     return entry;
   }
 
+  /**
+   * This function is used to retrieve an entry from the local cache.
+   *
+   * @param keyspace keyspace of entry
+   * @param table table of entry
+   * @param clauses clauses of entry
+   * @param limit limit
+   * @return entry if it already exists, else null
+   */
   public QueryCacheEntry getEntry(String keyspace, String table, List<Clause> clauses, int limit) {
 
     HashMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
@@ -127,40 +142,56 @@ public class QueryCache {
     return null;
   }
 
+  /**
+   * This function is used to add an entry to the cache.
+   *
+   * @param keyspace keyspace of entry
+   * @param table table of entry
+   * @param clauses clauses of entry
+   * @param clausesSerialized serialized clauses if applicable
+   * @param limit limit of query
+   * @return entry created
+   */
   private QueryCacheEntry addEntry(
-      String keyspace,
-      String table,
-      List<Clause> clauses,
-      byte[] clausesSerialized,
-      int limit,
-      int lca) {
+      String keyspace, String table, List<Clause> clauses, byte[] clausesSerialized, int limit) {
 
     addTable(keyspace, table);
 
+    // where to place entry
     HashMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
     List<QueryCacheEntry> entryList = tableMap.get(table);
 
-    QueryCacheEntry newEntry = new QueryCacheEntry(keyspace, table, clauses, limit, lca);
+    // create entry
+    QueryCacheEntry newEntry = new QueryCacheEntry(keyspace, table, clauses, limit);
     if (clausesSerialized != null) newEntry.setClausesSerialized(clausesSerialized);
 
+    // iterate over all entries to setup new entry and add to list if applicable
     synchronized (entryList) {
       for (QueryCacheEntry entry : entryList) {
+        // if the clauses are the same check for limit difs
         if (entry.isSame(clauses)) {
+          // limits are the same so short circuit can occur as this new entry is a duplicate
           if (entry.limit == newEntry.limit) return entry;
+          // if the new entry has a higher limit than the existing entry it is covered
           else if (entry.limit == -1 && newEntry.limit > 0) {
             newEntry.isCovered = entry;
             entry.covers.add(newEntry);
+            // if the new entry has a higher limit then the original entry is covered by the new
+            // entry
           } else if (entry.limit > 0 && newEntry.limit > 0 && entry.limit < newEntry.limit) {
             entry.isCovered = newEntry;
             newEntry.covers.add(entry);
           }
         }
 
+        // check if the new entry is covered by a set of clauses that is a super set
         if (newEntry.isCovered == null && entry.isSuperSet(clauses)) {
           newEntry.isCovered = entry;
           entry.covers.add(newEntry);
         }
 
+        // check if the current entry has a subset of clauses to the entry, then that entry is
+        // covered
         if (entry.isCovered == null && entry.isSubSet(clauses)) {
           entry.isCovered = newEntry;
           newEntry.covers.add(entry);
@@ -170,23 +201,28 @@ public class QueryCache {
       entryList.add(newEntry);
     }
 
+    // process the entry (determine if cache miss is applicable)
     return this.processEntry(newEntry);
   }
 
+  /**
+   * This function is used to determine if a cache miss has occured
+   *
+   * @param newEntry entry to process
+   * @return entry
+   */
   private QueryCacheEntry processEntry(final QueryCacheEntry newEntry) {
-
-    final int lca = newEntry.lca;
 
     // TODO add entry to DB (of your parent)
     try {
 
-      // If the entry isn't covered or the lca value is set
+      // If the entry isn't covered add the entry to your parents cache (or your local nodes cache)
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER && newEntry.isCovered == null) {
 
-        PathStoreServerClient.getInstance().addQueryEntry(newEntry);
+        // call update cache on parent node
+        PathStoreServerClient.getInstance().updateCache(newEntry);
 
-        // Hossein: don't update your parents query cache (for now)
-
+        // when the entry
         if (PathStoreProperties.getInstance().role == Role.SERVER) {
           fetchDelta(newEntry);
         }
@@ -198,6 +234,21 @@ public class QueryCache {
     return newEntry;
   }
 
+  /**
+   * This function is used to write all updates to the view_table for a given table that is newer
+   * then a parentTimestamp
+   *
+   * @param keyspace keyspace for entry
+   * @param table table for entry
+   * @param clausesSerialized clauses
+   * @param parentTimestamp timestamp of the current entry's latest parent timestamp
+   * @param nodeID node id that this request is coming from, this is to exclude rows that were
+   *     pushed using
+   * @param limit how many rows can be processed
+   * @return uuid of delta used in {@link #fetchDelta(QueryCacheEntry)}
+   * @throws IOException reading from bytes
+   * @throws ClassNotFoundException can't find class needed
+   */
   public UUID createDelta(
       String keyspace,
       String table,
@@ -219,6 +270,9 @@ public class QueryCache {
     select.allowFiltering();
 
     for (Clause clause : clauses) select.where(clause);
+
+    // ensure that the passed entry exists within your cache
+    this.updateCache(keyspace, table, clausesSerialized, limit);
 
     Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
 
@@ -248,6 +302,8 @@ public class QueryCache {
 
       Object previousKey = null;
       Object currentKey = null;
+
+      // used to account for limits
       int count = -1;
 
       int totalRowsChanged = 0;
@@ -286,6 +342,8 @@ public class QueryCache {
           batch.add(insert);
           batchSize += statement.length();
         }
+
+        previousKey = currentKey;
       }
       if (batchSize > 0) local.execute(batch);
 
@@ -297,34 +355,54 @@ public class QueryCache {
     }
   }
 
+  /**
+   * This function is used to fetch a delta on a given entry. As in it will grab all updates that
+   * pertain to a query
+   *
+   * @param entry entry to get updates for.
+   */
   public void fetchDelta(QueryCacheEntry entry) {
     UUID deltaId = null;
 
+    // the parentTimeStamp is only present after the initial fetch
     if (entry.getParentTimeStamp() != null) {
-      deltaId = PathStoreServerClient.getInstance().cretateQueryDelta(entry);
+      deltaId = PathStoreServerClient.getInstance().createQueryDelta(entry);
+
+      // if no new rows were written to the view table return as there is no data to fetch
       if (deltaId == null) return;
     }
 
+    // fetch Data from parent
     fetchData(entry, deltaId);
   }
 
+  /**
+   * If deltaID is null then this is the first time data is being pulled. When this occurs
+   *
+   * @param entry
+   * @param deltaID
+   */
   private void fetchData(QueryCacheEntry entry, UUID deltaID) {
     Session parent = PathStorePrivilegedCluster.getParentInstance().connect();
     Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
 
     String table = deltaID != null ? "view_" + entry.table : entry.table;
 
+    // select all from the table
     Select select = QueryBuilder.select().all().from(entry.keyspace, table);
 
     select.allowFiltering();
 
+    // if the deltaID exists pull only rows with that view id
     if (deltaID != null) select.where(QueryBuilder.eq("pathstore_view_id", deltaID));
 
+    // add all additional clauses from the entry
     for (Clause clause : entry.clauses) select.where(clause);
 
     // hossein here again
     select.setFetchSize(1000);
 
+    // execute the query on the parent node
     ResultSet results = parent.execute(select);
 
     Collection<Column> columns =
@@ -336,13 +414,15 @@ public class QueryCache {
 
     UUID highest_timestamp = null;
 
-    // check this
+    // iterate over each returned row
     for (Row row : results) {
 
+      // insert object
       Insert insert = QueryBuilder.insertInto(entry.keyspace, entry.table);
 
       for (Column column : columns) {
-        if (column.column_name.compareTo("pathstore_parent_timestamp") == 0) {
+        if (column.column_name.compareTo("pathstore_parent_timestamp")
+            == 0) { // used to calculate the highest time stamp to set
           UUID row_timestamp = row.getUUID("pathstore_parent_timestamp");
 
           if (highest_timestamp == null
@@ -351,6 +431,7 @@ public class QueryCache {
 
           insert.value("pathstore_parent_timestamp", QueryBuilder.now());
         } else {
+          // for all other columns except for insert_sid and dirty add them to the insert value
           try {
             if (column.column_name.compareTo("pathstore_insert_sid") != 0
                 && column.column_name.compareTo("pathstore_dirty") != 0
@@ -369,6 +450,7 @@ public class QueryCache {
 
       String statement = insert.toString();
 
+      // either add the statement to the batch or execute the insert locally.
       if (statement.length() > PathStoreProperties.getInstance().MaxBatchSize)
         local.execute(insert);
       else {
@@ -381,8 +463,11 @@ public class QueryCache {
         batchSize += statement.length();
       }
     }
+
+    // if the batch still has data execute the rest of the batch
     if (batchSize > 0) local.execute(batch);
 
+    // update the entry's timestamp to the highest timestamp from the data provided
     UUID entry_timestamp = entry.getParentTimeStamp();
 
     assert (entry_timestamp == null || entry_timestamp.timestamp() < highest_timestamp.timestamp());

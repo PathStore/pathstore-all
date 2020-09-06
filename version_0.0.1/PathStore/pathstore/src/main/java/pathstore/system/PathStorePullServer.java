@@ -17,11 +17,12 @@
  */
 package pathstore.system;
 
-import com.datastax.driver.core.querybuilder.Clause;
+import com.datastax.driver.core.Statement;
 import org.apache.commons.cli.*;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
 import pathstore.common.QueryCacheEntry;
+import pathstore.sessions.SessionToken;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
@@ -31,14 +32,15 @@ import java.util.List;
 /** TODO: Comment */
 public class PathStorePullServer implements Runnable {
 
-  public static String clauseToString(List<Clause> clauses) {
-    Clause c = clauses.get(0);
-    return c.getName() + ":" + c.getValue();
-  }
-
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStorePullServer.class);
 
+  /**
+   * For all entries in the qc that aren't covered fetch their delta.
+   *
+   * <p>Entries are added to the qc by {@link pathstore.client.PathStoreSession#execute(Statement)}
+   * and {@link pathstore.client.PathStoreSession#execute(Statement, SessionToken)}
+   */
   private void pull() {
     HashMap<String, HashMap<String, List<QueryCacheEntry>>> entries =
         QueryCache.getInstance().getEntries();

@@ -34,24 +34,12 @@ public class PathStoreServerImplRMI implements PathStoreServer {
     return instance;
   }
 
-  public String addQueryEntry(String keyspace, String table, byte[] clauses, int limit, int lca)
+  public String updateCache(String keyspace, String table, byte[] clauses, int limit)
       throws RemoteException {
-
-    if (lca != -1) {
-      logger.info(
-          String.format("Called parent to pull for lca %d on table %s.%s", lca, keyspace, table));
-
-      if (lca == PathStoreProperties.getInstance().NodeID) {
-        logger.info("LCA Hit for recursive force pull");
-        return null;
-      } else {
-        logger.info("LCA Still not hit");
-      }
-    }
 
     long d = System.nanoTime();
     try {
-      QueryCache.getInstance().updateCache(keyspace, table, clauses, limit, lca);
+      QueryCache.getInstance().updateCache(keyspace, table, clauses, limit);
       //			System.out.println("^^^^^^^^^^^^^^^^ time to reply took: " + Timer.getTime(d));
 
     } catch (ClassNotFoundException | IOException e) {
@@ -249,40 +237,14 @@ public class PathStoreServerImplRMI implements PathStoreServer {
         // lca
         if (sessionToken.sourceNode != lca) sourceNode.forcePush(sessionToken, lca);
 
-        // force pull all of K or T of session from N_A to NodeID iff n_d isn't LCA
-//        if (PathStoreProperties.getInstance().NodeID != lca) {
-//
-//          Collection<SchemaInfo.Table> tablesToPull =
-//              PathStorePushServer.buildCollectionFromSessionToken(sessionToken);
-//
-//          if (tablesToPull == null)
-//            throw new RuntimeException("Could not generate tables for sessionToken");
-//
-//          // TODO: Don't make a rmi call for every table, make one bulk call
-//          for (SchemaInfo.Table table : tablesToPull)
-//            for (QueryCacheEntry entry :
-//                sourceNode.getCacheEntriesFromTable(table.keyspace_name, table.table_name))
-//              QueryCache.getInstance()
-//                  .updateCache(entry.keyspace, entry.keyspace, entry.clauses, entry.limit, lca);
-//        }
+        // force synchronize all of K or T of session from destination node to lca if the
+        // destination node isn't the lca
+        if (PathStoreProperties.getInstance().NodeID != lca)
+          this.forceSynchronize(sessionToken, lca);
       }
       return true;
     }
     return false;
-  }
-
-  /**
-   * This function is used to gather all the entries from a node based on a table.
-   *
-   * <p>This is used for session consistency
-   *
-   * @param keyspace keyspace to get
-   * @param table table to get
-   * @return
-   */
-  @Override
-  public List<QueryCacheEntry> getCacheEntriesFromTable(final String keyspace, final String table) {
-    return QueryCache.getInstance().getEntriesByTable(keyspace, table);
   }
 
   /**
@@ -305,7 +267,7 @@ public class PathStoreServerImplRMI implements PathStoreServer {
               "Performing a force push for session data on node %d with session name %s with lca of %d",
               nodeId, sessionToken.sessionName, lca));
       PathStorePushServer.push(
-          PathStorePushServer.buildCollectionFromSessionToken(sessionToken),
+          sessionToken.stream().collect(Collectors.toList()),
           PathStorePrivilegedCluster.getDaemonInstance().connect(),
           PathStorePrivilegedCluster.getParentInstance().connect(),
           SchemaInfo.getInstance(),
@@ -317,6 +279,47 @@ public class PathStoreServerImplRMI implements PathStoreServer {
           String.format(
               "LCA has been hit with nodeid %d and session name %s",
               lca, sessionToken.sessionName));
+    }
+  }
+
+  /**
+   * This function is used to force synchronize all caches between n_d and n_a
+   *
+   * @param sessionToken session token to migrate
+   * @param lca lca of migration
+   * @see SessionToken#stream()
+   */
+  @Override
+  public void forceSynchronize(final SessionToken sessionToken, final int lca) {
+    int nodeId = PathStoreProperties.getInstance().NodeID;
+    if (nodeId != lca) {
+
+      logger.info(String.format("Still haven't hit lca of %d", lca));
+
+      PathStoreServerClient.getInstance().forceSynchronize(sessionToken, lca);
+
+      logger.info(
+          String.format("Starting synchronization of all session data for node id %d", lca));
+
+      sessionToken.stream()
+          .map(table -> QueryCache.getInstance().getEntries(table))
+          .flatMap(Collection::stream)
+          .filter(queryCacheEntry -> queryCacheEntry.getIsCovered() == null) // only non-covered
+          .forEach(
+              nonCoveredQueryCacheEntry -> {
+                logger.info("Waiting");
+                nonCoveredQueryCacheEntry.waitUntilReady();
+                logger.info(
+                    String.format(
+                        "Synchronizing entry on table %s.%s with clauses %s",
+                        nonCoveredQueryCacheEntry.keyspace,
+                        nonCoveredQueryCacheEntry.table,
+                        nonCoveredQueryCacheEntry.clauses));
+                QueryCache.getInstance().fetchDelta(nonCoveredQueryCacheEntry);
+              });
+
+    } else {
+      logger.info(String.format("Hit lca of %d, not going any further", lca));
     }
   }
 

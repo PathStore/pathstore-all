@@ -2,10 +2,14 @@ package pathstore.sessions;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import pathstore.util.SchemaInfo;
 
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static pathstore.util.SchemaInfo.Table;
 
 /**
  * This class is used to denote a session token. Tokens will solely be managed by {@link
@@ -122,6 +126,36 @@ public class SessionToken implements Serializable {
     this.hasBeenValidated = true;
     this.sourceNode = newSourceNode;
     System.out.println(String.format("Validated session token with name %s", this.sessionName));
+  }
+
+  /**
+   * This function is used to build a stream of table objects from the data set.
+   *
+   * <p>This gets used during the migration process.
+   *
+   * @return stream of tables determine by data set and session type
+   */
+  public Stream<Table> stream() {
+    switch (this.sessionType) {
+      case KEYSPACE:
+        return this.data.stream()
+            .map(keyspace -> SchemaInfo.getInstance().getTablesFromKeyspace(keyspace))
+            .flatMap(Collection::stream)
+            .filter(table -> !table.table_name.startsWith("view_"));
+      case TABLE:
+        return this.data.stream()
+            .map(
+                entry -> {
+                  int locationOfPeriod = entry.indexOf('.');
+                  return SchemaInfo.getInstance()
+                      .getTableFromKeyspaceAndTableName(
+                          entry.substring(0, locationOfPeriod),
+                          entry.substring(locationOfPeriod + 1));
+                })
+            .filter(table -> !table.table_name.startsWith("view_"));
+      default:
+        throw new RuntimeException("Session Type is not either keyspace or table");
+    }
   }
 
   /**

@@ -38,16 +38,14 @@ public class QueryCacheEntry implements Serializable {
   private transient boolean ready = false;
   private transient UUID parentTimeStamp = null;
   public transient int limit;
-  public transient int lca;
 
   public QueryCacheEntry(
-      String keyspace, String table, List<Clause> clauses, int limit, final int lca) {
+      String keyspace, String table, List<Clause> clauses, int limit) {
     this.keyspace = keyspace;
     this.table = table;
     this.clauses = clauses;
     covers = new ArrayList<>();
     this.limit = limit;
-    this.lca = lca;
   }
 
   public QueryCacheEntry getIsCovered() {
