@@ -117,7 +117,6 @@ public class QueryCache {
     QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
     if (entry == null) entry = addEntry(keyspace, table, clauses, null, limit);
-    else System.out.println("Cache hit");
 
     entry.waitUntilReady();
 

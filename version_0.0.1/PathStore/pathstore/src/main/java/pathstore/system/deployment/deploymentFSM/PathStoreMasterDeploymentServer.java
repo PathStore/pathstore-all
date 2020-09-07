@@ -95,6 +95,10 @@ public class PathStoreMasterDeploymentServer implements Runnable {
         completeSet.add(newNodeId);
       }
 
+      System.out.println(waitingDeployment);
+
+      System.out.println(deployed);
+
       // (2)
       waitingDeployment.stream()
           .filter(i -> deployed.containsAll(i.waitFor))
