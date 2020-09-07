@@ -2,6 +2,7 @@ package pathstore.client;
 
 import com.datastax.driver.core.Cluster;
 import org.json.JSONObject;
+import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.util.ClusterCache;
 import pathstore.util.SchemaInfo;
@@ -37,7 +38,11 @@ public class PathStoreClientAuthenticatedCluster {
 
       if (response.isPresent()) {
         JSONObject responseObject = new JSONObject(response.get());
-        if (responseObject.getString("status").equals("valid")) {
+        if (responseObject
+            .getEnum(
+                Constants.REGISTER_APPLICATION.STATUS_STATES.class,
+                Constants.REGISTER_APPLICATION.STATUS)
+            .equals(Constants.REGISTER_APPLICATION.STATUS_STATES.VALID)) {
           SchemaInfo schemaInfo =
               PathStoreServerClient.getInstance().getSchemaInfo(applicationName);
 
@@ -47,8 +52,11 @@ public class PathStoreClientAuthenticatedCluster {
           SchemaInfo.setInstance(schemaInfo);
           instance =
               new PathStoreClientAuthenticatedCluster(
-                  responseObject.getString("username"), responseObject.getString("password"));
-        } else throw new RuntimeException("Login Credentials are invalid");
+                  responseObject.getString(Constants.REGISTER_APPLICATION.USERNAME),
+                  responseObject.getString(Constants.REGISTER_APPLICATION.PASSWORD));
+        } else
+          throw new RuntimeException(
+              responseObject.getString(Constants.REGISTER_APPLICATION.REASON));
       } else throw new RuntimeException("Response is not present");
     }
     return instance;

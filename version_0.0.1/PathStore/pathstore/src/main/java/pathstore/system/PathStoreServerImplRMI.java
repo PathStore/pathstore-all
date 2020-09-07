@@ -77,19 +77,31 @@ public class PathStoreServerImplRMI implements PathStoreServer {
         String.format("Register application credentials for application %s", applicationName));
 
     if (ClientAuthenticationUtil.isComboInvalid(applicationName, password)) {
-      logger.info(
+      String errorResponse =
           String.format(
               "Registration of application credentials for application %s has failed as the provided credentials do not match the master application credentials",
-              applicationName));
-      return new JSONObject().put("status", "invalid").toString();
+              applicationName);
+      logger.info(errorResponse);
+      return new JSONObject()
+          .put(
+              Constants.REGISTER_APPLICATION.STATUS,
+              Constants.REGISTER_APPLICATION.STATUS_STATES.INVALID)
+          .put(Constants.REGISTER_APPLICATION.REASON, errorResponse)
+          .toString();
     }
 
     if (ClientAuthenticationUtil.isApplicationNotLoaded(applicationName)) {
-      logger.info(
+      String errorResponse =
           String.format(
               "Registration of application credentials for application %s has failed as the provided application name is not loaded on the give node",
-              applicationName));
-      return new JSONObject().put("status", "invalid").toString();
+              applicationName);
+      logger.info(errorResponse);
+      return new JSONObject()
+          .put(
+              Constants.REGISTER_APPLICATION.STATUS,
+              Constants.REGISTER_APPLICATION.STATUS_STATES.INVALID)
+          .put(Constants.REGISTER_APPLICATION.REASON, errorResponse)
+          .toString();
     }
 
     Optional<Credential> optionalExistingCredential =
@@ -110,9 +122,11 @@ public class PathStoreServerImplRMI implements PathStoreServer {
     }
 
     return new JSONObject()
-        .put("status", "valid")
-        .put("username", clientUsername)
-        .put("password", clientPassword)
+        .put(
+            Constants.REGISTER_APPLICATION.STATUS,
+            Constants.REGISTER_APPLICATION.STATUS_STATES.VALID)
+        .put(Constants.REGISTER_APPLICATION.USERNAME, clientUsername)
+        .put(Constants.REGISTER_APPLICATION.PASSWORD, clientPassword)
         .toString();
   }
 

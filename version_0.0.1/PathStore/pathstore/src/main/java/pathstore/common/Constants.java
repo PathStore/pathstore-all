@@ -194,4 +194,17 @@ public final class Constants {
   public static final class STARTUP_COLUMNS {
     public static final String TASK_DONE = "task_done";
   }
+
+  public static final class REGISTER_APPLICATION {
+    public static final String STATUS = "status";
+
+    public enum STATUS_STATES {
+      VALID,
+      INVALID
+    }
+
+    public static final String REASON = "reason";
+    public static final String USERNAME = "username";
+    public static final String PASSWORD = "password";
+  }
 }
