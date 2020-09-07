@@ -84,8 +84,6 @@ public class FinalizeRootInstallation implements ICommand {
   @Override
   public void execute() {
 
-    System.out.println("Writing server record to root's table");
-
     PathStorePrivilegedCluster cluster =
         PathStorePrivilegedCluster.getChildInstance(
             this.cassandraUsername, this.cassandraPassword, this.ip, this.cassandraPort);
@@ -122,5 +120,11 @@ public class FinalizeRootInstallation implements ICommand {
     session.execute(insert);
 
     cluster.close();
+  }
+
+  /** @return info message */
+  @Override
+  public String toString() {
+    return "Writing server and deployment record to roots table";
   }
 }
