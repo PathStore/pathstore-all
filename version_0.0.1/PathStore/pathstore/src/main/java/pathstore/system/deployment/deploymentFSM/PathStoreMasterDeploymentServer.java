@@ -47,73 +47,75 @@ public class PathStoreMasterDeploymentServer implements Runnable {
    */
   @Override
   public void run() {
-    while (true) {
-      // (1)
-      Select selectAllDeploymentRecords =
-          QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
+    try {
+      while (true) {
+        // (1)
+        Select selectAllDeploymentRecords =
+            QueryBuilder.select()
+                .all()
+                .from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
 
-      // Deployment
-      Set<Integer> deployed = new HashSet<>();
-      Set<DeploymentEntry> waitingDeployment = new HashSet<>();
+        // Deployment
+        Set<Integer> deployed = new HashSet<>();
+        Set<DeploymentEntry> waitingDeployment = new HashSet<>();
 
-      // Removal
-      Set<DeploymentEntry> waitingRemoval = new HashSet<>();
-      Set<Integer> completeSet = new HashSet<>();
+        // Removal
+        Set<DeploymentEntry> waitingRemoval = new HashSet<>();
+        Set<Integer> completeSet = new HashSet<>();
 
-      for (Row row : this.session.execute(selectAllDeploymentRecords)) {
-        DeploymentProcessStatus status =
-            DeploymentProcessStatus.valueOf(
-                row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS));
-        int newNodeId = row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID);
+        for (Row row : this.session.execute(selectAllDeploymentRecords)) {
+          DeploymentProcessStatus status =
+              DeploymentProcessStatus.valueOf(
+                  row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS));
+          int newNodeId = row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID);
 
-        // Setup filterable sets
-        switch (status) {
-          case DEPLOYED:
-            deployed.add(newNodeId);
-            break;
-          case WAITING_DEPLOYMENT:
-            waitingDeployment.add(
-                new DeploymentEntry(
-                    newNodeId,
-                    row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
-                    status,
-                    row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class),
-                    UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
-            break;
-          case WAITING_REMOVAL:
-            waitingRemoval.add(
-                new DeploymentEntry(
-                    newNodeId,
-                    row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
-                    status,
-                    row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class),
-                    UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
-            break;
+          // Setup filterable sets
+          switch (status) {
+            case DEPLOYED:
+              deployed.add(newNodeId);
+              break;
+            case WAITING_DEPLOYMENT:
+              waitingDeployment.add(
+                  new DeploymentEntry(
+                      newNodeId,
+                      row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
+                      status,
+                      row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class),
+                      UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
+              break;
+            case WAITING_REMOVAL:
+              waitingRemoval.add(
+                  new DeploymentEntry(
+                      newNodeId,
+                      row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
+                      status,
+                      row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class),
+                      UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
+              break;
+          }
+
+          // add to complete set
+          completeSet.add(newNodeId);
         }
 
-        // add to complete set
-        completeSet.add(newNodeId);
+        // (2)
+        waitingDeployment.stream()
+            .filter(i -> deployed.containsAll(i.waitFor))
+            .forEach(this::transitionDeploy);
+
+        // (3) If all nodes i is waiting for aren't presented in the record set
+        waitingRemoval.stream()
+            .filter(i -> Collections.disjoint(i.waitFor, completeSet))
+            .forEach(this::transitionRemoval);
+
+        try {
+          Thread.sleep(5000);
+        } catch (InterruptedException e) {
+          logger.error(e);
+        }
       }
-
-      System.out.println(waitingDeployment);
-
-      System.out.println(deployed);
-
-      // (2)
-      waitingDeployment.stream()
-          .filter(i -> deployed.containsAll(i.waitFor))
-          .forEach(this::transitionDeploy);
-
-      // (3) If all nodes i is waiting for aren't presented in the record set
-      waitingRemoval.stream()
-          .filter(i -> Collections.disjoint(i.waitFor, completeSet))
-          .forEach(this::transitionRemoval);
-
-      try {
-        Thread.sleep(5000);
-      } catch (InterruptedException e) {
-        logger.error(e);
-      }
+    } catch (Exception e) {
+      logger.error(e);
     }
   }
 

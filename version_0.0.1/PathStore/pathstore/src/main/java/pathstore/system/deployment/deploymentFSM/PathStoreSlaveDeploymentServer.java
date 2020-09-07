@@ -65,47 +65,53 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
    */
   @Override
   public void run() {
-    while (true) {
-      // (1)
-      Select selectAllDeployment =
-          QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
-      selectAllDeployment.where(QueryBuilder.eq(PARENT_NODE_ID, this.nodeId));
+    try {
+      while (true) {
+        // (1)
+        Select selectAllDeployment =
+            QueryBuilder.select()
+                .all()
+                .from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
+        selectAllDeployment.where(QueryBuilder.eq(PARENT_NODE_ID, this.nodeId));
 
-      // Query all rows from the deployment table
-      for (Row row : this.session.execute(selectAllDeployment)) {
-        DeploymentProcessStatus currentStatus =
-            DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS));
+        // Query all rows from the deployment table
+        for (Row row : this.session.execute(selectAllDeployment)) {
+          DeploymentProcessStatus currentStatus =
+              DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS));
 
-        if (currentStatus != DeploymentProcessStatus.DEPLOYING
-            && currentStatus != DeploymentProcessStatus.REMOVING) continue;
+          if (currentStatus != DeploymentProcessStatus.DEPLOYING
+              && currentStatus != DeploymentProcessStatus.REMOVING) continue;
 
-        String serverUUID = row.getString(SERVER_UUID);
+          String serverUUID = row.getString(SERVER_UUID);
 
-        Select queryServer =
-            QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
-        queryServer.where(QueryBuilder.eq(SERVER_UUID, serverUUID));
+          Select queryServer =
+              QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
+          queryServer.where(QueryBuilder.eq(SERVER_UUID, serverUUID));
 
-        // (2) && (3)
-        for (Row serverRow : this.session.execute(queryServer))
-          this.spawnSubProcess(
-              new DeploymentEntry(
-                  row.getInt(NEW_NODE_ID),
-                  this.nodeId,
-                  currentStatus,
-                  row.getList(WAIT_FOR, Integer.class),
-                  UUID.fromString(serverUUID)),
-              serverRow.getString(IP),
-              serverRow.getString(USERNAME),
-              serverRow.getString(PASSWORD),
-              serverRow.getInt(SSH_PORT),
-              serverRow.getInt(RMI_PORT));
+          // (2) && (3)
+          for (Row serverRow : this.session.execute(queryServer))
+            this.spawnSubProcess(
+                new DeploymentEntry(
+                    row.getInt(NEW_NODE_ID),
+                    this.nodeId,
+                    currentStatus,
+                    row.getList(WAIT_FOR, Integer.class),
+                    UUID.fromString(serverUUID)),
+                serverRow.getString(IP),
+                serverRow.getString(USERNAME),
+                serverRow.getString(PASSWORD),
+                serverRow.getInt(SSH_PORT),
+                serverRow.getInt(RMI_PORT));
+        }
+
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException e) {
+          this.logger.error(e);
+        }
       }
-
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        this.logger.error(e);
-      }
+    } catch (Exception e) {
+      logger.error(e);
     }
   }
 
@@ -255,7 +261,8 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
       try {
 
         for (ICommand command :
-            StartupUTIL.initUnDeploymentList(sshUtil, ip, cassandraPort, entry.newNodeId, entry.parentNodeId)) {
+            StartupUTIL.initUnDeploymentList(
+                sshUtil, ip, cassandraPort, entry.newNodeId, entry.parentNodeId)) {
           this.logger.info(
               PathStoreDeploymentUtils.formatParallelMessages(entry.newNodeId, command.toString()));
           command.execute();
