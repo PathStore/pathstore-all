@@ -57,7 +57,6 @@ public final class Constants {
     public static final String PATHSTORE_DELETED = "pathstore_deleted";
     public static final String PATHSTORE_DIRTY = "pathstore_dirty";
     public static final String PATHSTORE_NODE = "pathstore_node";
-    public static final String PATHSTORE_INSERT_SID = "pathstore_insert_sid";
   }
 
   public static final String SYSTEM_SCHEMA = "system_schema";

@@ -62,12 +62,26 @@ public class PathStoreServerClient {
     try {
       Registry registry = null;
 
-      if (PathStoreProperties.getInstance().role == Role.SERVER)
+      if (PathStoreProperties.getInstance().role == Role.SERVER) {
+        if (PathStoreProperties.getInstance().RMIRegistryParentIP == null)
+          throw new RuntimeException(
+              "Could not connect to parent registry as the ip specified is null");
+        if (PathStoreProperties.getInstance().RMIRegistryParentPort == -1)
+          throw new RuntimeException(
+              "Could not connect to parent registry as the port is -1");
+
         registry =
             LocateRegistry.getRegistry(
                 PathStoreProperties.getInstance().RMIRegistryParentIP,
                 PathStoreProperties.getInstance().RMIRegistryParentPort);
-      else {
+      } else {
+        if (PathStoreProperties.getInstance().RMIRegistryIP == null)
+          throw new RuntimeException(
+              "Could not connect to local node registry as the ip specified is null");
+        if (PathStoreProperties.getInstance().RMIRegistryPort== -1)
+          throw new RuntimeException(
+              "Could not connect to local node registry as the port is -1");
+
         registry =
             LocateRegistry.getRegistry(
                 PathStoreProperties.getInstance().RMIRegistryIP,

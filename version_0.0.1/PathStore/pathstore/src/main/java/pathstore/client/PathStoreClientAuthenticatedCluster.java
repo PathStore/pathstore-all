@@ -26,13 +26,11 @@ public class PathStoreClientAuthenticatedCluster {
    * @param applicationName the application name you're trying to connect with
    * @param masterPassword the master password associated with your application
    * @return a connection instance if valid credentials are passed.
-   * @throws Exception If there is an issues retrieving the response from the local node, or the
-   *     credentials provided are invalid.
    * @apiNote Ideally you should only call this function at the start of your application, then you
    *     can use {@link #getInstance()} to retrieve this instance in other classes.
    */
-  public static synchronized PathStoreClientAuthenticatedCluster initInstance(
-      final String applicationName, final String masterPassword) throws Exception {
+  private static PathStoreClientAuthenticatedCluster initInstance(
+      final String applicationName, final String masterPassword) {
     if (instance == null) {
       Optional<String> response =
           PathStoreServerClient.getInstance().registerApplication(applicationName, masterPassword);
@@ -44,14 +42,15 @@ public class PathStoreClientAuthenticatedCluster {
           SchemaInfo schemaInfo =
               PathStoreServerClient.getInstance().getSchemaInfo(applicationName);
 
-          if (schemaInfo == null) throw new Exception("Could not get schema info from local node");
+          if (schemaInfo == null)
+            throw new RuntimeException("Could not get schema info from local node");
 
           SchemaInfo.setInstance(schemaInfo);
           instance =
               new PathStoreClientAuthenticatedCluster(
                   responseObject.getString("username"), responseObject.getString("password"));
-        } else throw new Exception("Login Credentials are invalid");
-      } else throw new Exception("Response is not present");
+        } else throw new RuntimeException("Login Credentials are invalid");
+      } else throw new RuntimeException("Response is not present");
     }
     return instance;
   }
@@ -61,13 +60,17 @@ public class PathStoreClientAuthenticatedCluster {
    * #initInstance(String, String)} has already been called and successfully works.
    *
    * @return instance if present
-   * @throws Exception thrown if {@link #initInstance(String, String)} hasn't been called yet
    */
-  public static synchronized PathStoreClientAuthenticatedCluster getInstance() throws Exception {
+  public static synchronized PathStoreClientAuthenticatedCluster getInstance() {
     if (instance != null) return instance;
 
-    throw new Exception(
-        "Instance is not yet initialized you must call PathStoreClientAuthenticatedCluster#initInstance first");
+    PathStoreProperties.getInstance().verifyClientAuthenticationDetails();
+
+    PathStoreProperties.getInstance().verifyCassandraConnectionDetails();
+
+    return initInstance(
+        PathStoreProperties.getInstance().applicationName,
+        PathStoreProperties.getInstance().applicationMasterPassword);
   }
 
   /** Username provided on registration */
@@ -88,9 +91,6 @@ public class PathStoreClientAuthenticatedCluster {
    */
   private PathStoreClientAuthenticatedCluster(
       final String clientUsername, final String clientPassword) {
-
-    System.out.println(
-        String.format("Connecting with credentials %s %s", clientUsername, clientPassword));
 
     this.clientUsername = clientUsername;
     this.clientPassword = clientPassword;

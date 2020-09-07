@@ -174,7 +174,6 @@ public class AddApplication implements IService {
     query.append("pathstore_parent_timestamp timeuuid,");
     query.append("pathstore_dirty boolean,");
     query.append("pathstore_deleted boolean,");
-    query.append("pathstore_insert_sid text,");
     query.append("pathstore_node int,");
     query.append("PRIMARY KEY(");
 
@@ -244,16 +243,6 @@ public class AddApplication implements IService {
                 + "."
                 + table.table_name
                 + " (pathstore_deleted)");
-
-    session.execute(query.toString());
-
-    query =
-        new StringBuilder(
-            "CREATE INDEX ON "
-                + table.keyspace_name
-                + "."
-                + table.table_name
-                + " (pathstore_insert_sid)");
 
     session.execute(query.toString());
 

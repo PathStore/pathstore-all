@@ -21,6 +21,7 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.*;
 import com.datastax.driver.core.querybuilder.Update.Assignments;
 import com.google.common.util.concurrent.ListenableFuture;
+import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
 import pathstore.exception.InvalidKeyspaceException;
 import pathstore.exception.InvalidStatementTypeException;
@@ -82,10 +83,8 @@ public class PathStoreSession implements Session {
     return executeNormal(statement, sessionToken);
   }
 
-  private PathStoreResultSet executeNormal(Statement statement, SessionToken sessionToken)
+  private PathStoreResultSet executeNormal(Statement statement, final SessionToken sessionToken)
       throws PathStoreRemoteException {
-
-    // TODO: Check if statement throws errors
 
     String keyspace = statement.getKeyspace();
     String table = "";
@@ -95,6 +94,18 @@ public class PathStoreSession implements Session {
       throw new InvalidKeyspaceException("Keyspace does not start with pathstore prefix");
 
     if (statement instanceof Select) {
+
+      // We only do select validation as it is the only query that modifies local state. Everything
+      // else will fail at the Cassandra level
+      try {
+        this.session.execute(statement);
+      } catch (Exception e) {
+        throw new RuntimeException(
+            String.format(
+                "Could not execute the select statement %s as it is invalid",
+                statement.toString()));
+      }
+
       Select select = (Select) statement;
 
       table = select.getTable();
@@ -218,7 +229,7 @@ public class PathStoreSession implements Session {
     if (sessionToken != null && !sessionToken.hasBeenValidated())
       if (PathStoreServerClient.getInstance().validateSession(sessionToken)) {
         logger.info(String.format("Session is valid %s", sessionToken.sessionName));
-        sessionToken.isValidated(PathStoreSessionManager.getInstance().localNodeId);
+        sessionToken.isValidated(PathStoreProperties.getInstance().NodeID);
       } else {
         logger.info(String.format("Session is invalid %s", sessionToken.sessionName));
         PathStoreSessionManager.getInstance().removeToken(sessionToken.sessionName);

@@ -18,6 +18,7 @@
 package pathstore.common;
 
 import pathstore.authentication.Credential;
+import pathstore.client.PathStoreServerClient;
 
 import java.io.FileInputStream;
 import java.util.Properties;
@@ -83,6 +84,37 @@ public class PathStoreProperties {
     return PathStoreProperties.instance;
   }
 
+  /** Used to verify the present of the super user credentials within the properties file */
+  public void verifyCassandraSuperUserCredentials() {
+    if (this.credential == null)
+      throw new RuntimeException("Super user credentials are not present in the properties file");
+  }
+
+  /** Used to verify the presence of the cassandra ip and port information */
+  public void verifyCassandraConnectionDetails() {
+    if (this.CassandraIP == null)
+      throw new RuntimeException("Cassandra IP is not present within the properties file");
+    if (this.CassandraPort == -1)
+      throw new RuntimeException("Cassandra port is not present within the properties file");
+  }
+
+  /** Used to verify the presence of the parent cassandra ip and port information */
+  public void verifyParentCassandraConnectionDetails() {
+    if (this.CassandraParentIP == null)
+      throw new RuntimeException("Cassandra Parent IP is not present within the properties file");
+    if (this.CassandraParentPort == -1)
+      throw new RuntimeException("Cassandra Parent Port is not present within the properties file");
+  }
+
+  /** Used to verify client authentication details */
+  public void verifyClientAuthenticationDetails() {
+    if (this.applicationName == null)
+      throw new RuntimeException("Application Name is not set in the properties file");
+
+    if (this.applicationMasterPassword == null)
+      throw new RuntimeException("Application Master Password is not set in the properties file");
+  }
+
   /** Denotes the role of the server */
   public Role role;
 
@@ -96,31 +128,31 @@ public class PathStoreProperties {
   public int ParentID;
 
   /** Denotes the current node's local rmi server normally 127.0.0.1 */
-  public String RMIRegistryIP;
+  public String RMIRegistryIP = null;
 
-  /** Denotes the current node's local rmi server's port normall 1099 */
-  public int RMIRegistryPort;
+  /** Denotes the current node's local rmi server's port normally 1099 */
+  public int RMIRegistryPort = -1;
 
   /** Denotes the current node's parent rmi server's address */
-  public String RMIRegistryParentIP;
+  public String RMIRegistryParentIP = null;
 
   /** Denotes the current node's parent rmi server's port */
-  public int RMIRegistryParentPort;
+  public int RMIRegistryParentPort = -1;
 
   /** Denote the node's local cassandra instance address */
-  public String CassandraIP;
+  public String CassandraIP = null;
 
   /** Denotes the node's local cassandra instance port */
-  public int CassandraPort;
+  public int CassandraPort = -1;
 
   /** Denotes the node's parent cassandra instance address */
-  public String CassandraParentIP;
+  public String CassandraParentIP = null;
 
   /** Denotes the node's parent cassandra instance port */
-  public int CassandraParentPort;
+  public int CassandraParentPort = -1;
 
   /** Denotes credential to local cassandra instance */
-  public Credential credential;
+  public Credential credential = null;
 
   /**
    * Denotes batch size
@@ -134,6 +166,13 @@ public class PathStoreProperties {
 
   /** Denotes how often the push server pull's data */
   public int PushSleep = 1000;
+
+  // client only properties
+  public String sessionFile = null;
+
+  public String applicationName = null;
+
+  public String applicationMasterPassword = null;
 
   /**
    * Parses the data in accordance to what is needed per role. See class Java doc for description on
@@ -174,6 +213,13 @@ public class PathStoreProperties {
           break;
         default:
           throw new Exception();
+      }
+
+      if (this.role == Role.CLIENT) {
+        this.NodeID = PathStoreServerClient.getInstance().getLocalNodeId();
+        this.sessionFile = this.getProperty(props, "sessionFile");
+        this.applicationName = this.getProperty(props, "applicationName");
+        this.applicationMasterPassword = this.getProperty(props, "applicationMasterPassword");
       }
 
       in.close();

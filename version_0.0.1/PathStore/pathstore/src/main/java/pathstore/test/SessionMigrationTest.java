@@ -10,10 +10,6 @@ import pathstore.sessions.PathStoreSessionManager;
 
 public class SessionMigrationTest {
   public static void main(String[] args) throws Exception {
-    PathStoreClientAuthenticatedCluster.initInstance("pathstore_demo", "pathstore_demo");
-
-    PathStoreSessionManager.init("/home/myles/Documents/sessionFile.txt");
-
     PathStoreSession session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Insert insert =

@@ -26,8 +26,8 @@ import pathstore.sessions.SessionToken;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
-import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 
 /** TODO: Comment */
 public class PathStorePullServer implements Runnable {
@@ -42,11 +42,11 @@ public class PathStorePullServer implements Runnable {
    * and {@link pathstore.client.PathStoreSession#execute(Statement, SessionToken)}
    */
   private void pull() {
-    HashMap<String, HashMap<String, List<QueryCacheEntry>>> entries =
+    ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> entries =
         QueryCache.getInstance().getEntries();
 
     for (String keyspace : entries.keySet()) {
-      HashMap<String, List<QueryCacheEntry>> tables = entries.get(keyspace);
+      ConcurrentMap<String, List<QueryCacheEntry>> tables = entries.get(keyspace);
 
       for (String table : tables.keySet()) {
         List<QueryCacheEntry> cache_entries = tables.get(table);

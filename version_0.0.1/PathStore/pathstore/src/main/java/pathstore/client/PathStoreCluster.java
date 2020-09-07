@@ -47,6 +47,9 @@ public class PathStoreCluster {
    * @return super user privileged pathstore cluster
    */
   public static PathStoreCluster getSuperUserInstance() {
+    PathStoreProperties.getInstance().verifyCassandraSuperUserCredentials();
+    PathStoreProperties.getInstance().verifyCassandraConnectionDetails();
+
     return clusterCache.getInstance(
         PathStoreProperties.getInstance().credential,
         PathStoreProperties.getInstance().CassandraIP,
@@ -60,8 +63,16 @@ public class PathStoreCluster {
    * @see CredentialCache
    */
   public static PathStoreCluster getDaemonInstance() {
+    Credential daemonCredentials =
+        CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().NodeID);
+
+    if (daemonCredentials == null)
+      throw new RuntimeException("Daemon credentials are not present within the local auth table");
+
+    PathStoreProperties.getInstance().verifyCassandraConnectionDetails();
+
     return clusterCache.getInstance(
-        CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().NodeID),
+        daemonCredentials,
         PathStoreProperties.getInstance().CassandraIP,
         PathStoreProperties.getInstance().CassandraPort);
   }

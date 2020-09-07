@@ -1,6 +1,6 @@
 package pathstore.sessions;
 
-import pathstore.client.PathStoreServerClient;
+import pathstore.common.PathStoreProperties;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
@@ -32,26 +32,22 @@ public class PathStoreSessionManager {
    * @param sessionFile where you want your sessions to be stored, and or where to load previous
    *     sessions from
    */
-  public static synchronized void init(final String sessionFile) {
-    if (instance != null)
-      throw new RuntimeException("Cannot call init after instance has already been created");
-    else instance = new PathStoreSessionManager(sessionFile);
+  private static void init(final String sessionFile) {
+    if (sessionFile == null)
+      throw new RuntimeException(
+          "You have not set the sessionFile properties in the properties file");
+
+    if (instance == null) instance = new PathStoreSessionManager(sessionFile);
   }
 
   /** @return get session manager instance */
   public static synchronized PathStoreSessionManager getInstance() {
-    if (instance == null) throw new RuntimeException("Must call init first");
+    if (instance == null) init(PathStoreProperties.getInstance().sessionFile);
     return instance;
   }
 
   /** File name where session storage exists or will exist */
   private final String sessionFile;
-
-  /**
-   * Gathered from {@link PathStoreServerClient#getLocalNodeId()}. This is used to denote the source
-   * node and is used for migration purposes
-   */
-  public final int localNodeId;
 
   /**
    * Store all sessions that are keyspace based tokens (when migrated all data within a keyspace is
@@ -66,10 +62,10 @@ public class PathStoreSessionManager {
    */
   private PathStoreSessionManager(final String sessionFile) {
     this.sessionFile = sessionFile;
-    this.localNodeId = PathStoreServerClient.getInstance().getLocalNodeId();
 
-    if (this.localNodeId == -1)
-      logger.error("local node id has returned -1, sessions created will not be migrated");
+    if (PathStoreProperties.getInstance().NodeID == -1)
+      throw new RuntimeException(
+          "Node id gathered from local node returned -1, sessions will not be migrateable");
 
     this.loadFromFile();
   }
@@ -205,7 +201,9 @@ public class PathStoreSessionManager {
     SessionToken token = this.sessionStore.get(transformedSessionName);
 
     if (token == null) {
-      SessionToken temp = new SessionToken(this.localNodeId, transformedSessionName, sessionType);
+      SessionToken temp =
+          new SessionToken(
+              PathStoreProperties.getInstance().NodeID, transformedSessionName, sessionType);
       this.sessionStore.put(transformedSessionName, temp);
       token = temp;
     }

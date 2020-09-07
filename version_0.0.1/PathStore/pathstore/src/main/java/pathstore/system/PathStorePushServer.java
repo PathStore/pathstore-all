@@ -44,15 +44,9 @@ public class PathStorePushServer implements Runnable {
     for (Column column : columns) {
       if (!row.isNull(column.column_name))
         if (!column.column_name.equals("pathstore_node"))
-          if (!column.column_name.equals("pathstore_insert_sid")) // Hossein
-            // if(row.getObject(column.column_name)==null)
-            //	{
-            // insert.value("pathstore_node", PathStoreProperties.getInstance().NodeID);
-            //	continue;
-            // }
-            if (column.column_name.compareTo("pathstore_parent_timestamp") == 0)
-              insert.value(column.column_name, QueryBuilder.now());
-            else insert.value(column.column_name, row.getObject(column.column_name));
+          if (column.column_name.compareTo("pathstore_parent_timestamp") == 0)
+            insert.value(column.column_name, QueryBuilder.now());
+          else insert.value(column.column_name, row.getObject(column.column_name));
     }
     insert.value("pathstore_node", nodeid);
 

@@ -30,6 +30,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * This class is responsible for storing queries that have already been made. This is to allow for
@@ -37,39 +39,31 @@ import java.util.*;
  */
 public class QueryCache {
 
-  private final HashMap<String, HashMap<String, List<QueryCacheEntry>>> entries = new HashMap<>();
+  private final ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> entries =
+      new ConcurrentHashMap<>();
 
   public void remove(final String keyspace) {
     entries.remove(keyspace);
   }
 
-  public HashMap<String, HashMap<String, List<QueryCacheEntry>>> getEntries() {
+  public ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> getEntries() {
     return entries;
   }
 
   private static QueryCache instance = null;
 
-  public static QueryCache getInstance() {
+  public static synchronized QueryCache getInstance() {
     if (QueryCache.instance == null) QueryCache.instance = new QueryCache();
     return QueryCache.instance;
   }
 
-  private void addKeyspace(String keyspace) {
-    if (!entries.containsKey(keyspace)) {
-      synchronized (entries) {
-        if (!entries.containsKey(keyspace)) entries.put(keyspace, new HashMap<>());
-      }
-    }
+  private void addKeyspace(final String keyspace) {
+    this.entries.putIfAbsent(keyspace, new ConcurrentHashMap<>());
   }
 
-  private void addTable(String keyspace, String table) {
+  private void addTable(final String keyspace, final String table) {
     addKeyspace(keyspace);
-    if (!entries.get(keyspace).containsKey(table)) {
-      synchronized (entries.get(keyspace)) {
-        if (!entries.get(keyspace).containsKey(table))
-          entries.get(keyspace).put(table, new ArrayList<>());
-      }
-    }
+    this.entries.get(keyspace).putIfAbsent(table, new ArrayList<>());
   }
 
   public Collection<QueryCacheEntry> getEntries(final SchemaInfo.Table table) {
@@ -77,7 +71,7 @@ public class QueryCache {
     if (table == null) return Collections.emptyList();
 
     // get values from keyspace
-    HashMap<String, List<QueryCacheEntry>> tableMap = this.entries.get(table.keyspace_name);
+    ConcurrentMap<String, List<QueryCacheEntry>> tableMap = this.entries.get(table.keyspace_name);
 
     // if the keyspace doesn't exist return empty list
     if (tableMap == null) return Collections.emptyList();
@@ -140,7 +134,7 @@ public class QueryCache {
    */
   public QueryCacheEntry getEntry(String keyspace, String table, List<Clause> clauses, int limit) {
 
-    HashMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
+    ConcurrentMap<String, List<QueryCacheEntry>> tableMap = this.entries.get(keyspace);
     if (tableMap == null) return null;
 
     List<QueryCacheEntry> entryList = tableMap.get(table);
@@ -171,7 +165,7 @@ public class QueryCache {
     addTable(keyspace, table);
 
     // where to place entry
-    HashMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
+    ConcurrentMap<String, List<QueryCacheEntry>> tableMap = entries.get(keyspace);
     List<QueryCacheEntry> entryList = tableMap.get(table);
 
     // create entry
@@ -337,8 +331,7 @@ public class QueryCache {
         // Hossein
         for (Column column : columns) {
           if (!row.isNull(column.column_name)
-              && column.column_name.compareTo("pathstore_dirty") != 0
-              && column.column_name.compareTo("pathstore_insert_sid") != 0)
+              && column.column_name.compareTo("pathstore_dirty") != 0)
             insert.value(column.column_name, row.getObject(column.column_name));
         }
 
@@ -444,10 +437,9 @@ public class QueryCache {
 
           insert.value("pathstore_parent_timestamp", QueryBuilder.now());
         } else {
-          // for all other columns except for insert_sid and dirty add them to the insert value
+          // for all other columns except for dirty add them to the insert value
           try {
-            if (column.column_name.compareTo("pathstore_insert_sid") != 0
-                && column.column_name.compareTo("pathstore_dirty") != 0
+            if (column.column_name.compareTo("pathstore_dirty") != 0
                 && !row.isNull(column.column_name))
               insert.value(column.column_name, row.getObject(column.column_name));
           } catch (Exception e) {

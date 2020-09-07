@@ -45,6 +45,9 @@ public class PathStorePrivilegedCluster {
    * @return super user instance
    */
   public static PathStorePrivilegedCluster getSuperUserInstance() {
+    PathStoreProperties.getInstance().verifyCassandraSuperUserCredentials();
+    PathStoreProperties.getInstance().verifyCassandraConnectionDetails();
+
     return clusterCache.getInstance(
         PathStoreProperties.getInstance().credential,
         PathStoreProperties.getInstance().CassandraIP,
@@ -60,8 +63,16 @@ public class PathStorePrivilegedCluster {
    *     are boot strapped
    */
   public static PathStorePrivilegedCluster getDaemonInstance() {
+    Credential daemonCredentials =
+        CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().NodeID);
+
+    if (daemonCredentials == null)
+      throw new RuntimeException("Daemon credentials are not present in the local auth table");
+
+    PathStoreProperties.getInstance().verifyCassandraConnectionDetails();
+
     return clusterCache.getInstance(
-        CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().NodeID),
+        daemonCredentials,
         PathStoreProperties.getInstance().CassandraIP,
         PathStoreProperties.getInstance().CassandraPort);
   }
@@ -75,8 +86,17 @@ public class PathStorePrivilegedCluster {
    *     credentials are boot strapped
    */
   public static PathStorePrivilegedCluster getParentInstance() {
+
+    Credential parentCredentials =
+        CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().ParentID);
+
+    if (parentCredentials == null)
+      throw new RuntimeException("Parent credentials are not present within the local auth table");
+
+    PathStoreProperties.getInstance().verifyParentCassandraConnectionDetails();
+
     return clusterCache.getInstance(
-        CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().ParentID),
+        parentCredentials,
         PathStoreProperties.getInstance().CassandraParentIP,
         PathStoreProperties.getInstance().CassandraParentPort);
   }
