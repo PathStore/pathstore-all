@@ -83,9 +83,15 @@ public class ClientAuthenticationUtil {
         superUserSession.execute(
             QueryBuilder.select()
                 .all()
-                .from("local_keyspace", "client_auth")
-                .where(QueryBuilder.eq("keyspace_name", applicationName))))
-      return Optional.of(new Credential(-1, row.getString("username"), row.getString("password")));
+                .from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_CLIENT_AUTH)
+                .where(
+                    QueryBuilder.eq(
+                        Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME, applicationName))))
+      return Optional.of(
+          new Credential(
+              -1,
+              row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME),
+              row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD)));
 
     return Optional.empty();
   }
@@ -106,10 +112,10 @@ public class ClientAuthenticationUtil {
     AuthenticationUtil.grantAccessToKeyspace(superUserSession, applicationName, clientUsername);
 
     superUserSession.execute(
-        QueryBuilder.insertInto("local_keyspace", "client_auth")
-            .value("keyspace_name", applicationName)
-            .value("username", clientUsername)
-            .value("password", clientPassword));
+        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_CLIENT_AUTH)
+            .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME, applicationName)
+            .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME, clientUsername)
+            .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD, clientPassword));
   }
 
   /**
@@ -127,8 +133,10 @@ public class ClientAuthenticationUtil {
     if (optionalCredential.isPresent()) {
       superUserSession.execute(
           QueryBuilder.delete()
-              .from("local_keyspace", "client_auth")
-              .where(QueryBuilder.eq("keyspace_name", applicationName)));
+              .from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_CLIENT_AUTH)
+              .where(
+                  QueryBuilder.eq(
+                      Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME, applicationName)));
 
       AuthenticationUtil.dropRole(superUserSession, optionalCredential.get().username);
     }

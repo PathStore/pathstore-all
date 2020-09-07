@@ -193,12 +193,26 @@ public final class Constants {
     public static final String KEYSPACE_NAME = "keyspace_name";
   }
 
-  public static final String LOCAL_KEYSPACE = "local_keyspace";
+  public static final String LOCAL_STARTUP = "local_startup";
 
-  public static final String STARTUP = "startup";
-
-  public static final class STARTUP_COLUMNS {
+  public static final class LOCAL_STARTUP_COLUMNS {
     public static final String TASK_DONE = "task_done";
+  }
+
+  public static final String LOCAL_AUTH = "local_auth";
+
+  public static final class LOCAL_AUTH_COLUMNS {
+    public static final String NODE_ID = "node_id";
+    public static final String USERNAME = "username";
+    public static final String PASSWORD = "password";
+  }
+
+  public static final String LOCAL_CLIENT_AUTH = "local_client_auth";
+
+  public static final class LOCAL_CLIENT_AUTH_COLUMNS {
+    public static final String KEYSPACE_NAME = "keyspace_name";
+    public static final String USERNAME = "username";
+    public static final String PASSWORD = "password";
   }
 
   public static final class REGISTER_APPLICATION {

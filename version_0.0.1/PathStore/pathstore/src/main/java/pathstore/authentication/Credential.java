@@ -3,10 +3,14 @@ package pathstore.authentication;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import pathstore.common.Constants;
 
 import java.util.Objects;
 
-/** Row in local_keyspace.auth or local_keyspace.client_auth with node_id of -1 */
+/**
+ * Row in pathstore_applications.local_auth or pathstore_applications.local_client_auth with node_id
+ * of -1
+ */
 public final class Credential {
 
   /**
@@ -33,12 +37,14 @@ public final class Credential {
   }
 
   /**
-   * @param row row from local_keyspace.auth
+   * @param row row from pathstore_applications.local_auth
    * @return parsed credential object
    */
   public static Credential buildFromRow(final Row row) {
     return new Credential(
-        row.getInt("node_id"), row.getString("username"), row.getString("password"));
+        row.getInt(Constants.LOCAL_AUTH_COLUMNS.NODE_ID),
+        row.getString(Constants.LOCAL_AUTH_COLUMNS.USERNAME),
+        row.getString(Constants.LOCAL_AUTH_COLUMNS.PASSWORD));
   }
 
   /**
@@ -54,10 +60,10 @@ public final class Credential {
       final Session session, final Credential credential) {
     if (session != null && credential != null)
       session.execute(
-          QueryBuilder.insertInto("local_keyspace", "auth")
-              .value("node_id", credential.node_id)
-              .value("username", credential.username)
-              .value("password", credential.password));
+          QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_AUTH)
+              .value(Constants.LOCAL_AUTH_COLUMNS.NODE_ID, credential.node_id)
+              .value(Constants.LOCAL_AUTH_COLUMNS.USERNAME, credential.username)
+              .value(Constants.LOCAL_AUTH_COLUMNS.PASSWORD, credential.password));
 
     return credential;
   }

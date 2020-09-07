@@ -256,7 +256,7 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   }
 
   /**
-   * Write a credential to the child local_keyspace.auth table
+   * Write a credential to the child pathstore_applications.local_auth table
    *
    * @param nodeId node id to get credentials from
    * @param connectionUsername username to connect with
@@ -315,7 +315,7 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   }
 
   /**
-   * Remove a credential from the local nodes local_keyspace.auth table
+   * Remove a credential from the local nodes pathstore_applications.local_auth table
    *
    * @param nodeId node id to remove (As it must already be in the credential cache)
    * @return this

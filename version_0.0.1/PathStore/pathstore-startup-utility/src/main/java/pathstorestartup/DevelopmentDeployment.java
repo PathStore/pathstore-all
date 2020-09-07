@@ -276,13 +276,6 @@ public class DevelopmentDeployment {
             childSuperuserPassword,
             ip,
             cassandraPort,
-            PathStoreSchemaLoaderUtils::loadLocalKeyspace,
-            "local_keyspace")
-        .loadKeyspace(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
             PathStoreSchemaLoaderUtils::loadApplicationSchema,
             Constants.PATHSTORE_APPLICATIONS)
         .createRole(

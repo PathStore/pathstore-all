@@ -3,7 +3,7 @@ package pathstore.system.deployment.commands;
 import pathstore.authentication.CredentialCache;
 
 /**
- * This command is used to remove credentials from the local node's local_keyspace.auth table during
+ * This command is used to remove credentials from the local node's pathstore_applications.local_auth table during
  * un-deployment of a child node
  */
 public class RemoveLocalCredential implements ICommand {

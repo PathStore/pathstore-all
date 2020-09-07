@@ -6,7 +6,7 @@ import pathstore.system.PathStorePrivilegedCluster;
 
 /**
  * This command is used to write the current node's daemon account to the child node's
- * local_keyspace.auth table so they can access the parent node's cassandra during push and pull
+ * pathstore_applications.local_auth table so they can access the parent node's cassandra during push and pull
  * operations
  */
 public class WriteCredentialsToChildNode implements ICommand {

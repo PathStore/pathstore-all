@@ -406,22 +406,9 @@ public class PathStoreSchemaLoaderUtils {
             + "CREATE INDEX apps_pathstore_deleted_idx ON pathstore_applications.apps (pathstore_deleted);\n"
             + "CREATE INDEX apps_pathstore_dirty_idx ON pathstore_applications.apps (pathstore_dirty);\n"
             + "CREATE INDEX apps_pathstore_parent_timestamp_idx ON pathstore_applications.apps (pathstore_parent_timestamp);\n"
-            + "CREATE INDEX apps_pathstore_node_idx ON pathstore_applications.apps (pathstore_node);";
-
-    parseSchema(schema).forEach(session::execute);
-  }
-
-  /**
-   * This will be called from a parent node onto a child node in order to have the table ready
-   * before anything occurs
-   *
-   * @param session session of child
-   */
-  public static void loadLocalKeyspace(final Session session) {
-    String localKeyspace =
-        "CREATE KEYSPACE local_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = false;\n"
+            + "CREATE INDEX apps_pathstore_node_idx ON pathstore_applications.apps (pathstore_node);"
             + "\n"
-            + "CREATE TABLE local_keyspace.startup (\n"
+            + "CREATE TABLE pathstore_applications.local_startup (\n"
             + "    task_done int,\n"
             + "    PRIMARY KEY (task_done)\n"
             + ") WITH read_repair_chance = 0.0\n"
@@ -438,7 +425,7 @@ public class PathStoreSchemaLoaderUtils {
             + "   AND max_index_interval = 2048\n"
             + "   AND crc_check_chance = 1.0;"
             + "\n"
-            + "CREATE TABLE local_keyspace.auth (\n"
+            + "CREATE TABLE pathstore_applications.local_auth (\n"
             + "    node_id int,\n"
             + "    username text,\n"
             + "    password text,\n"
@@ -457,7 +444,7 @@ public class PathStoreSchemaLoaderUtils {
             + "   AND max_index_interval = 2048\n"
             + "   AND crc_check_chance = 1.0;"
             + "\n"
-            + "CREATE TABLE local_keyspace.client_auth (\n"
+            + "CREATE TABLE pathstore_applications.local_client_auth (\n"
             + "    keyspace_name text,\n"
             + "    username text,\n"
             + "    password text,\n"
@@ -476,7 +463,7 @@ public class PathStoreSchemaLoaderUtils {
             + "   AND max_index_interval = 2048\n"
             + "   AND crc_check_chance = 1.0;";
 
-    parseSchema(localKeyspace).forEach(session::execute);
+    parseSchema(schema).forEach(session::execute);
   }
 
   /**

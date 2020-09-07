@@ -14,8 +14,7 @@ import java.util.UUID;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.WAIT_FOR;
-import static pathstore.common.Constants.PATHSTORE_COLUMNS.*;
-import static pathstore.common.Constants.PATHSTORE_COLUMNS.PATHSTORE_DIRTY;
+import static pathstore.common.Constants.PATHSTORE_META_COLUMNS.*;
 import static pathstore.common.Constants.SERVERS_COLUMNS.*;
 import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
 

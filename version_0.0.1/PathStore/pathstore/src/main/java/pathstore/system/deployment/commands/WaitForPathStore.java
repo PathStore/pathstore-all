@@ -84,10 +84,10 @@ public class WaitForPathStore implements ICommand {
             this.username, this.password, this.ip, this.port);
     Session session = cluster.connect();
 
-    Select tasks = QueryBuilder.select().all().from(Constants.LOCAL_KEYSPACE, Constants.STARTUP);
+    Select tasks = QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_STARTUP);
 
     for (Row row : session.execute(tasks)) {
-      int task = row.getInt(Constants.STARTUP_COLUMNS.TASK_DONE);
+      int task = row.getInt(Constants.LOCAL_STARTUP_COLUMNS.TASK_DONE);
 
       if (this.neededRecords.containsKey(task)) {
         this.logger.info(neededRecords.get(task));

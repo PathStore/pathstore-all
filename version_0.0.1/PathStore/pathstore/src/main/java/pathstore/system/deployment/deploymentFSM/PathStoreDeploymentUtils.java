@@ -23,8 +23,8 @@ public class PathStoreDeploymentUtils {
    */
   public static void writeTaskDone(final Session session, final int task) {
     session.execute(
-        QueryBuilder.insertInto(Constants.LOCAL_KEYSPACE, Constants.STARTUP)
-            .value(Constants.STARTUP_COLUMNS.TASK_DONE, task));
+        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_STARTUP)
+            .value(Constants.LOCAL_STARTUP_COLUMNS.TASK_DONE, task));
   }
 
   /**

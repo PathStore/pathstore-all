@@ -2,6 +2,7 @@ package pathstore.authentication;
 
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import pathstore.common.Constants;
 import pathstore.system.PathStorePrivilegedCluster;
 
 import java.util.concurrent.ConcurrentMap;
@@ -10,7 +11,8 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
- * This class is used to cache all credentials in the local_keyspace.auth table into memory.
+ * This class is used to cache all credentials in the pathstore_appliactions.local_auth table into
+ * memory.
  *
  * <p>All writes to that table should be done through this class if they're related to this node
  * specifically.
@@ -49,7 +51,10 @@ public final class CredentialCache {
   private ConcurrentMap<Integer, Credential> load() {
     return StreamSupport.stream(
             this.privSession
-                .execute(QueryBuilder.select().all().from("local_keyspace", "auth"))
+                .execute(
+                    QueryBuilder.select()
+                        .all()
+                        .from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_AUTH))
                 .spliterator(),
             true)
         .map(Credential::buildFromRow)
@@ -82,8 +87,8 @@ public final class CredentialCache {
 
     this.privSession.execute(
         QueryBuilder.delete()
-            .from("local_keyspace", "auth")
-            .where(QueryBuilder.eq("node_id", nodeId)));
+            .from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_AUTH)
+            .where(QueryBuilder.eq(Constants.LOCAL_AUTH_COLUMNS.NODE_ID, nodeId)));
   }
 
   /**
