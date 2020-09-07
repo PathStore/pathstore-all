@@ -19,12 +19,12 @@ public class AuthenticationUtil {
    * @return random alpha number password of size 100
    */
   public static String generateAlphaNumericPassword() {
-    return "p" // temporary to avoid strings that start with a number
+    return new RandomStringGenerator.Builder().withinRange('a', 'z').build().generate(1)
         + new RandomStringGenerator.Builder()
             .withinRange('0', 'z')
             .filteredBy(LETTERS, DIGITS)
             .build()
-            .generate(5);
+            .generate(99);
   }
 
   /**

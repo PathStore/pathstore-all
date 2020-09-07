@@ -10,7 +10,10 @@ import pathstore.authentication.Credential;
 import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.client.PathStoreCluster;
 import pathstore.client.PathStoreServerClient;
-import pathstore.common.*;
+import pathstore.common.Constants;
+import pathstore.common.PathStoreProperties;
+import pathstore.common.PathStoreServer;
+import pathstore.common.QueryCache;
 import pathstore.sessions.SessionToken;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
 import pathstore.system.logging.PathStoreLogger;
@@ -412,7 +415,7 @@ public class PathStoreServerImplRMI implements PathStoreServer {
 
   /**
    * This function is used to gather the node of the local node for node_source in a session token.
-   * Only called once by {@link pathstore.sessions.PathStoreSessionManager#init(String)}
+   * Only called once by {@link PathStoreProperties#getInstance()}
    *
    * @return local node id
    */
