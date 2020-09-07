@@ -16,10 +16,7 @@ public class PathStoreThreadManager {
   /** @return daemon instance */
   public static synchronized PathStoreThreadManager getDaemonInstance() {
     if (daemonInstance == null)
-      daemonInstance =
-          new PathStoreThreadManager(
-              Executors.newFixedThreadPool(
-                  PathStoreProperties.getInstance().role == Role.SERVER ? 5 : 3));
+      daemonInstance = new PathStoreThreadManager(Executors.newFixedThreadPool(5));
     return daemonInstance;
   }
 
