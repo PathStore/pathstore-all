@@ -18,37 +18,30 @@ public class ClientAuthenticationTest {
 
   public static void main(String[] args) {
 
-    if (args[0] != null && args[1] != null) {
+    try {
+      PathStoreClientAuthenticatedCluster cluster =
+          PathStoreClientAuthenticatedCluster.getInstance();
+
+      Session session = cluster.connect();
 
       try {
-        PathStoreClientAuthenticatedCluster cluster =
-            PathStoreClientAuthenticatedCluster.initInstance(args[0], args[1]);
+        Select select =
+            QueryBuilder.select()
+                .all()
+                .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
 
-        Session session = cluster.connect();
-
-        try {
-          Select select =
-              QueryBuilder.select()
-                  .all()
-                  .from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
-
-          session.execute(select);
-
-        } catch (Exception e) {
-          System.out.println("Proper permissions are assigned to the role");
-        }
-
-        cluster.close();
-
-        System.out.println("Test complete, close completed successfully");
+        session.execute(select);
 
       } catch (Exception e) {
-        e.printStackTrace();
+        System.out.println("Proper permissions are assigned to the role");
       }
 
-    } else {
-      System.out.println(
-          "args[0] must be the application name and args[1] must be the master password");
+      cluster.close();
+
+      System.out.println("Test complete, close completed successfully");
+
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 }

@@ -7,7 +7,6 @@ import java.io.IOException;
 
 public class SessionManagerTest {
   public static void main(String[] args) throws IOException {
-    PathStoreSessionManager.init("/home/myles/Documents/sessionFile.txt");
 
     SessionToken testSessionToken =
         PathStoreSessionManager.getInstance().getTableToken("test-session");
