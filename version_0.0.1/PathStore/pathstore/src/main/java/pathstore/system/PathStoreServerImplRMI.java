@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import pathstore.authentication.AuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.authentication.Credential;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.client.PathStoreCluster;
 import pathstore.client.PathStoreServerClient;
 import pathstore.common.*;
@@ -76,10 +77,10 @@ public class PathStoreServerImplRMI implements PathStoreServer {
     logger.info(
         String.format("Register application credentials for application %s", applicationName));
 
-    if (ClientAuthenticationUtil.isComboInvalid(applicationName, password)) {
+    if (ClientAuthenticationUtil.isApplicationNotLoaded(applicationName)) {
       String errorResponse =
           String.format(
-              "Registration of application credentials for application %s has failed as the provided credentials do not match the master application credentials",
+              "Registration of application credentials for application %s has failed as the provided application name is not loaded on the give node",
               applicationName);
       logger.info(errorResponse);
       return new JSONObject()
@@ -90,10 +91,10 @@ public class PathStoreServerImplRMI implements PathStoreServer {
           .toString();
     }
 
-    if (ClientAuthenticationUtil.isApplicationNotLoaded(applicationName)) {
+    if (ClientAuthenticationUtil.isComboInvalid(applicationName, password)) {
       String errorResponse =
           String.format(
-              "Registration of application credentials for application %s has failed as the provided application name is not loaded on the give node",
+              "Registration of application credentials for application %s has failed as the provided credentials do not match the master application credentials",
               applicationName);
       logger.info(errorResponse);
       return new JSONObject()
@@ -131,9 +132,8 @@ public class PathStoreServerImplRMI implements PathStoreServer {
   }
 
   /**
-   * This function is used by {@link
-   * pathstore.client.PathStoreClientAuthenticatedCluster#initInstance(String, String)} to load a
-   * schema info for the client node.
+   * This function is used by {@link PathStoreClientAuthenticatedCluster#getInstance()} schema info
+   * for the client node.
    *
    * @param keyspace application associated with the client
    * @return schemainfo solely on that application
