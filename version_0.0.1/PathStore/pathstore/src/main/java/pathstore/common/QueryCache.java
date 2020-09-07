@@ -117,6 +117,7 @@ public class QueryCache {
     QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
     if (entry == null) entry = addEntry(keyspace, table, clauses, null, limit);
+    else System.out.println("Cache hit");
 
     entry.waitUntilReady();
 
@@ -225,6 +226,8 @@ public class QueryCache {
 
       // If the entry isn't covered add the entry to your parents cache (or your local nodes cache)
       if (PathStoreProperties.getInstance().role != Role.ROOTSERVER && newEntry.isCovered == null) {
+
+        System.out.println("Calling parent for non-covered cache miss");
 
         // call update cache on parent node
         PathStoreServerClient.getInstance().updateCache(newEntry);
