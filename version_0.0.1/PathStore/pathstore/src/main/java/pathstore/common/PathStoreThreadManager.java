@@ -15,8 +15,11 @@ public class PathStoreThreadManager {
 
   /** @return daemon instance */
   public static synchronized PathStoreThreadManager getDaemonInstance() {
-      if (daemonInstance == null)
-        daemonInstance = new PathStoreThreadManager(Executors.newFixedThreadPool(5));
+    if (daemonInstance == null)
+      daemonInstance =
+          new PathStoreThreadManager(
+              Executors.newFixedThreadPool(
+                  PathStoreProperties.getInstance().role == Role.SERVER ? 5 : 3));
     return daemonInstance;
   }
 
@@ -25,8 +28,8 @@ public class PathStoreThreadManager {
 
   /** @return sub process instance */
   public static synchronized PathStoreThreadManager subProcessInstance() {
-      if (subProcessInstance == null)
-        subProcessInstance = new PathStoreThreadManager(Executors.newCachedThreadPool());
+    if (subProcessInstance == null)
+      subProcessInstance = new PathStoreThreadManager(Executors.newCachedThreadPool());
     return subProcessInstance;
   }
 

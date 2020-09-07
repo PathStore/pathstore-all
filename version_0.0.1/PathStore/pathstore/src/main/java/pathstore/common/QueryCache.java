@@ -319,20 +319,20 @@ public class QueryCache {
         if (!currentKey.equals(previousKey)) count++;
         if (count >= limit) break;
 
-        if (row.getInt("pathstore_node") == nodeID
-            || row.getUUID("pathstore_parent_timestamp").timestamp() <= parentTimestamp.timestamp())
-          continue;
+        if (row.getInt(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_NODE) == nodeID
+            || row.getUUID(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_PARENT_TIMESTAMP).timestamp()
+                <= parentTimestamp.timestamp()) continue;
 
         totalRowsChanged++;
-        Insert insert = QueryBuilder.insertInto(keyspace, "view_" + table);
+        Insert insert = QueryBuilder.insertInto(keyspace, Constants.VIEW_PREFIX + table);
 
-        insert.value("pathstore_view_id", deltaID);
+        insert.value(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_VIEW_ID, deltaID);
 
         // Hossein
         for (Column column : columns) {
           if (!row.isNull(column.column_name)
-              && column.column_name.compareTo("pathstore_dirty") != 0)
-            insert.value(column.column_name, row.getObject(column.column_name));
+              && column.column_name.compareTo(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DIRTY)
+                  != 0) insert.value(column.column_name, row.getObject(column.column_name));
         }
 
         String statement = insert.toString();
@@ -392,7 +392,7 @@ public class QueryCache {
     Session parent = PathStorePrivilegedCluster.getParentInstance().connect();
     Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
 
-    String table = deltaID != null ? "view_" + entry.table : entry.table;
+    String table = deltaID != null ? Constants.VIEW_PREFIX + entry.table : entry.table;
 
     // select all from the table
     Select select = QueryBuilder.select().all().from(entry.keyspace, table);
@@ -400,7 +400,8 @@ public class QueryCache {
     select.allowFiltering();
 
     // if the deltaID exists pull only rows with that view id
-    if (deltaID != null) select.where(QueryBuilder.eq("pathstore_view_id", deltaID));
+    if (deltaID != null)
+      select.where(QueryBuilder.eq(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_VIEW_ID, deltaID));
 
     // add all additional clauses from the entry
     for (Clause clause : entry.clauses) select.where(clause);
@@ -427,19 +428,22 @@ public class QueryCache {
       Insert insert = QueryBuilder.insertInto(entry.keyspace, entry.table);
 
       for (Column column : columns) {
-        if (column.column_name.compareTo("pathstore_parent_timestamp")
+        if (column.column_name.compareTo(
+                Constants.PATHSTORE_META_COLUMNS.PATHSTORE_PARENT_TIMESTAMP)
             == 0) { // used to calculate the highest time stamp to set
-          UUID row_timestamp = row.getUUID("pathstore_parent_timestamp");
+          UUID row_timestamp =
+              row.getUUID(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_PARENT_TIMESTAMP);
 
           if (highest_timestamp == null
               || highest_timestamp.timestamp() < row_timestamp.timestamp())
             highest_timestamp = row_timestamp;
 
-          insert.value("pathstore_parent_timestamp", QueryBuilder.now());
+          insert.value(
+              Constants.PATHSTORE_META_COLUMNS.PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now());
         } else {
           // for all other columns except for dirty add them to the insert value
           try {
-            if (column.column_name.compareTo("pathstore_dirty") != 0
+            if (column.column_name.compareTo(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DIRTY) != 0
                 && !row.isNull(column.column_name))
               insert.value(column.column_name, row.getObject(column.column_name));
           } catch (Exception e) {

@@ -29,6 +29,8 @@ public final class Constants {
   public static final String PATHSTORE_DAEMON_USERNAME = "pathstore";
 
   public static final String PATHSTORE_PREFIX = "pathstore_";
+  public static final String VIEW_PREFIX = "view_";
+  public static final String LOCAL_PREFIX = "local_";
 
   public static final class PROPERTIES_CONSTANTS {
     public static final String ROLE = "Role";
@@ -48,15 +50,19 @@ public final class Constants {
     public static final String PUSH_SLEEP = "PushSleep";
     public static final String USERNAME = "Username";
     public static final String PASSWORD = "Password";
+    public static final String SESSION_FILE = "sessionFile";
+    public static final String APPLICATION_NAME = "applicationName";
+    public static final String APPLICATION_MASTER_PASSWORD = "applicationMasterPassword";
   }
 
   /** TODO: Change all references to this class */
-  public static final class PATHSTORE_COLUMNS {
+  public static final class PATHSTORE_META_COLUMNS {
     public static final String PATHSTORE_VERSION = "pathstore_version";
     public static final String PATHSTORE_PARENT_TIMESTAMP = "pathstore_parent_timestamp";
     public static final String PATHSTORE_DELETED = "pathstore_deleted";
     public static final String PATHSTORE_DIRTY = "pathstore_dirty";
     public static final String PATHSTORE_NODE = "pathstore_node";
+    public static final String PATHSTORE_VIEW_ID = "pathstore_view_id";
   }
 
   public static final String SYSTEM_SCHEMA = "system_schema";

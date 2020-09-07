@@ -2,6 +2,7 @@ package pathstore.sessions;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import pathstore.common.Constants;
 import pathstore.util.SchemaInfo;
 
 import java.io.Serializable;
@@ -141,7 +142,10 @@ public class SessionToken implements Serializable {
         return this.data.stream()
             .map(keyspace -> SchemaInfo.getInstance().getTablesFromKeyspace(keyspace))
             .flatMap(Collection::stream)
-            .filter(table -> !table.table_name.startsWith("view_"));
+            .filter(
+                table ->
+                    !table.table_name.startsWith(Constants.VIEW_PREFIX)
+                        && !table.table_name.startsWith(Constants.LOCAL_PREFIX));
       case TABLE:
         return this.data.stream()
             .map(
@@ -152,7 +156,10 @@ public class SessionToken implements Serializable {
                           entry.substring(0, locationOfPeriod),
                           entry.substring(locationOfPeriod + 1));
                 })
-            .filter(table -> !table.table_name.startsWith("view_"));
+            .filter(
+                table ->
+                    !table.table_name.startsWith(Constants.VIEW_PREFIX)
+                        && !table.table_name.startsWith(Constants.LOCAL_PREFIX));
       default:
         throw new RuntimeException("Session Type is not either keyspace or table");
     }

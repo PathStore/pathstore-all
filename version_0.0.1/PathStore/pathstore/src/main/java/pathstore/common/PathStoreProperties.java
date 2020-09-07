@@ -222,9 +222,9 @@ public class PathStoreProperties {
       }
 
       if (this.role == Role.CLIENT) {
-        this.sessionFile = this.getProperty(props, "sessionFile");
-        this.applicationName = this.getProperty(props, "applicationName");
-        this.applicationMasterPassword = this.getProperty(props, "applicationMasterPassword");
+        this.sessionFile = this.getProperty(props, SESSION_FILE);
+        this.applicationName = this.getProperty(props, APPLICATION_NAME);
+        this.applicationMasterPassword = this.getProperty(props, APPLICATION_MASTER_PASSWORD);
       }
 
       in.close();

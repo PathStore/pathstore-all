@@ -21,7 +21,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.*;
-import org.apache.commons.cli.*;
+import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
@@ -43,19 +43,22 @@ public class PathStorePushServer implements Runnable {
 
     for (Column column : columns) {
       if (!row.isNull(column.column_name))
-        if (!column.column_name.equals("pathstore_node"))
-          if (column.column_name.compareTo("pathstore_parent_timestamp") == 0)
-            insert.value(column.column_name, QueryBuilder.now());
+        if (!column.column_name.equals(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_NODE))
+          if (column.column_name.compareTo(
+                  Constants.PATHSTORE_META_COLUMNS.PATHSTORE_PARENT_TIMESTAMP)
+              == 0) insert.value(column.column_name, QueryBuilder.now());
           else insert.value(column.column_name, row.getObject(column.column_name));
     }
-    insert.value("pathstore_node", nodeid);
+    insert.value(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_NODE, nodeid);
 
     return insert;
   }
 
   private static Delete createDelete(
       Row row, String keyspace, String tablename, Collection<Column> columns) {
-    Delete delete = QueryBuilder.delete("pathstore_dirty").from(keyspace, tablename);
+    Delete delete =
+        QueryBuilder.delete(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DIRTY)
+            .from(keyspace, tablename);
 
     for (Column column : columns)
       if (column.kind.compareTo("regular") != 0)
@@ -72,10 +75,12 @@ public class PathStorePushServer implements Runnable {
       final int nodeid) {
     try {
       for (Table table : tables) {
-        if (table.table_name.startsWith("view_") || table.table_name.startsWith("local_")) continue;
+        // sanity check
+        if (table.table_name.startsWith(Constants.VIEW_PREFIX)
+            || table.table_name.startsWith(Constants.LOCAL_PREFIX)) continue;
 
         Select select = QueryBuilder.select().all().from(table.keyspace_name, table.table_name);
-        select.where(QueryBuilder.eq("pathstore_dirty", true));
+        select.where(QueryBuilder.eq(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DIRTY, true));
 
         ResultSet results = local.execute(select);
 
@@ -169,31 +174,10 @@ public class PathStorePushServer implements Runnable {
     return schemaInfo.getLoadedKeyspaces().stream()
         .map(schemaInfo::getTablesFromKeyspace)
         .flatMap(Collection::stream)
-        .filter(table -> !table.table_name.startsWith("view_"))
+        .filter(
+            table ->
+                !table.table_name.startsWith(Constants.LOCAL_PREFIX)
+                    && !table.table_name.startsWith(Constants.LOCAL_PREFIX))
         .collect(Collectors.toSet());
-  }
-
-  private static void parseCommandLineArguments(String args[]) {
-    Options options = new Options();
-
-    options.addOption(
-        Option.builder("n").longOpt("nodeid").desc("Number").hasArg().argName("nodeid").build());
-
-    CommandLineParser parser = new DefaultParser();
-    HelpFormatter formatter = new HelpFormatter();
-    CommandLine cmd;
-
-    try {
-      cmd = parser.parse(options, args);
-    } catch (ParseException e) {
-      System.out.println(e.getMessage());
-      formatter.printHelp("utility-name", options);
-
-      System.exit(1);
-      return;
-    }
-
-    if (cmd.hasOption("nodeid"))
-      PathStoreProperties.getInstance().NodeID = Integer.parseInt(cmd.getOptionValue("nodeid"));
   }
 }

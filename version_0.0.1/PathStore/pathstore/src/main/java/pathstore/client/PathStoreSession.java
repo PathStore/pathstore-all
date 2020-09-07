@@ -21,6 +21,7 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.*;
 import com.datastax.driver.core.querybuilder.Update.Assignments;
 import com.google.common.util.concurrent.ListenableFuture;
+import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
 import pathstore.exception.InvalidKeyspaceException;
@@ -83,6 +84,12 @@ public class PathStoreSession implements Session {
     return executeNormal(statement, sessionToken);
   }
 
+  private void checkForViewPrefix(final String table) {
+    if (table.startsWith(Constants.VIEW_PREFIX))
+      throw new RuntimeException(
+          "Cannot perform an operation on a view table with pathstore session");
+  }
+
   private PathStoreResultSet executeNormal(Statement statement, final SessionToken sessionToken)
       throws PathStoreRemoteException {
 
@@ -90,7 +97,7 @@ public class PathStoreSession implements Session {
     String table = "";
     boolean allowFiltering = false;
 
-    if (!keyspace.startsWith("pathstore"))
+    if (!keyspace.startsWith(Constants.PATHSTORE_PREFIX))
       throw new InvalidKeyspaceException("Keyspace does not start with pathstore prefix");
 
     if (statement instanceof Select) {
@@ -110,7 +117,9 @@ public class PathStoreSession implements Session {
 
       table = select.getTable();
 
-      if (!table.startsWith("local_")) {
+      this.checkForViewPrefix(table);
+
+      if (!table.startsWith(Constants.LOCAL_PREFIX)) {
 
         this.handleSession(sessionToken);
 
@@ -131,22 +140,29 @@ public class PathStoreSession implements Session {
 
       table = insert.getTable();
 
-      if (!table.startsWith("local_")) {
-        insert.value("pathstore_version", QueryBuilder.now());
-        insert.value("pathstore_parent_timestamp", QueryBuilder.now());
-        insert.value("pathstore_dirty", true);
+      this.checkForViewPrefix(table);
+
+      if (!table.startsWith(Constants.LOCAL_PREFIX)) {
+        insert.value(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_VERSION, QueryBuilder.now());
+        insert.value(
+            Constants.PATHSTORE_META_COLUMNS.PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now());
+        insert.value(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DIRTY, true);
       }
     } else if (statement instanceof Delete) {
       Delete delete = (Delete) statement;
 
       table = delete.getTable();
-      if (!table.startsWith("local_")) {
+
+      this.checkForViewPrefix(table);
+
+      if (!table.startsWith(Constants.LOCAL_PREFIX)) {
         Insert insert = QueryBuilder.insertInto(delete.getKeyspace(), delete.getTable());
 
-        insert.value("pathstore_version", QueryBuilder.now());
-        insert.value("pathstore_parent_timestamp", QueryBuilder.now());
-        insert.value("pathstore_dirty", true);
-        insert.value("pathstore_deleted", true);
+        insert.value(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_VERSION, QueryBuilder.now());
+        insert.value(
+            Constants.PATHSTORE_META_COLUMNS.PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now());
+        insert.value(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DIRTY, true);
+        insert.value(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DELETED, true);
 
         List<Clause> clauses = delete.where().getClauses();
 
@@ -163,13 +179,16 @@ public class PathStoreSession implements Session {
 
       table = update.getTable();
 
-      if (!table.startsWith("local_")) {
+      this.checkForViewPrefix(table);
+
+      if (!table.startsWith(Constants.LOCAL_PREFIX)) {
 
         Insert insert = QueryBuilder.insertInto(update.getKeyspace(), update.getTable());
 
-        insert.value("pathstore_version", QueryBuilder.now());
-        insert.value("pathstore_parent_timestamp", QueryBuilder.now());
-        insert.value("pathstore_dirty", true);
+        insert.value(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_VERSION, QueryBuilder.now());
+        insert.value(
+            Constants.PATHSTORE_META_COLUMNS.PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now());
+        insert.value(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DIRTY, true);
 
         Assignments assignment = update.with();
 

@@ -124,7 +124,7 @@ public class PathStoreIterator implements Iterator<Row> {
    * @return true or false
    */
   private boolean is_deleted(final ArrayBackedRow row) {
-    return row.getBool("pathstore_deleted");
+    return row.getBool(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DELETED);
   }
 
   /**
@@ -139,7 +139,8 @@ public class PathStoreIterator implements Iterator<Row> {
         SchemaInfo.getInstance().getTableColumns(this.keyspace, this.table);
 
     for (Column col : columns) {
-      if (col.kind.compareTo("regular") != 0 && !col.column_name.startsWith("pathstore_")) {
+      if (col.kind.compareTo("regular") != 0
+          && !col.column_name.startsWith(Constants.PATHSTORE_PREFIX)) {
 
         Object value1 = row.getObject(col.column_name);
         Object value2 = row_next.getObject(col.column_name);
@@ -192,8 +193,8 @@ public class PathStoreIterator implements Iterator<Row> {
     // add greater than clause to pathstore_version
     checkForNewerRows.where(
         QueryBuilder.gt(
-            Constants.PATHSTORE_COLUMNS.PATHSTORE_VERSION,
-            row.getUUID(Constants.PATHSTORE_COLUMNS.PATHSTORE_VERSION)));
+            Constants.PATHSTORE_META_COLUMNS.PATHSTORE_VERSION,
+            row.getUUID(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_VERSION)));
 
     return this.session.execute(checkForNewerRows).one() != null;
   }

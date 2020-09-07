@@ -66,8 +66,6 @@ public class PathStoreServerImplRMI implements PathStoreServer {
   }
 
   /**
-   * TODO: State reason why status is invalid
-   *
    * @param applicationName application name to register client for
    * @param password application password. This must be valid in comparison to the password given on
    *     application registration or after altering
@@ -77,15 +75,11 @@ public class PathStoreServerImplRMI implements PathStoreServer {
    */
   @Override
   public String registerApplication(final String applicationName, final String password) {
-    logger.info(
-        String.format("Register application credentials for application %s", applicationName));
-
     if (ClientAuthenticationUtil.isApplicationNotLoaded(applicationName)) {
       String errorResponse =
           String.format(
               "Registration of application credentials for application %s has failed as the provided application name is not loaded on the give node",
               applicationName);
-      logger.info(errorResponse);
       return new JSONObject()
           .put(
               Constants.REGISTER_APPLICATION.STATUS,
@@ -99,7 +93,6 @@ public class PathStoreServerImplRMI implements PathStoreServer {
           String.format(
               "Registration of application credentials for application %s has failed as the provided credentials do not match the master application credentials",
               applicationName);
-      logger.info(errorResponse);
       return new JSONObject()
           .put(
               Constants.REGISTER_APPLICATION.STATUS,
