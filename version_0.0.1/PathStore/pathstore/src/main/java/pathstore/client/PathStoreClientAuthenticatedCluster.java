@@ -37,7 +37,6 @@ public class PathStoreClientAuthenticatedCluster {
 
       if (response.isPresent()) {
         JSONObject responseObject = new JSONObject(response.get());
-        System.out.println(responseObject.toString());
         if (responseObject.getString("status").equals("valid")) {
           SchemaInfo schemaInfo =
               PathStoreServerClient.getInstance().getSchemaInfo(applicationName);

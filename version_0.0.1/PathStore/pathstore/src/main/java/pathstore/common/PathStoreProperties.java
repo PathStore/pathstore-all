@@ -79,8 +79,14 @@ public class PathStoreProperties {
 
   /** @return either create new instance and return it or return existing instance */
   public static PathStoreProperties getInstance() {
-    if (PathStoreProperties.instance == null)
+    if (PathStoreProperties.instance == null) {
       PathStoreProperties.instance = new PathStoreProperties();
+
+      // load node id if role is client
+      if (instance.role == Role.CLIENT) {
+        instance.NodeID = PathStoreServerClient.getInstance().getLocalNodeId();
+      }
+    }
     return PathStoreProperties.instance;
   }
 
@@ -216,7 +222,6 @@ public class PathStoreProperties {
       }
 
       if (this.role == Role.CLIENT) {
-        this.NodeID = PathStoreServerClient.getInstance().getLocalNodeId();
         this.sessionFile = this.getProperty(props, "sessionFile");
         this.applicationName = this.getProperty(props, "applicationName");
         this.applicationMasterPassword = this.getProperty(props, "applicationMasterPassword");
