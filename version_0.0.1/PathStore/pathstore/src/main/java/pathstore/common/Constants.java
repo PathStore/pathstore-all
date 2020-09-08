@@ -227,4 +227,12 @@ public final class Constants {
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
   }
+
+  public static final class SESSION_TOKEN {
+    public static final String SESSION_UUID = "sessionUUID";
+    public static final String SOURCE_NODE = "sourceNode";
+    public static final String SESSION_NAME = "sessionName";
+    public static final String SESSION_TYPE = "sessionType";
+    public static final String DATA = "data";
+  }
 }

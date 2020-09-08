@@ -173,19 +173,19 @@ public class SessionToken implements Serializable {
   public String exportToJson() {
     JSONObject json = new JSONObject();
 
-    json.put("sessionUUID", this.sessionUUID.toString());
+    json.put(Constants.SESSION_TOKEN.SESSION_UUID, this.sessionUUID.toString());
 
-    json.put("sourceNode", this.sourceNode);
+    json.put(Constants.SESSION_TOKEN.SOURCE_NODE, this.sourceNode);
 
-    json.put("sessionName", this.sessionName);
+    json.put(Constants.SESSION_TOKEN.SESSION_NAME, this.sessionName);
 
-    json.put("sessionType", this.sessionType.toString());
+    json.put(Constants.SESSION_TOKEN.SESSION_TYPE, this.sessionType.toString());
 
     JSONArray data = new JSONArray();
 
     this.data.forEach(data::put);
 
-    json.put("data", data);
+    json.put(Constants.SESSION_TOKEN.DATA, data);
 
     return json.toString();
   }
@@ -197,18 +197,18 @@ public class SessionToken implements Serializable {
   public static SessionToken buildFromJsonString(final String sessionTokenString) {
     JSONObject sessionObject = new JSONObject(sessionTokenString);
 
-    return sessionObject.has("sessionUUID")
-            && sessionObject.has("sourceNode")
-            && sessionObject.has("sessionName")
-            && sessionObject.has("sessionType")
-            && sessionObject.has("data")
+    return sessionObject.has(Constants.SESSION_TOKEN.SESSION_UUID)
+            && sessionObject.has(Constants.SESSION_TOKEN.SOURCE_NODE)
+            && sessionObject.has(Constants.SESSION_TOKEN.SESSION_NAME)
+            && sessionObject.has(Constants.SESSION_TOKEN.SESSION_TYPE)
+            && sessionObject.has(Constants.SESSION_TOKEN.DATA)
         ? new SessionToken(
-            UUID.fromString(sessionObject.getString("sessionUUID")),
-            sessionObject.getInt("sourceNode"),
-            sessionObject.getString("sessionName"),
-            SessionType.valueOf(sessionObject.getString("sessionType")),
+            UUID.fromString(sessionObject.getString(Constants.SESSION_TOKEN.SESSION_UUID)),
+            sessionObject.getInt(Constants.SESSION_TOKEN.SOURCE_NODE),
+            sessionObject.getString(Constants.SESSION_TOKEN.SESSION_NAME),
+            SessionType.valueOf(sessionObject.getString(Constants.SESSION_TOKEN.SESSION_TYPE)),
             new HashSet<>(
-                sessionObject.getJSONArray("data").toList().stream()
+                sessionObject.getJSONArray(Constants.SESSION_TOKEN.DATA).toList().stream()
                     .map(Objects::toString)
                     .collect(Collectors.toSet())))
         : null;

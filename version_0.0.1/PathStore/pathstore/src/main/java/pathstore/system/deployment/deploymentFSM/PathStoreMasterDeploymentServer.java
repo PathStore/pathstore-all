@@ -115,7 +115,6 @@ public class PathStoreMasterDeploymentServer implements Runnable {
         }
       }
     } catch (Exception e) {
-      e.printStackTrace();
       logger.error(e);
     }
   }
