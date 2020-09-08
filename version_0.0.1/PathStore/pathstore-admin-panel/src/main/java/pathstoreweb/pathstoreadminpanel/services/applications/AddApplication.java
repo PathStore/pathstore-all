@@ -232,6 +232,8 @@ public class AddApplication implements IService {
         .append(table.speculative_retry)
         .append("'");
 
+    System.out.println(query.toString());
+    
     session.execute(query.toString());
 
     if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) {
