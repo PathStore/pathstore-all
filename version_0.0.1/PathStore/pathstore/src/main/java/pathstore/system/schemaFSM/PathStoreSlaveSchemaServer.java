@@ -9,10 +9,7 @@ import com.datastax.driver.core.querybuilder.Update;
 import pathstore.authentication.AuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.client.PathStoreCluster;
-import pathstore.common.Constants;
-import pathstore.common.PathStoreProperties;
-import pathstore.common.PathStoreThreadManager;
-import pathstore.common.QueryCache;
+import pathstore.common.*;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.PathStorePushServer;
 import pathstore.system.logging.PathStoreLogger;
@@ -223,7 +220,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
 
     Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
 
-    this.forcePush(keyspace);
+    if (PathStoreProperties.getInstance().role == Role.SERVER) this.forcePush(keyspace);
 
     logger.info(String.format("Forced push all entries for keyspace %s", keyspace));
 
