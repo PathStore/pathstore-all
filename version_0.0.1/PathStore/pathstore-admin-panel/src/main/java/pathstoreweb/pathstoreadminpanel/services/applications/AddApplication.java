@@ -188,7 +188,6 @@ public class AddApplication implements IService {
       if (col.kind.equals("clustering")) query.append(col.column_name).append(",");
 
     if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) query.append("pathstore_version) ");
-    else query.append(") ");
 
     query.append(")");
 
