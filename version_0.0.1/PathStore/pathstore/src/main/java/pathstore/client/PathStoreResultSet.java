@@ -19,6 +19,7 @@ package pathstore.client;
 
 import com.datastax.driver.core.*;
 import com.google.common.util.concurrent.ListenableFuture;
+import pathstore.common.Constants;
 
 import java.util.Iterator;
 import java.util.List;
@@ -93,10 +94,24 @@ public class PathStoreResultSet implements ResultSet {
     return resultSet.all();
   }
 
+  /**
+   * This function behaves differently depending on what kind of table is used. This is because if a
+   * table has a local_ prefix we know that the table does not contain ps meta columns and is not
+   * meant to be transferred around the network. This we will provide the standard result set
+   * iterator if the table is a local table. Else if the table is a regular ps table we need to
+   * 'compress' the log through {@link PathStoreIterator}
+   *
+   * @return iterator determined by above.
+   */
   public Iterator<Row> iterator() {
-    // TODO Auto-generated method stub
-    return new PathStoreIterator(
-        this.session, this.resultSet.iterator(), this.keyspace, this.table, this.allowFiltering);
+    return this.table.startsWith(Constants.LOCAL_PREFIX)
+        ? resultSet.iterator()
+        : new PathStoreIterator(
+            this.session,
+            this.resultSet.iterator(),
+            this.keyspace,
+            this.table,
+            this.allowFiltering);
   }
 
   public ExecutionInfo getExecutionInfo() {

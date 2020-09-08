@@ -127,19 +127,25 @@ public class AddApplication implements IService {
       this.session.execute("drop keyspace if exists " + this.addApplicationPayload.applicationName);
     }
 
+    // re-create schema
+    this.session.execute(
+        String.format(
+            "CREATE KEYSPACE %s WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;",
+            this.addApplicationPayload.applicationName));
+
     for (SchemaInfo.Table table :
         this.schemaInfo.getTablesFromKeyspace(this.addApplicationPayload.applicationName)) {
-
       augmentSchema(table);
-      createViewTable(table);
 
-      insertApplicationSchema(
-          this.addApplicationPayload.applicationName,
-          PathStorePrivilegedCluster.getSuperUserInstance()
-              .getMetadata()
-              .getKeyspace(table.keyspace_name)
-              .exportAsString());
+      if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) createViewTable(table);
     }
+
+    insertApplicationSchema(
+        this.addApplicationPayload.applicationName,
+        PathStorePrivilegedCluster.getSuperUserInstance()
+            .getMetadata()
+            .getKeyspace(this.addApplicationPayload.applicationName)
+            .exportAsString());
 
     this.schemaInfo.removeKeyspace(this.addApplicationPayload.applicationName);
     this.session.execute("drop keyspace if exists " + this.addApplicationPayload.applicationName);
@@ -155,10 +161,6 @@ public class AddApplication implements IService {
    * @param table table to augment
    */
   private void augmentSchema(final SchemaInfo.Table table) {
-    this.session.execute(
-        String.format(
-            "CREATE KEYSPACE %s WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;",
-            this.addApplicationPayload.applicationName));
 
     Collection<SchemaInfo.Column> columns = this.schemaInfo.getTableColumns(table);
 
@@ -170,11 +172,14 @@ public class AddApplication implements IService {
       query.append(col.column_name).append(" ").append(type).append(",");
     }
 
-    query.append("pathstore_version timeuuid,");
-    query.append("pathstore_parent_timestamp timeuuid,");
-    query.append("pathstore_dirty boolean,");
-    query.append("pathstore_deleted boolean,");
-    query.append("pathstore_node int,");
+    if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) {
+      query.append("pathstore_version timeuuid,");
+      query.append("pathstore_parent_timestamp timeuuid,");
+      query.append("pathstore_dirty boolean,");
+      query.append("pathstore_deleted boolean,");
+      query.append("pathstore_node int,");
+    }
+
     query.append("PRIMARY KEY(");
 
     for (SchemaInfo.Column col : columns)
@@ -182,7 +187,8 @@ public class AddApplication implements IService {
     for (SchemaInfo.Column col : columns)
       if (col.kind.equals("clustering")) query.append(col.column_name).append(",");
 
-    query.append("pathstore_version) ");
+    if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) query.append("pathstore_version) ");
+    else query.append(") ");
 
     query.append(")");
 
@@ -192,7 +198,9 @@ public class AddApplication implements IService {
       if (col.kind.compareTo("clustering") == 0)
         query.append(col.column_name).append(" ").append(col.clustering_order).append(",");
 
-    query.append("pathstore_version DESC) ");
+    if (!table.table_name.startsWith(Constants.LOCAL_PREFIX))
+      query.append("pathstore_version DESC) ");
+    else query.append(") ");
 
     query
         .append("	    AND caching = ")
@@ -226,45 +234,47 @@ public class AddApplication implements IService {
 
     session.execute(query.toString());
 
-    query =
-        new StringBuilder(
-            "CREATE INDEX ON "
-                + table.keyspace_name
-                + "."
-                + table.table_name
-                + " (pathstore_dirty)");
+    if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) {
+      query =
+          new StringBuilder(
+              "CREATE INDEX ON "
+                  + table.keyspace_name
+                  + "."
+                  + table.table_name
+                  + " (pathstore_dirty)");
 
-    session.execute(query.toString());
+      session.execute(query.toString());
 
-    query =
-        new StringBuilder(
-            "CREATE INDEX ON "
-                + table.keyspace_name
-                + "."
-                + table.table_name
-                + " (pathstore_deleted)");
+      query =
+          new StringBuilder(
+              "CREATE INDEX ON "
+                  + table.keyspace_name
+                  + "."
+                  + table.table_name
+                  + " (pathstore_deleted)");
 
-    session.execute(query.toString());
+      session.execute(query.toString());
 
-    query =
-        new StringBuilder(
-            "CREATE INDEX ON "
-                + table.keyspace_name
-                + "."
-                + table.table_name
-                + " (pathstore_parent_timestamp)");
+      query =
+          new StringBuilder(
+              "CREATE INDEX ON "
+                  + table.keyspace_name
+                  + "."
+                  + table.table_name
+                  + " (pathstore_parent_timestamp)");
 
-    session.execute(query.toString());
+      session.execute(query.toString());
 
-    query =
-        new StringBuilder(
-            "CREATE INDEX ON "
-                + table.keyspace_name
-                + "."
-                + table.table_name
-                + " (pathstore_node)");
+      query =
+          new StringBuilder(
+              "CREATE INDEX ON "
+                  + table.keyspace_name
+                  + "."
+                  + table.table_name
+                  + " (pathstore_node)");
 
-    session.execute(query.toString());
+      session.execute(query.toString());
+    }
 
     // load indexes
     for (SchemaInfo.Index index : this.schemaInfo.getTableIndexes(table)) {

@@ -289,6 +289,22 @@
                             <finalName>session_migration_test</finalName>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>build-seventh</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>pathstore.test.LocalTableTest</mainClass>
+                                </transformer>
+                            </transformers>
+                            <finalName>local_table_test</finalName>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
