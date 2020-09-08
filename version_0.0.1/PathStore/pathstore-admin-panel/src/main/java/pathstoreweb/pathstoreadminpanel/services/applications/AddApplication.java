@@ -122,22 +122,16 @@ public class AddApplication implements IService {
       // load information for that loaded schema.
       this.schemaInfo.loadKeyspace(this.addApplicationPayload.applicationName);
     } catch (RuntimeException ignored) { // error loading the schema
-      throw new Exception();
-    } finally {
       this.session.execute("drop keyspace if exists " + this.addApplicationPayload.applicationName);
+      throw new Exception();
     }
-
-    // re-create schema
-    this.session.execute(
-        String.format(
-            "CREATE KEYSPACE %s WITH replication = {'class' : 'SimpleStrategy', 'replication_factor' : 1 }  AND durable_writes = false;",
-            this.addApplicationPayload.applicationName));
 
     for (SchemaInfo.Table table :
         this.schemaInfo.getTablesFromKeyspace(this.addApplicationPayload.applicationName)) {
-      augmentSchema(table);
-
-      if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) createViewTable(table);
+      if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) {
+        augmentSchema(table);
+        createViewTable(table);
+      }
     }
 
     insertApplicationSchema(
@@ -162,6 +156,9 @@ public class AddApplication implements IService {
    */
   private void augmentSchema(final SchemaInfo.Table table) {
 
+    this.session.execute(
+        String.format("drop table if exists %s.%s", table.keyspace_name, table.table_name));
+
     Collection<SchemaInfo.Column> columns = this.schemaInfo.getTableColumns(table);
 
     StringBuilder query =
@@ -172,37 +169,20 @@ public class AddApplication implements IService {
       query.append(col.column_name).append(" ").append(type).append(",");
     }
 
-    if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) {
-      query.append("pathstore_version timeuuid,");
-      query.append("pathstore_parent_timestamp timeuuid,");
-      query.append("pathstore_dirty boolean,");
-      query.append("pathstore_deleted boolean,");
-      query.append("pathstore_node int,");
-    }
+    query.append("pathstore_version timeuuid,");
+    query.append("pathstore_parent_timestamp timeuuid,");
+    query.append("pathstore_dirty boolean,");
+    query.append("pathstore_deleted boolean,");
+    query.append("pathstore_node int,");
 
     query.append("PRIMARY KEY(");
 
-    long primaryKeySize =
-        columns.stream()
-            .filter(col -> col.kind.equals("partition_key") || col.kind.equals("clustering"))
-            .count();
+    for (SchemaInfo.Column col : columns)
+      if (col.kind.equals("partition_key")) query.append(col.column_name).append(",");
+    for (SchemaInfo.Column col : columns)
+      if (col.kind.equals("clustering")) query.append(col.column_name).append(",");
 
-    int counter = 0;
-
-    for (SchemaInfo.Column col : columns) {
-      counter++;
-      if (col.kind.equals("partition_key")) query.append(col.column_name);
-      if (counter < primaryKeySize - 1) query.append(",");
-    }
-
-    counter = 0;
-    for (SchemaInfo.Column col : columns) {
-      counter++;
-      if (col.kind.equals("clustering")) query.append(col.column_name);
-      if (counter < primaryKeySize - 1) query.append(",");
-    }
-
-    if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) query.append("pathstore_version) ");
+    query.append("pathstore_version) ");
 
     query.append(")");
 
@@ -212,9 +192,7 @@ public class AddApplication implements IService {
       if (col.kind.compareTo("clustering") == 0)
         query.append(col.column_name).append(" ").append(col.clustering_order).append(",");
 
-    if (!table.table_name.startsWith(Constants.LOCAL_PREFIX))
-      query.append("pathstore_version DESC) ");
-    else query.append(") ");
+    query.append("pathstore_version DESC) ");
 
     query
         .append("	    AND caching = ")
@@ -246,51 +224,47 @@ public class AddApplication implements IService {
         .append(table.speculative_retry)
         .append("'");
 
-    System.out.println(query.toString());
+    session.execute(query.toString());
+
+    query =
+        new StringBuilder(
+            "CREATE INDEX ON "
+                + table.keyspace_name
+                + "."
+                + table.table_name
+                + " (pathstore_dirty)");
 
     session.execute(query.toString());
 
-    if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) {
-      query =
-          new StringBuilder(
-              "CREATE INDEX ON "
-                  + table.keyspace_name
-                  + "."
-                  + table.table_name
-                  + " (pathstore_dirty)");
+    query =
+        new StringBuilder(
+            "CREATE INDEX ON "
+                + table.keyspace_name
+                + "."
+                + table.table_name
+                + " (pathstore_deleted)");
 
-      session.execute(query.toString());
+    session.execute(query.toString());
 
-      query =
-          new StringBuilder(
-              "CREATE INDEX ON "
-                  + table.keyspace_name
-                  + "."
-                  + table.table_name
-                  + " (pathstore_deleted)");
+    query =
+        new StringBuilder(
+            "CREATE INDEX ON "
+                + table.keyspace_name
+                + "."
+                + table.table_name
+                + " (pathstore_parent_timestamp)");
 
-      session.execute(query.toString());
+    session.execute(query.toString());
 
-      query =
-          new StringBuilder(
-              "CREATE INDEX ON "
-                  + table.keyspace_name
-                  + "."
-                  + table.table_name
-                  + " (pathstore_parent_timestamp)");
+    query =
+        new StringBuilder(
+            "CREATE INDEX ON "
+                + table.keyspace_name
+                + "."
+                + table.table_name
+                + " (pathstore_node)");
 
-      session.execute(query.toString());
-
-      query =
-          new StringBuilder(
-              "CREATE INDEX ON "
-                  + table.keyspace_name
-                  + "."
-                  + table.table_name
-                  + " (pathstore_node)");
-
-      session.execute(query.toString());
-    }
+    session.execute(query.toString());
 
     // load indexes
     for (SchemaInfo.Index index : this.schemaInfo.getTableIndexes(table)) {
@@ -302,26 +276,6 @@ public class AddApplication implements IService {
       System.out.println(indexQuery);
 
       session.execute(indexQuery);
-    }
-
-    // load UDT's
-    for (SchemaInfo.Type type :
-        this.schemaInfo.getKeyspaceTypes(this.addApplicationPayload.applicationName)) {
-
-      // Build types into string
-      StringBuilder types = new StringBuilder();
-      for (int i = 0; i < type.field_names.size(); i++) {
-        if (i > 0) types.append(",").append("\n");
-        types.append(type.field_names.get(i)).append(" ").append(type.field_types.get(i));
-      }
-
-      String typeQuery =
-          String.format(
-              "CREATE TYPE %s.%s (\n%s\n)", type.keyspace_name, type.type_name, types.toString());
-
-      System.out.println(typeQuery);
-
-      session.execute(typeQuery);
     }
   }
 
