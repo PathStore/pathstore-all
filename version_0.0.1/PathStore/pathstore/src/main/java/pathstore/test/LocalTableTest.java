@@ -28,6 +28,8 @@ public class LocalTableTest {
     session.execute(update);
 
     read(session);
+
+    PathStoreClientAuthenticatedCluster.getInstance().close();
   }
 
   private static void read(final PathStoreSession session) {
