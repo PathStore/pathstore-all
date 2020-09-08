@@ -30,12 +30,18 @@ import pathstore.util.SchemaInfo.Column;
 import pathstore.util.SchemaInfo.Table;
 
 import java.util.Collection;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /** TODO: Comment */
 public class PathStorePushServer implements Runnable {
   private static final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStorePushServer.class);
+
+  public static final Predicate<Table> filterOutViewAndLocal =
+      table ->
+          !table.table_name.startsWith(Constants.LOCAL_PREFIX)
+              && !table.table_name.startsWith(Constants.LOCAL_PREFIX);
 
   private static Insert createInsert(
       Row row, String keyspace, String tablename, Collection<Column> columns, int nodeid) {
@@ -174,10 +180,7 @@ public class PathStorePushServer implements Runnable {
     return schemaInfo.getLoadedKeyspaces().stream()
         .map(schemaInfo::getTablesFromKeyspace)
         .flatMap(Collection::stream)
-        .filter(
-            table ->
-                !table.table_name.startsWith(Constants.LOCAL_PREFIX)
-                    && !table.table_name.startsWith(Constants.LOCAL_PREFIX))
+        .filter(filterOutViewAndLocal)
         .collect(Collectors.toSet());
   }
 }

@@ -13,10 +13,13 @@ import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreThreadManager;
 import pathstore.common.QueryCache;
+import pathstore.system.PathStorePrivilegedCluster;
+import pathstore.system.PathStorePushServer;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
-import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.util.SchemaInfo;
+
+import java.util.stream.Collectors;
 
 /**
  * This class is the slave schema loader.
@@ -220,14 +223,9 @@ public class PathStoreSlaveSchemaServer implements Runnable {
 
     Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
 
-    // force push here
+    this.forcePush(keyspace);
 
-    AuthenticationUtil.revokeAccessToKeyspace(
-        superUserSession, keyspace, Constants.PATHSTORE_DAEMON_USERNAME);
-
-    this.logger.info(
-        String.format(
-            "Revoked access to keyspace %s to %s", keyspace, Constants.PATHSTORE_DAEMON_USERNAME));
+    logger.info(String.format("Forced push all entries for keyspace %s", keyspace));
 
     SchemaInfo.getInstance().removeKeyspace(keyspace);
 
@@ -237,6 +235,17 @@ public class PathStoreSlaveSchemaServer implements Runnable {
 
     if (ClientAuthenticationUtil.deleteClientAccount(keyspace))
       this.logger.info(String.format("Removed temporary client account for keyspace %s", keyspace));
+
+    // called after schema info is removed so that the push server won't call on this keyspace and
+    // throw an error
+    // TODO: (Myles) do we need to wait for the push server to finish its current trip before
+    // revoking permissions on that table
+    AuthenticationUtil.revokeAccessToKeyspace(
+        superUserSession, keyspace, Constants.PATHSTORE_DAEMON_USERNAME);
+
+    this.logger.info(
+        String.format(
+            "Revoked access to keyspace %s to %s", keyspace, Constants.PATHSTORE_DAEMON_USERNAME));
 
     superUserSession.execute("drop keyspace if exists " + keyspace);
 
@@ -251,5 +260,22 @@ public class PathStoreSlaveSchemaServer implements Runnable {
     this.session.execute(delete);
 
     this.logger.info("Application removed " + keyspace);
+  }
+
+  /**
+   * This function is used to force push all data from this keyspace to its parent before removal,
+   * to not have any data missing
+   *
+   * @param keyspace keyspace to push data for
+   */
+  private void forcePush(final String keyspace) {
+    PathStorePushServer.push(
+        SchemaInfo.getInstance().getTablesFromKeyspace(keyspace).stream()
+            .filter(PathStorePushServer.filterOutViewAndLocal)
+            .collect(Collectors.toList()),
+        PathStorePrivilegedCluster.getDaemonInstance().connect(),
+        PathStorePrivilegedCluster.getParentInstance().connect(),
+        SchemaInfo.getInstance(),
+        PathStoreProperties.getInstance().NodeID);
   }
 }

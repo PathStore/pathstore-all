@@ -31,12 +31,18 @@ import java.rmi.registry.Registry;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Will comment this class when merger occurs to grpc */
+/**
+ * This class is used in three different instances. One where the client communicates with its local
+ * node, two when a node communicates with its parent and three when a node needs to communicate
+ * with another node in the network for Session Consistency.
+ *
+ * @see PathStoreServer for the definition of communication options
+ * @implNote This will be migrated to GRPC in the future.
+ */
 public class PathStoreServerClient {
 
+  /** Instance of class, only one per runtime */
   private static PathStoreServerClient instance = null;
-
-  private final PathStoreServer stub;
 
   public static synchronized PathStoreServerClient getInstance() {
     if (PathStoreServerClient.instance == null)
@@ -47,6 +53,8 @@ public class PathStoreServerClient {
   public static PathStoreServerClient getCustom(final String ip, final int port) {
     return new PathStoreServerClient(ip, port);
   }
+
+    private final PathStoreServer stub;
 
   public PathStoreServerClient(final String ip, final int port) {
     try {
@@ -67,8 +75,7 @@ public class PathStoreServerClient {
           throw new RuntimeException(
               "Could not connect to parent registry as the ip specified is null");
         if (PathStoreProperties.getInstance().RMIRegistryParentPort == -1)
-          throw new RuntimeException(
-              "Could not connect to parent registry as the port is -1");
+          throw new RuntimeException("Could not connect to parent registry as the port is -1");
 
         registry =
             LocateRegistry.getRegistry(
@@ -78,9 +85,8 @@ public class PathStoreServerClient {
         if (PathStoreProperties.getInstance().RMIRegistryIP == null)
           throw new RuntimeException(
               "Could not connect to local node registry as the ip specified is null");
-        if (PathStoreProperties.getInstance().RMIRegistryPort== -1)
-          throw new RuntimeException(
-              "Could not connect to local node registry as the port is -1");
+        if (PathStoreProperties.getInstance().RMIRegistryPort == -1)
+          throw new RuntimeException("Could not connect to local node registry as the port is -1");
 
         registry =
             LocateRegistry.getRegistry(

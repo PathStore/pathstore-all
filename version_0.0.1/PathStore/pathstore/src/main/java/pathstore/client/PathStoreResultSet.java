@@ -113,10 +113,18 @@ public class PathStoreResultSet implements ResultSet {
     return resultSet.one();
   }
 
+  /**
+   * TODO: Cache iterator calls.
+   *
+   * @apiNote This should only be used if you don't plan on using the iterator afterwards as the
+   *     iterator will skip the first value
+   * @return true if empty, else false
+   */
   public boolean empty() {
     return !this.iterator().hasNext();
   }
 
+  /** @return Converts the iterator, to an ordered spliterator to allow stream suppourt */
   public Stream<Row> stream() {
     return StreamSupport.stream(
         Spliterators.spliteratorUnknownSize(this.iterator(), Spliterator.ORDERED), false);
