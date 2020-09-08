@@ -182,10 +182,25 @@ public class AddApplication implements IService {
 
     query.append("PRIMARY KEY(");
 
-    for (SchemaInfo.Column col : columns)
-      if (col.kind.equals("partition_key")) query.append(col.column_name).append(",");
-    for (SchemaInfo.Column col : columns)
-      if (col.kind.equals("clustering")) query.append(col.column_name).append(",");
+    long primaryKeySize =
+        columns.stream()
+            .filter(col -> col.kind.equals("partition_key") || col.kind.equals("clustering"))
+            .count();
+
+    int counter = 0;
+
+    for (SchemaInfo.Column col : columns) {
+      counter++;
+      if (col.kind.equals("partition_key")) query.append(col.column_name);
+      if (counter < primaryKeySize - 1) query.append(",");
+    }
+
+    counter = 0;
+    for (SchemaInfo.Column col : columns) {
+      counter++;
+      if (col.kind.equals("clustering")) query.append(col.column_name);
+      if (counter < primaryKeySize - 1) query.append(",");
+    }
 
     if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) query.append("pathstore_version) ");
 
@@ -232,7 +247,7 @@ public class AddApplication implements IService {
         .append("'");
 
     System.out.println(query.toString());
-    
+
     session.execute(query.toString());
 
     if (!table.table_name.startsWith(Constants.LOCAL_PREFIX)) {
