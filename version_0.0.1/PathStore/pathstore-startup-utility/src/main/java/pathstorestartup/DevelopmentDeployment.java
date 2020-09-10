@@ -254,7 +254,11 @@ public class DevelopmentDeployment {
             childSuperuserUsername,
             childSuperuserPassword)
         .generateWebsiteProperties(
-            ip, cassandraPort, rmiRegistryPort, childSuperuserUsername, childSuperuserPassword)
+            "127.0.0.1",
+            cassandraPort,
+            rmiRegistryPort,
+            childSuperuserUsername,
+            childSuperuserPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
         .createRole(
