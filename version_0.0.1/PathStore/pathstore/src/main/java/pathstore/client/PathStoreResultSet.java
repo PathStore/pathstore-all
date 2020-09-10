@@ -18,6 +18,7 @@
 package pathstore.client;
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.core.querybuilder.Clause;
 import com.google.common.util.concurrent.ListenableFuture;
 import pathstore.common.Constants;
 
@@ -47,26 +48,31 @@ public class PathStoreResultSet implements ResultSet {
   private final String table;
 
   /** If the query could break the log (allow filtering clause or secondary index column clause) */
-  private final boolean allowFiltering;
+  private final boolean logBreaking;
+
+  /** List of clauses for the query */
+  private final List<Clause> originalClauses;
 
   /**
    * @param session {@link #session}
    * @param resultSet {@link #resultSet}
    * @param keyspace {@link #keyspace}
    * @param table {@link #table}
-   * @param allowFiltering {@link #allowFiltering}
+   * @param logBreaking {@link #logBreaking}
    */
   public PathStoreResultSet(
       final Session session,
       final ResultSet resultSet,
       final String keyspace,
       final String table,
-      final boolean allowFiltering) {
+      final boolean logBreaking,
+      final List<Clause> originalClauses) {
     this.session = session;
     this.resultSet = resultSet;
     this.keyspace = keyspace;
     this.table = table;
-    this.allowFiltering = allowFiltering;
+    this.logBreaking = logBreaking;
+    this.originalClauses = originalClauses;
   }
 
   public boolean isExhausted() {
@@ -79,19 +85,19 @@ public class PathStoreResultSet implements ResultSet {
     return resultSet.isFullyFetched();
   }
 
+  // TODO: Myles: We need to implement this
   public int getAvailableWithoutFetching() {
-    // TODO Auto-generated method stub
-    return resultSet.getAvailableWithoutFetching();
+    throw new UnsupportedOperationException();
   }
 
+  // TODO: Myles: We need to implement this
   public ListenableFuture<ResultSet> fetchMoreResults() {
-    // TODO Auto-generated method stub
-    return resultSet.fetchMoreResults();
+    throw new UnsupportedOperationException();
   }
 
+  // TODO: Myles: We need to implement this
   public List<Row> all() {
-    // TODO Auto-generated method stub
-    return resultSet.all();
+    throw new UnsupportedOperationException();
   }
 
   /**
@@ -111,7 +117,8 @@ public class PathStoreResultSet implements ResultSet {
             this.resultSet.iterator(),
             this.keyspace,
             this.table,
-            this.allowFiltering);
+            this.logBreaking,
+            this.originalClauses);
   }
 
   public ExecutionInfo getExecutionInfo() {
@@ -124,8 +131,14 @@ public class PathStoreResultSet implements ResultSet {
     return resultSet.getAllExecutionInfo();
   }
 
+  /**
+   * Unsupported as this will break our immutable log. If its a local table this will work as normal
+   *
+   * @return see above
+   */
   public Row one() {
-    return resultSet.one();
+    if (this.table.startsWith(Constants.LOCAL_PREFIX)) return resultSet.one();
+    throw new UnsupportedOperationException();
   }
 
   /**

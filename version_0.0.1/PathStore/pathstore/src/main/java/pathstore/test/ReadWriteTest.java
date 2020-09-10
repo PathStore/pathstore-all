@@ -9,8 +9,8 @@ import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.client.PathStoreSession;
 import pathstore.sessions.PathStoreSessionManager;
 
-public class SessionMigrationTest {
-  public static void main(String[] args) throws Exception {
+public class ReadWriteTest {
+  public static void main(String[] args) {
     PathStoreSession session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     if (args[0] == null) {
@@ -30,15 +30,11 @@ public class SessionMigrationTest {
 
     Select select = QueryBuilder.select().all().from("pathstore_demo", "users");
 
-    for (Row row :
-        session.execute(
-            select, PathStoreSessionManager.getInstance().getKeyspaceToken("demo-session")))
+    for (Row row : session.execute(select))
       System.out.println(
           String.format(
               "%s %s %d", row.getString("name"), row.getString("sport"), row.getInt("years")));
 
     PathStoreClientAuthenticatedCluster.getInstance().close();
-
-    PathStoreSessionManager.getInstance().close();
   }
 }

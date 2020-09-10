@@ -12,8 +12,6 @@ import java.util.Optional;
 /**
  * This class is the front facing class users will use to connect to their local pathstore node with
  * their application name and the associated master password.
- *
- * <p>TODO: Add custom exceptions
  */
 public class PathStoreClientAuthenticatedCluster {
 
@@ -34,7 +32,7 @@ public class PathStoreClientAuthenticatedCluster {
       final String applicationName, final String masterPassword) {
     if (instance == null) {
       Optional<String> response =
-          PathStoreServerClient.getInstance().registerApplication(applicationName, masterPassword);
+          PathStoreServerClient.getInstance().registerApplicationClient(applicationName, masterPassword);
 
       if (response.isPresent()) {
         JSONObject responseObject = new JSONObject(response.get());
@@ -57,16 +55,20 @@ public class PathStoreClientAuthenticatedCluster {
         } else
           throw new RuntimeException(
               responseObject.getString(Constants.REGISTER_APPLICATION.REASON));
-      } else throw new RuntimeException("Response is not present");
+      } else
+        throw new RuntimeException(
+            "Response is not present, most likely a network connectivity issue has occurred");
     }
     return instance;
   }
 
   /**
-   * This function is used to retrieve the local instance of this class if {@link
-   * #initInstance(String, String)} has already been called and successfully works.
+   * This function is used to retrieve the local instance of this class. If it is not present one
+   * will attempted to be created using the client authentication details present in pathstore
+   * properties. If those aren't present a runtime error will be thrown to inform the user that some
+   * key piece of information is missing
    *
-   * @return instance if present
+   * @return instance if it is present or if creation was successful
    */
   public static synchronized PathStoreClientAuthenticatedCluster getInstance() {
     if (instance != null) return instance;

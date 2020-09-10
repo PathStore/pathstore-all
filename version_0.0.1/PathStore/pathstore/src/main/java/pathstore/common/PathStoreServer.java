@@ -32,7 +32,7 @@ public interface PathStoreServer extends Remote {
       String keyspace, String table, byte[] clauses, UUID parentTimestamp, int nodeID, int limit)
       throws RemoteException;
 
-  String registerApplication(final String applicationName, final String password)
+  String registerApplicationClient(final String applicationName, final String password)
       throws RemoteException;
 
   SchemaInfo getSchemaInfo(final String keyspace) throws RemoteException;

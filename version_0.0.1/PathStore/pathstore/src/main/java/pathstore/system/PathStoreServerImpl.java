@@ -35,6 +35,14 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
+/**
+ * This is the starting point of a pathstore server.
+ *
+ * <p>It is used to spawn daemon threads and verify that all connections that are needed are valid.
+ *
+ * <p>It will also write to its startup table that is finished certain steps to allow the deployer
+ * of this process to autonomically verify the node is started up
+ */
 public class PathStoreServerImpl {
 
   /** Logger for {@link PathStoreServerImpl} */

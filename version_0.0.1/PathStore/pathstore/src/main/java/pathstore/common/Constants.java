@@ -17,7 +17,14 @@
  */
 package pathstore.common;
 
-/** TODO: Convert all literals to this class */
+/**
+ * This class is used to store all string literals used throughout the library and through the
+ * pathstore server and its extensions.
+ *
+ * <p>There is also a sibling class {@link
+ * pathstore.system.deployment.utilities.DeploymentConstants} specifically related to deployment
+ * constants
+ */
 public final class Constants {
 
   public static final String PROPERTIESFILE = "/etc/pathstore/pathstore.properties";

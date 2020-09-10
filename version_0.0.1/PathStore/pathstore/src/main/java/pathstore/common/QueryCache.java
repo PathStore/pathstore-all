@@ -22,6 +22,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.*;
 import pathstore.client.PathStoreServerClient;
+import pathstore.sessions.SessionToken;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
@@ -34,38 +35,75 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * This class is responsible for storing queries that have already been made. This is to allow for
- * quicker fetching of data.
+ * This class has a two prong feature set. For Servers this is an in-memory high level
+ * representation of the majority of data within the database (excluding non-covered local writes).
+ * It is also used to fetch updates for data that is of interest.
+ *
+ * <p>For clients it is used a representation of what it's local node has within the database that
+ * it can freely access (directly to cassandra without communicating with the local node).
+ *
+ * @see pathstore.client.PathStoreSession Client side usage
+ * @see pathstore.system.PathStorePullServer Server side usage
+ * @see pathstore.system.PathStoreServerImplRMI for how this can be called from clients are servers.
  */
 public class QueryCache {
 
-  private final ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> entries =
-      new ConcurrentHashMap<>();
-
-  public void remove(final String keyspace) {
-    entries.remove(keyspace);
-  }
-
-  public ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> getEntries() {
-    return entries;
-  }
-
+  /** Local instance of query cache */
   private static QueryCache instance = null;
 
+  /** @return get query cache instance */
   public static synchronized QueryCache getInstance() {
     if (QueryCache.instance == null) QueryCache.instance = new QueryCache();
     return QueryCache.instance;
   }
 
+  /** All qc entries */
+  private final ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> entries =
+      new ConcurrentHashMap<>();
+
+  /** @return {@link #entries} */
+  public ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> getEntries() {
+    return entries;
+  }
+
+  /**
+   * This function removes all entries from the qc for a keyspace, this is used on application
+   * removal
+   *
+   * @param keyspace keyspace to remove
+   * @see pathstore.system.schemaFSM.PathStoreSlaveSchemaServer
+   */
+  public void remove(final String keyspace) {
+    entries.remove(keyspace);
+  }
+
+  /**
+   * Add a keyspace to the cache if absent
+   *
+   * @param keyspace keyspace to add
+   */
   private void addKeyspace(final String keyspace) {
     this.entries.putIfAbsent(keyspace, new ConcurrentHashMap<>());
   }
 
+  /**
+   * Add a keyspace and table to the cache if absent
+   *
+   * @param keyspace keyspace to add
+   * @param table table to add
+   */
   private void addTable(final String keyspace, final String table) {
     addKeyspace(keyspace);
     this.entries.get(keyspace).putIfAbsent(table, new ArrayList<>());
   }
 
+  /**
+   * This function will return a set of querycache entries for a table object
+   *
+   * @param table table object to gather from
+   * @return set of entries if any, always non-null.
+   * @see pathstore.system.PathStoreServerImplRMI#forceSynchronize(SessionToken, int)
+   */
   public Collection<QueryCacheEntry> getEntries(final SchemaInfo.Table table) {
     // if table is null return empty list
     if (table == null) return Collections.emptyList();
@@ -83,9 +121,23 @@ public class QueryCache {
     return entries != null ? entries : Collections.emptyList();
   }
 
-  // called by child
+  /**
+   * This function is used to update the cache from a child node.
+   *
+   * <p>The logic is, if an entry isn't present in the cache, add it to the cache. Then if it is
+   * non-covered, inform the next node in the hierarchy that it must add this entry aswell (this
+   * node's parent)
+   *
+   * @param keyspace keyspace of the query
+   * @param table table of the query
+   * @param clausesSerialized serialized clause set
+   * @param limit return limit
+   * @return entry created
+   * @throws ClassNotFoundException for de-serialization failure
+   * @throws IOException for de-serialization failure
+   */
   public QueryCacheEntry updateCache(
-      String keyspace, String table, byte[] clausesSerialized, int limit)
+      final String keyspace, final String table, final byte[] clausesSerialized, final int limit)
       throws ClassNotFoundException, IOException {
 
     ByteArrayInputStream bytesIn = new ByteArrayInputStream(clausesSerialized);
@@ -96,6 +148,7 @@ public class QueryCache {
 
     if (entry == null) entry = addEntry(keyspace, table, clauses, clausesSerialized, limit);
 
+    // Myles: Pretty sure this isn't needed
     entry.waitUntilReady();
 
     return entry;
@@ -106,6 +159,9 @@ public class QueryCache {
    *
    * <p>This function is called by the client.
    *
+   * <p>The logic is, if an entry isn't present in the cache, add it to the cache. Then if it is
+   * non-covered, inform the local node that you're interested in the data.
+   *
    * @param keyspace keyspace of the query
    * @param table table of the query
    * @param clauses where statements for the query
@@ -113,11 +169,12 @@ public class QueryCache {
    * @return entry created.
    */
   public QueryCacheEntry updateCache(
-      String keyspace, String table, List<Clause> clauses, int limit) {
+      final String keyspace, final String table, final List<Clause> clauses, final int limit) {
     QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
     if (entry == null) entry = addEntry(keyspace, table, clauses, null, limit);
 
+    // Myles: Pretty sure this isn't needed
     entry.waitUntilReady();
 
     return entry;
@@ -132,7 +189,8 @@ public class QueryCache {
    * @param limit limit
    * @return entry if it already exists, else null
    */
-  public QueryCacheEntry getEntry(String keyspace, String table, List<Clause> clauses, int limit) {
+  public QueryCacheEntry getEntry(
+      final String keyspace, final String table, final List<Clause> clauses, final int limit) {
 
     ConcurrentMap<String, List<QueryCacheEntry>> tableMap = this.entries.get(keyspace);
     if (tableMap == null) return null;
@@ -150,7 +208,8 @@ public class QueryCache {
   }
 
   /**
-   * This function is used to add an entry to the cache.
+   * This function is used to add an entry to the cache. It will also calculate if this entry is
+   * covered or not.
    *
    * @param keyspace keyspace of entry
    * @param table table of entry
@@ -158,9 +217,14 @@ public class QueryCache {
    * @param clausesSerialized serialized clauses if applicable
    * @param limit limit of query
    * @return entry created
+   * @see #processEntry(QueryCacheEntry) for how this entry is processed after addition
    */
   private QueryCacheEntry addEntry(
-      String keyspace, String table, List<Clause> clauses, byte[] clausesSerialized, int limit) {
+      final String keyspace,
+      final String table,
+      final List<Clause> clauses,
+      final byte[] clausesSerialized,
+      final int limit) {
 
     addTable(keyspace, table);
 
@@ -181,27 +245,27 @@ public class QueryCache {
           if (entry.limit == newEntry.limit) return entry;
           // if the new entry has a higher limit than the existing entry it is covered
           else if (entry.limit == -1 && newEntry.limit > 0) {
-            newEntry.isCovered = entry;
-            entry.covers.add(newEntry);
+            newEntry.setIsCovered(entry);
+            entry.getCovers().add(newEntry);
             // if the new entry has a higher limit then the original entry is covered by the new
             // entry
           } else if (entry.limit > 0 && newEntry.limit > 0 && entry.limit < newEntry.limit) {
-            entry.isCovered = newEntry;
-            newEntry.covers.add(entry);
+            entry.setIsCovered(newEntry);
+            newEntry.getCovers().add(entry);
           }
         }
 
         // check if the new entry is covered by a set of clauses that is a super set
-        if (newEntry.isCovered == null && entry.isSuperSet(clauses)) {
-          newEntry.isCovered = entry;
-          entry.covers.add(newEntry);
+        if (newEntry.getIsCovered() == null && entry.isSuperSet(clauses)) {
+          newEntry.setIsCovered(entry);
+          entry.getCovers().add(newEntry);
         }
 
         // check if the current entry has a subset of clauses to the entry, then that entry is
         // covered
-        if (entry.isCovered == null && entry.isSubSet(clauses)) {
-          entry.isCovered = newEntry;
-          newEntry.covers.add(entry);
+        if (entry.getIsCovered() == null && entry.isSubSet(clauses)) {
+          entry.setIsCovered(newEntry);
+          newEntry.getCovers().add(entry);
         }
       }
 
@@ -213,20 +277,20 @@ public class QueryCache {
   }
 
   /**
-   * This function is used to determine if a cache miss has occured
+   * This function is used to determine if a cache miss has occurred if it has occured called the
+   * local node or parent node, if this is called on a server also fetch the delta for the new entry
+   * once the parent has received this data
    *
    * @param newEntry entry to process
    * @return entry
    */
   private QueryCacheEntry processEntry(final QueryCacheEntry newEntry) {
 
-    // TODO add entry to DB (of your parent)
     try {
 
       // If the entry isn't covered add the entry to your parents cache (or your local nodes cache)
-      if (PathStoreProperties.getInstance().role != Role.ROOTSERVER && newEntry.isCovered == null) {
-
-        System.out.println("Calling parent for non-covered cache miss");
+      if (PathStoreProperties.getInstance().role != Role.ROOTSERVER
+          && newEntry.getIsCovered() == null) {
 
         // call update cache on parent node
         PathStoreServerClient.getInstance().updateCache(newEntry);
@@ -259,11 +323,11 @@ public class QueryCache {
    * @throws ClassNotFoundException can't find class needed
    */
   public UUID createDelta(
-      String keyspace,
-      String table,
-      byte[] clausesSerialized,
-      UUID parentTimestamp,
-      int nodeID,
+      final String keyspace,
+      final String table,
+      final byte[] clausesSerialized,
+      final UUID parentTimestamp,
+      final int nodeID,
       int limit)
       throws IOException, ClassNotFoundException {
     ByteArrayInputStream bytesIn = new ByteArrayInputStream(clausesSerialized);
@@ -280,6 +344,8 @@ public class QueryCache {
 
     for (Clause clause : clauses) select.where(clause);
 
+    // Myles: This is used during garbage collection to allow each node to garbage collect things
+    // without needing to know what their children are interested in
     // ensure that the passed entry exists within your cache
     this.updateCache(keyspace, table, clausesSerialized, limit);
 
@@ -369,7 +435,7 @@ public class QueryCache {
    *
    * @param entry entry to get updates for.
    */
-  public void fetchDelta(QueryCacheEntry entry) {
+  public void fetchDelta(final QueryCacheEntry entry) {
     UUID deltaId = null;
 
     // the parentTimeStamp is only present after the initial fetch
@@ -385,12 +451,17 @@ public class QueryCache {
   }
 
   /**
-   * If deltaID is null then this is the first time data is being pulled. When this occurs
+   * If deltaID is null then this is the first time data is being pulled. When this occurs all data
+   * from the query is read from the data and transferred to this node.
    *
-   * @param entry
-   * @param deltaID
+   * <p>Otherwise if deltaID is non-null then a create delta call was made that returned that
+   * deltaID. Then instead of pulling from the regular table all data from view_$table_name is made
+   * with the primary key being that deltaID. Then similarly that data is written to the local table
+   *
+   * @param entry entry to fetch data for
+   * @param deltaID delta id of the primary key in view_$table, if null regular fetch is performed
    */
-  private void fetchData(QueryCacheEntry entry, UUID deltaID) {
+  private void fetchData(final QueryCacheEntry entry, final UUID deltaID) {
     Session parent = PathStorePrivilegedCluster.getParentInstance().connect();
     Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
 

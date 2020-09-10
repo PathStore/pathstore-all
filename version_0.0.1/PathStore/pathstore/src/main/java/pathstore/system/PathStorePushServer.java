@@ -23,6 +23,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.*;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
+import pathstore.sessions.SessionToken;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
@@ -33,18 +34,50 @@ import java.util.Collection;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-/** TODO: Comment */
+/**
+ * This daemon is present on every node within the network except for the root node.
+ *
+ * <p>Its sole purpose is to 'push' or propagate all 'dirty' data that has arrived to this node. We
+ * classify data has dirty when either A) the data was written to this node from a client or B) a
+ * child node has pushed data to this node.
+ *
+ * <p>We also use the {@link #push(Collection, Session, Session, SchemaInfo, int)} function during
+ * session migration and application un-deployment
+ *
+ * @implNote We only push data for augmented pathstore tables, not view_ or local_
+ * @see pathstore.system.schemaFSM.PathStoreSlaveSchemaServer
+ * @see PathStoreServerImplRMI#forcePush(SessionToken, int)
+ */
 public class PathStorePushServer implements Runnable {
+  /** logger for errors */
   private static final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStorePushServer.class);
 
+  /** Filter function to filter out all local and view prefixed tables */
   public static final Predicate<Table> filterOutViewAndLocal =
       table ->
-          !table.table_name.startsWith(Constants.LOCAL_PREFIX)
+          !table.table_name.startsWith(Constants.VIEW_PREFIX)
               && !table.table_name.startsWith(Constants.LOCAL_PREFIX);
 
+  /**
+   * This function is used to produce an insert value for the parent node.
+   *
+   * <p>Add all non-null columns, set pathstore_parent_timestamp to now and set the pathstore_node
+   * column to current node id
+   *
+   * @param row row to build from
+   * @param keyspace keyspace of row
+   * @param tablename table of row
+   * @param columns columns for row
+   * @param nodeid node id of current node
+   * @return insert statement
+   */
   private static Insert createInsert(
-      Row row, String keyspace, String tablename, Collection<Column> columns, int nodeid) {
+      final Row row,
+      final String keyspace,
+      final String tablename,
+      final Collection<Column> columns,
+      final int nodeid) {
     Insert insert = QueryBuilder.insertInto(keyspace, tablename);
 
     for (Column column : columns) {
@@ -60,8 +93,23 @@ public class PathStorePushServer implements Runnable {
     return insert;
   }
 
+  /**
+   * This function is used to produce a delete statement to execute locally. This is used to remove
+   * the dirty flag from a row that was pushed.
+   *
+   * <p>Where clauses are added for all non-regular columns (all primary key columns)
+   *
+   * @param row row to remove dirty flag from
+   * @param keyspace keyspace of row
+   * @param tablename table of row
+   * @param columns columns for row
+   * @return delete statement to remove dirty flag
+   */
   private static Delete createDelete(
-      Row row, String keyspace, String tablename, Collection<Column> columns) {
+      final Row row,
+      final String keyspace,
+      final String tablename,
+      final Collection<Column> columns) {
     Delete delete =
         QueryBuilder.delete(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DIRTY)
             .from(keyspace, tablename);
@@ -73,14 +121,25 @@ public class PathStorePushServer implements Runnable {
     return delete;
   }
 
+  /**
+   * This function will push all dirty data from a set of table objects from local -> parent. For
+   * all dirty data pushed it will also remove the dirty flag so it won't be pushed again
+   *
+   * @param tables tables to check for pushses
+   * @param source node to push from
+   * @param destination where to push to
+   * @param schemaInfo schema info for source node
+   * @param nodeid node id of the source node
+   */
   public static void push(
       final Collection<Table> tables,
-      final Session local,
-      final Session parent,
+      final Session source,
+      final Session destination,
       final SchemaInfo schemaInfo,
       final int nodeid) {
     try {
       for (Table table : tables) {
+
         // sanity check
         if (table.table_name.startsWith(Constants.VIEW_PREFIX)
             || table.table_name.startsWith(Constants.LOCAL_PREFIX)) continue;
@@ -88,7 +147,7 @@ public class PathStorePushServer implements Runnable {
         Select select = QueryBuilder.select().all().from(table.keyspace_name, table.table_name);
         select.where(QueryBuilder.eq(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DIRTY, true));
 
-        ResultSet results = local.execute(select);
+        ResultSet results = source.execute(select);
 
         Collection<Column> columns = schemaInfo.getTableColumns(table);
 
@@ -106,21 +165,17 @@ public class PathStorePushServer implements Runnable {
           String str_insert = insert.toString();
           String str_delete = delete.toString();
 
-          // System.out.println("insert: " + str_insert );
-
           if (str_insert.length() > PathStoreProperties.getInstance().MaxBatchSize
               || str_delete.length() > PathStoreProperties.getInstance().MaxBatchSize) {
-            // logger.debug("Executing parent insert and local delete");
-            parent.execute(insert);
-            local.execute(delete);
+            destination.execute(insert);
+            source.execute(delete);
           } else {
             if (insertBatchSize + str_insert.length()
                     > PathStoreProperties.getInstance().MaxBatchSize
                 || deleteBatchSize + str_delete.length()
                     > PathStoreProperties.getInstance().MaxBatchSize) {
-              // logger.debug("Executing parent insert and local delete");
-              parent.execute(insertBatch);
-              local.execute(deleteBatch);
+              destination.execute(insertBatch);
+              source.execute(deleteBatch);
 
               insertBatch = QueryBuilder.batch();
               deleteBatch = QueryBuilder.batch();
@@ -128,7 +183,6 @@ public class PathStorePushServer implements Runnable {
               insertBatchSize = 0;
               deleteBatchSize = 0;
             }
-            // System.out.println("adding: " + insert);
 
             insertBatch.add(insert);
             insertBatchSize += str_insert.length();
@@ -139,8 +193,8 @@ public class PathStorePushServer implements Runnable {
         }
         if (insertBatchSize > 0) {
           try {
-            parent.execute(insertBatch);
-            local.execute(deleteBatch);
+            destination.execute(insertBatch);
+            source.execute(deleteBatch);
           } catch (Exception e) {
             logger.error(e);
           }
@@ -153,6 +207,7 @@ public class PathStorePushServer implements Runnable {
     }
   }
 
+  /** Continuously call push every delta T defined by PushSleep property */
   public synchronized void run() {
     logger.info("Spawned pathstore push server thread");
 
@@ -175,6 +230,12 @@ public class PathStorePushServer implements Runnable {
     }
   }
 
+  /**
+   * Used to build a set of tables to push from a schema info object
+   *
+   * @param schemaInfo schema info object to build table set for
+   * @return collection of tables to push
+   */
   public static Collection<Table> buildCollectionOfTablesFromSchemaInfo(
       final SchemaInfo schemaInfo) {
     return schemaInfo.getLoadedKeyspaces().stream()

@@ -33,10 +33,19 @@ import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-/** This class is used to execute queries onto the database and adhere to the log structure */
+/**
+ * This class is a wrapper for a session object, this is used to manage selects for data locality,
+ * it is also used to manage user defined sessions.
+ *
+ * @see PathStoreCluster
+ * @see PathStoreClientAuthenticatedCluster
+ */
 public class PathStoreSession implements Session {
 
   /** Logger */
@@ -75,27 +84,65 @@ public class PathStoreSession implements Session {
     throw new UnsupportedOperationException();
   }
 
+  /**
+   * This function is used to execute a cql request onto the local cassandra database without
+   * session tokens.
+   *
+   * @param statement statement to execute
+   * @return result of the request
+   */
   public PathStoreResultSet execute(final Statement statement) {
     return executeNormal(statement, null);
   }
 
-  public ResultSet execute(final Statement statement, final SessionToken sessionToken)
+  /**
+   * This function is used to execute a cql request onto the local cassandra database and supports
+   * tracking of session data. Even though sessions are mainly handled on the client side, this is a
+   * way to easily allow our library to manage your session data for you.
+   *
+   * @param statement statement to execute
+   * @param sessionToken token to store in
+   * @return result set of data
+   * @throws PathStoreRemoteException if qc cannot call local node
+   */
+  public PathStoreResultSet execute(final Statement statement, final SessionToken sessionToken)
       throws PathStoreRemoteException {
     return executeNormal(statement, sessionToken);
   }
 
-  private void checkForViewPrefix(final String table) {
-    if (table.startsWith(Constants.VIEW_PREFIX))
-      throw new RuntimeException(
-          "Cannot perform an operation on a view table with pathstore session");
-  }
-
+  /**
+   * This function is used to process a statement with or without a session token.
+   *
+   * <p>This function behaves different based on what kind of statement you're passing.
+   *
+   * <p>If you pass a select statement pre-validation occurs so we can verify the validity of the
+   * statement, as if it is invalid it potentially will perpetually throw errors on the local nodes
+   * end during fetchDelta calls on that qc entry.
+   *
+   * <p>We also process your statement to ensure that qc entries only contain where clauses on the
+   * partition key + some number of clustering clauses as we need to uphold the immutable log
+   * structure.
+   *
+   * <p>We also will set ps_version and ps_parent_timestamp to the current time. and ps_dirty to
+   * true as this data is fresh.
+   *
+   * <p>For more information related to the processing of data and the way it is moved and merged
+   * around the network please see the complete documentation present on github.
+   *
+   * @param statement statement to execute
+   * @param sessionToken session token if present
+   * @return result set
+   * @throws PathStoreRemoteException if qc cannot call local node
+   * @see #execute(Statement)
+   * @see #execute(Statement, SessionToken)
+   */
   private PathStoreResultSet executeNormal(Statement statement, final SessionToken sessionToken)
       throws PathStoreRemoteException {
 
     String keyspace = statement.getKeyspace();
     String table = "";
-    boolean allowFiltering = false;
+    boolean logBreaking = false;
+    List<Clause> originalClauses = null;
 
     if (!keyspace.startsWith(Constants.PATHSTORE_PREFIX))
       throw new InvalidKeyspaceException("Keyspace does not start with pathstore prefix");
@@ -129,9 +176,9 @@ public class PathStoreSession implements Session {
 
         List<Clause> strippedClauses = this.parseClauses(select);
 
-        allowFiltering = originalSize > strippedClauses.size();
+        logBreaking = originalSize > strippedClauses.size();
 
-        this.printDifference(original, strippedClauses);
+        originalClauses = original;
 
         QueryCache.getInstance().updateCache(keyspace, table, strippedClauses, -1);
       }
@@ -227,7 +274,19 @@ public class PathStoreSession implements Session {
 
     ResultSet set = this.session.execute(statement);
 
-    return new PathStoreResultSet(this.session, set, keyspace, table, allowFiltering);
+    return new PathStoreResultSet(this.session, set, keyspace, table, logBreaking, originalClauses);
+  }
+
+  /**
+   * This simple function is used to determine if a table has the view prefix, as we do not allow
+   * the querying of view tables.
+   *
+   * @param table table to check
+   */
+  private void checkForViewPrefix(final String table) {
+    if (table.startsWith(Constants.VIEW_PREFIX))
+      throw new RuntimeException(
+          "Cannot perform an operation on a view table with pathstore session");
   }
 
   /**
@@ -255,16 +314,23 @@ public class PathStoreSession implements Session {
       }
   }
 
-  private void printDifference(final List<Clause> original, final List<Clause> stripped) {
-    List<Clause> originalClone = new ArrayList<>(original);
-
-    originalClone.removeAll(stripped);
-
-    for (Clause clause : originalClone) {
-      logger.info(String.format("stripped clause on column %s", clause.getName()));
-    }
-  }
-
+  /**
+   * This function is used to parse all potential log breaking clauses away from a select statement,
+   * this is used so we can pull all records from a given primary key during fetchDelta. This
+   * however does not affect the end result of the query, but will affect what we internally store
+   * within the qc.
+   *
+   * <p>The logic here is that we need to remove all where clauses on non-primary key columns.
+   *
+   * <p>We also need to remove all clauses on primary columns if not every partition column is
+   * fixed. The only clauses we keep are:
+   *
+   * <p>if all primary columns are present, then include them and all clustering columns keys, else
+   * we keep none of them.
+   *
+   * @param select select statement to parse.
+   * @return list of clauses as described above.
+   */
   private List<Clause> parseClauses(final Select select) {
 
     List<Clause> clauses = select.where().getClauses();

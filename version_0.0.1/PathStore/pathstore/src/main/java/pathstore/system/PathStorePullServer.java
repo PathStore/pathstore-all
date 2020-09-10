@@ -18,7 +18,6 @@
 package pathstore.system;
 
 import com.datastax.driver.core.Statement;
-import org.apache.commons.cli.*;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
 import pathstore.common.QueryCacheEntry;
@@ -27,11 +26,21 @@ import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 
-/** TODO: Comment */
+/**
+ * This class is used ran as a daemon on every server except for the root node.
+ *
+ * <p>Its sole purpose is to periodically fetch deltas for all non-covered querycache entries.
+ *
+ * <p>This is to "update" our local nodes data set in an eventually consistent manner.
+ *
+ * @see pathstore.common.PathStoreThreadManager
+ */
 public class PathStorePullServer implements Runnable {
 
+  /** Logger to handle errors */
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStorePullServer.class);
 
@@ -40,6 +49,9 @@ public class PathStorePullServer implements Runnable {
    *
    * <p>Entries are added to the qc by {@link pathstore.client.PathStoreSession#execute(Statement)}
    * and {@link pathstore.client.PathStoreSession#execute(Statement, SessionToken)}
+   *
+   * @see QueryCache#fetchDelta(QueryCacheEntry)
+   * @see QueryCache#createDelta(String, String, byte[], UUID, int, int)
    */
   private void pull() {
     ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> entries =
@@ -64,41 +76,17 @@ public class PathStorePullServer implements Runnable {
     }
   }
 
+  /** Run the pull server ever delta T defined by PullSleep properties */
   public synchronized void run() {
     logger.info("Pull Server spawned");
     while (true) {
       try {
-        // logger.debug("Pull server ran");
-        pull();
+        this.pull();
         Thread.sleep(PathStoreProperties.getInstance().PullSleep);
       } catch (Exception e) {
         System.err.println("PathStorePullServer exception: " + e.toString());
         this.logger.error(e);
       }
     }
-  }
-
-  private static void parseCommandLineArguments(String args[]) {
-    Options options = new Options();
-
-    options.addOption(
-        Option.builder("n").longOpt("nodeid").desc("Number").hasArg().argName("nodeid").build());
-
-    CommandLineParser parser = new DefaultParser();
-    HelpFormatter formatter = new HelpFormatter();
-    CommandLine cmd;
-
-    try {
-      cmd = parser.parse(options, args);
-    } catch (ParseException e) {
-      System.out.println(e.getMessage());
-      formatter.printHelp("utility-name", options);
-
-      System.exit(1);
-      return;
-    }
-
-    if (cmd.hasOption("nodeid"))
-      PathStoreProperties.getInstance().NodeID = Integer.parseInt(cmd.getOptionValue("nodeid"));
   }
 }

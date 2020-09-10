@@ -11,10 +11,6 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * This class is to be used on the client side to store their session tokens in a file which can be
  * used to when an application will migrate from one node to another.
- *
- * <p>TODO: Handle registration of sessions with local node to handle (n_s -> n_d1 -> n_d2)
- *
- * <p>TODO: Pull local node id on init as clients are not required to know the node id on connection
  */
 public class PathStoreSessionManager {
 

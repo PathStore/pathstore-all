@@ -18,8 +18,10 @@
 package pathstore.client;
 
 import com.datastax.driver.core.ArrayBackedRow;
+import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.common.Constants;
@@ -28,6 +30,8 @@ import pathstore.util.SchemaInfo.Column;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /** This class is responsible for log compression of cassandra responses */
 public class PathStoreIterator implements Iterator<Row> {
@@ -51,7 +55,10 @@ public class PathStoreIterator implements Iterator<Row> {
    * Can the query potentially break our log structure (Does it contain an allow filtering clause or
    * is it using a secondary index)
    */
-  private final boolean allowFiltering;
+  private final boolean logBreaking;
+
+  /** Clauses of select statement */
+  private final List<Clause> originalClauses;
 
   /** Next row for comparison */
   private ArrayBackedRow row_next = null;
@@ -64,19 +71,22 @@ public class PathStoreIterator implements Iterator<Row> {
    * @param iter {@link #iter}
    * @param keyspace {@link #keyspace}
    * @param table {@link #table}
-   * @param allowFiltering {@link #allowFiltering}
+   * @param logBreaking {@link #logBreaking}
+   * @param originalClauses {@link #originalClauses}
    */
   public PathStoreIterator(
       final Session session,
       final Iterator<Row> iter,
       final String keyspace,
       final String table,
-      final boolean allowFiltering) {
+      final boolean logBreaking,
+      final List<Clause> originalClauses) {
     this.session = session;
     this.iter = iter;
     this.keyspace = keyspace;
     this.table = table;
-    this.allowFiltering = allowFiltering;
+    this.logBreaking = logBreaking;
+    this.originalClauses = originalClauses;
   }
 
   /**
@@ -108,10 +118,22 @@ public class PathStoreIterator implements Iterator<Row> {
       this.row_next = (ArrayBackedRow) this.iter.next();
     }
 
-    // handle if a row is out dated
-    if (this.allowFiltering && this.hasNewerRows(this.row)) {
-      this.row = null;
-      return this.hasNext();
+    if (this.originalClauses == null && this.logBreaking)
+      throw new RuntimeException("Clauses not set but log breaking is set true, this is a bug");
+
+    if (this.row != null) {
+      if (this.logBreaking) {
+        ArrayBackedRow temp = this.getCompleteRow(this.row);
+        if (temp == null)
+          throw new RuntimeException(
+              "This shouldn't occur, please report this bug with the select query made and a copy of our schema");
+        if (this.validateCompleteRowAgainstClauseSet(temp)) {
+          this.row = temp;
+        } else {
+          this.row = null;
+          return this.hasNext();
+        }
+      }
     }
 
     return this.row != null;
@@ -166,6 +188,39 @@ public class PathStoreIterator implements Iterator<Row> {
   }
 
   /**
+   * This function is used to build a select statement on a primary key minus ps version.
+   *
+   * <p>This is used to determine if a new rower exists then the row in a log breaking iterator
+   * case, and is also used to produce a clear row for the latest partial row in a log breaking
+   * query
+   *
+   * @param row row to build query from, assumed non-null
+   * @return select statement to execute or to further modify
+   * @implNote row is assumed to be non-null.
+   * @see #hasNewerRows(ArrayBackedRow)
+   * @see #getCompleteRow(ArrayBackedRow)
+   */
+  private Select getQueryOnPrimaryKeyMinusPSVersion(final ArrayBackedRow row) {
+    Select select = QueryBuilder.select().all().from(this.keyspace, this.table);
+
+    SchemaInfo schemaInfo = SchemaInfo.getInstance();
+
+    Collection<String> primaryKeyColumns =
+        schemaInfo.getPartitionColumnNames(this.keyspace, this.table);
+    primaryKeyColumns.addAll(
+        schemaInfo.getClusterColumnNames(this.keyspace, this.table).stream()
+            .filter(
+                clusteringColumn ->
+                    !clusteringColumn.equals(Constants.PATHSTORE_META_COLUMNS.PATHSTORE_VERSION))
+            .collect(Collectors.toList()));
+
+    primaryKeyColumns.forEach(
+        columnName -> select.where(QueryBuilder.eq(columnName, row.getObject(columnName))));
+
+    return select;
+  }
+
+  /**
    * This function is used to determine if a row has a newer version
    *
    * @param row row to check
@@ -175,20 +230,7 @@ public class PathStoreIterator implements Iterator<Row> {
    */
   private boolean hasNewerRows(final ArrayBackedRow row) {
 
-    if (row == null) return false;
-
-    Select checkForNewerRows = QueryBuilder.select().all().from(this.keyspace, this.table);
-
-    SchemaInfo schemaInfo = SchemaInfo.getInstance();
-
-    // produce a set of all primary key column names
-    Collection<String> primaryKeyColumns =
-        schemaInfo.getPartitionColumnNames(this.keyspace, this.table);
-    primaryKeyColumns.addAll(schemaInfo.getClusterColumnNames(this.keyspace, this.table));
-
-    primaryKeyColumns.forEach(
-        columnName ->
-            checkForNewerRows.where(QueryBuilder.eq(columnName, row.getObject(columnName))));
+    Select checkForNewerRows = this.getQueryOnPrimaryKeyMinusPSVersion(row);
 
     // add greater than clause to pathstore_version
     checkForNewerRows.where(
@@ -200,25 +242,64 @@ public class PathStoreIterator implements Iterator<Row> {
   }
 
   /**
-   * TODO: Re add removal of pathstore hidden columns
+   * This function is used to get a complete row from a partial row that is verified to be the
+   * newest row from a log breaking query.
    *
-   * <p>This will return the next row and update the internal row
+   * @param partialRow partial row
+   * @return complete row
+   * @implNote partial row is assumed to be non-null and if null is returned it is most likely due
+   *     to database failure.
+   */
+  private ArrayBackedRow getCompleteRow(final ArrayBackedRow partialRow) {
+
+    Select getFullRow = this.getQueryOnPrimaryKeyMinusPSVersion(partialRow);
+
+    PathStoreIterator iterator =
+        new PathStoreIterator(
+            this.session,
+            this.session.execute(getFullRow).iterator(),
+            this.keyspace,
+            this.table,
+            false,
+            null);
+
+    if (iterator.hasNext()) return (ArrayBackedRow) iterator.next();
+
+    // this shouldn't occur as this function is called with a row with the same primary key.
+    return null;
+  }
+
+  /**
+   * Validate a complete row against clause set. If all values in the row are equal to the where
+   * clauses this is valid, else false
+   *
+   * @param row row
+   * @return true if valid else false
+   */
+  private boolean validateCompleteRowAgainstClauseSet(final ArrayBackedRow row) {
+
+    for (Clause clause : this.originalClauses)
+      if (!row.getObject(clause.getName()).equals(clause.getValue())) return false;
+
+    return true;
+  }
+
+  /**
+   * This will return the next row and update the internal row
    *
    * @return row to user
    */
   @Override
   public Row next() {
 
-    /*
-    // remove pathstore metacolumns
-    List<Definition>columns_query = row.metadata.asList();
-    for (int x = columns_query.size()-1; x > -1; x--) {
-    	String name = columns_query.get(x).getName();
-    	if (columns_query.get(x).getName().startsWith("pathstore_")) {
-    		row.data.set(x, null);
-    	}
-    }
-    */
+    List<ColumnDefinitions.Definition> columns_query = row.metadata.asList();
+
+    // Myles: is there are reason that this is from back to front? otherwise we will switch
+    // from [0, length) as this isn't clean
+    for (int x = columns_query.size() - 1; x > -1; x--)
+      if (columns_query.get(x).getName().startsWith(Constants.PATHSTORE_PREFIX))
+        row.data.set(x, null);
+
     ArrayBackedRow tempRow = this.row;
     this.row = null;
     return tempRow;

@@ -68,6 +68,18 @@ import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
  * <p>{@link Constants.PROPERTIES_CONSTANTS#CASSANDRA_IP}
  *
  * <p>{@link Constants.PROPERTIES_CONSTANTS#CASSANDRA_PORT}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#SESSION_FILE}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#APPLICATION_NAME}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#APPLICATION_MASTER_PASSWORD}
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#USERNAME} Note: This is only used for privileged
+ * clients, ones run by the network admin. Otherwise it is used for all servers
+ *
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#PASSWORD} Note: This is only used for privileged
+ * clients, ones run by the network admin. Otherwise it is used for all servers
  */
 public class PathStoreProperties {
 
@@ -78,14 +90,13 @@ public class PathStoreProperties {
   private static PathStoreProperties instance = null;
 
   /** @return either create new instance and return it or return existing instance */
-  public static PathStoreProperties getInstance() {
+  public static synchronized PathStoreProperties getInstance() {
     if (PathStoreProperties.instance == null) {
       PathStoreProperties.instance = new PathStoreProperties();
 
       // load node id if role is client
-      if (instance.role == Role.CLIENT) {
+      if (instance.role == Role.CLIENT)
         instance.NodeID = PathStoreServerClient.getInstance().getLocalNodeId();
-      }
     }
     return PathStoreProperties.instance;
   }
@@ -174,10 +185,14 @@ public class PathStoreProperties {
   public int PushSleep = 1000;
 
   // client only properties
+
+  /** where to store session tokens on client side */
   public String sessionFile = null;
 
+  /** What is the name of the application a client is trying to connect for */
   public String applicationName = null;
 
+  /** what is that applications master password */
   public String applicationMasterPassword = null;
 
   /**
@@ -244,9 +259,11 @@ public class PathStoreProperties {
    */
   private String getProperty(final Properties properties, final String key) {
     String response = properties.getProperty(key);
-    return response != null ? response.trim() : null;
+    if (response != null) return response.trim();
+    else
+      throw new RuntimeException(
+          String.format("Expected property %s to be present but was not found", key));
   }
-
   /** @return all values loaded in from properties file */
   @Override
   public String toString() {
@@ -280,12 +297,23 @@ public class PathStoreProperties {
         + '\''
         + ", CassandraParentPort="
         + CassandraParentPort
+        + ", credential="
+        + credential
         + ", MaxBatchSize="
         + MaxBatchSize
         + ", PullSleep="
         + PullSleep
         + ", PushSleep="
         + PushSleep
+        + ", sessionFile='"
+        + sessionFile
+        + '\''
+        + ", applicationName='"
+        + applicationName
+        + '\''
+        + ", applicationMasterPassword='"
+        + applicationMasterPassword
+        + '\''
         + '}';
   }
 }

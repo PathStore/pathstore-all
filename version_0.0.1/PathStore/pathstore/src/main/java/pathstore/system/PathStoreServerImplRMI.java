@@ -25,6 +25,9 @@ import java.rmi.RemoteException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * This class is used to implement all rmi function that are needed for node to node communication
+ */
 public class PathStoreServerImplRMI implements PathStoreServer {
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStoreServerImplRMI.class);
@@ -33,19 +36,27 @@ public class PathStoreServerImplRMI implements PathStoreServer {
   private static PathStoreServerImplRMI instance;
 
   /** @return instance of rmi server */
-  public static PathStoreServerImplRMI getInstance() {
+  public static synchronized PathStoreServerImplRMI getInstance() {
     if (instance == null) instance = new PathStoreServerImplRMI();
     return instance;
   }
 
-  public String updateCache(String keyspace, String table, byte[] clauses, int limit)
+  /**
+   * Update the parent / local node cache
+   *
+   * @param keyspace keyspace of the entry
+   * @param table table of the entry
+   * @param clauses clauses for the entry
+   * @param limit limit on rows
+   * @return test string
+   * @throws RemoteException if an error occurs during the remove call
+   */
+  public String updateCache(
+      final String keyspace, final String table, final byte[] clauses, final int limit)
       throws RemoteException {
 
-    long d = System.nanoTime();
     try {
       QueryCache.getInstance().updateCache(keyspace, table, clauses, limit);
-      //			System.out.println("^^^^^^^^^^^^^^^^ time to reply took: " + Timer.getTime(d));
-
     } catch (ClassNotFoundException | IOException e) {
       throw new RemoteException(e.getMessage());
     }
@@ -53,9 +64,26 @@ public class PathStoreServerImplRMI implements PathStoreServer {
     return "server says hello!";
   }
 
+  /**
+   * This function is used to create a delta for an entry on a parent node.
+   *
+   * @param keyspace keyspace of entry
+   * @param table table of entry
+   * @param clauses clauses of entry
+   * @param parentTimestamp timestamp of entry, so only greater than is pulled
+   * @param nodeID node id of caller (to not add rows pushed by the child)
+   * @param limit limit on rows
+   * @return delta uuid if rows were added, else null
+   * @throws RemoteException if an error occurs during the create delta call
+   */
   @Override
   public UUID createQueryDelta(
-      String keyspace, String table, byte[] clauses, UUID parentTimestamp, int nodeID, int limit)
+      final String keyspace,
+      final String table,
+      final byte[] clauses,
+      final UUID parentTimestamp,
+      final int nodeID,
+      final int limit)
       throws RemoteException {
     try {
       return QueryCache.getInstance()
@@ -74,7 +102,7 @@ public class PathStoreServerImplRMI implements PathStoreServer {
    * @see pathstore.client.PathStoreClientAuthenticatedCluster
    */
   @Override
-  public String registerApplication(final String applicationName, final String password) {
+  public String registerApplicationClient(final String applicationName, final String password) {
     if (ClientAuthenticationUtil.isApplicationNotLoaded(applicationName)) {
       String errorResponse =
           String.format(
@@ -265,8 +293,8 @@ public class PathStoreServerImplRMI implements PathStoreServer {
    * <p>This will recursively push data from n_s to lca. Once lca is hit, it will not push anymore
    * as the data is where it needs to be
    *
-   * @param sessionToken
-   * @param lca
+   * @param sessionToken session token to migrate
+   * @param lca lca calculation from {@link #lca(int, int)} between n_s and n_d
    */
   @Override
   public void forcePush(final SessionToken sessionToken, final int lca) {
@@ -298,6 +326,12 @@ public class PathStoreServerImplRMI implements PathStoreServer {
    * @param sessionToken session token to migrate
    * @param lca lca of migration
    * @see SessionToken#stream()
+   * @implNote The reason why we only process ready entries is because the only way an entry can be
+   *     not ready is during its creation process. If a non-ready entry is non-covered, it will have
+   *     to go to its parent, so if we wait for it to be complete we will pull double the amount of
+   *     data. Thus we should only be processing entries that are ready which implies they have a
+   *     parentTimestamp which means all fetchDelta calls will only be deltas and not entire
+   *     datasets. Which in turn will speed up session migration time.
    */
   @Override
   public void forceSynchronize(final SessionToken sessionToken, final int lca) {
@@ -314,11 +348,13 @@ public class PathStoreServerImplRMI implements PathStoreServer {
       sessionToken.stream()
           .map(table -> QueryCache.getInstance().getEntries(table))
           .flatMap(Collection::stream)
-          .filter(queryCacheEntry -> queryCacheEntry.getIsCovered() == null) // only non-covered
+          .filter(
+              queryCacheEntry ->
+                  queryCacheEntry.getIsCovered() == null
+                      && queryCacheEntry
+                          .isReady()) // only non-covered and ready entries, see implNote
           .forEach(
               nonCoveredQueryCacheEntry -> {
-                logger.info("Waiting");
-                nonCoveredQueryCacheEntry.waitUntilReady();
                 logger.info(
                     String.format(
                         "Synchronizing entry on table %s.%s with clauses %s",

@@ -86,7 +86,6 @@ public class PathStorePrivilegedCluster {
    *     credentials are boot strapped
    */
   public static PathStorePrivilegedCluster getParentInstance() {
-
     Credential parentCredentials =
         CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().ParentID);
 

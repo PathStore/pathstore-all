@@ -26,7 +26,6 @@ public class LoadKeyspace implements ICommand {
    * Function that will take a session object as a param and load a keyspace to it
    *
    * @see pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils#loadApplicationSchema(Session)
-   * @see pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils#loadLocalKeyspace(Session)
    */
   private final Consumer<Session> loadKeyspaceFunction;
 

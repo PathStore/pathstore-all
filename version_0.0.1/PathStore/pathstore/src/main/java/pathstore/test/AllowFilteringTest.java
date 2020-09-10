@@ -6,6 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.system.PathStorePrivilegedCluster;
 
 /**
  * Steps to test allow filtering logic.
@@ -21,22 +22,28 @@ import pathstore.common.Constants;
 public class AllowFilteringTest {
   public static void main(String[] args) {
 
-    Session psSession = PathStoreCluster.getDaemonInstance().connect();
+    Session psSession = PathStoreCluster.getSuperUserInstance().connect();
 
-    Select select = QueryBuilder.select().all().from("pathstore_applications", "node_schemas");
-    select.where(QueryBuilder.eq("process_status", args[0]));
+    Select select =
+        QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
+    select.where(QueryBuilder.eq(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS, args[0]));
     select.allowFiltering();
+
+    System.out.println(String.format("Executing query %s", select.toString()));
 
     for (Row row : psSession.execute(select)) {
       System.out.println(
           String.format(
-              "%d %s %s",
-              row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID),
-              row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
-              row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)));
+              "Parent Node Id: %d Node id: %d Server UUID: %s Process Status: %s Who to wait for: %s",
+              row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
+              row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID),
+              row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID),
+              row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS),
+              row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class)));
     }
 
+    PathStoreCluster.getSuperUserInstance().close();
+    PathStorePrivilegedCluster.getSuperUserInstance().close();
     System.out.println("Test complete");
-    psSession.close();
   }
 }
