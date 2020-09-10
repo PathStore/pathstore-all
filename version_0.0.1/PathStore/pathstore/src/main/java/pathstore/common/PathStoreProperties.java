@@ -260,9 +260,7 @@ public class PathStoreProperties {
   private String getProperty(final Properties properties, final String key) {
     String response = properties.getProperty(key);
     if (response != null) return response.trim();
-    else
-      throw new RuntimeException(
-          String.format("Expected property %s to be present but was not found", key));
+    else return "";
   }
   /** @return all values loaded in from properties file */
   @Override
