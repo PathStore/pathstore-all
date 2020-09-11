@@ -7,7 +7,6 @@ import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.client.PathStoreSession;
-import pathstore.sessions.PathStoreSessionManager;
 
 public class ReadWriteTest {
   public static void main(String[] args) {
@@ -19,13 +18,14 @@ public class ReadWriteTest {
               .value("name", "myles")
               .value("sport", "golf");
 
-      session.execute(
-          insert, PathStoreSessionManager.getInstance().getKeyspaceToken("demo-session"));
+      session.execute(insert);
 
       Update update = QueryBuilder.update("pathstore_demo", "users");
 
       update.where(QueryBuilder.eq("name", "myles"));
       update.with(QueryBuilder.set("years", 20));
+
+      session.execute(update);
     }
 
     Select select = QueryBuilder.select().all().from("pathstore_demo", "users");
