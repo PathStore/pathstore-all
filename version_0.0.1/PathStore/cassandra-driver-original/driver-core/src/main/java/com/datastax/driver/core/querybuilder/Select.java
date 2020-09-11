@@ -256,6 +256,15 @@ public class Select extends BuiltStatement {
     }
 
     /**
+     * PATHSTORE UPDATE. This is used by PathStoreSession to be able to determine without reflection if a given select query is using allow filtering or not
+     *
+     * @return {@link #allowFiltering}
+     */
+    public boolean hasAllowFiltering(){
+        return this.allowFiltering;
+    }
+
+    /**
      * The WHERE clause of a SELECT statement.
      */
     public static class Where extends BuiltStatement.ForwardingStatement<Select> {
@@ -265,12 +274,12 @@ public class Select extends BuiltStatement {
         protected Where(Select statement) {
             super(statement);
         }
-        
-        
+
+
         public List<Clause> getClauses() {
 			return clauses;
 		}
-        
+
         /**
          * Adds the provided clause to this WHERE clause.
          *

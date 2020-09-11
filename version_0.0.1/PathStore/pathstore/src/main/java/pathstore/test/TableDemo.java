@@ -1,20 +1,20 @@
 /**********
-*
-* Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*
-***********/
+ *
+ * Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ ***********/
 /*
  * Copyright (c) 1995, 2008, Oracle and/or its affiliates. All rights reserved.
  *
@@ -44,7 +44,7 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */ 
+ */
 
 package pathstore.test;
 
@@ -56,7 +56,6 @@ package pathstore.test;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -100,24 +99,24 @@ import java.util.Vector;
  * This is like TableDemo, except that it substitutes a
  * Favorite Color column for the Last Name column and specifies
  * a custom cell renderer and editor for the color data.
+ * TODO: Comment
  */
 public class TableDemo extends JPanel implements TableModelListener, ActionListener {
     private boolean DEBUG = false;
 
-    private JTable table=null;
+    private JTable table = null;
     private UpdateThread updateThread = null;
-    private JTextField name=null;
-    private JTextField sport=null;
-    
-    
-    
+    private JTextField name = null;
+    private JTextField sport = null;
+
+
     public TableDemo() {
-        super(new GridLayout(3,1));
+        super(new GridLayout(3, 1));
 
         table = new JTable(new MyTableModel());
-        
+
         table.getModel().addTableModelListener(this);
-        
+
         table.setPreferredScrollableViewportSize(new Dimension(500, 70));
         table.setFillsViewportHeight(true);
 
@@ -126,13 +125,13 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
 
         //Set up renderer and editor for the Favorite Color column.
         table.setDefaultRenderer(Color.class,
-                                 new ColorRenderer(true));
+                new ColorRenderer(true));
         table.setDefaultEditor(Color.class,
-                               new ColorEditor());
+                new ColorEditor());
 
         //Add the scroll pane to this panel.
         add(scrollPane);
-        
+
         JPanel userPanel = new JPanel();
 
         JLabel lname = new JLabel("Name");
@@ -143,16 +142,16 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
         JButton newUser = new JButton("Create");
         newUser.setActionCommand("NewUser");
         newUser.addActionListener(this);
-        
+
         userPanel.add(lname);
         userPanel.add(name);
         userPanel.add(lsport);
         userPanel.add(sport);
         userPanel.add(newUser);
-        
+
         add(userPanel);
 
-        
+
         JPanel create10Panel = new JPanel();
 
         JButton create10User = new JButton("Create 10");
@@ -160,162 +159,160 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
         create10User.addActionListener(this);
 
         create10Panel.add(create10User);
-        
+
         add(create10Panel);
-        
-    	updateThread = new UpdateThread(this); 
-    	updateThread.start();
+
+        updateThread = new UpdateThread(this);
+        updateThread.start();
     }
 
     public void reloadModel() {
-    	((MyTableModel)table.getModel()).loadModel();
-    	this.repaint();
+        ((MyTableModel) table.getModel()).loadModel();
+        this.repaint();
     }
-    
-    
-    class UpdateThread extends Thread {
-    	TableDemo tableDemo;
-    	
-    	public UpdateThread(TableDemo tableDemo) {
-			this.tableDemo = tableDemo;
-		}
 
-		synchronized public void run() {
-    			
-    		while(true) {
-    			try {
-    				tableDemo.reloadModel();
-    				
-    	    		this.wait(1000);
-    			} catch (InterruptedException e) {
-    				System.err.println("TableDemo exception: " + e.toString());
-    				e.printStackTrace();
-    			}
-    		}
-    	}
-    		
+
+    class UpdateThread extends Thread {
+        TableDemo tableDemo;
+
+        public UpdateThread(TableDemo tableDemo) {
+            this.tableDemo = tableDemo;
+        }
+
+        synchronized public void run() {
+
+            while (true) {
+                try {
+                    tableDemo.reloadModel();
+
+                    this.wait(1000);
+                } catch (InterruptedException e) {
+                    System.err.println("TableDemo exception: " + e.toString());
+                    e.printStackTrace();
+                }
+            }
+        }
+
     }
-    
+
     class MyTableModel extends AbstractTableModel {
-       
-		private String[] columnNames = {"name",
-                                        "color",
-                                        "sport",
-                                        "years",
-                                        "vegetarian",
-                                        "Delete"};
+
+        private String[] columnNames = {"name",
+                "color",
+                "sport",
+                "years",
+                "vegetarian",
+                "Delete"};
         private Object[][] data = {
-            {"Mary", new Color(153, 0, 153),
-             "Snowboarding", new Integer(5), new Boolean(false)},
-            {"Alison", new Color(51, 51, 153),
-             "Rowing", new Integer(3), new Boolean(true)},
-            {"Kathy", new Color(51, 102, 51),
-             "Knitting", new Integer(2), new Boolean(false)},
-            {"Sharon", Color.red,
-             "Speed reading", new Integer(20), new Boolean(true)},
-            {"Philip", Color.pink,
-             "Pool", new Integer(10), new Boolean(false)}
+                {"Mary", new Color(153, 0, 153),
+                        "Snowboarding", new Integer(5), new Boolean(false)},
+                {"Alison", new Color(51, 51, 153),
+                        "Rowing", new Integer(3), new Boolean(true)},
+                {"Kathy", new Color(51, 102, 51),
+                        "Knitting", new Integer(2), new Boolean(false)},
+                {"Sharon", Color.red,
+                        "Speed reading", new Integer(20), new Boolean(true)},
+                {"Philip", Color.pink,
+                        "Pool", new Integer(10), new Boolean(false)}
         };
 
-        
-        public void insertRecords() {
-        	
-        	PathStoreCluster cluster = PathStoreCluster.getInstance();
-    		Session session = cluster.connect();
-    	
-    		for (int x=0; x < data.length; x++) {
-    			Insert insert = QueryBuilder.insertInto("pathstore_demo", "users");
-    			insert.value("name", data[x][0]);
-    			
-    			Color color = (Color)data[x][1];
-    			
-    			List<Integer>rgb=new Vector<Integer>();
-    			
-    			rgb.add((int)color.getRed());
-    			rgb.add((int)color.getGreen());
-    			rgb.add((int)color.getBlue());
-    			
-    			insert.value("color", rgb);
-    			insert.value("sport", data[x][2]);
-    			insert.value("years", data[x][3]);
-    			insert.value("vegetarian", data[x][4]);
-    			
-    			session.execute(insert);
-    		}
-        }
-        
-        public void updateRecord(int x, int y) {
-           	PathStoreCluster cluster = PathStoreCluster.getInstance();
-    		Session session = cluster.connect();
-    		Update update = QueryBuilder.update("pathstore_demo", "users");
-		
-			Color color = (Color)data[x][1];
-			
-			
-			if (y==1) {
-				List<Integer>rgb=new Vector<Integer>();
-				rgb.add((int)color.getRed());
-				rgb.add((int)color.getGreen());
-				rgb.add((int)color.getBlue());
-				update.with(QueryBuilder.set(columnNames[y], rgb));
-	    		
-			}
-			else
-				update.with(QueryBuilder.set(columnNames[y], data[x][y]));
-    		
-			update.where(QueryBuilder.eq("name", data[x][0]));
-			session.execute(update);
-     	}
-        
-        public void deleteRecord(int x) {
-        	PathStoreCluster cluster = PathStoreCluster.getInstance();
-    		Session session = cluster.connect();
-    	
-			Delete delete = QueryBuilder.delete().from("pathstore_demo", "users");
-			delete.where(QueryBuilder.eq("name", data[x][0]));
-			
-			session.execute(delete);
-			
-		}
-        
-        
-        
-        public void loadModel() {
-        	PathStoreCluster cluster = PathStoreCluster.getInstance();
-    		Session session = cluster.connect();
-    	
-    		Select select = QueryBuilder.select().all().from("pathstore_demo", "users");
-    		
-    		ResultSet results = session.execute(select);
 
-    		Vector<Object[]> tuples = new Vector<Object[]>();
-    		
-    		for (Row row : results) {
-    			Object [] tuple = {"",null,"",null,null,null};
-    			
-    			tuple[0] = row.getString("name");
-    			List<Integer> rgb = row.getList("color", Integer.class);
-    			Color color = new Color(rgb.get(0),rgb.get(1),rgb.get(2));
-    			tuple[1] = color;
-    			tuple[2] = row.getString("sport");
-    			tuple[3] = new Integer(row.getInt("years"));
-				tuple[4] = new Boolean(row.getBool("vegetarian"));
-				tuple[5] = new Boolean(false);
-				
-    		
-				tuples.add(tuple);
-    		}
-    		
-    		data = new Object[tuples.size()][6];
-    		
-    		for (int x=0; x < tuples.size(); x++)
-    			data[x] = tuples.elementAt(x);
+        public void insertRecords() {
+
+            PathStoreCluster cluster = PathStoreCluster.getDaemonInstance();
+            Session session = cluster.connect();
+
+            for (int x = 0; x < data.length; x++) {
+                Insert insert = QueryBuilder.insertInto("pathstore_demo", "users");
+                insert.value("name", data[x][0]);
+
+                Color color = (Color) data[x][1];
+
+                List<Integer> rgb = new Vector<Integer>();
+
+                rgb.add((int) color.getRed());
+                rgb.add((int) color.getGreen());
+                rgb.add((int) color.getBlue());
+
+                insert.value("color", rgb);
+                insert.value("sport", data[x][2]);
+                insert.value("years", data[x][3]);
+                insert.value("vegetarian", data[x][4]);
+
+                session.execute(insert);
+            }
         }
-        
+
+        public void updateRecord(int x, int y) {
+            PathStoreCluster cluster = PathStoreCluster.getDaemonInstance();
+            Session session = cluster.connect();
+            Update update = QueryBuilder.update("pathstore_demo", "users");
+
+            Color color = (Color) data[x][1];
+
+
+            if (y == 1) {
+                List<Integer> rgb = new Vector<Integer>();
+                rgb.add((int) color.getRed());
+                rgb.add((int) color.getGreen());
+                rgb.add((int) color.getBlue());
+                update.with(QueryBuilder.set(columnNames[y], rgb));
+
+            } else
+                update.with(QueryBuilder.set(columnNames[y], data[x][y]));
+
+            update.where(QueryBuilder.eq("name", data[x][0]));
+            session.execute(update);
+        }
+
+        public void deleteRecord(int x) {
+            PathStoreCluster cluster = PathStoreCluster.getDaemonInstance();
+            Session session = cluster.connect();
+
+            Delete delete = QueryBuilder.delete().from("pathstore_demo", "users");
+            delete.where(QueryBuilder.eq("name", data[x][0]));
+
+            session.execute(delete);
+
+        }
+
+
+        public void loadModel() {
+            PathStoreCluster cluster = PathStoreCluster.getDaemonInstance();
+            Session session = cluster.connect();
+
+            Select select = QueryBuilder.select().all().from("pathstore_demo", "users");
+
+            ResultSet results = session.execute(select);
+
+            Vector<Object[]> tuples = new Vector<Object[]>();
+
+            for (Row row : results) {
+                Object[] tuple = {"", null, "", null, null, null};
+
+                tuple[0] = row.getString("name");
+                List<Integer> rgb = row.getList("color", Integer.class);
+                Color color = new Color(rgb.get(0), rgb.get(1), rgb.get(2));
+                tuple[1] = color;
+                tuple[2] = row.getString("sport");
+                tuple[3] = new Integer(row.getInt("years"));
+                tuple[4] = new Boolean(row.getBool("vegetarian"));
+                tuple[5] = new Boolean(false);
+
+
+                tuples.add(tuple);
+            }
+
+            data = new Object[tuples.size()][6];
+
+            for (int x = 0; x < tuples.size(); x++)
+                data[x] = tuples.elementAt(x);
+        }
+
         public MyTableModel() {
-        	loadModel();
+            loadModel();
         }
-        
+
         public int getColumnCount() {
             return columnNames.length;
         }
@@ -355,9 +352,9 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
         public void setValueAt(Object value, int row, int col) {
             if (DEBUG) {
                 System.out.println("Setting value at " + row + "," + col
-                                   + " to " + value
-                                   + " (an instance of "
-                                   + value.getClass() + ")");
+                        + " to " + value
+                        + " (an instance of "
+                        + value.getClass() + ")");
             }
 
             data[row][col] = value;
@@ -373,9 +370,9 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
             int numRows = getRowCount();
             int numCols = getColumnCount();
 
-            for (int i=0; i < numRows; i++) {
+            for (int i = 0; i < numRows; i++) {
                 System.out.print("    row " + i + ":");
-                for (int j=0; j < numCols; j++) {
+                for (int j = 0; j < numCols; j++) {
                     System.out.print("  " + data[i][j]);
                 }
                 System.out.println();
@@ -383,10 +380,7 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
             System.out.println("--------------------------");
         }
 
-		
 
-
-		
     }
 
     /**
@@ -408,38 +402,36 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
         frame.pack();
         frame.setSize(400, 400);
         frame.setVisible(true);
-        
-        
-        
-        
+
+
     }
 
     private static void parseCommandLineArguments(String args[]) {
-		Options options = new Options();
+        Options options = new Options();
 
-		options.addOption( Option.builder().longOpt( "server" )
-                .desc( "NUMBER" )
+        options.addOption(Option.builder().longOpt("server")
+                .desc("NUMBER")
                 .hasArg()
                 .argName("server")
-                .build() );
-		
-		options.addOption( Option.builder().longOpt( "rmiport" )
-                .desc( "NUMBER" )
+                .build());
+
+        options.addOption(Option.builder().longOpt("rmiport")
+                .desc("NUMBER")
                 .hasArg()
                 .argName("PORT")
-                .build() );
+                .build());
 
-		options.addOption( Option.builder().longOpt( "cassandraport" )
-                .desc( "NUMBER" )
+        options.addOption(Option.builder().longOpt("cassandraport")
+                .desc("NUMBER")
                 .hasArg()
                 .argName("PORT")
-                .build() );
+                .build());
 
-		
+
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
         CommandLine cmd;
-        
+
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
@@ -448,83 +440,82 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
             System.exit(1);
             return;
         }
-     
-        if (cmd.hasOption("rmiport")) 
-        	PathStoreProperties.getInstance().RMIRegistryPort = Integer.parseInt(cmd.getOptionValue("rmiport"));
-     
-        if (cmd.hasOption("cassandraport")) 
-        	PathStoreProperties.getInstance().CassandraPort = Integer.parseInt(cmd.getOptionValue("cassandraport"));
 
-        if (cmd.hasOption("server"))  {
-        	PathStoreProperties.getInstance().RMIRegistryIP = cmd.getOptionValue("server");
-        	PathStoreProperties.getInstance().CassandraIP = cmd.getOptionValue("server");
+        if (cmd.hasOption("rmiport"))
+            PathStoreProperties.getInstance().RMIRegistryPort = Integer.parseInt(cmd.getOptionValue("rmiport"));
+
+        if (cmd.hasOption("cassandraport"))
+            PathStoreProperties.getInstance().CassandraPort = Integer.parseInt(cmd.getOptionValue("cassandraport"));
+
+        if (cmd.hasOption("server")) {
+            PathStoreProperties.getInstance().RMIRegistryIP = cmd.getOptionValue("server");
+            PathStoreProperties.getInstance().CassandraIP = cmd.getOptionValue("server");
         }
-        
+
         System.out.println(PathStoreProperties.getInstance().RMIRegistryIP);
-	}
-    
-    
+    }
+
+
     public static void main(String[] args) {
-    	parseCommandLineArguments(args);
-    	//Schedule a job for the event-dispatching thread:
+        parseCommandLineArguments(args);
+        //Schedule a job for the event-dispatching thread:
         //creating and showing this application's GUI.
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 createAndShowGUI();
             }
         });
-        
-        
+
+
     }
 
-	@Override
-	public void tableChanged(TableModelEvent e) {
-		MyTableModel model = (MyTableModel)table.getModel();
-		
-		if(e.getColumn() == 5)
-			model.deleteRecord(e.getFirstRow());
-		else
-			model.updateRecord(e.getFirstRow(),e.getColumn());
-		
-	}
+    @Override
+    public void tableChanged(TableModelEvent e) {
+        MyTableModel model = (MyTableModel) table.getModel();
 
-	private void insertUser(Session session, String name, String sport,
-			List<Integer>rgb, int years, boolean vegetarian) {
-		Insert insert = QueryBuilder.insertInto("pathstore_demo", "users");
-		insert.value("name", name);
-		insert.value("color", rgb);
-		insert.value("sport", sport);
-		insert.value("years", years);
-		insert.value("vegetarian", vegetarian);
-		session.execute(insert);
-	}
-	
-	
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		PathStoreCluster cluster = PathStoreCluster.getInstance();
-		Session session = cluster.connect();
-		Random rand = new Random();
+        if (e.getColumn() == 5)
+            model.deleteRecord(e.getFirstRow());
+        else
+            model.updateRecord(e.getFirstRow(), e.getColumn());
 
-		List<Integer>rgb=new Vector<Integer>();
-		rgb.add(rand.nextInt(255));
-		rgb.add(rand.nextInt(255));
-		rgb.add(rand.nextInt(255));
-		
-		switch(e.getActionCommand()) {
-		case "NewUser":
-			insertUser(session,name.getText(),sport.getText(),rgb,0,false);
-			break;
-		case "Create10":
-			
-			for (int x=0; x < 10; x++) {
-				String name = "node" + PathStoreProperties.getInstance().NodeID + "-u-" + rand.nextInt(Integer.MAX_VALUE);
-				String sport = "";
-				insertUser(session,name,sport,rgb,x,false);
-			}
-		}
-		
-		
-		
-	}
+    }
+
+    private void insertUser(Session session, String name, String sport,
+                            List<Integer> rgb, int years, boolean vegetarian) {
+        Insert insert = QueryBuilder.insertInto("pathstore_demo", "users");
+        insert.value("name", name);
+        insert.value("color", rgb);
+        insert.value("sport", sport);
+        insert.value("years", years);
+        insert.value("vegetarian", vegetarian);
+        session.execute(insert);
+    }
+
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        PathStoreCluster cluster = PathStoreCluster.getDaemonInstance();
+        Session session = cluster.connect();
+        Random rand = new Random();
+
+        List<Integer> rgb = new Vector<Integer>();
+        rgb.add(rand.nextInt(255));
+        rgb.add(rand.nextInt(255));
+        rgb.add(rand.nextInt(255));
+
+        switch (e.getActionCommand()) {
+            case "NewUser":
+                insertUser(session, name.getText(), sport.getText(), rgb, 0, false);
+                break;
+            case "Create10":
+
+                for (int x = 0; x < 10; x++) {
+                    String name = "node" + PathStoreProperties.getInstance().NodeID + "-u-" + rand.nextInt(Integer.MAX_VALUE);
+                    String sport = "";
+                    insertUser(session, name, sport, rgb, x, false);
+                }
+        }
+
+
+    }
 }
