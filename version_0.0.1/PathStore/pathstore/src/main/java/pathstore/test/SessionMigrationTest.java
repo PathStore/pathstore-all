@@ -26,6 +26,9 @@ public class SessionMigrationTest {
 
       update.where(QueryBuilder.eq("name", "myles"));
       update.with(QueryBuilder.set("years", 20));
+
+      session.execute(
+          update, PathStoreSessionManager.getInstance().getKeyspaceToken("demo-session"));
     }
 
     Select select = QueryBuilder.select().all().from("pathstore_demo", "users");
