@@ -13,7 +13,7 @@ public class ReadWriteTest {
   public static void main(String[] args) {
     PathStoreSession session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
-    if (args[0] == null) {
+    if (args.length == 0) {
       Insert insert =
           QueryBuilder.insertInto("pathstore_demo", "users")
               .value("name", "myles")
