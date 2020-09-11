@@ -16,7 +16,7 @@
     "react-bootstrap": "^1.0.1",
     "react-dom": "^16.13.1",
     "react-modal": "latest",
-    "react-scripts": "3.4.1",
+    "react-scripts": "^3.4.3",
     "react-tree-graph": "^4.1.0",
     "typescript": "^3.8.3"
   },

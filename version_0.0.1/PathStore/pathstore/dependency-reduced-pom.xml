@@ -44,7 +44,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>pathstore.test.AllowFilteringTest</mainClass>
+                  <mainClass>pathstore.test.AllowFilteringTest2</mainClass>
                 </transformer>
               </transformers>
               <finalName>allow_filtering_test</finalName>
