@@ -44,10 +44,17 @@ export const ApplicationCreation: FunctionComponent = () => {
 
         const masterPassword = event.target.elements.password.value.trim();
 
+        const masterPasswordConfirmation = event.target.elements.password_confirmation.value.trim();
+
         if (submissionErrorModal.show) {
 
-            if (applicationName === "" || file == null || masterPassword === "") {
-                submissionErrorModal.show("You must submit an application, password, and upload a schema");
+            if (applicationName === "" || file == null || masterPassword === "" || masterPasswordConfirmation === "") {
+                submissionErrorModal.show("You must submit an application, password, password confirmation, and upload a schema");
+                return;
+            }
+
+            if (masterPassword !== masterPasswordConfirmation) {
+                submissionErrorModal.show("Master passwords entered do not match");
                 return;
             }
 
@@ -96,6 +103,13 @@ export const ApplicationCreation: FunctionComponent = () => {
                 <Form.Control type="password" placeholder="Enter master password here"/>
                 <Form.Text>
                     This password will be used to allow your clients to connect to a pathstore node.
+                </Form.Text>
+            </Form.Group>
+            <Form.Group controlId="password_confirmation">
+                <Form.Label>Master Password</Form.Label>
+                <Form.Control type="password" placeholder="Re-enter master password here"/>
+                <Form.Text>
+                    Re-type password as you did above
                 </Form.Text>
             </Form.Group>
             <Form.Group>
