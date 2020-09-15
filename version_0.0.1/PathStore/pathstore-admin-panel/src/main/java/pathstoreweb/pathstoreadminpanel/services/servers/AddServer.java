@@ -6,6 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.system.deployment.deploymentFSM.ServerAuthType;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.servers.formatter.AddServerFormatter;
 import pathstoreweb.pathstoreadminpanel.services.servers.payload.AddServerPayload;
@@ -49,6 +50,9 @@ public class AddServer implements IService {
             .value(Constants.SERVERS_COLUMNS.SERVER_UUID, this.payload.server.serverUUID.toString())
             .value(Constants.SERVERS_COLUMNS.IP, this.payload.server.ip)
             .value(Constants.SERVERS_COLUMNS.USERNAME, this.payload.server.username)
+            .value(
+                Constants.SERVERS_COLUMNS.AUTH_TYPE,
+                ServerAuthType.PASSWORD.toString()) // TODO Myles: temporary
             .value(Constants.SERVERS_COLUMNS.PASSWORD, this.payload.server.password)
             .value(Constants.SERVERS_COLUMNS.SSH_PORT, this.payload.server.sshPort)
             .value(Constants.SERVERS_COLUMNS.RMI_PORT, this.payload.server.rmiPort)

@@ -38,7 +38,9 @@ public class AddDeploymentRecords implements IService {
   /** @return {@link DeploymentRecordsFormatter#format()} */
   @Override
   public ResponseEntity<String> response() {
-    return new DeploymentRecordsFormatter(this.writeEntries()).format();
+    this.writeEntries();
+
+    return new DeploymentRecordsFormatter(new LinkedList<>()).format();
   }
 
   /**
@@ -49,35 +51,21 @@ public class AddDeploymentRecords implements IService {
    *
    * @return list of entries written. This is so the user can see the output
    */
-  private List<DeploymentEntry> writeEntries() {
+  private void writeEntries() {
 
     Session session = PathStoreCluster.getSuperUserInstance().connect();
 
-    LinkedList<DeploymentEntry> linkedList = new LinkedList<>();
-
     for (DeploymentRecord record : payload.records) {
-
-      DeploymentEntry entry =
-          new DeploymentEntry(
-              record.newNodeId,
-              record.parentId,
-              DeploymentProcessStatus.WAITING_DEPLOYMENT,
-              new LinkedList<>(Collections.singleton(record.parentId)),
-              UUID.fromString(record.serverUUID));
 
       Insert insert =
           QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT)
-              .value(NEW_NODE_ID, entry.newNodeId)
-              .value(PARENT_NODE_ID, entry.parentNodeId)
-              .value(PROCESS_STATUS, entry.deploymentProcessStatus.toString())
-              .value(WAIT_FOR, entry.waitFor)
-              .value(SERVER_UUID, entry.serverUUID.toString());
+              .value(NEW_NODE_ID, record.newNodeId)
+              .value(PARENT_NODE_ID, record.parentId)
+              .value(PROCESS_STATUS, DeploymentProcessStatus.WAITING_DEPLOYMENT.toString())
+              .value(WAIT_FOR, new LinkedList<>(Collections.singleton(record.parentId)))
+              .value(SERVER_UUID, record.serverUUID);
 
       session.execute(insert);
-
-      linkedList.addFirst(entry);
     }
-
-    return linkedList;
   }
 }

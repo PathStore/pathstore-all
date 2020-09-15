@@ -7,6 +7,7 @@ import pathstore.common.Constants;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
+import pathstore.system.deployment.deploymentFSM.ServerAuthType;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -99,6 +100,7 @@ public class FinalizeRootInstallation implements ICommand {
             .value(SERVER_UUID, serverUUID.toString())
             .value(IP, ip)
             .value(USERNAME, username)
+            .value(AUTH_TYPE, ServerAuthType.PASSWORD.toString()) // TODO Myles: Temporary
             .value(PASSWORD, password)
             .value(SSH_PORT, sshPort)
             .value(RMI_PORT, rmiPort)

@@ -1,10 +1,29 @@
 package pathstore.system.deployment.deploymentFSM;
 
+import com.datastax.driver.core.Row;
+
 import java.util.List;
 import java.util.UUID;
 
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
+
 /** This class is used to denote a deployment record entry in the deployment table */
 public class DeploymentEntry {
+
+  /**
+   * Build entry from row
+   *
+   * @param row row to build from
+   * @return built entry
+   */
+  public static DeploymentEntry fromRow(final Row row) {
+    return new DeploymentEntry(
+        row.getInt(NEW_NODE_ID),
+        row.getInt(PARENT_NODE_ID),
+        DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS)),
+        row.getList(WAIT_FOR, Integer.class),
+        UUID.fromString(row.getString(SERVER_UUID)));
+  }
 
   /** Node id of the new node */
   public final int newNodeId;
@@ -28,7 +47,7 @@ public class DeploymentEntry {
    * @param waitFor {@link #waitFor}
    * @param serverUUID {@link #serverUUID}
    */
-  public DeploymentEntry(
+  private DeploymentEntry(
       final int newNodeId,
       final int parentNodeId,
       final DeploymentProcessStatus deploymentProcessStatus,

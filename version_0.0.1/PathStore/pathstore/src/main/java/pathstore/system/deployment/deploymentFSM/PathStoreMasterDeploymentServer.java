@@ -12,7 +12,6 @@ import pathstore.system.logging.PathStoreLoggerFactory;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * This class is used to read the deployment table and determine when to transition nodes.
@@ -75,22 +74,10 @@ public class PathStoreMasterDeploymentServer implements Runnable {
               deployed.add(newNodeId);
               break;
             case WAITING_DEPLOYMENT:
-              waitingDeployment.add(
-                  new DeploymentEntry(
-                      newNodeId,
-                      row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
-                      status,
-                      row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class),
-                      UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
+              waitingDeployment.add(DeploymentEntry.fromRow(row));
               break;
             case WAITING_REMOVAL:
-              waitingRemoval.add(
-                  new DeploymentEntry(
-                      newNodeId,
-                      row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
-                      status,
-                      row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class),
-                      UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
+              waitingRemoval.add(DeploymentEntry.fromRow(row));
               break;
           }
 
