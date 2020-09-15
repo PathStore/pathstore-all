@@ -44,14 +44,7 @@ public class GetDeploymentRecords implements IService {
 
     LinkedList<DeploymentEntry> entries = new LinkedList<>();
 
-    for (Row row : session.execute(queryAllRecords))
-      entries.addFirst(
-          new DeploymentEntry(
-              row.getInt(NEW_NODE_ID),
-              row.getInt(PARENT_NODE_ID),
-              DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS)),
-              row.getList(WAIT_FOR, Integer.class),
-              UUID.fromString(row.getString(SERVER_UUID))));
+    for (Row row : session.execute(queryAllRecords)) entries.addFirst(DeploymentEntry.fromRow(row));
 
     return entries;
   }

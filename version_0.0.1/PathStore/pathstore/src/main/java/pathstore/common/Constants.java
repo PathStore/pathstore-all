@@ -153,7 +153,9 @@ public final class Constants {
     public static final String SERVER_UUID = "server_uuid";
     public static final String IP = "ip";
     public static final String USERNAME = "username";
+    public static final String AUTH_TYPE = "auth_type";
     public static final String PASSWORD = "password";
+    public static final String SERVER_IDENTITY = "server_identity";
     public static final String SSH_PORT = "ssh_port";
     public static final String RMI_PORT = "rmi_port";
     public static final String NAME = "name";

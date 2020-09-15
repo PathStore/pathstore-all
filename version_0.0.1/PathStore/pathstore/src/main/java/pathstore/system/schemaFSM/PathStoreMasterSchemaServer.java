@@ -67,8 +67,6 @@ public class PathStoreMasterSchemaServer implements Runnable {
 
         String keyspaceName = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
 
-        List<Integer> waitFor = row.getList(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, Integer.class);
-
         switch (status) {
           case INSTALLED:
             finished.computeIfAbsent(keyspaceName, k -> new HashSet<>());
@@ -76,15 +74,11 @@ public class PathStoreMasterSchemaServer implements Runnable {
             break;
           case WAITING_INSTALL:
             waiting.computeIfAbsent(keyspaceName, k -> new HashSet<>());
-            waiting
-                .get(keyspaceName)
-                .add(new NodeSchemaEntry(nodeId, keyspaceName, status, waitFor));
+            waiting.get(keyspaceName).add(NodeSchemaEntry.fromRow(row));
             break;
           case WAITING_REMOVE:
             waitingRemoval.computeIfAbsent(keyspaceName, k -> new HashSet<>());
-            waitingRemoval
-                .get(keyspaceName)
-                .add(new NodeSchemaEntry(nodeId, keyspaceName, status, waitFor));
+            waitingRemoval.get(keyspaceName).add(NodeSchemaEntry.fromRow(row));
             break;
         }
 
