@@ -7,8 +7,7 @@ import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.system.schemaFSM.NodeSchemaEntry;
-import pathstore.system.schemaFSM.ProccessStatus;
+import pathstore.common.tables.NodeSchemaEntry;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.GetApplicationStateFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 

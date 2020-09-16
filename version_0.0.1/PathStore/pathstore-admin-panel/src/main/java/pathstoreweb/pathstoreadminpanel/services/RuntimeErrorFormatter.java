@@ -10,8 +10,8 @@ import pathstoreweb.pathstoreadminpanel.services.IFormatter;
  * This class is used to pass an error that has occurred during a request to install/uninstall an
  * application
  *
- * @see pathstoreweb.pathstoreadminpanel.services.applicationmanagement.InstallApplication
- * @see pathstoreweb.pathstoreadminpanel.services.applicationmanagement.UnInstallApplication
+ * @see pathstoreweb.pathstoreadminpanel.services.applicationmanagement.DeployApplications
+ * @see pathstoreweb.pathstoreadminpanel.services.applicationmanagement.UnDeployApplications
  */
 public class RuntimeErrorFormatter implements IFormatter {
 

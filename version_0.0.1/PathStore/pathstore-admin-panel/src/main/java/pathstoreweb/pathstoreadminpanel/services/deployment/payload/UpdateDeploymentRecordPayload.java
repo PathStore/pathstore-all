@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
+import pathstore.common.tables.DeploymentProcessStatus;
 import pathstoreweb.pathstoreadminpanel.services.deployment.DeploymentRecord;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 

@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.system.schemaFSM.ProccessStatus;
+import pathstore.common.tables.NodeSchemaProcessStatus;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.ApplicationRecord;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
@@ -69,8 +69,9 @@ public class DeleteApplicationDeploymentRecordPayload extends ValidatedPayload {
     for (Row row : session.execute(nodeSchemaSelect))
       if (row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME)
               .equals(this.records.get(0).keyspaceName)
-          && ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS))
-              == ProccessStatus.INSTALLED)
+          && NodeSchemaProcessStatus.valueOf(
+                  row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS))
+              == NodeSchemaProcessStatus.INSTALLED)
         applicationNodeIdSet.add(row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID));
 
     // (3)

@@ -7,16 +7,12 @@ import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.system.deployment.deploymentFSM.DeploymentEntry;
-import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
+import pathstore.common.tables.DeploymentEntry;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.deployment.formatter.DeploymentRecordsFormatter;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.UUID;
-
-import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 
 /**
  * This class is used when the user wants to get all deployment records to understand the topology

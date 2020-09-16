@@ -5,7 +5,7 @@ import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import pathstore.common.Constants;
-import pathstore.system.schemaFSM.NodeSchemaEntry;
+import pathstore.common.tables.NodeSchemaEntry;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.GetApplicationState;
 
@@ -41,7 +41,9 @@ public class GetApplicationStateFormatter implements IFormatter {
       object
           .put(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, entry.nodeId)
           .put(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, entry.keyspaceName)
-          .put(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, entry.status.toString())
+          .put(
+              Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
+              entry.nodeSchemaProcessStatus.toString())
           .put(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, entry.waitFor);
 
       array.put(object);

@@ -6,16 +6,13 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.system.deployment.deploymentFSM.DeploymentEntry;
-import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
+import pathstore.common.tables.DeploymentProcessStatus;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.deployment.formatter.DeploymentRecordsFormatter;
 import pathstoreweb.pathstoreadminpanel.services.deployment.payload.AddDeploymentRecordPayload;
 
 import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;

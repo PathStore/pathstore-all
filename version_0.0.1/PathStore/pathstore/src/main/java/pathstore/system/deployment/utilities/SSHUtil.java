@@ -83,7 +83,7 @@ public class SSHUtil {
         privKey,
         null,
         passphrase != null ? passphrase.getBytes() : null);
-    this.session = jSch.getSession(host, username, port);
+    this.session = jSch.getSession(username, host, port);
     this.session.setConfig("StrictHostKeyChecking", "no");
     this.session.connect();
   }

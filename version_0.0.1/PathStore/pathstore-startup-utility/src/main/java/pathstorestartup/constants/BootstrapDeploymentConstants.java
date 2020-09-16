@@ -23,13 +23,22 @@ public class BootstrapDeploymentConstants {
   public static final String DEPLOYMENT_ENTRY = "\nDeployment server information\n";
   public static final String HOST_PROMPT = "Host: ";
   public static final String USERNAME_PROMPT = "Username: ";
+  public static final String AUTH_TYPE_PROMPT =
+      String.format("Auth Type (%s, %s): ", AUTH_TYPES.PASSWORD, AUTH_TYPES.KEY);
   public static final String PASSWORD_PROMPT = "Password: ";
+  public static final String PRIVATE_KEY_PATH_PROMPT = "Private Key Absolute Path: ";
+  public static final String PASSPHRASE_PROMPT = "Passphrase (hit enter if none exists): ";
   public static final String SSH_PORT_PROMPT = "SSH port: ";
   public static final String RMI_PORT_PROMPT = "RMI port (if unsure enter 1099): ";
   public static final String NETWORK_ADMIN_USERNAME_PROMPT = "Network Admin Username: ";
   public static final String NETWORK_ADMIN_PASSWORD_PROMPT = "Network Admin Password: ";
   public static final String COULD_NOT_CONNECT =
       "Could not connect to the server with the provided credentials please try again or quit with ctrl-c";
+
+  public static final class AUTH_TYPES {
+    public static final String PASSWORD = "password";
+    public static final String KEY = "key";
+  }
 
   /**
    * These are the constants and their respective functions for {@link

@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.system.schemaFSM.ProccessStatus;
+import pathstore.common.tables.NodeSchemaProcessStatus;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.payload.AddApplicationDeploymentRecordPayload;
 
@@ -47,7 +47,7 @@ public class DeployApplications implements IService {
               .value(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, record.keyspaceName)
               .value(
                   Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
-                  ProccessStatus.WAITING_INSTALL.toString())
+                  NodeSchemaProcessStatus.WAITING_INSTALL.toString())
               .value(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, new LinkedList<>(record.waitFor));
 
       session.execute(insert);
