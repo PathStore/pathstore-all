@@ -44,6 +44,12 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
     // store username
     const [username, setUsername] = useState<string | undefined>(props.server?.username);
 
+    // store auth type
+    const [authType, setAuthType] = useState<string | undefined>(undefined);
+
+    // store optional passphrase
+    const [passphrase, setPassphrase] = useState<string | undefined>(undefined);
+
     // store password
     const [password, setPassword] = useState<string>("");
 
@@ -103,11 +109,45 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
                 <Form.Control type="text" name="username" onChange={(event: any) => setUsername(event.target.value)}
                               value={username}/>
             </Form.Group>
-            <Form.Group controlId="password">
-                <Form.Label>Password</Form.Label>
-                <Form.Control type="password" name="password" onChange={(event: any) => setPassword(event.target.value)}
-                              value={password}/>
+            <Form.Group controlId="authetication_method">
+                <Form.Label>Authentication Method</Form.Label>
+                <Form.Control as="select" onChange={(event: any) => setAuthType(event.target.value)}>
+                    <option>n/a</option>
+                    <option>Password</option>
+                    <option>Key</option>
+                </Form.Control>
             </Form.Group>
+            {authType === "Password" ?
+                <Form.Group controlId="password">
+                    <Form.Label>Password</Form.Label>
+                    <Form.Control type="password" name="password"
+                                  onChange={(event: any) => setPassword(event.target.value)}
+                                  value={password}/>
+                </Form.Group>
+                :
+                null
+            }
+            {authType === "Key" ?
+                <>
+                    <Form.Group controlId="key">
+                        <Form.Label>Private Key Upload</Form.Label>
+                        <Form.File
+                            label="Private Key"
+                            lang="en"
+                            custom
+                            onChange={(event: any) => alert("File uploaded")}
+                        />
+                    </Form.Group>
+                    <Form.Group controlId="passphrase">
+                        <Form.Label>Passphrase</Form.Label>
+                        <Form.Control type="password" name="password"
+                                      onChange={(event: any) => setPassphrase(event.target.value)}
+                                      value={passphrase}/>
+                    </Form.Group>
+                </>
+                :
+                null
+            }
             <Form.Group controlId="ssh_port">
                 <Form.Label>SSH Port</Form.Label>
                 <Form.Control type="number" name="ssh_port" onChange={(event: any) => setSshPort(event.target.value)}
