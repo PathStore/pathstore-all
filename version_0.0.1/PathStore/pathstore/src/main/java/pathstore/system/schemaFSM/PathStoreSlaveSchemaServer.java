@@ -10,6 +10,8 @@ import pathstore.authentication.AuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.*;
+import pathstore.common.tables.NodeSchemaEntry;
+import pathstore.common.tables.NodeSchemaProcessStatus;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.PathStorePushServer;
 import pathstore.system.logging.PathStoreLogger;
@@ -68,19 +70,16 @@ public class PathStoreSlaveSchemaServer implements Runnable {
           QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, this.nodeId));
 
       for (Row row : this.session.execute(deploymentRecordQuery)) {
-        ProccessStatus currentStatus =
-            ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
+        NodeSchemaEntry entry = NodeSchemaEntry.fromRow(row);
 
-        if (currentStatus != ProccessStatus.INSTALLING && currentStatus != ProccessStatus.REMOVING)
-          continue;
-
-        String keyspaceName = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
+        if (entry.nodeSchemaProcessStatus != NodeSchemaProcessStatus.INSTALLING
+            && entry.nodeSchemaProcessStatus != NodeSchemaProcessStatus.REMOVING) continue;
 
         // (2)
-        this.transitionRow(currentStatus, keyspaceName);
+        this.transitionRow(entry.nodeSchemaProcessStatus, entry.keyspaceName);
 
         // (3)
-        this.spawnSubProcess(currentStatus, keyspaceName);
+        this.spawnSubProcess(entry.nodeSchemaProcessStatus, entry.keyspaceName);
       }
 
       try {
@@ -98,7 +97,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
    * @param processStatus what is the status of the row
    * @param keyspace what is the keyspace (used to identify primary key)
    */
-  private void transitionRow(final ProccessStatus processStatus, final String keyspace) {
+  private void transitionRow(final NodeSchemaProcessStatus processStatus, final String keyspace) {
 
     Update transitionState =
         QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
@@ -108,9 +107,9 @@ public class PathStoreSlaveSchemaServer implements Runnable {
         .with(
             QueryBuilder.set(
                 Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
-                processStatus == ProccessStatus.INSTALLING
-                    ? ProccessStatus.PROCESSING_INSTALLING.toString()
-                    : ProccessStatus.PROCESSING_REMOVING.toString()));
+                processStatus == NodeSchemaProcessStatus.INSTALLING
+                    ? NodeSchemaProcessStatus.PROCESSING_INSTALLING.toString()
+                    : NodeSchemaProcessStatus.PROCESSING_REMOVING.toString()));
 
     this.session.execute(transitionState);
   }
@@ -118,15 +117,16 @@ public class PathStoreSlaveSchemaServer implements Runnable {
   /**
    * Simple function that will start a sub process for each row that needs an operation performed on
    *
-   * @param proccessStatus what is the current status (Installing or Removing since we never require
-   *     after update)
+   * @param nodeSchemaProcessStatus what is the current status (Installing or Removing since we
+   *     never require after update)
    * @param keyspace what keyspace to perform the given operation on
    */
-  private void spawnSubProcess(final ProccessStatus proccessStatus, final String keyspace) {
+  private void spawnSubProcess(
+      final NodeSchemaProcessStatus nodeSchemaProcessStatus, final String keyspace) {
 
     this.subProcessManager.spawn(
         () -> {
-          switch (proccessStatus) {
+          switch (nodeSchemaProcessStatus) {
             case INSTALLING:
               logger.info(
                   String.format(
@@ -204,7 +204,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
         .with(
             QueryBuilder.set(
                 Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS,
-                ProccessStatus.INSTALLED.toString()));
+                NodeSchemaProcessStatus.INSTALLED.toString()));
 
     this.session.execute(update);
   }

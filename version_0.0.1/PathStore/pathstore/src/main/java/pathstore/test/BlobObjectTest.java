@@ -1,6 +1,6 @@
 package pathstore.test;
 
-import pathstore.system.deployment.deploymentFSM.ServerIdentity;
+import pathstore.common.tables.ServerIdentity;
 import pathstore.util.BlobObject;
 
 import java.nio.ByteBuffer;

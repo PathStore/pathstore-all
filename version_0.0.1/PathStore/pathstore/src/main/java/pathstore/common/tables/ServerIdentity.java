@@ -1,4 +1,4 @@
-package pathstore.system.deployment.deploymentFSM;
+package pathstore.common.tables;
 
 import pathstore.util.BlobObject;
 

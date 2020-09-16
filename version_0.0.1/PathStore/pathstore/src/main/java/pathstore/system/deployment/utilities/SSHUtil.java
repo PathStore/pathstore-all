@@ -1,8 +1,9 @@
 package pathstore.system.deployment.utilities;
 
 import com.jcraft.jsch.*;
-import pathstore.system.deployment.deploymentFSM.ServerAuthType;
-import pathstore.system.deployment.deploymentFSM.ServerEntry;
+import pathstore.common.tables.ServerAuthType;
+import pathstore.common.tables.ServerEntry;
+import pathstore.util.Pair;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,6 +60,16 @@ public class SSHUtil {
     this.session.connect();
   }
 
+  /**
+   * Build an ssh connection from a private key and a passphrase
+   *
+   * @param host host to connect to
+   * @param username username to connect as
+   * @param port port to connect on
+   * @param privKey private key to authenticate with
+   * @param passphrase optional passphrase if required for the private key
+   * @throws JSchException thrown if connection cannot be established
+   */
   public SSHUtil(
       final String host,
       final String username,

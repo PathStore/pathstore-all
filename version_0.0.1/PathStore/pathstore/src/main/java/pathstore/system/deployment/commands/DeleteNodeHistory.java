@@ -7,6 +7,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.common.tables.NodeSchemaEntry;
 import pathstore.system.logging.LoggerLevel;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
@@ -22,8 +23,8 @@ import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID;
  * @see pathstore.system.schemaFSM.PathStoreSlaveSchemaServer
  * @see pathstore.system.schemaFSM.PathStoreMasterSchemaServer
  * @implNote This is only to be run on the server side as it uses {@link
- *     PathStoreCluster#getDaemonInstance()}. This function does not connect to the child node at any
- *     point.
+ *     PathStoreCluster#getDaemonInstance()}. This function does not connect to the child node at
+ *     any point.
  */
 public class DeleteNodeHistory implements ICommand {
   /** Logger to display what is occuring */
@@ -109,14 +110,13 @@ public class DeleteNodeHistory implements ICommand {
     nodeSchemas.where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, this.newNodeId));
 
     for (Row row : session.execute(nodeSchemas)) {
+      NodeSchemaEntry entry = NodeSchemaEntry.fromRow(row);
+
       Delete nodeSchemaDelete =
           QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
       nodeSchemaDelete
           .where(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, this.newNodeId))
-          .and(
-              QueryBuilder.eq(
-                  Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME,
-                  row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME)));
+          .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, entry.keyspaceName));
 
       session.execute(nodeSchemaDelete);
     }

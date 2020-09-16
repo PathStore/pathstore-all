@@ -5,10 +5,12 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreSession;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
+import pathstore.common.tables.NodeSchemaEntry;
+import pathstore.common.tables.NodeSchemaProcessStatus;
 import pathstore.system.PathStorePrivilegedCluster;
-import pathstore.system.schemaFSM.ProccessStatus;
 
 import java.util.Optional;
 
@@ -27,7 +29,7 @@ public class ClientAuthenticationUtil {
    * @return true if loaded else false
    */
   public static boolean isApplicationNotLoaded(final String applicationName) {
-    Session pathStoreSession = PathStoreCluster.getDaemonInstance().connect();
+    PathStoreSession pathStoreSession = PathStoreCluster.getDaemonInstance().connect();
 
     Select queryNodeSchemasTable =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
@@ -36,10 +38,11 @@ public class ClientAuthenticationUtil {
         QueryBuilder.eq(
             Constants.NODE_SCHEMAS_COLUMNS.NODE_ID, PathStoreProperties.getInstance().NodeID));
 
-    for (Row row : pathStoreSession.execute(queryNodeSchemasTable))
-      if (row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME).equals(applicationName))
-        if (ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS))
-            == ProccessStatus.INSTALLED) return false;
+    for (Row row : pathStoreSession.execute(queryNodeSchemasTable)) {
+      NodeSchemaEntry entry = NodeSchemaEntry.fromRow(row);
+      if (entry.keyspaceName.equals(applicationName))
+        if (entry.nodeSchemaProcessStatus == NodeSchemaProcessStatus.INSTALLED) return false;
+    }
 
     return true;
   }

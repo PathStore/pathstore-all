@@ -7,6 +7,11 @@ import pathstore.system.logging.PathStoreLoggerFactory;
 import java.io.*;
 import java.nio.ByteBuffer;
 
+/**
+ * This interface should extend any class you wish to store in a blob object within cassandra.
+ *
+ * <p>TODO: Finished comments
+ */
 public interface BlobObject extends Serializable {
 
   PathStoreLogger logger = PathStoreLoggerFactory.getLogger(BlobObject.class);

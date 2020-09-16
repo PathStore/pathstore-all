@@ -1,4 +1,4 @@
-package pathstore.system.deployment.deploymentFSM;
+package pathstore.common.tables;
 
 import com.datastax.driver.core.Row;
 
@@ -7,7 +7,11 @@ import java.util.UUID;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 
-/** This class is used to denote a deployment record entry in the deployment table */
+/**
+ * This class is used to denote a deployment record entry in the deployment table
+ *
+ * <p>TODO: Make sure every reference to the deployment table uses the build from row
+ */
 public class DeploymentEntry {
 
   /**

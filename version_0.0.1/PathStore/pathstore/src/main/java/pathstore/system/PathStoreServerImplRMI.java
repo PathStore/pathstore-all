@@ -14,8 +14,10 @@ import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCache;
+import pathstore.common.tables.DeploymentEntry;
+import pathstore.common.tables.ServerEntry;
 import pathstore.sessions.SessionToken;
-import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
+import pathstore.common.tables.DeploymentProcessStatus;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
@@ -266,10 +268,10 @@ public class PathStoreServerImplRMI implements PathStoreServer {
 
         Row serverRow = optionalServerRow.get();
 
+        ServerEntry serverEntry = ServerEntry.fromRow(serverRow);
+
         PathStoreServerClient sourceNode =
-            PathStoreServerClient.getCustom(
-                serverRow.getString(Constants.SERVERS_COLUMNS.IP),
-                serverRow.getInt(Constants.SERVERS_COLUMNS.RMI_PORT));
+            PathStoreServerClient.getCustom(serverEntry.ip, serverEntry.rmiPort);
 
         // force push all of K or T of session from sourceNode to lca if the sourceNode isn't the
         // lca
@@ -419,10 +421,8 @@ public class PathStoreServerImplRMI implements PathStoreServer {
     // build child -> parent set from db.
     Map<Integer, Integer> childToParentMap =
         PathStoreCluster.getDaemonInstance().connect().execute(allDeployedNodes).stream()
-            .collect(
-                Collectors.toMap(
-                    row -> row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID),
-                    row -> row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID)));
+            .map(DeploymentEntry::fromRow)
+            .collect(Collectors.toMap(entry -> entry.newNodeId, entry -> entry.parentNodeId));
 
     Set<Integer> visitedSet = new HashSet<>();
 
