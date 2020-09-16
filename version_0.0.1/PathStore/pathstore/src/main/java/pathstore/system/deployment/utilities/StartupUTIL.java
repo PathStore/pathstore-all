@@ -5,8 +5,8 @@ import pathstore.authentication.CredentialCache;
 import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
-import pathstore.system.deployment.deploymentFSM.DeploymentEntry;
-import pathstore.system.deployment.deploymentFSM.ServerEntry;
+import pathstore.common.tables.DeploymentEntry;
+import pathstore.common.tables.ServerEntry;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 
 import java.io.File;

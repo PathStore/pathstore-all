@@ -1,4 +1,4 @@
-package pathstore.system.deployment.deploymentFSM;
+package pathstore.common.tables;
 
 /**
  * Used to flip the auth type between password authentication and private key with optional

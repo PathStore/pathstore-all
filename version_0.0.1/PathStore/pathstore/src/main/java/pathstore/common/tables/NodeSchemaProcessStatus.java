@@ -1,4 +1,4 @@
-package pathstore.system.schemaFSM;
+package pathstore.common.tables;
 
 /**
  * These are the statuses that the pathstore_applications.node_schemas table uses. The cycle for
@@ -11,7 +11,7 @@ package pathstore.system.schemaFSM;
  *
  * <p>WAITING_REMOVE -> REMOVING -> deleted record
  */
-public enum ProccessStatus {
+public enum NodeSchemaProcessStatus {
   WAITING_INSTALL,
   INSTALLING,
   PROCESSING_INSTALLING,

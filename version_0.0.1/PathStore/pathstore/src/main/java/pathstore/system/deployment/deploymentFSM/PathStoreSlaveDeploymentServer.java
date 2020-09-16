@@ -10,6 +10,9 @@ import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreThreadManager;
 import pathstore.common.Role;
+import pathstore.common.tables.DeploymentEntry;
+import pathstore.common.tables.DeploymentProcessStatus;
+import pathstore.common.tables.ServerEntry;
 import pathstore.system.deployment.commands.CommandError;
 import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.utilities.SSHUtil;
@@ -69,21 +72,18 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
 
         // Query all rows from the deployment table
         for (Row row : this.session.execute(selectAllDeployment)) {
-          DeploymentProcessStatus currentStatus =
-              DeploymentProcessStatus.valueOf(row.getString(PROCESS_STATUS));
+          DeploymentEntry entry = DeploymentEntry.fromRow(row);
 
-          if (currentStatus != DeploymentProcessStatus.DEPLOYING
-              && currentStatus != DeploymentProcessStatus.REMOVING) continue;
-
-          String serverUUID = row.getString(SERVER_UUID);
+          if (entry.deploymentProcessStatus != DeploymentProcessStatus.DEPLOYING
+              && entry.deploymentProcessStatus != DeploymentProcessStatus.REMOVING) continue;
 
           Select queryServer =
               QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
-          queryServer.where(QueryBuilder.eq(SERVER_UUID, serverUUID));
+          queryServer.where(QueryBuilder.eq(SERVER_UUID, entry.serverUUID.toString()));
 
           // (2) && (3)
           for (Row serverRow : this.session.execute(queryServer))
-            this.spawnSubProcess(DeploymentEntry.fromRow(row), ServerEntry.fromRow(serverRow));
+            this.spawnSubProcess(entry, ServerEntry.fromRow(serverRow));
         }
 
         try {

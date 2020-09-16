@@ -1,4 +1,4 @@
-package pathstore.system.deployment.deploymentFSM;
+package pathstore.common.tables;
 
 import com.datastax.driver.core.Row;
 import pathstore.util.BlobObject;
@@ -14,6 +14,8 @@ import static pathstore.common.Constants.SERVERS_COLUMNS.*;
  * <p>This is used to deploy children nodes
  *
  * <p>TODO: Finish comments
+ *
+ * <p>TODO: Make sure every reference to the servers table uses the build from row
  */
 public class ServerEntry {
   public static ServerEntry fromRow(final Row row) {

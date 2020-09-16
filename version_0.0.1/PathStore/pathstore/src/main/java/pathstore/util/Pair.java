@@ -1,4 +1,6 @@
-package pathstore.system.deployment.utilities;
+package pathstore.util;
+
+import pathstore.system.deployment.utilities.SSHUtil;
 
 /**
  * Simple pair class used for the response of {@link SSHUtil#execCommand(String)}

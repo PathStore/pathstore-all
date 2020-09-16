@@ -6,6 +6,8 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.common.tables.DeploymentEntry;
+import pathstore.common.tables.DeploymentProcessStatus;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
@@ -63,26 +65,23 @@ public class PathStoreMasterDeploymentServer implements Runnable {
         Set<Integer> completeSet = new HashSet<>();
 
         for (Row row : this.session.execute(selectAllDeploymentRecords)) {
-          DeploymentProcessStatus status =
-              DeploymentProcessStatus.valueOf(
-                  row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS));
-          int newNodeId = row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID);
+          DeploymentEntry entry = DeploymentEntry.fromRow(row);
 
           // Setup filterable sets
-          switch (status) {
+          switch (entry.deploymentProcessStatus) {
             case DEPLOYED:
-              deployed.add(newNodeId);
+              deployed.add(entry.newNodeId);
               break;
             case WAITING_DEPLOYMENT:
-              waitingDeployment.add(DeploymentEntry.fromRow(row));
+              waitingDeployment.add(entry);
               break;
             case WAITING_REMOVAL:
-              waitingRemoval.add(DeploymentEntry.fromRow(row));
+              waitingRemoval.add(entry);
               break;
           }
 
           // add to complete set
-          completeSet.add(newNodeId);
+          completeSet.add(entry.newNodeId);
         }
 
         // (2)

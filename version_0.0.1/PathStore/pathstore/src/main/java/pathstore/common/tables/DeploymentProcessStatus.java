@@ -1,4 +1,4 @@
-package pathstore.system.deployment.deploymentFSM;
+package pathstore.common.tables;
 
 /** Denotes the states a node can go through during deployment */
 public enum DeploymentProcessStatus {
