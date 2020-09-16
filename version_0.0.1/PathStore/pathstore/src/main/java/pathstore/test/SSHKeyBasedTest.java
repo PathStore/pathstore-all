@@ -7,12 +7,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-// username, host, port, priv key location, passphrase
+// host, username, port, priv key location, passphrase
 public class SSHKeyBasedTest {
   public static void main(String args[]) throws IOException, JSchException {
     if (args.length <= 4) {
       System.out.println(
-          "arg 1 is username, arg 2 is host, arg 3 is port, arg 4 is priv key location, arg 5 is passphrase (optional)");
+          "arg 1 is host, arg 2 is username, arg 3 is port, arg 4 is priv key location, arg 5 is passphrase (optional)");
       return;
     }
 

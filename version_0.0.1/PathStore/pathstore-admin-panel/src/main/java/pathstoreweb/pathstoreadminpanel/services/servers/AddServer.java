@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.system.deployment.deploymentFSM.ServerAuthType;
+import pathstore.common.tables.ServerAuthType;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.servers.formatter.AddServerFormatter;
 import pathstoreweb.pathstoreadminpanel.services.servers.payload.AddServerPayload;

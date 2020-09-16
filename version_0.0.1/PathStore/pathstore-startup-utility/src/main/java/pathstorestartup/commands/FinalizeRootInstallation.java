@@ -4,10 +4,12 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.common.Constants;
+import pathstore.common.tables.DeploymentProcessStatus;
+import pathstore.common.tables.ServerAuthType;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.deployment.commands.ICommand;
-import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
-import pathstore.system.deployment.deploymentFSM.ServerAuthType;
+import pathstore.system.deployment.utilities.ServerIdentity;
+import pathstorestartup.constants.BootstrapDeploymentConstants;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -40,6 +42,12 @@ public class FinalizeRootInstallation implements ICommand {
   /** Username to server */
   private final String username;
 
+  /** Method of authentication used to install the root node */
+  private final String authType;
+
+  /** Null if password auth was used, else */
+  private final ServerIdentity serverIdentity;
+
   /** Password to server */
   private final String password;
 
@@ -65,6 +73,8 @@ public class FinalizeRootInstallation implements ICommand {
       final String ip,
       final int cassandraPort,
       final String username,
+      final String authType,
+      final ServerIdentity serverIdentity,
       final String password,
       final int sshPort,
       final int rmiPort) {
@@ -73,6 +83,8 @@ public class FinalizeRootInstallation implements ICommand {
     this.ip = ip;
     this.cassandraPort = cassandraPort;
     this.username = username;
+    this.authType = authType;
+    this.serverIdentity = serverIdentity;
     this.password = password;
     this.sshPort = sshPort;
     this.rmiPort = rmiPort;
@@ -100,11 +112,16 @@ public class FinalizeRootInstallation implements ICommand {
             .value(SERVER_UUID, serverUUID.toString())
             .value(IP, ip)
             .value(USERNAME, username)
-            .value(AUTH_TYPE, ServerAuthType.PASSWORD.toString()) // TODO Myles: Temporary
-            .value(PASSWORD, password)
             .value(SSH_PORT, sshPort)
             .value(RMI_PORT, rmiPort)
             .value(NAME, "Root Node");
+
+    if (this.authType.equals(BootstrapDeploymentConstants.AUTH_TYPES.PASSWORD))
+      insert.value(AUTH_TYPE, ServerAuthType.PASSWORD.toString()).value(PASSWORD, this.password);
+    else
+      insert
+          .value(AUTH_TYPE, ServerAuthType.IDENTITY.toString())
+          .value(SERVER_IDENTITY, this.serverIdentity.serialize());
 
     session.execute(insert);
 
