@@ -8,6 +8,7 @@ import com.jcraft.jsch.JSchException;
 import org.springframework.web.multipart.MultipartFile;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.common.tables.ServerAuthType;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstoreweb.pathstoreadminpanel.services.servers.Server;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
@@ -113,10 +114,10 @@ public final class AddServerPayload extends ValidatedPayload {
 
     // (4)
     try {
-      if (this.server.authType.equals("Password"))
+      if (this.server.authType.equals(ServerAuthType.PASSWORD.toString()))
         new SSHUtil(this.server.ip, this.server.username, this.server.password, this.server.sshPort)
             .disconnect();
-      else if (this.server.authType.equals("Key"))
+      else if (this.server.authType.equals(ServerAuthType.IDENTITY.toString()))
         new SSHUtil(
             this.server.ip,
             this.server.username,
