@@ -1,6 +1,5 @@
 package pathstorestartup;
 
-import com.datastax.driver.core.utils.Bytes;
 import com.jcraft.jsch.JSchException;
 import pathstore.authentication.AuthenticationUtil;
 import pathstore.common.Constants;
@@ -193,7 +192,6 @@ public class DevelopmentDeployment {
         sshUtil = new SSHUtil(ip, username, password, sshPort);
       else {
         privKey = Files.readAllBytes(new File(privKeyPath).toPath());
-        System.out.println(Bytes.toHexString(privKey));
         sshUtil =
             new SSHUtil(
                 ip,
