@@ -62,12 +62,12 @@ public class AddServer implements IService {
             .value(Constants.SERVERS_COLUMNS.NAME, this.payload.server.name);
 
     // set proper rows for password auth type
-    if (this.payload.server.authType.equals("Password"))
+    if (this.payload.server.authType.equals(ServerAuthType.PASSWORD.toString()))
       insert
           .value(Constants.SERVERS_COLUMNS.AUTH_TYPE, ServerAuthType.PASSWORD.toString())
           .value(Constants.SERVERS_COLUMNS.PASSWORD, this.payload.server.password);
     // set proper rows for keys type
-    else if (this.payload.server.authType.equals("Keys"))
+    else if (this.payload.server.authType.equals(ServerAuthType.IDENTITY.toString()))
       insert
           .value(Constants.SERVERS_COLUMNS.AUTH_TYPE, ServerAuthType.IDENTITY.toString())
           .value(
