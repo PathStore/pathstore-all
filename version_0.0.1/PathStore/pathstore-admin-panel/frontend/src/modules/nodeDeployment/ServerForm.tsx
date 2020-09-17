@@ -73,9 +73,9 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
 
     // clear form
     const clearForm = useCallback(() => {
-        setIp(undefined);
-        setUsername(undefined);
-        setAuthType(undefined);
+        setIp("");
+        setUsername("");
+        setAuthType("n/a");
         setPrivateKey(undefined);
         setPrivateKeyFileName("");
         setPassword("");
@@ -136,7 +136,7 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
             </Form.Group>
             <Form.Group controlId="authetication_method">
                 <Form.Label>Authentication Method</Form.Label>
-                <Form.Control as="select" onChange={(event: any) => setAuthType(event.target.value)}>
+                <Form.Control as="select" value={authType} onChange={(event: any) => setAuthType(event.target.value)}>
                     <option>n/a</option>
                     <option>Password</option>
                     <option>Key</option>

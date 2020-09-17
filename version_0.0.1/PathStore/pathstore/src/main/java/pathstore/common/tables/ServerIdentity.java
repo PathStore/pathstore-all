@@ -2,38 +2,31 @@ package pathstore.common.tables;
 
 import pathstore.util.BlobObject;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-
 /**
  * This class is used to denote a server identity for a server object. This specifically represents
  * those server objects who need RSA authentication
  *
- * <p>TODO: Finish comments
+ * <p>This class gets serialized to {@link
+ * pathstore.common.Constants.SERVERS_COLUMNS#SERVER_IDENTITY}
  */
 public class ServerIdentity implements BlobObject {
-  public final byte[] privKey;
+  /** Private key in bytes */
+  public final byte[] privateKey;
 
+  /** Optional passphrase */
   public final String passphrase;
 
-  public ServerIdentity(final byte[] privKey) {
-    this(privKey, null);
+  /** @param privateKey private key to give, if passphrase is not present */
+  public ServerIdentity(final byte[] privateKey) {
+    this(privateKey, null);
   }
 
-  public ServerIdentity(final byte[] privKey, final String passphrase) {
-    this.privKey = privKey;
-    this.passphrase = passphrase;
-  }
-
-  public ServerIdentity(final String privKeyAbsolutePath) throws IOException {
-    this(privKeyAbsolutePath, null);
-  }
-
-  public ServerIdentity(final String privKeyAbsolutePath, final String passphrase)
-      throws IOException {
-    File file = new File(privKeyAbsolutePath);
-    this.privKey = Files.readAllBytes(file.toPath());
+  /**
+   * @param privateKey private key to give
+   * @param passphrase passphrase (can also be null)
+   */
+  public ServerIdentity(final byte[] privateKey, final String passphrase) {
+    this.privateKey = privateKey;
     this.passphrase = passphrase;
   }
 }
