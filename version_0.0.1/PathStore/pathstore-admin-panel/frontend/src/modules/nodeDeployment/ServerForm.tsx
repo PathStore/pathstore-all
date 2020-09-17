@@ -78,6 +78,7 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
         setAuthType("n/a");
         setPrivateKey(undefined);
         setPrivateKeyFileName("");
+        setPassphrase("");
         setPassword("");
         setSshPort(22);
         setRmiPort(1099);
