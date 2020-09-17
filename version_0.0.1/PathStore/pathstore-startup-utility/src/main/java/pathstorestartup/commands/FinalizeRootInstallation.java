@@ -6,9 +6,9 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import pathstore.common.Constants;
 import pathstore.common.tables.DeploymentProcessStatus;
 import pathstore.common.tables.ServerAuthType;
+import pathstore.common.tables.ServerIdentity;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.deployment.commands.ICommand;
-import pathstore.system.deployment.utilities.ServerIdentity;
 import pathstorestartup.constants.BootstrapDeploymentConstants;
 
 import java.util.Collections;
