@@ -79,7 +79,9 @@ public final class AddServerPayload extends ValidatedPayload {
    *
    * <p>(3): Name given is unique
    *
-   * <p>(4): Can connect
+   * <p>(4): Either password is present or private key is present
+   *
+   * <p>(5): Can connect
    *
    * @return list of errors if all null then the validity test has passed
    */
@@ -94,7 +96,7 @@ public final class AddServerPayload extends ValidatedPayload {
         this.server.rmiPort,
         this.server.name)) return new String[] {WRONG_SUBMISSION_FORMAT};
 
-    String[] errors = {null, null, null};
+    String[] errors = {null, null, null, null};
 
     Session session = PathStoreCluster.getSuperUserInstance().connect();
 
@@ -115,19 +117,24 @@ public final class AddServerPayload extends ValidatedPayload {
     // (4)
     try {
       if (this.server.authType.equals(ServerAuthType.PASSWORD.toString()))
-        new SSHUtil(this.server.ip, this.server.username, this.server.password, this.server.sshPort)
-            .disconnect();
+        if (this.server.password == null) errors[2] = PASSWORD_NOT_PRESENT;
+        else
+          new SSHUtil(
+                  this.server.ip, this.server.username, this.server.password, this.server.sshPort)
+              .disconnect();
       else if (this.server.authType.equals(ServerAuthType.IDENTITY.toString()))
-        new SSHUtil(
-            this.server.ip,
-            this.server.username,
-            this.server.sshPort,
-            this.getPrivateKey().getBytes(),
-            this.server.passphrase);
+        if (this.getPrivateKey() == null) errors[2] = PRIVATE_KEY_NOT_PRESENT;
+        else
+          new SSHUtil(
+              this.server.ip,
+              this.server.username,
+              this.server.sshPort,
+              this.getPrivateKey().getBytes(),
+              this.server.passphrase);
     } catch (JSchException e) {
-      errors[2] = CONNECTION_INFORMATION_IS_INVALID;
+      errors[3] = CONNECTION_INFORMATION_IS_INVALID;
     } catch (IOException e) {
-      errors[2] = "Could not read file";
+      errors[3] = "Could not read file";
     }
 
     return errors;

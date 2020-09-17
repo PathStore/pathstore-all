@@ -71,6 +71,10 @@ public final class ErrorConstants {
     public static final String NAME_IS_NOT_UNIQUE = "You must use a name that isn't already in use";
     public static final String CONNECTION_INFORMATION_IS_INVALID =
         "The connection information you provided is invalid";
+    public static final String PASSWORD_NOT_PRESENT =
+        "You must submit a password field when using password authentication";
+    public static final String PRIVATE_KEY_NOT_PRESENT =
+        "You must submit a private key file when using key based authentication";
   }
 
   /**

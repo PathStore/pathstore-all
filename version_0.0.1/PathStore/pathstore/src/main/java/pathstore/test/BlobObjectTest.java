@@ -20,6 +20,6 @@ public class BlobObjectTest {
     if (deSerialized == null) throw new RuntimeException("deSerialization failed");
 
     System.out.println(
-        String.format("%s %s", new String(deSerialized.privKey), deSerialized.passphrase));
+        String.format("%s %s", new String(deSerialized.privateKey), deSerialized.passphrase));
   }
 }

@@ -37,7 +37,7 @@ public class SSHUtil {
           serverEntry.ip,
           serverEntry.username,
           serverEntry.sshPort,
-          serverEntry.serverIdentity.privKey,
+          serverEntry.serverIdentity.privateKey,
           serverEntry.serverIdentity.passphrase);
 
     throw new RuntimeException("Server Entry does not have valid auth type defined");
