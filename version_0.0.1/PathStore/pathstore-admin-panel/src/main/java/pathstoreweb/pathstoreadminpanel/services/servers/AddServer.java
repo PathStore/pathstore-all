@@ -7,9 +7,12 @@ import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.tables.ServerAuthType;
+import pathstore.common.tables.ServerIdentity;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.servers.formatter.AddServerFormatter;
 import pathstoreweb.pathstoreadminpanel.services.servers.payload.AddServerPayload;
+
+import java.io.IOException;
 
 /**
  * This service is used to insert a record in the database to denote the creation of a new server
@@ -35,13 +38,17 @@ public class AddServer implements IService {
    */
   @Override
   public ResponseEntity<String> response() {
-    this.writeServerRecord();
+    try {
+      this.writeServerRecord();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
 
     return new AddServerFormatter(this.payload.server.serverUUID, this.payload.server.ip).format();
   }
 
   /** Write insert up to the table */
-  private void writeServerRecord() {
+  private void writeServerRecord() throws IOException {
 
     Session session = PathStoreCluster.getSuperUserInstance().connect();
 
@@ -50,13 +57,27 @@ public class AddServer implements IService {
             .value(Constants.SERVERS_COLUMNS.SERVER_UUID, this.payload.server.serverUUID.toString())
             .value(Constants.SERVERS_COLUMNS.IP, this.payload.server.ip)
             .value(Constants.SERVERS_COLUMNS.USERNAME, this.payload.server.username)
-            .value(
-                Constants.SERVERS_COLUMNS.AUTH_TYPE,
-                ServerAuthType.PASSWORD.toString()) // TODO Myles: temporary
-            .value(Constants.SERVERS_COLUMNS.PASSWORD, this.payload.server.password)
             .value(Constants.SERVERS_COLUMNS.SSH_PORT, this.payload.server.sshPort)
             .value(Constants.SERVERS_COLUMNS.RMI_PORT, this.payload.server.rmiPort)
             .value(Constants.SERVERS_COLUMNS.NAME, this.payload.server.name);
+
+    // set proper rows for password auth type
+    if (this.payload.server.authType.equals("Password"))
+      insert
+          .value(Constants.SERVERS_COLUMNS.AUTH_TYPE, ServerAuthType.PASSWORD.toString())
+          .value(Constants.SERVERS_COLUMNS.PASSWORD, this.payload.server.password);
+    // set proper rows for keys type
+    else if (this.payload.server.authType.equals("Keys"))
+      insert
+          .value(Constants.SERVERS_COLUMNS.AUTH_TYPE, ServerAuthType.IDENTITY.toString())
+          .value(
+              Constants.SERVERS_COLUMNS.SERVER_IDENTITY,
+              new ServerIdentity(
+                      this.payload.getPrivateKey().getBytes(), this.payload.server.passphrase)
+                  .serialize());
+    else
+      throw new RuntimeException(
+          String.format("%s  is not a valid auth type", this.payload.server.authType));
 
     session.execute(insert);
   }

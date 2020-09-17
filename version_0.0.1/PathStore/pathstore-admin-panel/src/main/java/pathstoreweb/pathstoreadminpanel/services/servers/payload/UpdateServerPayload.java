@@ -40,12 +40,23 @@ public final class UpdateServerPayload extends ValidatedPayload {
       final String server_uuid,
       final String ip,
       final String username,
+      final String auth_type,
+      final String passphrase,
       final String password,
       final int ssh_port,
       final int rmi_port,
       final String name) {
     this.server =
-        new Server(UUID.fromString(server_uuid), ip, username, password, ssh_port, rmi_port, name);
+        new Server(
+            UUID.fromString(server_uuid),
+            ip,
+            username,
+            auth_type,
+            passphrase,
+            password,
+            ssh_port,
+            rmi_port,
+            name);
   }
 
   /**
@@ -64,8 +75,7 @@ public final class UpdateServerPayload extends ValidatedPayload {
    * match)
    *
    * <p>(5) server UUID is not attached to a deployment node that is at any other state then {@link
-   * pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus#DEPLOYED} or (TODO:
-   * un-deployed)
+   * pathstore.common.tables.DeploymentProcessStatus#DEPLOYED}
    *
    * <p>(6) Information provided is a valid server (can connect)
    *

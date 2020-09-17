@@ -13,6 +13,9 @@ interface ServerFormProperties {
     readonly onFormSubmitCallback: (
         ip: string | undefined,
         username: string | undefined,
+        authType: string | undefined,
+        privateKey: File | undefined,
+        passphrase: string | undefined,
         password: string | undefined,
         ssh_port: number | undefined,
         rmi_port: number | undefined,
@@ -47,6 +50,12 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
     // store auth type
     const [authType, setAuthType] = useState<string | undefined>(undefined);
 
+    // store private key on submission
+    const [privateKey, setPrivateKey] = useState<File | undefined>(undefined);
+
+    // store the name of the privateKey File
+    const [privateKeyFileName, setPrivateKeyFileName] = useState<string>("");
+
     // store optional passphrase
     const [passphrase, setPassphrase] = useState<string | undefined>(undefined);
 
@@ -64,8 +73,11 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
 
     // clear form
     const clearForm = useCallback(() => {
-        setIp("");
-        setUsername("");
+        setIp(undefined);
+        setUsername(undefined);
+        setAuthType(undefined);
+        setPrivateKey(undefined);
+        setPrivateKeyFileName("");
         setPassword("");
         setSshPort(22);
         setRmiPort(1099);
@@ -81,14 +93,27 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
         if (submissionErrorModal.show) {
 
             if (ip === undefined || username === undefined || password === undefined || name === undefined ||
-                ip === "" || username === "" || password === "" || name === "") {
-                submissionErrorModal.show("You must fill in the ip, username, password and name boxes");
+                ip === "" || username === "" || name === "") {
+                submissionErrorModal.show("You must fill in the ip, username and name boxes");
+                return;
+            }
+
+            if (authType === "Password" && password === "") {
+                submissionErrorModal.show("You must fill in the password box");
+                return;
+            }
+
+            if (authType === "Key" && privateKey === undefined) {
+                submissionErrorModal.show("You must fill provide a private key file");
                 return;
             }
 
             props.onFormSubmitCallback(
                 ip,
                 username,
+                authType,
+                privateKey,
+                passphrase,
                 password,
                 sshPort,
                 rmiPort,
@@ -96,7 +121,7 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
                 clearForm
             );
         }
-    }, [ip, username, password, sshPort, rmiPort, name, clearForm, props, submissionErrorModal]);
+    }, [ip, username, authType, privateKey, passphrase, password, sshPort, rmiPort, name, clearForm, props, submissionErrorModal]);
 
     return (
         <Form onSubmit={onFormSubmit}>
@@ -132,10 +157,14 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
                     <Form.Group controlId="key">
                         <Form.Label>Private Key Upload</Form.Label>
                         <Form.File
-                            label="Private Key"
+                            label={privateKeyFileName}
                             lang="en"
                             custom
-                            onChange={(event: any) => alert("File uploaded")}
+                            onChange={(event: any) => {
+                                const file: File = event.target.files[0];
+                                setPrivateKey(file);
+                                setPrivateKeyFileName(file.name);
+                            }}
                         />
                     </Form.Group>
                     <Form.Group controlId="passphrase">

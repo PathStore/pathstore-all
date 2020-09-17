@@ -14,7 +14,13 @@ public class Server {
   /** Username to ssh into server */
   public final String username;
 
-  /** TODO: Maybe don't query? */
+  /** auth type of server */
+  public final String authType;
+
+  /** Passphrase of the server */
+  public final String passphrase;
+
+  /** Password for server */
   public final String password;
 
   /** SSH port number for server */
@@ -30,6 +36,8 @@ public class Server {
    * @param serverUUID {@link #serverUUID}
    * @param ip {@link #ip}
    * @param username {@link #username}
+   * @param authType {@link #authType}
+   * @param passphrase {@link #passphrase}
    * @param password {@link #password}
    * @param sshPort {@link #sshPort}
    * @param rmiPort {@link #rmiPort}
@@ -39,6 +47,8 @@ public class Server {
       final UUID serverUUID,
       final String ip,
       final String username,
+      final String authType,
+      final String passphrase,
       final String password,
       final int sshPort,
       final int rmiPort,
@@ -46,6 +56,8 @@ public class Server {
     this.serverUUID = serverUUID;
     this.ip = ip;
     this.username = username;
+    this.authType = authType;
+    this.passphrase = passphrase;
     this.password = password;
     this.sshPort = sshPort;
     this.rmiPort = rmiPort;

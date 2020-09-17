@@ -60,6 +60,9 @@ export const ModifyServerModal: FunctionComponent = () => {
     const onFormSubmit = useCallback((
         ip: string | undefined,
         username: string | undefined,
+        authType: string | undefined,
+        privateKey: File | undefined,
+        passphrase: string | undefined,
         password: string | undefined,
         ssh_port: number | undefined,
         rmi_port: number | undefined,
@@ -91,7 +94,7 @@ export const ModifyServerModal: FunctionComponent = () => {
             })
             .catch(errorModal.show)
             .finally(loadingModal.close);
-    }, [loadingModal, forceRefresh, close, errorModal.show, data]);
+    }, [loadingModal, forceRefresh, close, errorModal.show]);
 
     return (
         <Modal show={visible} size={'xl'} centered>
@@ -101,11 +104,12 @@ export const ModifyServerModal: FunctionComponent = () => {
             <Modal.Body>
                 <h3>Delete Modal</h3>
                 <Button onClick={deleteServer}>Delete Server</Button>
-                <hr/>
-                <h3>Update Modal</h3>
-                <SubmissionErrorModalProvider>
-                    <ServerForm onFormSubmitCallback={onFormSubmit} server={data}/>
-                </SubmissionErrorModalProvider>
+                {/* Temporary removal until PUT requests can receive files */}
+                {/*<hr/>*/}
+                {/*<h3>Update Modal</h3>*/}
+                {/*<SubmissionErrorModalProvider>*/}
+                {/*    <ServerForm onFormSubmitCallback={onFormSubmit} server={data}/>*/}
+                {/*</SubmissionErrorModalProvider>*/}
             </Modal.Body>
             <Modal.Footer>
                 <Button onClick={close}>close</Button>
