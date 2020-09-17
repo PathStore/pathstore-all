@@ -89,7 +89,6 @@ public final class AddServerPayload extends ValidatedPayload {
     if (this.bulkNullCheck(
         this.server.ip,
         this.server.username,
-        this.server.password,
         this.server.sshPort,
         this.server.rmiPort,
         this.server.name)) return new String[] {WRONG_SUBMISSION_FORMAT};

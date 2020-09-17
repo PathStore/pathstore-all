@@ -92,13 +92,13 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
 
         if (submissionErrorModal.show) {
 
-            if (ip === undefined || username === undefined || password === undefined || name === undefined ||
+            if (ip === undefined || username === undefined || name === undefined ||
                 ip === "" || username === "" || name === "") {
                 submissionErrorModal.show("You must fill in the ip, username and name boxes");
                 return;
             }
 
-            if (authType === "Password" && password === "") {
+            if (authType === "Password" && (password === undefined || password === "")) {
                 submissionErrorModal.show("You must fill in the password box");
                 return;
             }

@@ -55,7 +55,7 @@ export const AddServers: FunctionComponent = () => {
 
         if (loadingModal.show && loadingModal.close && errorModal.show && forceRefresh) {
 
-            if (ip && username && password && name) {
+            if (ip && username && name) {
                 let formData = new FormData();
                 formData.append("ip", ip);
                 formData.append("username", username);
@@ -64,7 +64,7 @@ export const AddServers: FunctionComponent = () => {
                 formData.append("name", name);
 
 
-                if (authType === "Password") {
+                if (authType === "Password" && password) {
                     formData.append("auth_type", SERVER_AUTH_TYPE[SERVER_AUTH_TYPE.PASSWORD]);
                     formData.append("password", password);
                 } else if (authType === "Key" && privateKey) {
