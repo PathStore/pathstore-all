@@ -61,7 +61,7 @@ public final class AddServerPayload extends ValidatedPayload {
   }
 
   /** @param privateKey set {@link #privateKey} to this */
-  public void serPrivateKey(final MultipartFile privateKey) {
+  public void setPrivateKey(final MultipartFile privateKey) {
     this.privateKey = privateKey;
   }
 
