@@ -42,6 +42,6 @@ public class SessionMigrationTest {
 
     PathStoreClientAuthenticatedCluster.getInstance().close();
 
-    PathStoreSessionManager.getInstance().close();
+    PathStoreSessionManager.getInstance().swap();
   }
 }

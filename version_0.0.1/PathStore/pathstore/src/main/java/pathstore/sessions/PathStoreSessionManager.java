@@ -98,61 +98,6 @@ public class PathStoreSessionManager {
   }
 
   /**
-   * This function is used to dump all session tokens to a file. This should be used when you plan
-   * to kill a client and move it to a new destination node
-   *
-   * @implNote Since PathStore is dockerized this file name should be an absolute path and for ease
-   *     of use should also be related to a virtual directory to the host machine for access.
-   * @throws IOException if creation of file fails
-   * @throws RuntimeException if json dump cannot be performed
-   */
-  public void close() throws IOException {
-    File sessionFile = new File(this.sessionFile);
-
-    if (sessionFile.createNewFile()) {
-      logger.info(String.format("%s successfully created", this.sessionFile));
-
-      FileWriter sessionFileWriter = new FileWriter(sessionFile);
-
-      // write sessions to file
-      this.sessionStore
-          .values()
-          .forEach(
-              sessionToken -> {
-                try {
-                  sessionFileWriter.write(sessionToken.exportToJson().concat("\n"));
-                } catch (IOException e) {
-                  e.printStackTrace();
-                }
-              });
-
-      sessionFileWriter.close();
-
-      // close instance after dump is complete
-
-      // Myles: Maybe make this optional? Under the case where someone wants to dump there sessions
-      // to disk but continue to use their application
-      instance = null;
-
-      logger.info(
-          String.format("Dump operation successfully performed on file %s", this.sessionFile));
-    } else {
-      logger.info(String.format("%s already exists", this.sessionFile));
-      if (sessionFile.delete()) {
-        logger.info(
-            String.format("%s successfully deleted, retrying dump operation", this.sessionFile));
-        this.close();
-      } else {
-        logger.error(String.format("Couldn't delete file %s, dump failure", this.sessionFile));
-
-        throw new RuntimeException(
-            String.format(
-                "Could not delete the file %s, the session dump has failed", this.sessionFile));
-      }
-    }
-  }
-
-  /**
    * This function is called on initialization of the session manager to load any sessions from a
    * previously created session file. All migration of previous sessions will occur here.
    */
@@ -205,5 +150,53 @@ public class PathStoreSessionManager {
     }
 
     return token;
+  }
+
+  /**
+   * This function is used to take a snapshot of all sessions in memory and dump it to a file.
+   *
+   * @apiNote Note that when a swap occurs it will override anything in the local session file
+   * @implNote Since PathStore is dockerized this file name should be an absolute path and for ease
+   *     of use should also be related to a virtual directory to the host machine for access.
+   * @throws IOException if creation of file fails
+   */
+  public void swap() throws IOException {
+    File sessionFile = new File(this.sessionFile);
+
+    if (sessionFile.createNewFile())
+      logger.info(String.format("Session file created with path %s", sessionFile));
+    else logger.info(String.format("Session file exists with path %s", sessionFile));
+
+    FileWriter sessionFileWriter = new FileWriter(sessionFile, false);
+
+    // write sessions to file
+    this.sessionStore
+        .values()
+        .forEach(
+            sessionToken -> {
+              try {
+                sessionFileWriter.write(sessionToken.exportToJson().concat("\n"));
+              } catch (IOException e) {
+                e.printStackTrace();
+              }
+            });
+
+    sessionFileWriter.close();
+
+    logger.info(
+        String.format("Swap operation successfully performed on file %s", this.sessionFile));
+  }
+
+  /**
+   * Used on shutdown of client
+   *
+   * <p>This will perform a final swap and then reset the instance.
+   *
+   * @throws IOException {@link #swap()} for reason
+   */
+  public void close() throws IOException {
+    this.swap();
+
+    instance = null;
   }
 }

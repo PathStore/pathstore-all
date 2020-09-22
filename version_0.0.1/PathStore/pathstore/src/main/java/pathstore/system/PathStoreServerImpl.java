@@ -59,6 +59,8 @@ public class PathStoreServerImpl {
   public static void main(final String args[]) {
     try {
 
+      logger.info(Constants.ASCII_ART);
+
       logger.info(
           String.format(
               "PathStore has started up with the external ip of %s",

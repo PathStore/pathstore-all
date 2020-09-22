@@ -32,7 +32,8 @@ public class PathStoreClientAuthenticatedCluster {
       final String applicationName, final String masterPassword) {
     if (instance == null) {
       Optional<String> response =
-          PathStoreServerClient.getInstance().registerApplicationClient(applicationName, masterPassword);
+          PathStoreServerClient.getInstance()
+              .registerApplicationClient(applicationName, masterPassword);
 
       if (response.isPresent()) {
         JSONObject responseObject = new JSONObject(response.get());
@@ -123,5 +124,6 @@ public class PathStoreClientAuthenticatedCluster {
   public void close() {
     this.session.close();
     this.cluster.close();
+    instance = null;
   }
 }

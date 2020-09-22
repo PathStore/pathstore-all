@@ -6,7 +6,7 @@ import pathstore.sessions.SessionToken;
 import java.io.IOException;
 
 public class SessionManagerTest {
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws IOException, InterruptedException {
 
     SessionToken testSessionToken =
         PathStoreSessionManager.getInstance().getTableToken("test-session");
@@ -15,6 +15,11 @@ public class SessionManagerTest {
     testSessionToken.addEntry("b");
     testSessionToken.addEntry("c");
     testSessionToken.addEntry("d");
+
+    PathStoreSessionManager.getInstance().swap();
+
+    System.out.println("Check file now");
+    Thread.sleep(10000);
 
     SessionToken testSessionToken1 =
         PathStoreSessionManager.getInstance().getTableToken("test-session-1");
