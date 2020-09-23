@@ -77,6 +77,7 @@ export const ApplicationCreation: FunctionComponent = () => {
                     .then(() => {
                         if (formRef.current)
                             formRef.current.reset();
+                        setFileName("");
                         if (forceRefresh)
                             forceRefresh();
                     }) // Show creation modal
@@ -84,7 +85,7 @@ export const ApplicationCreation: FunctionComponent = () => {
                     .finally(loadingModal.close);
             }
         }
-    }, [file, formRef, forceRefresh, loadingModal, errorModal, submissionErrorModal]);
+    }, [file, formRef, setFileName, forceRefresh, loadingModal, errorModal, submissionErrorModal]);
 
     /**
      * This callback is used to take the inputted file and stored it inside the internal state
