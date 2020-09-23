@@ -6,13 +6,14 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.common.tables.DeploymentEntry;
+import pathstore.common.tables.DeploymentProcessStatus;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * This class is used to read the deployment table and determine when to transition nodes.
@@ -64,38 +65,23 @@ public class PathStoreMasterDeploymentServer implements Runnable {
         Set<Integer> completeSet = new HashSet<>();
 
         for (Row row : this.session.execute(selectAllDeploymentRecords)) {
-          DeploymentProcessStatus status =
-              DeploymentProcessStatus.valueOf(
-                  row.getString(Constants.DEPLOYMENT_COLUMNS.PROCESS_STATUS));
-          int newNodeId = row.getInt(Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID);
+          DeploymentEntry entry = DeploymentEntry.fromRow(row);
 
           // Setup filterable sets
-          switch (status) {
+          switch (entry.deploymentProcessStatus) {
             case DEPLOYED:
-              deployed.add(newNodeId);
+              deployed.add(entry.newNodeId);
               break;
             case WAITING_DEPLOYMENT:
-              waitingDeployment.add(
-                  new DeploymentEntry(
-                      newNodeId,
-                      row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
-                      status,
-                      row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class),
-                      UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
+              waitingDeployment.add(entry);
               break;
             case WAITING_REMOVAL:
-              waitingRemoval.add(
-                  new DeploymentEntry(
-                      newNodeId,
-                      row.getInt(Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID),
-                      status,
-                      row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class),
-                      UUID.fromString(row.getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID))));
+              waitingRemoval.add(entry);
               break;
           }
 
           // add to complete set
-          completeSet.add(newNodeId);
+          completeSet.add(entry.newNodeId);
         }
 
         // (2)

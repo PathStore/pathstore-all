@@ -6,16 +6,13 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.system.deployment.deploymentFSM.DeploymentEntry;
-import pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus;
+import pathstore.common.tables.DeploymentProcessStatus;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.deployment.formatter.DeploymentRecordsFormatter;
 import pathstoreweb.pathstoreadminpanel.services.deployment.payload.AddDeploymentRecordPayload;
 
 import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
@@ -38,7 +35,9 @@ public class AddDeploymentRecords implements IService {
   /** @return {@link DeploymentRecordsFormatter#format()} */
   @Override
   public ResponseEntity<String> response() {
-    return new DeploymentRecordsFormatter(this.writeEntries()).format();
+    this.writeEntries();
+
+    return new DeploymentRecordsFormatter(new LinkedList<>()).format();
   }
 
   /**
@@ -49,35 +48,21 @@ public class AddDeploymentRecords implements IService {
    *
    * @return list of entries written. This is so the user can see the output
    */
-  private List<DeploymentEntry> writeEntries() {
+  private void writeEntries() {
 
     Session session = PathStoreCluster.getSuperUserInstance().connect();
 
-    LinkedList<DeploymentEntry> linkedList = new LinkedList<>();
-
     for (DeploymentRecord record : payload.records) {
-
-      DeploymentEntry entry =
-          new DeploymentEntry(
-              record.newNodeId,
-              record.parentId,
-              DeploymentProcessStatus.WAITING_DEPLOYMENT,
-              new LinkedList<>(Collections.singleton(record.parentId)),
-              UUID.fromString(record.serverUUID));
 
       Insert insert =
           QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT)
-              .value(NEW_NODE_ID, entry.newNodeId)
-              .value(PARENT_NODE_ID, entry.parentNodeId)
-              .value(PROCESS_STATUS, entry.deploymentProcessStatus.toString())
-              .value(WAIT_FOR, entry.waitFor)
-              .value(SERVER_UUID, entry.serverUUID.toString());
+              .value(NEW_NODE_ID, record.newNodeId)
+              .value(PARENT_NODE_ID, record.parentId)
+              .value(PROCESS_STATUS, DeploymentProcessStatus.WAITING_DEPLOYMENT.toString())
+              .value(WAIT_FOR, new LinkedList<>(Collections.singleton(record.parentId)))
+              .value(SERVER_UUID, record.serverUUID);
 
       session.execute(insert);
-
-      linkedList.addFirst(entry);
     }
-
-    return linkedList;
   }
 }

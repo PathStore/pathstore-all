@@ -4,6 +4,7 @@ import com.jcraft.jsch.JSchException;
 import pathstore.authentication.AuthenticationUtil;
 import pathstore.common.Constants;
 import pathstore.common.Role;
+import pathstore.common.tables.ServerIdentity;
 import pathstore.system.deployment.commands.*;
 import pathstore.system.deployment.utilities.DeploymentConstants;
 import pathstore.system.deployment.utilities.SSHUtil;
@@ -12,6 +13,9 @@ import pathstorestartup.commands.FinalizeRootInstallation;
 import pathstorestartup.constants.BootstrapDeploymentConstants;
 import pathstorestartup.constants.BootstrapDeploymentBuilder;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Scanner;
 
@@ -66,6 +70,9 @@ public class DevelopmentDeployment {
             BootstrapDeploymentConstants.DEVELOPMENT_TAR_LOCATIONS.LOCAL_PATHSTORE_ADMIN_PANEL_TAR,
             dir);
 
+    // add shutdown hook
+    Runtime.getRuntime().addShutdownHook(new Thread(this::cleanUp));
+
     // build cassandra
     new DevelopmentBuilder()
         .execute(
@@ -114,14 +121,6 @@ public class DevelopmentDeployment {
 
     // deploy the built images to a server
     this.deploy();
-
-    // remove local tars after deployment is finished
-    new DevelopmentBuilder()
-        .execute(DELETE_TAR_TAG, this.cassandraTar, DELETE_TAR(this.cassandraTar), 0)
-        .execute(DELETE_TAR_TAG, this.pathstoreTar, DELETE_TAR(this.pathstoreTar), 0)
-        .execute(
-            DELETE_TAR_TAG, this.pathstoreAdminPanelTar, DELETE_TAR(this.pathstoreAdminPanelTar), 0)
-        .build();
   }
 
   /**
@@ -139,9 +138,31 @@ public class DevelopmentDeployment {
     String username =
         Utils.askQuestionWithInvalidResponse(
             this.scanner, BootstrapDeploymentConstants.USERNAME_PROMPT, new String[] {"root"});
-    String password =
-        Utils.askQuestionWithInvalidResponse(
-            this.scanner, BootstrapDeploymentConstants.PASSWORD_PROMPT, null);
+
+    String authType =
+        Utils.askQuestionWithSpecificResponses(
+            this.scanner,
+            BootstrapDeploymentConstants.AUTH_TYPE_PROMPT,
+            new String[] {
+              BootstrapDeploymentConstants.AUTH_TYPES.PASSWORD,
+              BootstrapDeploymentConstants.AUTH_TYPES.KEY
+            });
+
+    String password = null, privKeyPath = null, passphrase = null;
+
+    if (authType.equals(BootstrapDeploymentConstants.AUTH_TYPES.PASSWORD))
+      password =
+          Utils.askQuestionWithInvalidResponse(
+              this.scanner, BootstrapDeploymentConstants.PASSWORD_PROMPT, null);
+    else {
+      privKeyPath =
+          Utils.askQuestionWithInvalidResponse(
+              this.scanner, BootstrapDeploymentConstants.PRIVATE_KEY_PATH_PROMPT, null);
+      passphrase =
+          Utils.askQuestionWithInvalidResponse(
+              this.scanner, BootstrapDeploymentConstants.PASSPHRASE_PROMPT, null);
+    }
+
     int sshPort =
         Utils.askQuestionWithInvalidResponseInteger(
             this.scanner, BootstrapDeploymentConstants.SSH_PORT_PROMPT, null);
@@ -156,7 +177,23 @@ public class DevelopmentDeployment {
             this.scanner, BootstrapDeploymentConstants.NETWORK_ADMIN_PASSWORD_PROMPT, null);
 
     try {
-      SSHUtil sshUtil = new SSHUtil(ip, username, password, sshPort);
+      SSHUtil sshUtil;
+
+      byte[] privKey = null;
+
+      if (authType.equals(BootstrapDeploymentConstants.AUTH_TYPES.PASSWORD))
+        sshUtil = new SSHUtil(ip, username, password, sshPort);
+      else {
+        privKey = Files.readAllBytes(new File(privKeyPath).toPath());
+        sshUtil =
+            new SSHUtil(
+                ip,
+                username,
+                sshPort,
+                privKey,
+                passphrase.trim().length() == 0 ? null : passphrase);
+      }
+
       System.out.println("Connected");
 
       String childSuperuserUsername = Constants.PATHSTORE_SUPERUSER_USERNAME;
@@ -179,6 +216,10 @@ public class DevelopmentDeployment {
                     ip,
                     cassandraPort,
                     username,
+                    authType,
+                    authType.equals(BootstrapDeploymentConstants.AUTH_TYPES.PASSWORD)
+                        ? null
+                        : new ServerIdentity(privKey, passphrase),
                     password,
                     sshPort,
                     rmiPort))) {
@@ -192,7 +233,8 @@ public class DevelopmentDeployment {
         sshUtil.disconnect();
       }
 
-    } catch (JSchException e) {
+    } catch (JSchException | IOException e) {
+      e.printStackTrace();
       System.err.println(BootstrapDeploymentConstants.COULD_NOT_CONNECT);
       this.deploy();
     }
@@ -327,6 +369,23 @@ public class DevelopmentDeployment {
         .startImageAndWait(
             BootstrapDeploymentConstants.RUN_COMMANDS.PATHSTORE_ADMIN_PANEL_RUN, null)
         .custom(finalizeRootInstallation)
+        .build();
+  }
+
+  /**
+   * This function is used at the end or on shutdown to cleanup the local image tars. As if these
+   * aren't cleaned up and this runs again, it will rebuild the image with a copy of the previous
+   * image which will exponentially make the image size larger.
+   */
+  private void cleanUp() {
+    new DevelopmentBuilder()
+        .execute(DELETE_TAR_TAG, this.cassandraTar, DELETE_TAR(this.cassandraTar), -1)
+        .execute(DELETE_TAR_TAG, this.pathstoreTar, DELETE_TAR(this.pathstoreTar), -1)
+        .execute(
+            DELETE_TAR_TAG,
+            this.pathstoreAdminPanelTar,
+            DELETE_TAR(this.pathstoreAdminPanelTar),
+            -1)
         .build();
   }
 }

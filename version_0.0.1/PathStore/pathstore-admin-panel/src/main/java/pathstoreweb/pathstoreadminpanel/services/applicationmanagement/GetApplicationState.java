@@ -7,8 +7,7 @@ import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.http.ResponseEntity;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
-import pathstore.system.schemaFSM.NodeSchemaEntry;
-import pathstore.system.schemaFSM.ProccessStatus;
+import pathstore.common.tables.NodeSchemaEntry;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.GetApplicationStateFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 
@@ -50,12 +49,7 @@ public class GetApplicationState implements IService {
     LinkedList<NodeSchemaEntry> entries = new LinkedList<>();
 
     for (Row row : session.execute(queryAllNodeSchemas))
-      entries.addFirst(
-          new NodeSchemaEntry(
-              row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID),
-              row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME),
-              ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS)),
-              row.getList(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, Integer.class)));
+      entries.addFirst(NodeSchemaEntry.fromRow(row));
 
     return entries;
   }

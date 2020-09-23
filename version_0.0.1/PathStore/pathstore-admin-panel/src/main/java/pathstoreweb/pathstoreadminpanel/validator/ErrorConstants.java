@@ -65,12 +65,16 @@ public final class ErrorConstants {
    */
   public static final class ADD_SERVER_PAYLOAD {
     public static final String WRONG_SUBMISSION_FORMAT =
-        "You must submit the fields: ip, username, password, ssh_port, rmi_port, name";
+        "You must submit the fields: ip, username, ssh_port, rmi_port, name";
     public static final String IP_IS_NOT_UNIQUE =
         "You must use an ip address that isn't already in use";
     public static final String NAME_IS_NOT_UNIQUE = "You must use a name that isn't already in use";
     public static final String CONNECTION_INFORMATION_IS_INVALID =
         "The connection information you provided is invalid";
+    public static final String PASSWORD_NOT_PRESENT =
+        "You must submit a password field when using password authentication";
+    public static final String PRIVATE_KEY_NOT_PRESENT =
+        "You must submit a private key file when using key based authentication";
   }
 
   /**
@@ -79,7 +83,7 @@ public final class ErrorConstants {
    */
   public static final class UPDATE_SERVER_PAYLOAD {
     public static final String WRONG_SUBMISSION_FORMAT =
-        "You must submit the following fields: server_uuid, ip, username, password, ssh_port, rmi_port, name";
+        "You must submit the following fields: server_uuid, ip, username, ssh_port, rmi_port, name";
     public static final String SERVER_UUID_DOESNT_EXIST =
         "The server uuid you passed does not exist";
     public static final String IP_IS_NOT_UNIQUE =
@@ -90,6 +94,10 @@ public final class ErrorConstants {
         "You cannot modify a server record that is attached to an existing pathstore node";
     public static final String CONNECTION_INFORMATION_IS_INVALID =
         "The connection information you provided is invalid";
+    public static final String PASSWORD_NOT_PRESENT =
+        "You must submit a password field when using password authentication";
+    public static final String PRIVATE_KEY_NOT_PRESENT =
+        "You must submit a private key file when using key based authentication";
   }
 
   /**

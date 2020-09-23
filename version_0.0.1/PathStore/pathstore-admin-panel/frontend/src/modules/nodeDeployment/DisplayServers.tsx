@@ -46,6 +46,7 @@ export const DisplayServers: FunctionComponent = () => {
                         <td>{server.server_uuid}</td>
                         <td>{server.ip}</td>
                         <td>{server.username}</td>
+                        <td>{server.auth_type}</td>
                         <td>{server.ssh_port}</td>
                         <td>{server.rmi_port}</td>
                         <td>{server.name}</td>
@@ -65,6 +66,7 @@ export const DisplayServers: FunctionComponent = () => {
                     <th>Server UUID</th>
                     <th>IP</th>
                     <th>Username</th>
+                    <th>Auth Type</th>
                     <th>SSH Port</th>
                     <th>RMI Port</th>
                     <th>Server Name</th>

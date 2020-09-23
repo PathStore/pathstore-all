@@ -13,6 +13,9 @@ interface ServerFormProperties {
     readonly onFormSubmitCallback: (
         ip: string | undefined,
         username: string | undefined,
+        authType: string | undefined,
+        privateKey: File | undefined,
+        passphrase: string | undefined,
         password: string | undefined,
         ssh_port: number | undefined,
         rmi_port: number | undefined,
@@ -44,6 +47,18 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
     // store username
     const [username, setUsername] = useState<string | undefined>(props.server?.username);
 
+    // store auth type
+    const [authType, setAuthType] = useState<string | undefined>(undefined);
+
+    // store private key on submission
+    const [privateKey, setPrivateKey] = useState<File | undefined>(undefined);
+
+    // store the name of the privateKey File
+    const [privateKeyFileName, setPrivateKeyFileName] = useState<string>("");
+
+    // store optional passphrase
+    const [passphrase, setPassphrase] = useState<string | undefined>(undefined);
+
     // store password
     const [password, setPassword] = useState<string>("");
 
@@ -60,6 +75,10 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
     const clearForm = useCallback(() => {
         setIp("");
         setUsername("");
+        setAuthType("n/a");
+        setPrivateKey(undefined);
+        setPrivateKeyFileName("");
+        setPassphrase("");
         setPassword("");
         setSshPort(22);
         setRmiPort(1099);
@@ -74,15 +93,28 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
 
         if (submissionErrorModal.show) {
 
-            if (ip === undefined || username === undefined || password === undefined || name === undefined ||
-                ip === "" || username === "" || password === "" || name === "") {
-                submissionErrorModal.show("You must fill in the ip, username, password and name boxes");
+            if (ip === undefined || username === undefined || name === undefined ||
+                ip === "" || username === "" || name === "") {
+                submissionErrorModal.show("You must fill in the ip, username and name boxes");
+                return;
+            }
+
+            if (authType === "Password" && (password === undefined || password === "")) {
+                submissionErrorModal.show("You must fill in the password box");
+                return;
+            }
+
+            if (authType === "Key" && privateKey === undefined) {
+                submissionErrorModal.show("You must fill provide a private key file");
                 return;
             }
 
             props.onFormSubmitCallback(
                 ip,
                 username,
+                authType,
+                privateKey,
+                passphrase,
                 password,
                 sshPort,
                 rmiPort,
@@ -90,7 +122,7 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
                 clearForm
             );
         }
-    }, [ip, username, password, sshPort, rmiPort, name, clearForm, props, submissionErrorModal]);
+    }, [ip, username, authType, privateKey, passphrase, password, sshPort, rmiPort, name, clearForm, props, submissionErrorModal]);
 
     return (
         <Form onSubmit={onFormSubmit}>
@@ -103,11 +135,49 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
                 <Form.Control type="text" name="username" onChange={(event: any) => setUsername(event.target.value)}
                               value={username}/>
             </Form.Group>
-            <Form.Group controlId="password">
-                <Form.Label>Password</Form.Label>
-                <Form.Control type="password" name="password" onChange={(event: any) => setPassword(event.target.value)}
-                              value={password}/>
+            <Form.Group controlId="authetication_method">
+                <Form.Label>Authentication Method</Form.Label>
+                <Form.Control as="select" value={authType} onChange={(event: any) => setAuthType(event.target.value)}>
+                    <option>n/a</option>
+                    <option>Password</option>
+                    <option>Key</option>
+                </Form.Control>
             </Form.Group>
+            {authType === "Password" ?
+                <Form.Group controlId="password">
+                    <Form.Label>Password</Form.Label>
+                    <Form.Control type="password" name="password"
+                                  onChange={(event: any) => setPassword(event.target.value)}
+                                  value={password}/>
+                </Form.Group>
+                :
+                null
+            }
+            {authType === "Key" ?
+                <>
+                    <Form.Group controlId="key">
+                        <Form.Label>Private Key Upload</Form.Label>
+                        <Form.File
+                            label={privateKeyFileName}
+                            lang="en"
+                            custom
+                            onChange={(event: any) => {
+                                const file: File = event.target.files[0];
+                                setPrivateKey(file);
+                                setPrivateKeyFileName(file.name);
+                            }}
+                        />
+                    </Form.Group>
+                    <Form.Group controlId="passphrase">
+                        <Form.Label>Passphrase</Form.Label>
+                        <Form.Control type="password" name="password"
+                                      onChange={(event: any) => setPassphrase(event.target.value)}
+                                      value={passphrase}/>
+                    </Form.Group>
+                </>
+                :
+                null
+            }
             <Form.Group controlId="ssh_port">
                 <Form.Label>SSH Port</Form.Label>
                 <Form.Control type="number" name="ssh_port" onChange={(event: any) => setSshPort(event.target.value)}

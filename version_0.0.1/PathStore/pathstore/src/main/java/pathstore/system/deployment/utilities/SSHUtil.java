@@ -1,6 +1,9 @@
 package pathstore.system.deployment.utilities;
 
 import com.jcraft.jsch.*;
+import pathstore.common.tables.ServerAuthType;
+import pathstore.common.tables.ServerEntry;
+import pathstore.util.Pair;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +22,28 @@ public class SSHUtil {
   private final Session session;
 
   /**
+   * This function is used to build a SSHUtil object from a Server entry from the database. This
+   * will generate a SSHUtil object based on what the authentication type is
+   *
+   * @param serverEntry serverEntry Record from db
+   * @return SSHUtil build from it
+   */
+  public static SSHUtil buildFromServerEntry(final ServerEntry serverEntry) throws JSchException {
+    if (serverEntry.authType == ServerAuthType.PASSWORD)
+      return new SSHUtil(
+          serverEntry.ip, serverEntry.username, serverEntry.password, serverEntry.sshPort);
+    else if (serverEntry.authType == ServerAuthType.IDENTITY)
+      return new SSHUtil(
+          serverEntry.ip,
+          serverEntry.username,
+          serverEntry.sshPort,
+          serverEntry.serverIdentity.privateKey,
+          serverEntry.serverIdentity.passphrase);
+
+    throw new RuntimeException("Server Entry does not have valid auth type defined");
+  }
+
+  /**
    * Creates session object
    *
    * @param host host to connect to
@@ -31,6 +56,34 @@ public class SSHUtil {
       throws JSchException {
     this.session = new JSch().getSession(username, host, port);
     this.session.setPassword(password);
+    this.session.setConfig("StrictHostKeyChecking", "no");
+    this.session.connect();
+  }
+
+  /**
+   * Build an ssh connection from a private key and a passphrase
+   *
+   * @param host host to connect to
+   * @param username username to connect as
+   * @param port port to connect on
+   * @param privKey private key to authenticate with
+   * @param passphrase optional passphrase if required for the private key
+   * @throws JSchException thrown if connection cannot be established
+   */
+  public SSHUtil(
+      final String host,
+      final String username,
+      final int port,
+      final byte[] privKey,
+      final String passphrase)
+      throws JSchException {
+    JSch jSch = new JSch();
+    jSch.addIdentity(
+        "pathstore-deployer-connection",
+        privKey,
+        null,
+        passphrase != null ? passphrase.getBytes() : null);
+    this.session = jSch.getSession(username, host, port);
     this.session.setConfig("StrictHostKeyChecking", "no");
     this.session.connect();
   }

@@ -26,6 +26,9 @@ export const ApplicationCreation: FunctionComponent = () => {
     // load the submission error modal to inform the user if they've inputted invalid data
     const submissionErrorModal = useContext(SubmissionErrorModalContext);
 
+    // name of file which was uploaded
+    const [fileName, setFileName] = useState<string>("");
+
     // State to store the file TODO: Find proper type
     const [file, setFile] = useState<File | null>(null);
 
@@ -86,7 +89,11 @@ export const ApplicationCreation: FunctionComponent = () => {
     /**
      * This callback is used to take the inputted file and stored it inside the internal state
      */
-    const updateFile = useCallback((event: any) => setFile(event.target.files[0]), [setFile]);
+    const updateFile = useCallback((event: any) => {
+        const file: File = event.target.files[0];
+        setFile(file);
+        setFileName(file.name);
+    }, [setFile, setFileName]);
 
     return (
         <Form onSubmit={onFormSubmit} ref={formRef}>
@@ -113,8 +120,9 @@ export const ApplicationCreation: FunctionComponent = () => {
                 </Form.Text>
             </Form.Group>
             <Form.Group>
+                <Form.Label>Application File</Form.Label>
                 <Form.File
-                    label="PathStore Application File"
+                    label={fileName}
                     lang="en"
                     custom
                     onChange={updateFile}

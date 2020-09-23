@@ -7,6 +7,8 @@ import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.common.tables.NodeSchemaEntry;
+import pathstore.common.tables.NodeSchemaProcessStatus;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
@@ -61,36 +63,26 @@ public class PathStoreMasterSchemaServer implements Runnable {
       Map<String, Set<Integer>> completeSet = new HashMap<>();
 
       for (Row row : this.session.execute(selectAllNodeSchemaRecords)) {
-        ProccessStatus status =
-            ProccessStatus.valueOf(row.getString(Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS));
-        int nodeId = row.getInt(Constants.NODE_SCHEMAS_COLUMNS.NODE_ID);
+        NodeSchemaEntry entry = NodeSchemaEntry.fromRow(row);
 
-        String keyspaceName = row.getString(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME);
-
-        List<Integer> waitFor = row.getList(Constants.NODE_SCHEMAS_COLUMNS.WAIT_FOR, Integer.class);
-
-        switch (status) {
+        switch (entry.nodeSchemaProcessStatus) {
           case INSTALLED:
-            finished.computeIfAbsent(keyspaceName, k -> new HashSet<>());
-            finished.get(keyspaceName).add(nodeId);
+            finished.computeIfAbsent(entry.keyspaceName, k -> new HashSet<>());
+            finished.get(entry.keyspaceName).add(entry.nodeId);
             break;
           case WAITING_INSTALL:
-            waiting.computeIfAbsent(keyspaceName, k -> new HashSet<>());
-            waiting
-                .get(keyspaceName)
-                .add(new NodeSchemaEntry(nodeId, keyspaceName, status, waitFor));
+            waiting.computeIfAbsent(entry.keyspaceName, k -> new HashSet<>());
+            waiting.get(entry.keyspaceName).add(entry);
             break;
           case WAITING_REMOVE:
-            waitingRemoval.computeIfAbsent(keyspaceName, k -> new HashSet<>());
-            waitingRemoval
-                .get(keyspaceName)
-                .add(new NodeSchemaEntry(nodeId, keyspaceName, status, waitFor));
+            waitingRemoval.computeIfAbsent(entry.keyspaceName, k -> new HashSet<>());
+            waitingRemoval.get(entry.keyspaceName).add(entry);
             break;
         }
 
         // update complete set
-        completeSet.computeIfAbsent(keyspaceName, k -> new HashSet<>());
-        completeSet.get(keyspaceName).add(nodeId);
+        completeSet.computeIfAbsent(entry.keyspaceName, k -> new HashSet<>());
+        completeSet.get(entry.keyspaceName).add(entry.nodeId);
       }
 
       // (2)
@@ -124,7 +116,7 @@ public class PathStoreMasterSchemaServer implements Runnable {
                     i ->
                         i.waitFor.equals(Collections.singletonList(-1))
                             || (finished.get(k) != null && finished.get(k).containsAll(i.waitFor)))
-                .forEach(e -> this.transition(e, ProccessStatus.INSTALLING)));
+                .forEach(e -> this.transition(e, NodeSchemaProcessStatus.INSTALLING)));
   }
 
   /**
@@ -146,7 +138,7 @@ public class PathStoreMasterSchemaServer implements Runnable {
                         i.waitFor.equals(Collections.singletonList(-1))
                             || (completeSet.get(k) != null
                                 && Collections.disjoint(completeSet.get(k), i.waitFor)))
-                .forEach(e -> this.transition(e, ProccessStatus.REMOVING)));
+                .forEach(e -> this.transition(e, NodeSchemaProcessStatus.REMOVING)));
   }
 
   /**
@@ -154,12 +146,13 @@ public class PathStoreMasterSchemaServer implements Runnable {
    *
    * @param entry entry to transition
    */
-  private void transition(final NodeSchemaEntry entry, final ProccessStatus proccessStatus) {
+  private void transition(
+      final NodeSchemaEntry entry, final NodeSchemaProcessStatus nodeSchemaProcessStatus) {
 
     logger.info(
         String.format(
             "%s node %d for keyspace %s",
-            proccessStatus.toString(), entry.nodeId, entry.keyspaceName));
+            nodeSchemaProcessStatus.toString(), entry.nodeId, entry.keyspaceName));
 
     Update transitionUpdate =
         QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
@@ -168,7 +161,7 @@ public class PathStoreMasterSchemaServer implements Runnable {
         .and(QueryBuilder.eq(Constants.NODE_SCHEMAS_COLUMNS.KEYSPACE_NAME, entry.keyspaceName))
         .with(
             QueryBuilder.set(
-                Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, proccessStatus.toString()));
+                Constants.NODE_SCHEMAS_COLUMNS.PROCESS_STATUS, nodeSchemaProcessStatus.toString()));
 
     this.session.execute(transitionUpdate);
   }

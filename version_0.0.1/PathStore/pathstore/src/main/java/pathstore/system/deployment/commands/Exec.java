@@ -1,7 +1,7 @@
 package pathstore.system.deployment.commands;
 
 import com.jcraft.jsch.JSchException;
-import pathstore.system.deployment.utilities.Pair;
+import pathstore.util.Pair;
 import pathstore.system.deployment.utilities.SSHUtil;
 
 import java.io.IOException;

@@ -4,7 +4,7 @@ import {ErrorModalContext} from "../../contexts/ErrorModalContext";
 import {APIContext} from "../../contexts/APIContext";
 import {ServerCreationResponseModalContext} from "../../contexts/ServerCreationResponseModalContext";
 import {webHandler} from "../../utilities/Utils";
-import {Server} from "../../utilities/ApiDeclarations";
+import {Server, SERVER_AUTH_TYPE} from "../../utilities/ApiDeclarations";
 import {ServerForm} from "./ServerForm";
 import {SubmissionErrorModalProvider} from "../../contexts/SubmissionErrorModalContext";
 
@@ -31,6 +31,9 @@ export const AddServers: FunctionComponent = () => {
      *
      * @param ip ip of server
      * @param username username of server to connect
+     * @param authType authType used for server
+     * @param privateKey private key file
+     * @param passphrase optional passphrase
      * @param password password of server to connect
      * @param ssh_port ssh port to connect on
      * @param rmi_port rmi port to host rmi server
@@ -40,6 +43,9 @@ export const AddServers: FunctionComponent = () => {
     const onFormSubmit = useCallback((
         ip: string | undefined,
         username: string | undefined,
+        authType: string | undefined,
+        privateKey: File | undefined,
+        passphrase: string | undefined,
         password: string | undefined,
         ssh_port: number | undefined,
         rmi_port: number | undefined,
@@ -49,31 +55,44 @@ export const AddServers: FunctionComponent = () => {
 
         if (loadingModal.show && loadingModal.close && errorModal.show && forceRefresh) {
 
-            let url = "/api/v1/servers"
-                + "?ip=" + ip
-                + "&username=" + username
-                + "&password=" + password
-                + "&ssh_port=" + (ssh_port === undefined ? 22 : ssh_port)
-                + "&rmi_port=" + (rmi_port === undefined ? 1099 : rmi_port)
-                + "&name=" + name;
+            if (ip && username && name) {
+                let formData = new FormData();
+                formData.append("ip", ip);
+                formData.append("username", username);
+                formData.append("ssh_port", (ssh_port === undefined ? 22 : ssh_port).toString());
+                formData.append("rmi_port", (rmi_port === undefined ? 1099 : rmi_port).toString());
+                formData.append("name", name);
 
-            /*
-                    clearForm();
-            this.props.callback();
-             */
-            loadingModal.show();
-            fetch(url, {
-                method: 'POST'
-            })
-                .then(webHandler)
-                .then((s: Server) => {
-                    if (show)
-                        show(s);
-                    clearForm();
-                    forceRefresh();
+
+                if (authType === "Password" && password) {
+                    formData.append("auth_type", SERVER_AUTH_TYPE[SERVER_AUTH_TYPE.PASSWORD]);
+                    formData.append("password", password);
+                } else if (authType === "Key" && privateKey) {
+                    formData.append("auth_type", SERVER_AUTH_TYPE[SERVER_AUTH_TYPE.IDENTITY]);
+                    formData.append("privateKey", privateKey);
+
+                    if (passphrase)
+                        formData.append("passphrase", passphrase);
+                } else {
+                    alert("ERROR in add server call");
+                    return;
+                }
+
+                loadingModal.show();
+                fetch("/api/v1/servers", {
+                    method: 'POST',
+                    body: formData
                 })
-                .catch(errorModal.show)
-                .finally(loadingModal.close);
+                    .then(webHandler)
+                    .then((s: Server) => {
+                        if (show)
+                            show(s);
+                        clearForm();
+                        forceRefresh();
+                    })
+                    .catch(errorModal.show)
+                    .finally(loadingModal.close);
+            }
         }
     }, [loadingModal, errorModal, forceRefresh, show]);
 

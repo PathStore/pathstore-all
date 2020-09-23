@@ -5,12 +5,15 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.jcraft.jsch.JSchException;
+import org.springframework.web.multipart.MultipartFile;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.common.tables.ServerAuthType;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstoreweb.pathstoreadminpanel.services.servers.Server;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
+import java.io.IOException;
 import java.util.UUID;
 
 import static pathstoreweb.pathstoreadminpanel.validator.ErrorConstants.UPDATE_SERVER_PAYLOAD.*;
@@ -27,6 +30,9 @@ public final class UpdateServerPayload extends ValidatedPayload {
    */
   public final Server server;
 
+  /** Private key (if applicable) */
+  private MultipartFile privateKey;
+
   /**
    * @param server_uuid server UUID to modify
    * @param ip ip of server
@@ -40,12 +46,34 @@ public final class UpdateServerPayload extends ValidatedPayload {
       final String server_uuid,
       final String ip,
       final String username,
+      final String auth_type,
+      final String passphrase,
       final String password,
       final int ssh_port,
       final int rmi_port,
       final String name) {
+    if (server_uuid == null) throw new RuntimeException("Server UUID Null");
     this.server =
-        new Server(UUID.fromString(server_uuid), ip, username, password, ssh_port, rmi_port, name);
+        new Server(
+            UUID.fromString(server_uuid),
+            ip,
+            username,
+            auth_type,
+            passphrase,
+            password,
+            ssh_port,
+            rmi_port,
+            name);
+  }
+
+  /** @param privateKey set {@link #privateKey} to this */
+  public void setPrivateKey(final MultipartFile privateKey) {
+    this.privateKey = privateKey;
+  }
+
+  /** @return {@link #privateKey} */
+  public MultipartFile getPrivateKey() {
+    return this.privateKey;
   }
 
   /**
@@ -64,8 +92,7 @@ public final class UpdateServerPayload extends ValidatedPayload {
    * match)
    *
    * <p>(5) server UUID is not attached to a deployment node that is at any other state then {@link
-   * pathstore.system.deployment.deploymentFSM.DeploymentProcessStatus#DEPLOYED} or (TODO:
-   * un-deployed)
+   * pathstore.common.tables.DeploymentProcessStatus#DEPLOYED}
    *
    * <p>(6) Information provided is a valid server (can connect)
    *
@@ -79,12 +106,11 @@ public final class UpdateServerPayload extends ValidatedPayload {
         this.server.serverUUID,
         this.server.ip,
         this.server.username,
-        this.server.password,
         this.server.sshPort,
         this.server.rmiPort,
         this.server.name)) return new String[] {WRONG_SUBMISSION_FORMAT};
 
-    String[] errors = {SERVER_UUID_DOESNT_EXIST, null, null, null, null};
+    String[] errors = {SERVER_UUID_DOESNT_EXIST, null, null, null, null, null};
 
     Session session = PathStoreCluster.getSuperUserInstance().connect();
 
@@ -121,10 +147,23 @@ public final class UpdateServerPayload extends ValidatedPayload {
 
     // (6)
     try {
-      new SSHUtil(this.server.ip, this.server.username, this.server.password, this.server.sshPort)
-          .disconnect();
-    } catch (JSchException e) {
-      errors[4] = CONNECTION_INFORMATION_IS_INVALID;
+      if (this.server.authType.equals(ServerAuthType.PASSWORD.toString()))
+        if (this.server.password == null) errors[4] = PASSWORD_NOT_PRESENT;
+        else
+          new SSHUtil(
+                  this.server.ip, this.server.username, this.server.password, this.server.sshPort)
+              .disconnect();
+      else if (this.server.authType.equals(ServerAuthType.IDENTITY.toString()))
+        if (this.getPrivateKey() == null) errors[4] = PRIVATE_KEY_NOT_PRESENT;
+        else
+          new SSHUtil(
+              this.server.ip,
+              this.server.username,
+              this.server.sshPort,
+              this.getPrivateKey().getBytes(),
+              this.server.passphrase);
+    } catch (JSchException | IOException e) {
+      errors[5] = CONNECTION_INFORMATION_IS_INVALID;
     }
 
     return errors;

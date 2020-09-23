@@ -23,12 +23,21 @@ export enum DEPLOYMENT_STATE {
 }
 
 /**
+ * State for {@link Server#auth_type}
+ */
+export enum SERVER_AUTH_TYPE {
+    "PASSWORD",
+    "IDENTITY"
+}
+
+/**
  * Parse response from any server endpoint
  */
 export interface Server {
     server_uuid: string
     ip: string
     username: string
+    auth_type: string
     ssh_port: number
     rmi_port: number
     name: string
@@ -95,6 +104,7 @@ export interface ApplicationUpdate {
     keyspaceName: string
     waitFor: number[]
 }
+
 /**
  * Parse error response (error code 400)
  */

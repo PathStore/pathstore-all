@@ -5,6 +5,8 @@ import pathstore.authentication.CredentialCache;
 import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
+import pathstore.common.tables.DeploymentEntry;
+import pathstore.common.tables.ServerEntry;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 
 import java.io.File;
@@ -159,15 +161,11 @@ public class StartupUTIL {
    * @return list of removal commands
    */
   public static List<ICommand> initUnDeploymentList(
-      final SSHUtil sshUtil,
-      final String ip,
-      final int cassandraPort,
-      final int newNodeId,
-      final int parentNodeId) {
+      final SSHUtil sshUtil, final DeploymentEntry deploymentEntry, final ServerEntry serverEntry) {
     return new DeploymentBuilder<>(sshUtil)
-        .removeLocalCredential(newNodeId)
-        .remove(new ForcePush(newNodeId, ip, cassandraPort))
-        .deleteNodeHistory(newNodeId, parentNodeId)
+        .removeLocalCredential(deploymentEntry.newNodeId)
+        .remove(new ForcePush(deploymentEntry.newNodeId, serverEntry.ip, serverEntry.cassandraPort))
+        .deleteNodeHistory(deploymentEntry.newNodeId, deploymentEntry.parentNodeId)
         .build();
   }
 }

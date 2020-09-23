@@ -5,6 +5,8 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
+import pathstore.common.tables.DeploymentEntry;
+import pathstore.common.tables.DeploymentProcessStatus;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 

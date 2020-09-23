@@ -1,7 +1,10 @@
 package pathstoreweb.pathstoreadminpanel.controllers;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartResolver;
+import org.springframework.web.multipart.support.StandardServletMultipartResolver;
 import pathstoreweb.pathstoreadminpanel.Endpoints;
 import pathstoreweb.pathstoreadminpanel.services.ValidityErrorFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.DeployApplications;
@@ -32,7 +35,10 @@ import pathstoreweb.pathstoreadminpanel.services.servers.payload.AddServerPayloa
 import pathstoreweb.pathstoreadminpanel.services.servers.payload.DeleteServerPayload;
 import pathstoreweb.pathstoreadminpanel.services.servers.payload.UpdateServerPayload;
 
-/** Main controller for api. TODO: split up to sub functions */
+import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
+
+/** Main controller for api. */
 @RestController
 @RequestMapping(Endpoints.API)
 public class ApiV1 {
@@ -214,5 +220,26 @@ public class ApiV1 {
   @GetMapping(Endpoints.AVAILABLE_LOG_DATES)
   public ResponseEntity<String> getAvailableLogs() {
     return new GetAvailableLogDates().response();
+  }
+
+  /**
+   * This is used to allow put requests to send
+   *
+   * @return multipart resolver
+   */
+  @Bean
+  public MultipartResolver multipartResolver() {
+    return new StandardServletMultipartResolver() {
+      @Override
+      public boolean isMultipart(HttpServletRequest request) {
+        String method = request.getMethod().toLowerCase();
+        // By default, only POST is allowed. Since this is an 'update' we should accept PUT.
+        if (!Arrays.asList("put", "post").contains(method)) {
+          return false;
+        }
+        String contentType = request.getContentType();
+        return (contentType != null && contentType.toLowerCase().startsWith("multipart/"));
+      }
+    };
   }
 }

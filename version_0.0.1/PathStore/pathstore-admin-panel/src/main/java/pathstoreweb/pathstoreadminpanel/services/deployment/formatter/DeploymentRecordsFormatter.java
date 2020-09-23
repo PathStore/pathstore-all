@@ -4,7 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import pathstore.system.deployment.deploymentFSM.DeploymentEntry;
+import pathstore.common.tables.DeploymentEntry;
 import pathstoreweb.pathstoreadminpanel.services.IFormatter;
 
 import java.util.List;
