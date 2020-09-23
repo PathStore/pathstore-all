@@ -131,10 +131,8 @@ public final class AddServerPayload extends ValidatedPayload {
               this.server.sshPort,
               this.getPrivateKey().getBytes(),
               this.server.passphrase);
-    } catch (JSchException e) {
+    } catch (JSchException | IOException e) {
       errors[3] = CONNECTION_INFORMATION_IS_INVALID;
-    } catch (IOException e) {
-      errors[3] = "Could not read file";
     }
 
     return errors;
