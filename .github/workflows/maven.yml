@@ -1,7 +1,7 @@
 # This workflow will build a Java project with Maven
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
 
-name: Java CI with Maven
+name: Verify Packaging of PathStore, Startup Utility, and the Admin Panel
 
 on:
   push:
@@ -20,6 +20,12 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-    - name: Build with Maven
+    - name: Build PathStore
       run: mvn package
       working-directory: ./version_0.0.1/PathStore/pathstore
+    - name: Build Startup Utility
+      run: mvn package
+      working-directory: ./version_0.0.1/PathStore/pathstore-startup-utility
+    - name: Build Admin Panel
+      run: mvn package
+      working-directory: ./version_0.0.1/PathStore/pathstore-admin-panel
