@@ -52,6 +52,7 @@ public final class UpdateServerPayload extends ValidatedPayload {
       final int ssh_port,
       final int rmi_port,
       final String name) {
+    if (server_uuid == null) throw new RuntimeException("Server UUID Null");
     this.server =
         new Server(
             UUID.fromString(server_uuid),

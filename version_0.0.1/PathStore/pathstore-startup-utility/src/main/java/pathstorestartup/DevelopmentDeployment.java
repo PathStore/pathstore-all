@@ -73,61 +73,54 @@ public class DevelopmentDeployment {
     // add shutdown hook
     Runtime.getRuntime().addShutdownHook(new Thread(this::cleanUp));
 
-    try {
-      // build cassandra
-      new DevelopmentBuilder()
-          .execute(
-              BUILDING_IMAGE_TAG,
-              DeploymentConstants.CASSANDRA,
-              BUILD_IMAGE(DeploymentConstants.CASSANDRA, cassandraPath),
-              0)
-          .execute(
-              SAVING_IMAGE_TAG,
-              DeploymentConstants.CASSANDRA,
-              SAVING_IMAGE(this.cassandraTar, DeploymentConstants.CASSANDRA),
-              0)
-          .build();
+    // build cassandra
+    new DevelopmentBuilder()
+        .execute(
+            BUILDING_IMAGE_TAG,
+            DeploymentConstants.CASSANDRA,
+            BUILD_IMAGE(DeploymentConstants.CASSANDRA, cassandraPath),
+            0)
+        .execute(
+            SAVING_IMAGE_TAG,
+            DeploymentConstants.CASSANDRA,
+            SAVING_IMAGE(this.cassandraTar, DeploymentConstants.CASSANDRA),
+            0)
+        .build();
 
-      // build pathstore
-      new DevelopmentBuilder()
-          .execute(MVN_PACKAGE_TAG, pathstorePath, MVN_PACKAGE(pathstorePath), 0)
-          .execute(
-              BUILDING_IMAGE_TAG,
-              DeploymentConstants.PATHSTORE,
-              BUILD_IMAGE(DeploymentConstants.PATHSTORE, pathstorePath),
-              0)
-          .execute(
-              SAVING_IMAGE_TAG,
-              DeploymentConstants.PATHSTORE,
-              SAVING_IMAGE(this.pathstoreTar, DeploymentConstants.PATHSTORE),
-              0)
-          .build();
+    // build pathstore
+    new DevelopmentBuilder()
+        .execute(MVN_PACKAGE_TAG, pathstorePath, MVN_PACKAGE(pathstorePath), 0)
+        .execute(
+            BUILDING_IMAGE_TAG,
+            DeploymentConstants.PATHSTORE,
+            BUILD_IMAGE(DeploymentConstants.PATHSTORE, pathstorePath),
+            0)
+        .execute(
+            SAVING_IMAGE_TAG,
+            DeploymentConstants.PATHSTORE,
+            SAVING_IMAGE(this.pathstoreTar, DeploymentConstants.PATHSTORE),
+            0)
+        .build();
 
-      // build pathstore-admin-panel
-      new DevelopmentBuilder()
-          .execute(
-              MVN_PACKAGE_TAG, pathstoreAdminPanelPath, MVN_PACKAGE(pathstoreAdminPanelPath), 0)
-          .execute(
-              BUILDING_IMAGE_TAG,
-              BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL,
-              BUILD_IMAGE(
-                  BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL, pathstoreAdminPanelPath),
-              0)
-          .execute(
-              SAVING_IMAGE_TAG,
-              BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL,
-              SAVING_IMAGE(
-                  this.pathstoreAdminPanelTar, BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL),
-              0)
-          .build();
+    // build pathstore-admin-panel
+    new DevelopmentBuilder()
+        .execute(MVN_PACKAGE_TAG, pathstoreAdminPanelPath, MVN_PACKAGE(pathstoreAdminPanelPath), 0)
+        .execute(
+            BUILDING_IMAGE_TAG,
+            BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL,
+            BUILD_IMAGE(
+                BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL, pathstoreAdminPanelPath),
+            0)
+        .execute(
+            SAVING_IMAGE_TAG,
+            BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL,
+            SAVING_IMAGE(
+                this.pathstoreAdminPanelTar, BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL),
+            0)
+        .build();
 
-      // deploy the built images to a server
-      this.deploy();
-
-    } finally {
-      // remove local tars after deployment is finished or failed.
-      this.cleanUp();
-    }
+    // deploy the built images to a server
+    this.deploy();
   }
 
   /**

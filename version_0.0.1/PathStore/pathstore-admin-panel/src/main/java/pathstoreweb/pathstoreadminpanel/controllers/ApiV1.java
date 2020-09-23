@@ -38,7 +38,7 @@ import pathstoreweb.pathstoreadminpanel.services.servers.payload.UpdateServerPay
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 
-/** Main controller for api. TODO: split up to sub functions */
+/** Main controller for api. */
 @RestController
 @RequestMapping(Endpoints.API)
 public class ApiV1 {
