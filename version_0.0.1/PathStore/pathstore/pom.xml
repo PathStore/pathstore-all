@@ -54,7 +54,7 @@
             <artifactId>metrics-core</artifactId>
             <version>3.0.2</version>
         </dependency>
-        
+
         <!-- Json library for communication between client and server -->
         <dependency>
             <groupId>org.json</groupId>
