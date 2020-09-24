@@ -37,6 +37,12 @@
             <artifactId>cassandra-driver-core-custom</artifactId>
             <version>3.2.1</version>
         </dependency>
+        <!-- For cassandra logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>LATEST</version>
+        </dependency>
         <!-- Json library for communication between client and server -->
         <dependency>
             <groupId>org.json</groupId>
