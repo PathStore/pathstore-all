@@ -8,6 +8,7 @@
     \|__|     \|__|\|__|    \|__|  \|__|\|__|\_________\   \|__|  \|_______|\|__|\|__|\|_______|
                                             \|_________|                                        
 </pre>
+[![Actions Status](https://github.com/delara/cloudpath/workflows/package/badge.svg)](https://github.com/delara/cloudpath/actions)
 
 # Usage
 
