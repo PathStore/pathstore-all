@@ -18,6 +18,8 @@
 package pathstore.system;
 
 import com.datastax.driver.core.Session;
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
 import pathstore.authentication.CredentialCache;
 import pathstore.common.*;
 import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
@@ -31,10 +33,6 @@ import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
 import pathstore.util.SchemaInfo;
 
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
-
 /**
  * This is the starting point of a pathstore server.
  *
@@ -42,12 +40,16 @@ import java.rmi.server.UnicastRemoteObject;
  *
  * <p>It will also write to its startup table that is finished certain steps to allow the deployer
  * of this process to autonomically verify the node is started up
+ *
+ * <p>TODO: Add shutdown hook for server
  */
 public class PathStoreServerImpl {
 
   /** Logger for {@link PathStoreServerImpl} */
   private static final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStoreServerImpl.class);
+
+  private static Server server;
 
   /**
    * Startup tasks:
@@ -84,28 +86,21 @@ public class PathStoreServerImpl {
 
       logger.info("Daemon connection was initialized successfully");
 
-      PathStoreServer stub =
-          (PathStoreServer)
-              UnicastRemoteObject.exportObject(PathStoreServerImplRMI.getInstance(), 0);
-
       System.out.println(PathStoreProperties.getInstance().ExternalAddress);
 
-      System.setProperty(
-          "java.rmi.server.hostname", PathStoreProperties.getInstance().ExternalAddress);
-      Registry registry =
-          LocateRegistry.createRegistry(PathStoreProperties.getInstance().RMIRegistryPort);
+      // start grpc
+      server =
+          ServerBuilder.forPort(PathStoreProperties.getInstance().RMIRegistryPort)
+              .addService(new PathStoreServerImplGRPC())
+              .build();
 
-      try {
-        System.out.println("Binding rmi connection");
-        registry.bind("PathStoreServer", stub);
-        PathStoreDeploymentUtils.writeTaskDone(local, 0);
-      } catch (Exception ex) {
-        System.out.println("Could not bind, trying again");
-        registry.rebind("PathStoreServer", stub);
-        PathStoreDeploymentUtils.writeTaskDone(local, 0);
-      }
+      server.start();
 
-      logger.info("Binded to java RMI");
+      logger.info(
+          String.format(
+              "Started GRPC on port %d", PathStoreProperties.getInstance().RMIRegistryPort));
+
+      PathStoreDeploymentUtils.writeTaskDone(local, 0);
 
       if (!SchemaInfo.getInstance().isKeyspaceLoaded(Constants.PATHSTORE_APPLICATIONS)) {
         logger.info("Application keyspace not detected, attempting to load");

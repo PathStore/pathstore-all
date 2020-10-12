@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+option java_multiple_files = false;
+option java_package = "pathstore.grpc";
+option java_outer_classname = "pathStoreProto";
+option objc_class_prefix = "PSP";
+
+package pathstore;
+
+service PathStoreService{
+
+  // add queryEntry to parent node. infoFromServer is a constant string.
+  rpc updateCache(QueryEntry) returns(InfoFromServer);
+
+  rpc createQueryDelta(QueryDeltaEntry) returns (UUIDInfo);
+
+  rpc registerApplicationClient(RegisterApplicationRequest) returns (RegisterApplicationResponse);
+
+  rpc getSchemaInfo(SchemaInfoRequest) returns (SchemaInfoResponse);
+
+  rpc validateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+
+  rpc forcePush(ForcePushRequest) returns (google.protobuf.Empty);
+
+  rpc forceSynchronize(ForceSynchronizationRequest) returns (google.protobuf.Empty);
+
+  rpc getLocalNodeId(google.protobuf.Empty) returns (GetLocalNodeResponse);
+
+}
+
+// Data Type define:
+
+message QueryEntry{
+  string keyspace = 1;
+  string table = 2;
+  bytes clauses = 3;
+  int32 limit = 4;
+}
+
+message InfoFromServer{
+  string info = 1;    // const string.
+}
+
+message QueryDeltaEntry{
+  string keyspace = 1;
+  string table = 2;
+  bytes clauses = 3;
+  string parentTimestamp = 4; // uuid
+  int32 nodeID = 5;
+  int32 limit = 6;
+}
+
+message UUIDInfo{
+  string uuid = 1;
+}
+
+message RegisterApplicationRequest{
+  string applicationName = 1;
+  string password = 2;
+}
+
+message RegisterApplicationResponse{
+  string response = 1;
+}
+
+message SchemaInfoRequest{
+  string keyspace = 1;
+}
+
+message SchemaInfoResponse{
+  bytes response = 1;
+}
+
+message ValidateSessionRequest{
+  bytes sessionToken = 1;
+}
+
+message ValidateSessionResponse{
+  bool response = 1;
+}
+
+message ForcePushRequest{
+  bytes sessionToken = 1;
+  int32 lca = 2;
+}
+
+message ForceSynchronizationRequest{
+  bytes sessionToken = 1;
+  int32 lca = 2;
+}
+
+message GetLocalNodeResponse{
+  int32 node = 1;
+}

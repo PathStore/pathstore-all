@@ -22,7 +22,6 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import io.netty.util.internal.ConcurrentSet;
 import pathstore.common.Constants;
-import pathstore.common.PathStoreServer;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
