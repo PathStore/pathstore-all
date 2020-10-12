@@ -40,7 +40,7 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
       pathStoreProto.QueryDeltaEntry request,
       StreamObserver<pathStoreProto.UUIDInfo> responseObserver) {
     String keyspace = request.getKeyspace();
-    String table = request.getKeyspace();
+    String table = request.getTable();
     byte[] clauses = request.getClauses().toByteArray();
     UUID parentTimestamp = UUID.fromString(request.getParentTimestamp());
     int nodeId = request.getNodeID();
