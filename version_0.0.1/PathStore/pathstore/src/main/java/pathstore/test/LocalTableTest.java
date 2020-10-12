@@ -9,7 +9,7 @@ import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.client.PathStoreSession;
 
 public class LocalTableTest {
-  public static void main(String[] args) {
+  public static void main(String[] args) throws InterruptedException {
     PathStoreSession session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Insert insert =
