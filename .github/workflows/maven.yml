@@ -21,11 +21,11 @@ jobs:
       with:
         java-version: 1.8
     - name: Build PathStore
-      run: mvn package
+      run: mvn -B package
       working-directory: ./version_0.0.1/PathStore/pathstore
     - name: Build Startup Utility
-      run: mvn package
+      run: mvn -B package
       working-directory: ./version_0.0.1/PathStore/pathstore-startup-utility
     - name: Build Admin Panel
-      run: mvn package
+      run: mvn package      run: mvn -B package
       working-directory: ./version_0.0.1/PathStore/pathstore-admin-panel
