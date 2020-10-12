@@ -66,7 +66,7 @@ export const ModifyServerModal: FunctionComponent = () => {
         passphrase: string | undefined,
         password: string | undefined,
         ssh_port: number | undefined,
-        rmi_port: number | undefined,
+        grpc_port: number | undefined,
         name: string | undefined,
         clearForm: () => void
     ): void => {
@@ -76,7 +76,7 @@ export const ModifyServerModal: FunctionComponent = () => {
             formData.append("ip", ip);
             formData.append("username", username);
             formData.append("ssh_port", (ssh_port === undefined ? 22 : ssh_port).toString());
-            formData.append("rmi_port", (rmi_port === undefined ? 1099 : rmi_port).toString());
+            formData.append("grpc_port", (grpc_port === undefined ? 1099 : grpc_port).toString());
             formData.append("name", name);
 
 

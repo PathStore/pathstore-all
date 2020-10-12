@@ -65,7 +65,7 @@ public final class ErrorConstants {
    */
   public static final class ADD_SERVER_PAYLOAD {
     public static final String WRONG_SUBMISSION_FORMAT =
-        "You must submit the fields: ip, username, ssh_port, rmi_port, name";
+        "You must submit the fields: ip, username, ssh_port, grpc_port, name";
     public static final String IP_IS_NOT_UNIQUE =
         "You must use an ip address that isn't already in use";
     public static final String NAME_IS_NOT_UNIQUE = "You must use a name that isn't already in use";
@@ -83,7 +83,7 @@ public final class ErrorConstants {
    */
   public static final class UPDATE_SERVER_PAYLOAD {
     public static final String WRONG_SUBMISSION_FORMAT =
-        "You must submit the following fields: server_uuid, ip, username, ssh_port, rmi_port, name";
+        "You must submit the following fields: server_uuid, ip, username, ssh_port, grpc_port, name";
     public static final String SERVER_UUID_DOESNT_EXIST =
         "The server uuid you passed does not exist";
     public static final String IP_IS_NOT_UNIQUE =

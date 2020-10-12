@@ -26,8 +26,8 @@ public class Server {
   /** SSH port number for server */
   public final int sshPort;
 
-  /** RMI port for pathstore rmi server */
-  public final int rmiPort;
+  /** GRPC port for pathstore grpc server */
+  public final int grpcPort;
 
   /** Human readable name for this server */
   public final String name;
@@ -40,7 +40,7 @@ public class Server {
    * @param passphrase {@link #passphrase}
    * @param password {@link #password}
    * @param sshPort {@link #sshPort}
-   * @param rmiPort {@link #rmiPort}
+   * @param grpcPort {@link #grpcPort}
    * @param name {@link #name}
    */
   public Server(
@@ -51,7 +51,7 @@ public class Server {
       final String passphrase,
       final String password,
       final int sshPort,
-      final int rmiPort,
+      final int grpcPort,
       final String name) {
     this.serverUUID = serverUUID;
     this.ip = ip;
@@ -60,7 +60,7 @@ public class Server {
     this.passphrase = passphrase;
     this.password = password;
     this.sshPort = sshPort;
-    this.rmiPort = rmiPort;
+    this.grpcPort = grpcPort;
     this.name = name;
   }
 }

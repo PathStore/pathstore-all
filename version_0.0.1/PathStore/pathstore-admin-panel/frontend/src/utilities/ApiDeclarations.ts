@@ -39,7 +39,7 @@ export interface Server {
     username: string
     auth_type: string
     ssh_port: number
-    rmi_port: number
+    grpc_port: number
     name: string
 }
 

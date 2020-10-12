@@ -46,7 +46,7 @@ export const ServerInfo: FunctionComponent<ServerInfoProps> = (props) => {
                 <p>IP: {object[0].ip}</p>
                 <p>Username: {object[0].username}</p>
                 <p>SSH Port: {object[0].ssh_port}</p>
-                <p>RMI Port: {object[0].rmi_port}</p>
+                <p>GRPC Port: {object[0].grpc_port}</p>
                 <p>Name: {object[0].name}</p>
             </div>
         );
