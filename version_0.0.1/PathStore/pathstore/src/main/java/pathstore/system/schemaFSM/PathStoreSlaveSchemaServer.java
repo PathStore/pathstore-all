@@ -210,9 +210,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
   }
 
   /**
-   * TODO: Force push data
-   *
-   * <p>Drops the keyspace if it exists then it updates node_schema that said keyspace is removed
+   * Drops the keyspace if it exists then it updates node_schema that said keyspace is removed
    *
    * @param keyspace application to remove
    */

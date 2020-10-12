@@ -62,7 +62,6 @@ public final class Constants {
     public static final String APPLICATION_MASTER_PASSWORD = "applicationMasterPassword";
   }
 
-  /** TODO: Change all references to this class */
   public static final class PATHSTORE_META_COLUMNS {
     public static final String PATHSTORE_VERSION = "pathstore_version";
     public static final String PATHSTORE_PARENT_TIMESTAMP = "pathstore_parent_timestamp";

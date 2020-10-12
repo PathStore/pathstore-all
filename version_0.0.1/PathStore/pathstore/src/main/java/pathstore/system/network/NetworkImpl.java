@@ -27,7 +27,12 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * This is class is the implementation of {@link pathstore.system.PathStoreServerImplGRPC}. That
+ * class is purely a transportation wrapper
+ */
 public class NetworkImpl {
+  /** Logger */
   private final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(NetworkImpl.class);
 
   /**

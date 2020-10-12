@@ -26,7 +26,6 @@ import io.grpc.stub.StreamObserver;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
-import pathstore.exception.PathStoreRemoteException;
 import pathstore.grpc.PathStoreServiceGrpc;
 import pathstore.grpc.pathStoreProto;
 import pathstore.sessions.SessionToken;
@@ -35,9 +34,6 @@ import pathstore.system.network.NetworkUtil;
 import pathstore.util.SchemaInfo;
 
 import java.io.IOException;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -179,7 +175,9 @@ public class PathStoreServerClient {
               .setLimit(entry.limit)
               .build();
 
-      return UUID.fromString(this.blockingStub.createQueryDelta(queryDeltaEntry).getUuid());
+      String response = this.blockingStub.createQueryDelta(queryDeltaEntry).getUuid();
+
+      return response != null ? UUID.fromString(response) : null;
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
