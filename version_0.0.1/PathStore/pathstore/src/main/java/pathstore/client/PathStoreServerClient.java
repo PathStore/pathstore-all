@@ -118,7 +118,7 @@ public class PathStoreServerClient {
    * @param port port to connect on
    */
   private PathStoreServerClient(final String ip, final int port) {
-    this(ManagedChannelBuilder.forAddress(ip, port));
+    this(ManagedChannelBuilder.forAddress(ip, port).usePlaintext(true));
   }
 
   /** @param channelBuilder channel build based on ip and port */
