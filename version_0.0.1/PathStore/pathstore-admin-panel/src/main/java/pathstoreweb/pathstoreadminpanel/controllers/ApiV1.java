@@ -91,7 +91,7 @@ public class ApiV1 {
    * @return {}
    */
   @PostMapping(Endpoints.APPLICATIONS)
-  public ResponseEntity<String> addApplication(@RequestBody final AddApplicationPayload payload) {
+  public ResponseEntity<String> addApplication(final AddApplicationPayload payload) {
     return payload.hasErrors()
         ? new ValidityErrorFormatter(payload.getErrors()).format()
         : new AddApplication(payload).response();
@@ -125,7 +125,7 @@ public class ApiV1 {
    * @return either errors or success response
    */
   @PostMapping(Endpoints.SERVERS)
-  public ResponseEntity<String> addServer(@RequestBody final AddServerPayload payload) {
+  public ResponseEntity<String> addServer(final AddServerPayload payload) {
     return payload.hasErrors()
         ? new ValidityErrorFormatter(payload.getErrors()).format()
         : new AddServer(payload).response();
@@ -138,7 +138,7 @@ public class ApiV1 {
    * @return either errors or success response
    */
   @PutMapping(Endpoints.SERVERS)
-  public ResponseEntity<String> updateServer(@RequestBody final UpdateServerPayload payload) {
+  public ResponseEntity<String> updateServer(final UpdateServerPayload payload) {
     return payload.hasErrors()
         ? new ValidityErrorFormatter(payload.getErrors()).format()
         : new UpdateServer(payload).response();
@@ -152,7 +152,7 @@ public class ApiV1 {
    * @return either errors or success response
    */
   @DeleteMapping(Endpoints.SERVERS)
-  public ResponseEntity<String> deleteServer(@RequestBody final DeleteServerPayload payload) {
+  public ResponseEntity<String> deleteServer(final DeleteServerPayload payload) {
     return payload.hasErrors()
         ? new ValidityErrorFormatter(payload.getErrors()).format()
         : new DeleteServer(payload).response();
