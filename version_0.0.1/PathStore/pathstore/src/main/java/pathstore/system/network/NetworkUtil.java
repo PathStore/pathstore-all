@@ -4,8 +4,13 @@ import com.google.protobuf.ByteString;
 
 import java.io.*;
 
-// TODO: Comment
+/** Network utils for GRPC object write and read */
 public class NetworkUtil {
+
+  /**
+   * @param object object to write to byte string
+   * @return grpc bytestring
+   */
   public static ByteString writeObject(final Object object) {
     try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream out = new ObjectOutputStream(bos)) {
@@ -17,8 +22,13 @@ public class NetworkUtil {
     }
   }
 
-  public static Object readObject(final byte[] bytes) {
-    try (ObjectInput in = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
+  /**
+   * @param byteString from grpc response
+   * @return object parsed must be casted
+   */
+  public static Object readObject(final ByteString byteString) {
+    try (ObjectInput in =
+        new ObjectInputStream(new ByteArrayInputStream(byteString.toByteArray()))) {
       return in.readObject();
     } catch (IOException | ClassNotFoundException e) {
       throw new RuntimeException(e);

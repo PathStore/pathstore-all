@@ -9,8 +9,7 @@ option objc_class_prefix = "PSP";
 package pathstore;
 
 service PathStoreService{
-
-  // add queryEntry to parent node. infoFromServer is a constant string.
+  
   rpc updateCache(QueryEntry) returns(InfoFromServer);
 
   rpc createQueryDelta(QueryDeltaEntry) returns (UUIDInfo);
@@ -29,8 +28,6 @@ service PathStoreService{
 
 }
 
-// Data Type define:
-
 message QueryEntry{
   string keyspace = 1;
   string table = 2;
@@ -39,14 +36,14 @@ message QueryEntry{
 }
 
 message InfoFromServer{
-  string info = 1;    // const string.
+  string info = 1;
 }
 
 message QueryDeltaEntry{
   string keyspace = 1;
   string table = 2;
   bytes clauses = 3;
-  string parentTimestamp = 4; // uuid
+  string parentTimestamp = 4;
   int32 nodeID = 5;
   int32 limit = 6;
 }

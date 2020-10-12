@@ -139,7 +139,7 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
       StreamObserver<pathStoreProto.ValidateSessionResponse> responseObserver) {
 
     SessionToken sessionToken =
-        (SessionToken) NetworkUtil.readObject(request.getSessionToken().toByteArray());
+        (SessionToken) NetworkUtil.readObject(request.getSessionToken());
 
     boolean response = this.network.validateSession(sessionToken);
 
@@ -159,7 +159,7 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
   public void forcePush(
       pathStoreProto.ForcePushRequest request, StreamObserver<Empty> responseObserver) {
     SessionToken sessionToken =
-        (SessionToken) NetworkUtil.readObject(request.getSessionToken().toByteArray());
+        (SessionToken) NetworkUtil.readObject(request.getSessionToken());
     int lca = request.getLca();
 
     this.network.forcePush(sessionToken, lca);
@@ -179,7 +179,7 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
   public void forceSynchronize(
       pathStoreProto.ForceSynchronizationRequest request, StreamObserver<Empty> responseObserver) {
     SessionToken sessionToken =
-        (SessionToken) NetworkUtil.readObject(request.getSessionToken().toByteArray());
+        (SessionToken) NetworkUtil.readObject(request.getSessionToken());
     int lca = request.getLca();
 
     this.network.forceSynchronize(sessionToken, lca);

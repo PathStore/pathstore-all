@@ -223,7 +223,7 @@ public class PathStoreServerClient {
 
     return (SchemaInfo)
         NetworkUtil.readObject(
-            this.blockingStub.getSchemaInfo(schemaInfoRequest).getResponse().toByteArray());
+            this.blockingStub.getSchemaInfo(schemaInfoRequest).getResponse());
   }
 
   /**
