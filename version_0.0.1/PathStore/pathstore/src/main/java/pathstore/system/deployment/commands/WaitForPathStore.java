@@ -65,7 +65,7 @@ public class WaitForPathStore implements ICommand {
     this.port = port;
     this.currentWaitCount = 0;
     this.neededRecords = new HashMap<>();
-    this.neededRecords.put(0, "RMI Server started");
+    this.neededRecords.put(0, "GRPC Server started");
     this.neededRecords.put(1, "Pathstore Application keyspace loaded");
     this.neededRecords.put(2, "Daemons started");
   }

@@ -64,7 +64,7 @@ public class Microbenchmarkfig10 {
 		//writer
 		PathStoreProperties p1 = new PathStoreProperties();
 		p1.CassandraIP="10.70.20.1";
-		p1.RMIRegistryIP=p1.CassandraIP;
+		p1.GRPCIP =p1.CassandraIP;
 		PathStoreCluster clusterW = new PathStoreCluster(p1);
 		Session sessionWriter = clusterW.connect();
 
@@ -72,7 +72,7 @@ public class Microbenchmarkfig10 {
 		//reader
 		PathStoreProperties psRoot = new PathStoreProperties();
 		psRoot.CassandraIP="10.70.20.156";
-		psRoot.RMIRegistryIP=psRoot.CassandraIP;
+		psRoot.GRPCIP =psRoot.CassandraIP;
 		PathStoreCluster cluster2= new PathStoreCluster(psRoot);
 		Session sessionReader= cluster2.connect();
 

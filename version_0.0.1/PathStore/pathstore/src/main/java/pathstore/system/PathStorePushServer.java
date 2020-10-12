@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  *
  * @implNote We only push data for augmented pathstore tables, not view_ or local_
  * @see pathstore.system.schemaFSM.PathStoreSlaveSchemaServer
- * @see PathStoreServerImplRMI#forcePush(SessionToken, int)
+ * @see pathstore.system.network.NetworkImpl#forcePush(SessionToken, int)
  */
 public class PathStorePushServer implements Runnable {
   /** logger for errors */

@@ -127,10 +127,10 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    * @param ip ip
    * @param parentNodeId parent node id
    * @param role role of node
-   * @param rmiRegistryIP rmi ip
-   * @param rmiRegistryPort rmi port
-   * @param rmiRegistryParentIP rmi parent ip
-   * @param rmiRegistryParentPort rmi parent port
+   * @param grpcIP grpc ip
+   * @param grpcPort grpc port
+   * @param grpcParentIP grpc parent ip
+   * @param grpcParentPort grpc parent port
    * @param cassandraIP cassandra ip
    * @param cassandraPort cassandra port
    * @param cassandraParentIP cassandra parent ip
@@ -146,10 +146,10 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
       final String ip,
       final int parentNodeId,
       final Role role,
-      final String rmiRegistryIP,
-      final int rmiRegistryPort,
-      final String rmiRegistryParentIP,
-      final int rmiRegistryParentPort,
+      final String grpcIP,
+      final int grpcPort,
+      final String grpcParentIP,
+      final int grpcParentPort,
       final String cassandraIP,
       final int cassandraPort,
       final String cassandraParentIP,
@@ -165,10 +165,10 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
             ip,
             parentNodeId,
             role,
-            rmiRegistryIP,
-            rmiRegistryPort,
-            rmiRegistryParentIP,
-            rmiRegistryParentPort,
+            grpcIP,
+            grpcPort,
+            grpcParentIP,
+            grpcParentPort,
             cassandraIP,
             cassandraPort,
             cassandraParentIP,

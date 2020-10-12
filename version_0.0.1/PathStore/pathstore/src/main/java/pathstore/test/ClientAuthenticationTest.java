@@ -10,7 +10,7 @@ import pathstore.common.Constants;
  * This class is used to test the functionality of client authentication.
  *
  * <p>It is assumed that the cassandra ip/port is defined in the properties file. It is also assumed
- * that the rmi ip/port is defined in the properties file.
+ * that the grpc ip/port is defined in the properties file.
  *
  * @implNote You must pass the application name and master password as params, respectively
  */

@@ -255,7 +255,7 @@ public class NetworkImpl {
         ServerEntry serverEntry = ServerEntry.fromRow(serverRow);
 
         PathStoreServerClient sourceNode =
-            PathStoreServerClient.getCustom(serverEntry.ip, serverEntry.rmiPort);
+            PathStoreServerClient.getCustom(serverEntry.ip, serverEntry.grpcPort);
 
         // force push all of K or T of session from sourceNode to lca if the sourceNode isn't the
         // lca

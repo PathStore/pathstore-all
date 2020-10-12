@@ -49,21 +49,21 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
    *
    * @param ip ip of the root node
    * @param cassandraPort cassandra port of the root node
-   * @param rmiPort rmi port of the root node
+   * @param grpcPort grpc port of the root node
    * @param username super user username for root node
    * @param password super user password for root node
    */
   public BootstrapDeploymentBuilder generateWebsiteProperties(
       final String ip,
       final int cassandraPort,
-      final int rmiPort,
+      final int grpcPort,
       final String username,
       final String password) {
     this.commands.add(
         new CreateWebsitePropertiesFile(
             ip,
             cassandraPort,
-            rmiPort,
+            grpcPort,
             BootstrapDeploymentConstants.LOCAL_TEMP_PROPERTIES_FILE,
             username,
             password));

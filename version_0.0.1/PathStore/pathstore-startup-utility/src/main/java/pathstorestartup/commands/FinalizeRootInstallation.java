@@ -54,8 +54,8 @@ public class FinalizeRootInstallation implements ICommand {
   /** Ssh port to server */
   private final int sshPort;
 
-  /** Rmi port to server */
-  private final int rmiPort;
+  /** Grpc port to server */
+  private final int grpcPort;
 
   /**
    * @param cassandraUsername {@link #cassandraUsername}
@@ -65,7 +65,7 @@ public class FinalizeRootInstallation implements ICommand {
    * @param username {@link #username}
    * @param password {@link #password}
    * @param sshPort {@link #sshPort}
-   * @param rmiPort {@link #rmiPort}
+   * @param grpcPort {@link #grpcPort}
    */
   public FinalizeRootInstallation(
       final String cassandraUsername,
@@ -77,7 +77,7 @@ public class FinalizeRootInstallation implements ICommand {
       final ServerIdentity serverIdentity,
       final String password,
       final int sshPort,
-      final int rmiPort) {
+      final int grpcPort) {
     this.cassandraUsername = cassandraUsername;
     this.cassandraPassword = cassandraPassword;
     this.ip = ip;
@@ -87,7 +87,7 @@ public class FinalizeRootInstallation implements ICommand {
     this.serverIdentity = serverIdentity;
     this.password = password;
     this.sshPort = sshPort;
-    this.rmiPort = rmiPort;
+    this.grpcPort = grpcPort;
   }
 
   /**
@@ -110,10 +110,10 @@ public class FinalizeRootInstallation implements ICommand {
             .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
             .value(PATHSTORE_DIRTY, true)
             .value(SERVER_UUID, serverUUID.toString())
-            .value(IP, ip)
-            .value(USERNAME, username)
-            .value(SSH_PORT, sshPort)
-            .value(RMI_PORT, rmiPort)
+            .value(IP, this.ip)
+            .value(USERNAME, this.username)
+            .value(SSH_PORT, this.sshPort)
+            .value(GRPC_PORT, this.grpcPort)
             .value(NAME, "Root Node");
 
     if (this.authType.equals(BootstrapDeploymentConstants.AUTH_TYPES.PASSWORD))

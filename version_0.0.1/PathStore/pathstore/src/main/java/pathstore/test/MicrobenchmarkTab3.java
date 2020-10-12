@@ -61,7 +61,7 @@ public class MicrobenchmarkTab3 {
 		//writer
 		PathStoreProperties p1 = new PathStoreProperties();
 		p1.CassandraIP="10.70.20.1";
-		p1.RMIRegistryIP=p1.CassandraIP;
+		p1.GRPCIP =p1.CassandraIP;
 		PathStoreCluster clusterW = new PathStoreCluster(p1);
 		Session sessionWriter = clusterW.connect();
 

@@ -68,7 +68,7 @@ public class Microbenchmark1 {
 		}
 
 		if (cmd.hasOption("rmiport")) 
-			PathStoreProperties.getInstance().RMIRegistryPort = Integer.parseInt(cmd.getOptionValue("rmiport"));
+			PathStoreProperties.getInstance().GRPCPort = Integer.parseInt(cmd.getOptionValue("rmiport"));
 
 		if (cmd.hasOption("cassandraport")) 
 			PathStoreProperties.getInstance().CassandraPort = Integer.parseInt(cmd.getOptionValue("cassandraport"));

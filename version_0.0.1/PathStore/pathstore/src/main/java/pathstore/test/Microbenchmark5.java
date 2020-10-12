@@ -66,7 +66,7 @@ public class Microbenchmark5 {
 
 		PathStoreProperties p2 = new PathStoreProperties();
 		p2.CassandraIP="10.70.20.154";
-		p2.RMIRegistryIP=p2.CassandraIP;
+		p2.GRPCIP =p2.CassandraIP;
 
 		PathStoreCluster cluster2 = new PathStoreCluster(p2);
 		Session sessionWriter = cluster2.connect();

@@ -91,11 +91,11 @@ public class PathStoreServerClient {
   private PathStoreServerClient() {
     this(
         PathStoreProperties.getInstance().role == Role.SERVER
-            ? PathStoreProperties.getInstance().RMIRegistryParentIP
-            : PathStoreProperties.getInstance().RMIRegistryIP,
+            ? PathStoreProperties.getInstance().GRPCParentIP
+            : PathStoreProperties.getInstance().GRPCIP,
         PathStoreProperties.getInstance().role == Role.SERVER
-            ? PathStoreProperties.getInstance().RMIRegistryParentPort
-            : PathStoreProperties.getInstance().RMIRegistryPort);
+            ? PathStoreProperties.getInstance().GRPCParentPort
+            : PathStoreProperties.getInstance().GRPCPort);
   }
 
   /**

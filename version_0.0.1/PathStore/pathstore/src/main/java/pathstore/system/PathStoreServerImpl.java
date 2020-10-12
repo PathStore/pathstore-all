@@ -54,7 +54,7 @@ public class PathStoreServerImpl {
   /**
    * Startup tasks:
    *
-   * <p>0: setup rmi server 1: load applications keyspace 2: start daemons
+   * <p>0: setup grpc server 1: load applications keyspace 2: start daemons
    *
    * @param args
    */
@@ -90,7 +90,7 @@ public class PathStoreServerImpl {
 
       // start grpc
       server =
-          ServerBuilder.forPort(PathStoreProperties.getInstance().RMIRegistryPort)
+          ServerBuilder.forPort(PathStoreProperties.getInstance().GRPCPort)
               .addService(new PathStoreServerImplGRPC())
               .build();
 
@@ -98,7 +98,7 @@ public class PathStoreServerImpl {
 
       logger.info(
           String.format(
-              "Started GRPC on port %d", PathStoreProperties.getInstance().RMIRegistryPort));
+              "Started GRPC on port %d", PathStoreProperties.getInstance().GRPCPort));
 
       PathStoreDeploymentUtils.writeTaskDone(local, 0);
 

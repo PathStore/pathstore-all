@@ -36,7 +36,7 @@ public class GetServersFormatter implements IFormatter {
       object.put(Constants.SERVERS_COLUMNS.USERNAME, server.username);
       object.put(Constants.SERVERS_COLUMNS.AUTH_TYPE, server.authType.toString());
       object.put(Constants.SERVERS_COLUMNS.SSH_PORT, server.sshPort);
-      object.put(Constants.SERVERS_COLUMNS.RMI_PORT, server.rmiPort);
+      object.put(Constants.SERVERS_COLUMNS.GRPC_PORT, server.grpcPort);
       object.put(Constants.SERVERS_COLUMNS.NAME, server.name);
 
       jsonArray.put(object);

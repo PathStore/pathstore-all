@@ -29,17 +29,17 @@ public class GeneratePropertiesFile implements ICommand {
   /** Role of new node */
   private final Role role;
 
-  /** Rmi registry ip of new node */
-  private final String rmiRegistryIP;
+  /** grpc ip of new node */
+  private final String grpcIP;
 
-  /** Rmi registry port of new ndoe */
-  private final int rmiRegistryPort;
+  /** grpc port of new ndoe */
+  private final int grpcPort;
 
-  /** Rmi registry ip of new node's parent */
-  private final String rmiRegistryParentIP;
+  /** grpc ip of new node's parent */
+  private final String grpcParentIP;
 
-  /** Rmi registry port of new node's parent */
-  private final int rmiRegistryParentPort;
+  /** grpc port of new node's parent */
+  private final int grpcParentPort;
 
   /** Cassandra ip of new node */
   private final String cassandraIP;
@@ -67,25 +67,27 @@ public class GeneratePropertiesFile implements ICommand {
    * @param ip {@link #ip}
    * @param parentNodeId {@link #parentNodeId}
    * @param role {@link #role}
-   * @param rmiRegistryIP {@link #rmiRegistryIP}
-   * @param rmiRegistryPort {@link #rmiRegistryPort}
-   * @param rmiRegistryParentIP {@link #rmiRegistryParentIP}
-   * @param rmiRegistryParentPort {@link #rmiRegistryParentPort}
+   * @param grpcIP {@link #grpcIP}
+   * @param grpcPort {@link #grpcPort}
+   * @param grpcParentIP {@link #grpcParentIP}
+   * @param grpcParentPort {@link #grpcParentIP}
    * @param cassandraIP {@link #cassandraIP}
    * @param cassandraPort {@link #cassandraPort}
    * @param cassandraParentIP {@link #cassandraParentIP}
    * @param cassandraParentPort {@link #cassandraParentPort}
    * @param destinationToStore {@link #destinationToStore}
+   * @param username {@link #username}
+   * @param password {@link #password}
    */
   public GeneratePropertiesFile(
       final int nodeID,
       final String ip,
       final int parentNodeId,
       final Role role,
-      final String rmiRegistryIP,
-      final int rmiRegistryPort,
-      final String rmiRegistryParentIP,
-      final int rmiRegistryParentPort,
+      final String grpcIP,
+      final int grpcPort,
+      final String grpcParentIP,
+      final int grpcParentPort,
       final String cassandraIP,
       final int cassandraPort,
       final String cassandraParentIP,
@@ -97,10 +99,10 @@ public class GeneratePropertiesFile implements ICommand {
     this.ip = ip;
     this.parentNodeId = parentNodeId;
     this.role = role;
-    this.rmiRegistryIP = rmiRegistryIP;
-    this.rmiRegistryPort = rmiRegistryPort;
-    this.rmiRegistryParentIP = rmiRegistryParentIP;
-    this.rmiRegistryParentPort = rmiRegistryParentPort;
+    this.grpcIP = grpcIP;
+    this.grpcPort = grpcPort;
+    this.grpcParentIP = grpcParentIP;
+    this.grpcParentPort = grpcParentPort;
     this.cassandraIP = cassandraIP;
     this.cassandraPort = cassandraPort;
     this.cassandraParentIP = cassandraParentIP;
@@ -124,10 +126,10 @@ public class GeneratePropertiesFile implements ICommand {
     properties.put(EXTERNAL_ADDRESS, this.ip);
     properties.put(PARENT_ID, String.valueOf(this.parentNodeId));
     properties.put(ROLE, this.role.toString());
-    properties.put(RMI_REGISTRY_IP, this.rmiRegistryIP);
-    properties.put(RMI_REGISTRY_PORT, String.valueOf(this.rmiRegistryPort));
-    properties.put(RMI_REGISTRY_PARENT_IP, this.rmiRegistryParentIP);
-    properties.put(RMI_REGISTRY_PARENT_PORT, String.valueOf(this.rmiRegistryParentPort));
+    properties.put(GRPC_IP, this.grpcIP);
+    properties.put(GRPC_PORT, String.valueOf(this.grpcPort));
+    properties.put(GRPC_PARENT_IP, this.grpcParentIP);
+    properties.put(GRPC_PARENT_PORT, String.valueOf(this.grpcParentPort));
     properties.put(CASSANDRA_IP, this.cassandraIP);
     properties.put(CASSANDRA_PORT, String.valueOf(this.cassandraPort));
     properties.put(CASSANDRA_PARENT_IP, this.cassandraParentIP);
@@ -152,15 +154,15 @@ public class GeneratePropertiesFile implements ICommand {
   @Override
   public String toString() {
     return String.format(
-        "Generating properties file with the following parameters: NodeID: %d, IP: %s, ParentNodeId: %d, Role: %s, RMIRegistryIP: %s, RMIRegistryPort: %d, RMIRegistryParentIP: %s, RMIRegistryParentPort: %d, CassandraIP: %s, CassandraPort: %d, CassandraParentIP: %s, CassandraParentPort: %d, Destination: %s",
+        "Generating properties file with the following parameters: NodeID: %d, IP: %s, ParentNodeId: %d, Role: %s, GRPCIP: %s, GRPCPort: %d, GRPCParentIP: %s, GRPCParentPort: %d, CassandraIP: %s, CassandraPort: %d, CassandraParentIP: %s, CassandraParentPort: %d, Destination: %s",
         this.nodeID,
         this.ip,
         this.parentNodeId,
         this.role.toString(),
-        this.rmiRegistryIP,
-        this.rmiRegistryPort,
-        this.rmiRegistryParentIP,
-        this.rmiRegistryParentPort,
+        this.grpcIP,
+        this.grpcPort,
+        this.grpcParentIP,
+        this.grpcParentPort,
         this.cassandraIP,
         this.cassandraPort,
         this.cassandraParentIP,
