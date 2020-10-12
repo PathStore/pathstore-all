@@ -177,6 +177,8 @@ public class PathStoreServerClient {
 
       String response = this.blockingStub.createQueryDelta(queryDeltaEntry).getUuid();
 
+      System.out.println(response);
+
       return response != null ? UUID.fromString(response) : null;
     } catch (IOException e) {
       throw new RuntimeException(e);
