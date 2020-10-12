@@ -41,7 +41,8 @@ import pathstore.util.SchemaInfo;
  * <p>It will also write to its startup table that is finished certain steps to allow the deployer
  * of this process to autonomically verify the node is started up
  *
- * <p>TODO: Add shutdown hook for server
+ * <p>TODO: Add shutdown hook for grpc server + close communication to parent + close all cluster
+ * connections to local / parent / children cassandra and serialize qc into db
  */
 public class PathStoreServerImpl {
 
@@ -97,8 +98,7 @@ public class PathStoreServerImpl {
       server.start();
 
       logger.info(
-          String.format(
-              "Started GRPC on port %d", PathStoreProperties.getInstance().GRPCPort));
+          String.format("Started GRPC on port %d", PathStoreProperties.getInstance().GRPCPort));
 
       PathStoreDeploymentUtils.writeTaskDone(local, 0);
 
