@@ -50,7 +50,11 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
         this.network.createQueryDelta(keyspace, table, clauses, parentTimestamp, nodeId, limit);
 
     responseObserver.onNext(
-        pathStoreProto.UUIDInfo.newBuilder().setUuid(response.toString()).build());
+        pathStoreProto
+            .UUIDInfo
+            .newBuilder()
+            .setUuid(response != null ? response.toString() : null)
+            .build());
     responseObserver.onCompleted();
   }
 
