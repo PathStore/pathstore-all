@@ -32,7 +32,7 @@ public class ServerEntry {
             ? (ServerIdentity) BlobObject.deserialize(row.getBytes(SERVER_IDENTITY))
             : null,
         row.getInt(SSH_PORT),
-        row.getInt(RMI_PORT),
+        row.getInt(GRPC_PORT),
         row.getString(NAME));
   }
 
@@ -57,8 +57,8 @@ public class ServerEntry {
   /** Ssh port to connect on */
   public final int sshPort;
 
-  /** Rmi port of server */
-  public final int rmiPort;
+  /** grpc port of server */
+  public final int grpcPort;
 
   /** Default cassandraPort. */
   public final int cassandraPort = 9052;
@@ -74,7 +74,7 @@ public class ServerEntry {
    * @param password {@link #password}
    * @param serverIdentity {@link #serverIdentity}
    * @param sshPort {@link #sshPort}
-   * @param rmiPort {@link #rmiPort}
+   * @param grpcPort {@link #grpcPort}
    * @param name {@link #name}
    */
   private ServerEntry(
@@ -85,7 +85,7 @@ public class ServerEntry {
       final String password,
       final ServerIdentity serverIdentity,
       final int sshPort,
-      final int rmiPort,
+      final int grpcPort,
       final String name) {
     this.serverUUID = serverUUID;
     this.ip = ip;
@@ -94,7 +94,7 @@ public class ServerEntry {
     this.password = password;
     this.serverIdentity = serverIdentity;
     this.sshPort = sshPort;
-    this.rmiPort = rmiPort;
+    this.grpcPort = grpcPort;
     this.name = name;
   }
 }

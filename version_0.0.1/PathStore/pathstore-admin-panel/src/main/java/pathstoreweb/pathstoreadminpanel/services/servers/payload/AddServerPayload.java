@@ -35,7 +35,7 @@ public final class AddServerPayload extends ValidatedPayload {
    * @param username username to connect with
    * @param password password to connect with
    * @param ssh_port what port ssh is running
-   * @param rmi_port what port you want rmi to use
+   * @param grpc_port what port you want grpc to use
    * @param name name of server
    */
   public AddServerPayload(
@@ -45,7 +45,7 @@ public final class AddServerPayload extends ValidatedPayload {
       final String passphrase,
       final String password,
       final int ssh_port,
-      final int rmi_port,
+      final int grpc_port,
       final String name) {
     this.server =
         new Server(
@@ -56,7 +56,7 @@ public final class AddServerPayload extends ValidatedPayload {
             passphrase,
             password,
             ssh_port,
-            rmi_port,
+            grpc_port,
             name);
   }
 
@@ -93,7 +93,7 @@ public final class AddServerPayload extends ValidatedPayload {
         this.server.ip,
         this.server.username,
         this.server.sshPort,
-        this.server.rmiPort,
+        this.server.grpcPort,
         this.server.name)) return new String[] {WRONG_SUBMISSION_FORMAT};
 
     String[] errors = {null, null, null, null};

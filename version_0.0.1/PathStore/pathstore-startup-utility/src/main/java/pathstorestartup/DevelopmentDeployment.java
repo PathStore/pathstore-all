@@ -125,7 +125,7 @@ public class DevelopmentDeployment {
 
   /**
    * This function will prompt the user for the connection information to a server and ask for the
-   * rmi port to start the root server with
+   * grpc port to start the root server with
    *
    * @see #initList(SSHUtil, String, int, String, String, String, String, FinalizeRootInstallation)
    * @see FinalizeRootInstallation
@@ -166,9 +166,9 @@ public class DevelopmentDeployment {
     int sshPort =
         Utils.askQuestionWithInvalidResponseInteger(
             this.scanner, BootstrapDeploymentConstants.SSH_PORT_PROMPT, null);
-    int rmiPort =
+    int grpcPort =
         Utils.askQuestionWithInvalidResponseInteger(
-            this.scanner, BootstrapDeploymentConstants.RMI_PORT_PROMPT, null);
+            this.scanner, BootstrapDeploymentConstants.GRPC_PROMPT_PORT, null);
     String networkAdminUsername =
         Utils.askQuestionWithInvalidResponse(
             this.scanner, BootstrapDeploymentConstants.NETWORK_ADMIN_USERNAME_PROMPT, null);
@@ -205,7 +205,7 @@ public class DevelopmentDeployment {
             this.initList(
                 sshUtil,
                 ip,
-                rmiPort,
+                grpcPort,
                 childSuperuserUsername,
                 childSuperuserPassword,
                 networkAdminUsername,
@@ -222,7 +222,7 @@ public class DevelopmentDeployment {
                         : new ServerIdentity(privKey, passphrase),
                     password,
                     sshPort,
-                    rmiPort))) {
+                    grpcPort))) {
           System.out.println(command);
           command.execute();
         }
@@ -243,7 +243,7 @@ public class DevelopmentDeployment {
   /**
    * @param sshUtil used for commands that need to use ssh
    * @param ip ip of new node
-   * @param rmiRegistryPort new node's local rmi registry port
+   * @param grpcPort new node's local grpc registry port
    * @param childSuperuserUsername new super user username {@link
    *     Constants#PATHSTORE_SUPERUSER_USERNAME}
    * @param childSuperuserPassword new super user password
@@ -255,7 +255,7 @@ public class DevelopmentDeployment {
   private List<ICommand> initList(
       final SSHUtil sshUtil,
       final String ip,
-      final int rmiRegistryPort,
+      final int grpcPort,
       final String childSuperuserUsername,
       final String childSuperuserPassword,
       final String networkAdminUsername,
@@ -284,9 +284,9 @@ public class DevelopmentDeployment {
             -1,
             Role.ROOTSERVER,
             "127.0.0.1",
-            rmiRegistryPort,
+            grpcPort,
             "127.0.0.1",
-            rmiRegistryPort,
+            grpcPort,
             "127.0.0.1",
             cassandraPort,
             "127.0.0.1",
@@ -296,11 +296,7 @@ public class DevelopmentDeployment {
             childSuperuserUsername,
             childSuperuserPassword)
         .generateWebsiteProperties(
-            "127.0.0.1",
-            cassandraPort,
-            rmiRegistryPort,
-            childSuperuserUsername,
-            childSuperuserPassword)
+            "127.0.0.1", cassandraPort, grpcPort, childSuperuserUsername, childSuperuserPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
         .createRole(

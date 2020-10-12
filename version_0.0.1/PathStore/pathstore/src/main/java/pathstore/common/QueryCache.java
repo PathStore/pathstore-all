@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @see pathstore.client.PathStoreSession Client side usage
  * @see pathstore.system.PathStorePullServer Server side usage
- * @see pathstore.system.PathStoreServerImplRMI for how this can be called from clients are servers.
+ * @see pathstore.system.network.NetworkImpl for how this can be called from clients are servers.
  */
 public class QueryCache {
 
@@ -102,7 +102,7 @@ public class QueryCache {
    *
    * @param table table object to gather from
    * @return set of entries if any, always non-null.
-   * @see pathstore.system.PathStoreServerImplRMI#forceSynchronize(SessionToken, int)
+   * @see pathstore.system.network.NetworkImpl#forceSynchronize(SessionToken, int)
    */
   public Collection<QueryCacheEntry> getEntries(final SchemaInfo.Table table) {
     // if table is null return empty list

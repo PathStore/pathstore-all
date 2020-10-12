@@ -48,7 +48,7 @@ export const DisplayServers: FunctionComponent = () => {
                         <td>{server.username}</td>
                         <td>{server.auth_type}</td>
                         <td>{server.ssh_port}</td>
-                        <td>{server.rmi_port}</td>
+                        <td>{server.grpc_port}</td>
                         <td>{server.name}</td>
                     </ObjectRow>
                 );
@@ -68,7 +68,7 @@ export const DisplayServers: FunctionComponent = () => {
                     <th>Username</th>
                     <th>Auth Type</th>
                     <th>SSH Port</th>
-                    <th>RMI Port</th>
+                    <th>GRPC Port</th>
                     <th>Server Name</th>
                 </tr>
                 </thead>

@@ -44,10 +44,10 @@ public final class Constants {
     public static final String EXTERNAL_ADDRESS = "ExternalAddress";
     public static final String NODE_ID = "NodeID";
     public static final String PARENT_ID = "ParentID";
-    public static final String RMI_REGISTRY_IP = "RMIRegistryIP";
-    public static final String RMI_REGISTRY_PORT = "RMIRegistryPort";
-    public static final String RMI_REGISTRY_PARENT_IP = "RMIRegistryParentIP";
-    public static final String RMI_REGISTRY_PARENT_PORT = "RMIRegistryParentPort";
+    public static final String GRPC_IP = "GRPCIP";
+    public static final String GRPC_PORT = "GRPCPort";
+    public static final String GRPC_PARENT_IP = "GRPCParentIP";
+    public static final String GRPC_PARENT_PORT = "GRPCParentPort";
     public static final String CASSANDRA_IP = "CassandraIP";
     public static final String CASSANDRA_PORT = "CassandraPort";
     public static final String CASSANDRA_PARENT_IP = "CassandraParentIP";
@@ -62,7 +62,6 @@ public final class Constants {
     public static final String APPLICATION_MASTER_PASSWORD = "applicationMasterPassword";
   }
 
-  /** TODO: Change all references to this class */
   public static final class PATHSTORE_META_COLUMNS {
     public static final String PATHSTORE_VERSION = "pathstore_version";
     public static final String PATHSTORE_PARENT_TIMESTAMP = "pathstore_parent_timestamp";
@@ -157,7 +156,7 @@ public final class Constants {
     public static final String PASSWORD = "password";
     public static final String SERVER_IDENTITY = "server_identity";
     public static final String SSH_PORT = "ssh_port";
-    public static final String RMI_PORT = "rmi_port";
+    public static final String GRPC_PORT = "grpc_port";
     public static final String NAME = "name";
   }
 

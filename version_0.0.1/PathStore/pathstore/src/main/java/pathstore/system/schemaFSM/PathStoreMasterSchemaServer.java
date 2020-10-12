@@ -35,9 +35,7 @@ public class PathStoreMasterSchemaServer implements Runnable {
   private final Session session = PathStoreCluster.getDaemonInstance().connect();
 
   /**
-   * TODO: Removal
-   *
-   * <p>This daemon will transition rows that are WAITING_INSTALL to INSTALLING. The steps are:
+   * This daemon will transition rows that are WAITING_INSTALL to INSTALLING. The steps are:
    *
    * <p>(1): Query all rows from the Node Schemas table and filter them into sets of Installed,
    * Installing and Waiting

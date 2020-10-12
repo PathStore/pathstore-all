@@ -29,7 +29,7 @@ public class BootstrapDeploymentConstants {
   public static final String PRIVATE_KEY_PATH_PROMPT = "Private Key Absolute Path: ";
   public static final String PASSPHRASE_PROMPT = "Passphrase (hit enter if none exists): ";
   public static final String SSH_PORT_PROMPT = "SSH port: ";
-  public static final String RMI_PORT_PROMPT = "RMI port (if unsure enter 1099): ";
+  public static final String GRPC_PROMPT_PORT = "GRPC port (if unsure enter 1099): ";
   public static final String NETWORK_ADMIN_USERNAME_PROMPT = "Network Admin Username: ";
   public static final String NETWORK_ADMIN_PASSWORD_PROMPT = "Network Admin Password: ";
   public static final String COULD_NOT_CONNECT =

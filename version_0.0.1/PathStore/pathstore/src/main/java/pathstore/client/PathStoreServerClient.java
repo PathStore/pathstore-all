@@ -18,27 +18,33 @@
 package pathstore.client;
 
 import com.datastax.driver.core.Statement;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.Empty;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.stub.StreamObserver;
 import pathstore.common.PathStoreProperties;
-import pathstore.common.PathStoreServer;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
-import pathstore.exception.PathStoreRemoteException;
+import pathstore.grpc.PathStoreServiceGrpc;
+import pathstore.grpc.pathStoreProto;
 import pathstore.sessions.SessionToken;
-import pathstore.system.PathStoreServerImplRMI;
+import pathstore.system.network.NetworkImpl;
+import pathstore.system.network.NetworkUtil;
 import pathstore.util.SchemaInfo;
 
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class is used in three different instances. One where the client communicates with its local
  * node, two when a node communicates with its parent and three when a node needs to communicate
  * with another node in the network for Session Consistency.
  *
- * @see PathStoreServer for the definition of communication options
+ * @see pathstore.system.PathStoreServerImplGRPC
+ * @see NetworkImpl
  * @implNote This will be migrated to GRPC in the future.
  */
 public class PathStoreServerClient {
@@ -64,8 +70,42 @@ public class PathStoreServerClient {
     return new PathStoreServerClient(ip, port);
   }
 
-  /** Stub to execute on */
-  private final PathStoreServer stub;
+  /**
+   * Channel for connection. Used to shutdown
+   *
+   * <p>TODO: Call shutdown in {@link PathStoreCluster} and {@link
+   * PathStoreClientAuthenticatedCluster}
+   *
+   * @see #shutdown()
+   */
+  private final ManagedChannel channel;
+
+  /** Stub to local node / parent */
+  private final PathStoreServiceGrpc.PathStoreServiceBlockingStub blockingStub;
+
+  /**
+   * Creates connection to local node or to parent depending on role. Errors will be throw if any
+   * information required is missing or if the connection cannot be created as the information that
+   * was provided is pointing to an invalid source
+   */
+  private PathStoreServerClient() {
+    this(
+        PathStoreProperties.getInstance().role == Role.SERVER
+            ? PathStoreProperties.getInstance().GRPCParentIP
+            : PathStoreProperties.getInstance().GRPCIP,
+        PathStoreProperties.getInstance().role == Role.SERVER
+            ? PathStoreProperties.getInstance().GRPCParentPort
+            : PathStoreProperties.getInstance().GRPCPort);
+  }
+
+  /**
+   * Shutdown function to close grpc connection to local node / parent
+   *
+   * @throws InterruptedException if shutdown cannot be completed
+   */
+  public void shutdown() throws InterruptedException {
+    this.channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+  }
 
   /**
    * Constructor for {@link #getCustom(String, int)}
@@ -73,54 +113,14 @@ public class PathStoreServerClient {
    * @param ip ip to connect to
    * @param port port to connect on
    */
-  public PathStoreServerClient(final String ip, final int port) {
-    try {
-      Registry registry = LocateRegistry.getRegistry(ip, port);
-      this.stub = (PathStoreServer) registry.lookup("PathStoreServer");
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new PathStoreRemoteException();
-    }
+  private PathStoreServerClient(final String ip, final int port) {
+    this(ManagedChannelBuilder.forAddress(ip, port).usePlaintext(true));
   }
 
-  /**
-   * Creates connection to local node or to parent depending on role. Errors will be throw if any
-   * information required is missing or if the connection cannot be created as the information that
-   * was provided is pointing to an invalid source
-   */
-  public PathStoreServerClient() {
-    try {
-      Registry registry;
-
-      if (PathStoreProperties.getInstance().role == Role.SERVER) {
-        if (PathStoreProperties.getInstance().RMIRegistryParentIP == null)
-          throw new RuntimeException(
-              "Could not connect to parent registry as the ip specified is null");
-        if (PathStoreProperties.getInstance().RMIRegistryParentPort == -1)
-          throw new RuntimeException("Could not connect to parent registry as the port is -1");
-
-        registry =
-            LocateRegistry.getRegistry(
-                PathStoreProperties.getInstance().RMIRegistryParentIP,
-                PathStoreProperties.getInstance().RMIRegistryParentPort);
-      } else {
-        if (PathStoreProperties.getInstance().RMIRegistryIP == null)
-          throw new RuntimeException(
-              "Could not connect to local node registry as the ip specified is null");
-        if (PathStoreProperties.getInstance().RMIRegistryPort == -1)
-          throw new RuntimeException("Could not connect to local node registry as the port is -1");
-
-        registry =
-            LocateRegistry.getRegistry(
-                PathStoreProperties.getInstance().RMIRegistryIP,
-                PathStoreProperties.getInstance().RMIRegistryPort);
-      }
-      stub = (PathStoreServer) registry.lookup("PathStoreServer");
-      System.out.println("creating new stub to parent");
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new PathStoreRemoteException();
-    }
+  /** @param channelBuilder channel build based on ip and port */
+  private PathStoreServerClient(final ManagedChannelBuilder<?> channelBuilder) {
+    this.channel = channelBuilder.build();
+    this.blockingStub = PathStoreServiceGrpc.newBlockingStub(this.channel);
   }
 
   /**
@@ -128,14 +128,24 @@ public class PathStoreServerClient {
    * byte[], int)} on the parent node or local node
    *
    * @param entry entry pass to parent or local node
-   * @see pathstore.system.PathStoreServerImplRMI#updateCache(String, String, byte[], int)
+   * @see pathstore.system.PathStoreServerImplGRPC#updateCache(pathStoreProto.QueryEntry,
+   *     StreamObserver)
    */
   public void updateCache(final QueryCacheEntry entry) {
     try {
-      stub.updateCache(entry.keyspace, entry.table, entry.getClausesSerialized(), entry.limit);
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new PathStoreRemoteException();
+      pathStoreProto.QueryEntry queryEntry =
+          pathStoreProto
+              .QueryEntry
+              .newBuilder()
+              .setKeyspace(entry.keyspace)
+              .setTable(entry.table)
+              .setClauses(ByteString.copyFrom(entry.getClausesSerialized()))
+              .setLimit(entry.limit)
+              .build();
+
+      this.blockingStub.updateCache(queryEntry);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -148,23 +158,52 @@ public class PathStoreServerClient {
    *
    * @param entry entry to create delta for.
    * @return delta UUID if new rows exist, else null.
-   * @see pathstore.system.PathStoreServerImplRMI#createQueryDelta(String, String, byte[], UUID,
-   *     int, int)
+   * @see pathstore.system.network.NetworkImpl#createQueryDelta(String, String, byte[], UUID, int,
+   *     int)
    */
   public UUID createQueryDelta(final QueryCacheEntry entry) {
     try {
-      return stub.createQueryDelta(
-          entry.keyspace,
-          entry.table,
-          entry.getClausesSerialized(),
-          entry.getParentTimeStamp(),
-          PathStoreProperties.getInstance().NodeID,
-          entry.limit);
-    } catch (Exception e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-      throw new PathStoreRemoteException();
+      pathStoreProto.QueryDeltaEntry queryDeltaEntry =
+          pathStoreProto
+              .QueryDeltaEntry
+              .newBuilder()
+              .setKeyspace(entry.keyspace)
+              .setTable(entry.table)
+              .setClauses(ByteString.copyFrom(entry.getClausesSerialized()))
+              .setParentTimestamp(entry.getParentTimeStamp().toString())
+              .setNodeID(PathStoreProperties.getInstance().NodeID)
+              .setLimit(entry.limit)
+              .build();
+
+      String response = this.blockingStub.createQueryDelta(queryDeltaEntry).getUuid();
+
+      return response != null && response.length() > 0 ? UUID.fromString(response) : null;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * This function is used to register an application client. You must pass the application name and
+   * the master password.
+   *
+   * @param applicationName application name
+   * @param password master password for that application
+   * @return response string
+   * @see pathstore.system.network.NetworkImpl#registerApplicationClient(String, String)
+   */
+  public Optional<String> registerApplicationClient(
+      final String applicationName, final String password) {
+    pathStoreProto.RegisterApplicationRequest registerApplicationRequest =
+        pathStoreProto
+            .RegisterApplicationRequest
+            .newBuilder()
+            .setApplicationName(applicationName)
+            .setPassword(password)
+            .build();
+
+    return Optional.ofNullable(
+        this.blockingStub.registerApplicationClient(registerApplicationRequest).getResponse());
   }
 
   /**
@@ -176,34 +215,15 @@ public class PathStoreServerClient {
    * @param keyspace keyspace to partition by
    * @return partitioned schema info
    * @see SchemaInfo#getSchemaPartition(String)
-   * @see pathstore.system.PathStoreServerImplRMI#getSchemaInfo(String)
+   * @see pathstore.system.network.NetworkImpl#getSchemaInfo(String)
    */
   public SchemaInfo getSchemaInfo(final String keyspace) {
-    try {
-      return this.stub.getSchemaInfo(keyspace);
-    } catch (RemoteException e) {
-      e.printStackTrace();
-      throw new PathStoreRemoteException();
-    }
-  }
+    pathStoreProto.SchemaInfoRequest schemaInfoRequest =
+        pathStoreProto.SchemaInfoRequest.newBuilder().setKeyspace(keyspace).build();
 
-  /**
-   * This function is used to register an application client. You must pass the application name and
-   * the master password.
-   *
-   * @param applicationName application name
-   * @param password master password for that application
-   * @return response string
-   * @see pathstore.system.PathStoreServerImplRMI#registerApplicationClient(String, String)
-   */
-  public Optional<String> registerApplicationClient(
-      final String applicationName, final String password) {
-    try {
-      return Optional.ofNullable(this.stub.registerApplicationClient(applicationName, password));
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new PathStoreRemoteException();
-    }
+    return (SchemaInfo)
+        NetworkUtil.readObject(
+            this.blockingStub.getSchemaInfo(schemaInfoRequest).getResponse());
   }
 
   /**
@@ -218,15 +238,17 @@ public class PathStoreServerClient {
    *
    * @param sessionToken session token to validate
    * @return true if validated else false
-   * @see pathstore.system.PathStoreServerImplRMI#validateSession(SessionToken)
+   * @see pathstore.system.network.NetworkImpl#validateSession(SessionToken)
    */
   public boolean validateSession(final SessionToken sessionToken) {
-    try {
-      return this.stub.validateSession(sessionToken);
-    } catch (RemoteException e) {
-      e.printStackTrace();
-      throw new PathStoreRemoteException();
-    }
+    pathStoreProto.ValidateSessionRequest validateSessionRequest =
+        pathStoreProto
+            .ValidateSessionRequest
+            .newBuilder()
+            .setSessionToken(NetworkUtil.writeObject(sessionToken))
+            .build();
+
+    return this.blockingStub.validateSession(validateSessionRequest).getResponse();
   }
 
   /**
@@ -235,15 +257,18 @@ public class PathStoreServerClient {
    *
    * @param sessionToken session token to get what data needs to pushed
    * @param lca where to push to.
-   * @see pathstore.system.PathStoreServerImplRMI#forcePush(SessionToken, int)
+   * @see pathstore.system.network.NetworkImpl#forcePush(SessionToken, int)
    */
   public void forcePush(final SessionToken sessionToken, final int lca) {
-    try {
-      this.stub.forcePush(sessionToken, lca);
-    } catch (RemoteException e) {
-      e.printStackTrace();
-      throw new PathStoreRemoteException();
-    }
+    pathStoreProto.ForcePushRequest forcePushRequest =
+        pathStoreProto
+            .ForcePushRequest
+            .newBuilder()
+            .setSessionToken(NetworkUtil.writeObject(sessionToken))
+            .setLca(lca)
+            .build();
+
+    this.blockingStub.forcePush(forcePushRequest);
   }
 
   /**
@@ -254,7 +279,7 @@ public class PathStoreServerClient {
    *
    * @param sessionToken session token to pull on
    * @param lca where to pull from.
-   * @see pathstore.system.PathStoreServerImplRMI#forceSynchronize(SessionToken, int)
+   * @see pathstore.system.network.NetworkImpl#forceSynchronize(SessionToken, int)
    * @implNote Ensuring session consistency is not synonymous with session consistency + data
    *     locality. When you migrate your session from n_s -> n_d we ensure that the data you can
    *     read is the same but we do not guarantee that all session related data is present in n_d.
@@ -265,12 +290,15 @@ public class PathStoreServerClient {
    *     see the complete document on github.
    */
   public void forceSynchronize(final SessionToken sessionToken, final int lca) {
-    try {
-      this.stub.forceSynchronize(sessionToken, lca);
-    } catch (RemoteException e) {
-      e.printStackTrace();
-      throw new PathStoreRemoteException();
-    }
+    pathStoreProto.ForceSynchronizationRequest forceSynchronizationRequest =
+        pathStoreProto
+            .ForceSynchronizationRequest
+            .newBuilder()
+            .setSessionToken(NetworkUtil.writeObject(sessionToken))
+            .setLca(lca)
+            .build();
+
+    this.blockingStub.forceSynchronize(forceSynchronizationRequest);
   }
 
   /**
@@ -279,14 +307,9 @@ public class PathStoreServerClient {
    * decisions related to session consistency.
    *
    * @return local node id
-   * @see PathStoreServerImplRMI#getLocalNodeId()
+   * @see NetworkImpl#getLocalNodeId()
    */
   public int getLocalNodeId() {
-    try {
-      return this.stub.getLocalNodeId();
-    } catch (RemoteException e) {
-      e.printStackTrace();
-      throw new PathStoreRemoteException();
-    }
+    return this.blockingStub.getLocalNodeId(Empty.newBuilder().build()).getNode();
   }
 }

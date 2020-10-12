@@ -7,11 +7,7 @@ import java.util.UUID;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 
-/**
- * This class is used to denote a deployment record entry in the deployment table
- *
- * <p>TODO: Make sure every reference to the deployment table uses the build from row
- */
+/** This class is used to denote a deployment record entry in the deployment table */
 public class DeploymentEntry {
 
   /**

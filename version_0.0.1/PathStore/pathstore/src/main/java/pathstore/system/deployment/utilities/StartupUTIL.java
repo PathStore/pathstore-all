@@ -38,10 +38,10 @@ public class StartupUTIL {
    * @param nodeID new node's id
    * @param parentNodeId new node's parent id
    * @param role role of new node
-   * @param rmiRegistryIP new node's local rmi registry ip
-   * @param rmiRegistryPort new node's local rmi registry port
-   * @param rmiRegistryParentIP new node's parent rmi registry ip
-   * @param rmiRegistryParentPort new node's parent rmi registry port
+   * @param grpcIP new node's local grpc ip
+   * @param grpcPort new node's local grpc port
+   * @param grpcParentIP new node's parent grpc ip
+   * @param grpcParentPort new node's parent grpc port
    * @param cassandraIP new node's local cassandra instance ip
    * @param cassandraPort new node's local cassandra instance port
    * @param cassandraParentIP new node's parent cassandra instance ip
@@ -54,10 +54,10 @@ public class StartupUTIL {
       final int nodeID,
       final int parentNodeId,
       final Role role,
-      final String rmiRegistryIP,
-      final int rmiRegistryPort,
-      final String rmiRegistryParentIP,
-      final int rmiRegistryParentPort,
+      final String grpcIP,
+      final int grpcPort,
+      final String grpcParentIP,
+      final int grpcParentPort,
       final String cassandraIP,
       final int cassandraPort,
       final String cassandraParentIP,
@@ -83,10 +83,10 @@ public class StartupUTIL {
             ip,
             parentNodeId,
             role,
-            rmiRegistryIP,
-            rmiRegistryPort,
-            rmiRegistryParentIP,
-            rmiRegistryParentPort,
+            grpcIP,
+            grpcPort,
+            grpcParentIP,
+            grpcParentPort,
             cassandraIP,
             cassandraPort,
             cassandraParentIP,

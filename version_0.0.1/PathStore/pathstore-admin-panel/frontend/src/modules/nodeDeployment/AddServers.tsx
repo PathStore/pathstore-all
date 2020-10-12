@@ -36,7 +36,7 @@ export const AddServers: FunctionComponent = () => {
      * @param passphrase optional passphrase
      * @param password password of server to connect
      * @param ssh_port ssh port to connect on
-     * @param rmi_port rmi port to host rmi server
+     * @param grpc_port grpc port to host grpc server
      * @param name human readable name of server
      * @param clearForm ability to clear form
      */
@@ -48,7 +48,7 @@ export const AddServers: FunctionComponent = () => {
         passphrase: string | undefined,
         password: string | undefined,
         ssh_port: number | undefined,
-        rmi_port: number | undefined,
+        grpc_port: number | undefined,
         name: string | undefined,
         clearForm: () => void
     ): void => {
@@ -60,7 +60,7 @@ export const AddServers: FunctionComponent = () => {
                 formData.append("ip", ip);
                 formData.append("username", username);
                 formData.append("ssh_port", (ssh_port === undefined ? 22 : ssh_port).toString());
-                formData.append("rmi_port", (rmi_port === undefined ? 1099 : rmi_port).toString());
+                formData.append("grpc_port", (grpc_port === undefined ? 1099 : grpc_port).toString());
                 formData.append("name", name);
 
 

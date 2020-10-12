@@ -35,9 +35,9 @@ import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
  *
  * <p>SERVER {@link Role#SERVER}:
  *
- * <p>{@link Constants.PROPERTIES_CONSTANTS#RMI_REGISTRY_PARENT_IP}
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#GRPC_PARENT_IP}
  *
- * <p>{@link Constants.PROPERTIES_CONSTANTS#RMI_REGISTRY_PARENT_PORT}
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#GRPC_PARENT_PORT}
  *
  * <p>{@link Constants.PROPERTIES_CONSTANTS#CASSANDRA_PARENT_IP}
  *
@@ -61,9 +61,9 @@ import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
  *
  * <p>CLIENT {@link Role#CLIENT}:
  *
- * <p>{@link Constants.PROPERTIES_CONSTANTS#RMI_REGISTRY_IP}
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#GRPC_IP}
  *
- * <p>{@link Constants.PROPERTIES_CONSTANTS#RMI_REGISTRY_PORT}
+ * <p>{@link Constants.PROPERTIES_CONSTANTS#GRPC_PORT}
  *
  * <p>{@link Constants.PROPERTIES_CONSTANTS#CASSANDRA_IP}
  *
@@ -144,17 +144,17 @@ public class PathStoreProperties {
   /** Denotes the current node's parent id (-1 if root) */
   public int ParentID;
 
-  /** Denotes the current node's local rmi server normally 127.0.0.1 */
-  public String RMIRegistryIP = null;
+  /** Denotes the current node's local grpc server normally 127.0.0.1 */
+  public String GRPCIP = null;
 
-  /** Denotes the current node's local rmi server's port normally 1099 */
-  public int RMIRegistryPort = -1;
+  /** Denotes the current node's local grpc server's port normally 1099 */
+  public int GRPCPort = -1;
 
-  /** Denotes the current node's parent rmi server's address */
-  public String RMIRegistryParentIP = null;
+  /** Denotes the current node's parent grpc server's address */
+  public String GRPCParentIP = null;
 
-  /** Denotes the current node's parent rmi server's port */
-  public int RMIRegistryParentPort = -1;
+  /** Denotes the current node's parent grpc server's port */
+  public int GRPCParentPort = -1;
 
   /** Denote the node's local cassandra instance address */
   public String CassandraIP = null;
@@ -209,9 +209,8 @@ public class PathStoreProperties {
 
       switch (this.role) {
         case SERVER:
-          this.RMIRegistryParentIP = this.getProperty(props, RMI_REGISTRY_PARENT_IP);
-          this.RMIRegistryParentPort =
-              Integer.parseInt(this.getProperty(props, RMI_REGISTRY_PARENT_PORT));
+          this.GRPCParentIP = this.getProperty(props, GRPC_PARENT_IP);
+          this.GRPCParentPort = Integer.parseInt(this.getProperty(props, GRPC_PARENT_PORT));
           this.CassandraParentIP = this.getProperty(props, CASSANDRA_PARENT_IP);
           this.CassandraParentPort =
               Integer.parseInt(this.getProperty(props, CASSANDRA_PARENT_PORT));
@@ -222,8 +221,8 @@ public class PathStoreProperties {
           this.NodeID = Integer.parseInt(this.getProperty(props, NODE_ID));
           this.ParentID = Integer.parseInt(this.getProperty(props, PARENT_ID));
         case CLIENT:
-          this.RMIRegistryIP = this.getProperty(props, RMI_REGISTRY_IP);
-          this.RMIRegistryPort = Integer.parseInt(this.getProperty(props, RMI_REGISTRY_PORT));
+          this.GRPCIP = this.getProperty(props, GRPC_IP);
+          this.GRPCPort = Integer.parseInt(this.getProperty(props, GRPC_PORT));
           this.CassandraIP = this.getProperty(props, CASSANDRA_IP);
           this.CassandraPort = Integer.parseInt(this.getProperty(props, CASSANDRA_PORT));
           this.credential =
@@ -262,7 +261,8 @@ public class PathStoreProperties {
     if (response != null) return response.trim();
     else return "";
   }
-  /** @return all values loaded in from properties file */
+
+  /** @return string of all properties */
   @Override
   public String toString() {
     return "PathStoreProperties{"
@@ -275,16 +275,16 @@ public class PathStoreProperties {
         + NodeID
         + ", ParentID="
         + ParentID
-        + ", RMIRegistryIP='"
-        + RMIRegistryIP
+        + ", GRPCIP='"
+        + GRPCIP
         + '\''
-        + ", RMIRegistryPort="
-        + RMIRegistryPort
-        + ", RMIRegistryParentIP='"
-        + RMIRegistryParentIP
+        + ", GRPCPort="
+        + GRPCPort
+        + ", GRPCParentIP='"
+        + GRPCParentIP
         + '\''
-        + ", RMIRegistryParentPort="
-        + RMIRegistryParentPort
+        + ", GRPCParentPort="
+        + GRPCParentPort
         + ", CassandraIP='"
         + CassandraIP
         + '\''
@@ -295,8 +295,6 @@ public class PathStoreProperties {
         + '\''
         + ", CassandraParentPort="
         + CassandraParentPort
-        + ", credential="
-        + credential
         + ", MaxBatchSize="
         + MaxBatchSize
         + ", PullSleep="
@@ -305,12 +303,6 @@ public class PathStoreProperties {
         + PushSleep
         + ", sessionFile='"
         + sessionFile
-        + '\''
-        + ", applicationName='"
-        + applicationName
-        + '\''
-        + ", applicationMasterPassword='"
-        + applicationMasterPassword
         + '\''
         + '}';
   }

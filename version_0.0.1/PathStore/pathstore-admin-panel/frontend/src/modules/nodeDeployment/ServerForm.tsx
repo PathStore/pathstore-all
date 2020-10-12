@@ -18,7 +18,7 @@ interface ServerFormProperties {
         passphrase: string | undefined,
         password: string | undefined,
         ssh_port: number | undefined,
-        rmi_port: number | undefined,
+        grpc_port: number | undefined,
         name: string | undefined,
         clearForm: () => void
     ) => void;
@@ -65,8 +65,8 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
     // store ssh port
     const [sshPort, setSshPort] = useState<number | undefined>(props.server?.ssh_port);
 
-    // store rmi port
-    const [rmiPort, setRmiPort] = useState<number | undefined>(props.server?.rmi_port);
+    // store grpc port
+    const [grpcPort, setGrpcPort] = useState<number | undefined>(props.server?.grpc_port);
 
     // store name
     const [name, setName] = useState<string | undefined>(props.server?.name);
@@ -81,7 +81,7 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
         setPassphrase("");
         setPassword("");
         setSshPort(22);
-        setRmiPort(1099);
+        setGrpcPort(1099);
         setName("");
     }, []);
 
@@ -117,12 +117,12 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
                 passphrase,
                 password,
                 sshPort,
-                rmiPort,
+                grpcPort,
                 name,
                 clearForm
             );
         }
-    }, [ip, username, authType, privateKey, passphrase, password, sshPort, rmiPort, name, clearForm, props, submissionErrorModal]);
+    }, [ip, username, authType, privateKey, passphrase, password, sshPort, grpcPort, name, clearForm, props, submissionErrorModal]);
 
     return (
         <Form onSubmit={onFormSubmit}>
@@ -184,11 +184,11 @@ export const ServerForm: FunctionComponent<ServerFormProperties> = (props) => {
                               defaultValue={22}
                               value={sshPort}/>
             </Form.Group>
-            <Form.Group controlId="rmi_port">
-                <Form.Label>RMI Port</Form.Label>
-                <Form.Control type="number" name="rmi_port" onChange={(event: any) => setRmiPort(event.target.value)}
+            <Form.Group controlId="grpc_port">
+                <Form.Label>GRPC Port</Form.Label>
+                <Form.Control type="number" name="grpc_port" onChange={(event: any) => setGrpcPort(event.target.value)}
                               defaultValue={1099}
-                              value={rmiPort}/>
+                              value={grpcPort}/>
             </Form.Group>
             <Form.Group controlId="name">
                 <Form.Label>Server Name</Form.Label>

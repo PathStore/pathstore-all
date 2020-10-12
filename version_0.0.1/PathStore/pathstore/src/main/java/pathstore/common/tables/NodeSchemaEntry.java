@@ -6,11 +6,7 @@ import java.util.List;
 
 import static pathstore.common.Constants.NODE_SCHEMAS_COLUMNS.*;
 
-/**
- * This class is used to define an entry within the node schemas table
- *
- * <p>TODO: Make sure every reference to the node schemas table uses the build from row
- */
+/** This class is used to define an entry within the node schemas table */
 public final class NodeSchemaEntry {
   public static NodeSchemaEntry fromRow(final Row row) {
     return new NodeSchemaEntry(

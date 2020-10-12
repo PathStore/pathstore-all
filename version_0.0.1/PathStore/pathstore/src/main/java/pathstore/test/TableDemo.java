@@ -442,17 +442,17 @@ public class TableDemo extends JPanel implements TableModelListener, ActionListe
         }
 
         if (cmd.hasOption("rmiport"))
-            PathStoreProperties.getInstance().RMIRegistryPort = Integer.parseInt(cmd.getOptionValue("rmiport"));
+            PathStoreProperties.getInstance().GRPCPort = Integer.parseInt(cmd.getOptionValue("rmiport"));
 
         if (cmd.hasOption("cassandraport"))
             PathStoreProperties.getInstance().CassandraPort = Integer.parseInt(cmd.getOptionValue("cassandraport"));
 
         if (cmd.hasOption("server")) {
-            PathStoreProperties.getInstance().RMIRegistryIP = cmd.getOptionValue("server");
+            PathStoreProperties.getInstance().GRPCIP = cmd.getOptionValue("server");
             PathStoreProperties.getInstance().CassandraIP = cmd.getOptionValue("server");
         }
 
-        System.out.println(PathStoreProperties.getInstance().RMIRegistryIP);
+        System.out.println(PathStoreProperties.getInstance().GRPCIP);
     }
 
 

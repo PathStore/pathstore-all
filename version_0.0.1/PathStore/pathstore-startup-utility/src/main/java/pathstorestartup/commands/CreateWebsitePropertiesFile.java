@@ -20,8 +20,8 @@ public class CreateWebsitePropertiesFile implements ICommand {
   /** cassandra port for pathstore root node */
   private final int cassandraPort;
 
-  /** rmi to connect to pathstore root node */
-  private final int rmiPort;
+  /** grpc to connect to pathstore root node */
+  private final int grpcPort;
 
   /** Destination to store file locally */
   private final String destinationToWrite;
@@ -35,7 +35,7 @@ public class CreateWebsitePropertiesFile implements ICommand {
   /**
    * @param ip {@link #ip}
    * @param cassandraPort {@link #cassandraPort}
-   * @param rmiPort {@link #rmiPort}
+   * @param grpcPort {@link #grpcPort}
    * @param destinationToWrite {@link #destinationToWrite}
    * @param username {@link #username}
    * @param password {@link #password}
@@ -43,13 +43,13 @@ public class CreateWebsitePropertiesFile implements ICommand {
   public CreateWebsitePropertiesFile(
       final String ip,
       final int cassandraPort,
-      final int rmiPort,
+      final int grpcPort,
       final String destinationToWrite,
       final String username,
       final String password) {
     this.ip = ip;
     this.cassandraPort = cassandraPort;
-    this.rmiPort = rmiPort;
+    this.grpcPort = grpcPort;
     this.destinationToWrite = destinationToWrite;
     this.username = username;
     this.password = password;
@@ -66,10 +66,10 @@ public class CreateWebsitePropertiesFile implements ICommand {
     Properties properties = new Properties();
 
     properties.setProperty(ROLE, Role.CLIENT.toString());
-    properties.setProperty(CASSANDRA_IP, ip);
-    properties.setProperty(CASSANDRA_PORT, String.valueOf(cassandraPort));
-    properties.setProperty(RMI_REGISTRY_IP, ip);
-    properties.setProperty(RMI_REGISTRY_PORT, String.valueOf(rmiPort));
+    properties.setProperty(CASSANDRA_IP, this.ip);
+    properties.setProperty(CASSANDRA_PORT, String.valueOf(this.cassandraPort));
+    properties.setProperty(GRPC_IP, this.ip);
+    properties.setProperty(GRPC_PORT, String.valueOf(this.grpcPort));
     properties.setProperty(USERNAME, this.username);
     properties.setProperty(PASSWORD, this.password);
 

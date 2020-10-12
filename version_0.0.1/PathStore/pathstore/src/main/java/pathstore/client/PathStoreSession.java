@@ -26,7 +26,6 @@ import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
 import pathstore.exception.InvalidKeyspaceException;
 import pathstore.exception.InvalidStatementTypeException;
-import pathstore.exception.PathStoreRemoteException;
 import pathstore.sessions.PathStoreSessionManager;
 import pathstore.sessions.SessionToken;
 import pathstore.system.logging.PathStoreLogger;
@@ -103,10 +102,8 @@ public class PathStoreSession implements Session {
    * @param statement statement to execute
    * @param sessionToken token to store in
    * @return result set of data
-   * @throws PathStoreRemoteException if qc cannot call local node
    */
-  public PathStoreResultSet execute(final Statement statement, final SessionToken sessionToken)
-      throws PathStoreRemoteException {
+  public PathStoreResultSet execute(final Statement statement, final SessionToken sessionToken) {
     return executeNormal(statement, sessionToken);
   }
 
@@ -132,12 +129,10 @@ public class PathStoreSession implements Session {
    * @param statement statement to execute
    * @param sessionToken session token if present
    * @return result set
-   * @throws PathStoreRemoteException if qc cannot call local node
    * @see #execute(Statement)
    * @see #execute(Statement, SessionToken)
    */
-  private PathStoreResultSet executeNormal(Statement statement, final SessionToken sessionToken)
-      throws PathStoreRemoteException {
+  private PathStoreResultSet executeNormal(Statement statement, final SessionToken sessionToken) {
 
     String keyspace = statement.getKeyspace();
     String table = "";

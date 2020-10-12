@@ -4,6 +4,8 @@ import com.datastax.driver.core.Cluster;
 import org.json.JSONObject;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.ClusterCache;
 import pathstore.util.SchemaInfo;
 
@@ -14,6 +16,10 @@ import java.util.Optional;
  * their application name and the associated master password.
  */
 public class PathStoreClientAuthenticatedCluster {
+
+  /** Logger */
+  private static final PathStoreLogger logger =
+      PathStoreLoggerFactory.getLogger(PathStoreClientAuthenticatedCluster.class);
 
   /** Local saved instance of this class. */
   private static PathStoreClientAuthenticatedCluster instance = null;
@@ -121,9 +127,13 @@ public class PathStoreClientAuthenticatedCluster {
   }
 
   /** Close session and cluster */
-  public void close() {
+  public void close() throws InterruptedException {
+    PathStoreServerClient.getInstance().shutdown();
+    logger.debug("Shutdown grpc connection to local node");
     this.session.close();
+    logger.debug("Closed cassandra session");
     this.cluster.close();
+    logger.debug("Closed cassandra cluster connection");
     instance = null;
   }
 }
