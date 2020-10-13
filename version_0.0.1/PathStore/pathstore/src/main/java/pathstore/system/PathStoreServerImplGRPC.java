@@ -2,9 +2,10 @@ package pathstore.system;
 
 import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
+import pathstore.grpc.PathStoreServiceGrpc;
+import pathstore.grpc.pathStoreProto.*;
 import pathstore.sessions.SessionToken;
 import pathstore.system.network.NetworkImpl;
-import pathstore.grpc.*;
 import pathstore.system.network.NetworkUtil;
 import pathstore.util.SchemaInfo;
 
@@ -22,7 +23,7 @@ import java.util.UUID;
 public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServiceImplBase {
 
   /** Network Impl, this is the logic for each class */
-  private NetworkImpl network;
+  private final NetworkImpl network;
 
   /** Inits NetworkImpl */
   PathStoreServerImplGRPC() {
@@ -38,8 +39,7 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
    */
   @Override
   public void updateCache(
-      pathStoreProto.QueryEntry request,
-      StreamObserver<pathStoreProto.InfoFromServer> responseObserver) {
+      final QueryEntry request, final StreamObserver<InfoFromServer> responseObserver) {
 
     String keyspace = request.getKeyspace();
     String table = request.getTable();
@@ -48,7 +48,7 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
 
     String response = this.network.updateCache(keyspace, table, clauses, limit);
 
-    responseObserver.onNext(pathStoreProto.InfoFromServer.newBuilder().setInfo(response).build());
+    responseObserver.onNext(InfoFromServer.newBuilder().setInfo(response).build());
     responseObserver.onCompleted();
   }
 
@@ -61,8 +61,7 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
    */
   @Override
   public void createQueryDelta(
-      pathStoreProto.QueryDeltaEntry request,
-      StreamObserver<pathStoreProto.UUIDInfo> responseObserver) {
+      final QueryDeltaEntry request, final StreamObserver<UUIDInfo> responseObserver) {
     String keyspace = request.getKeyspace();
     String table = request.getTable();
     byte[] clauses = request.getClauses().toByteArray();
@@ -73,7 +72,7 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
     UUID response =
         this.network.createQueryDelta(keyspace, table, clauses, parentTimestamp, nodeId, limit);
 
-    pathStoreProto.UUIDInfo.Builder uuidInfo = pathStoreProto.UUIDInfo.newBuilder();
+    UUIDInfo.Builder uuidInfo = UUIDInfo.newBuilder();
 
     if (response != null) uuidInfo.setUuid(response.toString());
 
@@ -90,15 +89,14 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
    */
   @Override
   public void registerApplicationClient(
-      pathStoreProto.RegisterApplicationRequest request,
-      StreamObserver<pathStoreProto.RegisterApplicationResponse> responseObserver) {
+      final RegisterApplicationRequest request,
+      final StreamObserver<RegisterApplicationResponse> responseObserver) {
     String applicationName = request.getApplicationName();
     String password = request.getPassword();
 
     String response = this.network.registerApplicationClient(applicationName, password);
 
-    responseObserver.onNext(
-        pathStoreProto.RegisterApplicationResponse.newBuilder().setResponse(response).build());
+    responseObserver.onNext(RegisterApplicationResponse.newBuilder().setResponse(response).build());
     responseObserver.onCompleted();
   }
 
@@ -111,55 +109,47 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
    */
   @Override
   public void getSchemaInfo(
-      pathStoreProto.SchemaInfoRequest request,
-      StreamObserver<pathStoreProto.SchemaInfoResponse> responseObserver) {
+      final SchemaInfoRequest request, final StreamObserver<SchemaInfoResponse> responseObserver) {
     String keyspace = request.getKeyspace();
 
     SchemaInfo response = this.network.getSchemaInfo(keyspace);
 
     responseObserver.onNext(
-        pathStoreProto
-            .SchemaInfoResponse
-            .newBuilder()
-            .setResponse(NetworkUtil.writeObject(response))
-            .build());
+        SchemaInfoResponse.newBuilder().setResponse(NetworkUtil.writeObject(response)).build());
     responseObserver.onCompleted();
   }
 
-    /**
-     * Validate session from client to local node
-     *
-     * @param request request send
-     * @param responseObserver way to response
-     * @see NetworkImpl#validateSession(SessionToken) 
-     */
+  /**
+   * Validate session from client to local node
+   *
+   * @param request request send
+   * @param responseObserver way to response
+   * @see NetworkImpl#validateSession(SessionToken)
+   */
   @Override
   public void validateSession(
-      pathStoreProto.ValidateSessionRequest request,
-      StreamObserver<pathStoreProto.ValidateSessionResponse> responseObserver) {
+      final ValidateSessionRequest request,
+      final StreamObserver<ValidateSessionResponse> responseObserver) {
 
-    SessionToken sessionToken =
-        (SessionToken) NetworkUtil.readObject(request.getSessionToken());
+    SessionToken sessionToken = (SessionToken) NetworkUtil.readObject(request.getSessionToken());
 
     boolean response = this.network.validateSession(sessionToken);
 
-    responseObserver.onNext(
-        pathStoreProto.ValidateSessionResponse.newBuilder().setResponse(response).build());
+    responseObserver.onNext(ValidateSessionResponse.newBuilder().setResponse(response).build());
     responseObserver.onCompleted();
   }
 
-    /**
-     * Force push data from source to lca
-     *
-     * @param request request send
-     * @param responseObserver way to response
-     * @see NetworkImpl#forcePush(SessionToken, int) 
-     */
+  /**
+   * Force push data from source to lca
+   *
+   * @param request request send
+   * @param responseObserver way to response
+   * @see NetworkImpl#forcePush(SessionToken, int)
+   */
   @Override
   public void forcePush(
-      pathStoreProto.ForcePushRequest request, StreamObserver<Empty> responseObserver) {
-    SessionToken sessionToken =
-        (SessionToken) NetworkUtil.readObject(request.getSessionToken());
+      final ForcePushRequest request, final StreamObserver<Empty> responseObserver) {
+    SessionToken sessionToken = (SessionToken) NetworkUtil.readObject(request.getSessionToken());
     int lca = request.getLca();
 
     this.network.forcePush(sessionToken, lca);
@@ -168,18 +158,17 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
     responseObserver.onCompleted();
   }
 
-    /**
-     * Force sync caches from destination to lca
-     *
-     * @param request request send
-     * @param responseObserver way to response
-     * @see NetworkImpl#forceSynchronize(SessionToken, int) 
-     */
+  /**
+   * Force sync caches from destination to lca
+   *
+   * @param request request send
+   * @param responseObserver way to response
+   * @see NetworkImpl#forceSynchronize(SessionToken, int)
+   */
   @Override
   public void forceSynchronize(
-      pathStoreProto.ForceSynchronizationRequest request, StreamObserver<Empty> responseObserver) {
-    SessionToken sessionToken =
-        (SessionToken) NetworkUtil.readObject(request.getSessionToken());
+      final ForceSynchronizationRequest request, final StreamObserver<Empty> responseObserver) {
+    SessionToken sessionToken = (SessionToken) NetworkUtil.readObject(request.getSessionToken());
     int lca = request.getLca();
 
     this.network.forceSynchronize(sessionToken, lca);
@@ -188,20 +177,19 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
     responseObserver.onCompleted();
   }
 
-    /**
-     * Get local node id for client side
-     *
-     * @param request request send
-     * @param responseObserver way to response
-     * @see NetworkImpl#getLocalNodeId() 
-     */
+  /**
+   * Get local node id for client side
+   *
+   * @param request request send
+   * @param responseObserver way to response
+   * @see NetworkImpl#getLocalNodeId()
+   */
   @Override
   public void getLocalNodeId(
-      Empty request, StreamObserver<pathStoreProto.GetLocalNodeResponse> responseObserver) {
+      final Empty request, final StreamObserver<GetLocalNodeResponse> responseObserver) {
     int nodeId = this.network.getLocalNodeId();
 
-    responseObserver.onNext(
-        pathStoreProto.GetLocalNodeResponse.newBuilder().setNode(nodeId).build());
+    responseObserver.onNext(GetLocalNodeResponse.newBuilder().setNode(nodeId).build());
     responseObserver.onCompleted();
   }
 }
