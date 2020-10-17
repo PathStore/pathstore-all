@@ -27,7 +27,7 @@ import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
 import pathstore.grpc.PathStoreServiceGrpc;
-import pathstore.grpc.pathStoreProto;
+import pathstore.grpc.pathStoreProto.*;
 import pathstore.sessions.SessionToken;
 import pathstore.system.network.NetworkImpl;
 import pathstore.system.network.NetworkUtil;
@@ -128,15 +128,12 @@ public class PathStoreServerClient {
    * byte[], int)} on the parent node or local node
    *
    * @param entry entry pass to parent or local node
-   * @see pathstore.system.PathStoreServerImplGRPC#updateCache(pathStoreProto.QueryEntry,
-   *     StreamObserver)
+   * @see pathstore.system.PathStoreServerImplGRPC#updateCache(QueryEntry, StreamObserver)
    */
   public void updateCache(final QueryCacheEntry entry) {
     try {
-      pathStoreProto.QueryEntry queryEntry =
-          pathStoreProto
-              .QueryEntry
-              .newBuilder()
+      QueryEntry queryEntry =
+          QueryEntry.newBuilder()
               .setKeyspace(entry.keyspace)
               .setTable(entry.table)
               .setClauses(ByteString.copyFrom(entry.getClausesSerialized()))
@@ -163,10 +160,8 @@ public class PathStoreServerClient {
    */
   public UUID createQueryDelta(final QueryCacheEntry entry) {
     try {
-      pathStoreProto.QueryDeltaEntry queryDeltaEntry =
-          pathStoreProto
-              .QueryDeltaEntry
-              .newBuilder()
+      QueryDeltaEntry queryDeltaEntry =
+          QueryDeltaEntry.newBuilder()
               .setKeyspace(entry.keyspace)
               .setTable(entry.table)
               .setClauses(ByteString.copyFrom(entry.getClausesSerialized()))
@@ -194,10 +189,8 @@ public class PathStoreServerClient {
    */
   public Optional<String> registerApplicationClient(
       final String applicationName, final String password) {
-    pathStoreProto.RegisterApplicationRequest registerApplicationRequest =
-        pathStoreProto
-            .RegisterApplicationRequest
-            .newBuilder()
+    RegisterApplicationRequest registerApplicationRequest =
+        RegisterApplicationRequest.newBuilder()
             .setApplicationName(applicationName)
             .setPassword(password)
             .build();
@@ -218,12 +211,11 @@ public class PathStoreServerClient {
    * @see pathstore.system.network.NetworkImpl#getSchemaInfo(String)
    */
   public SchemaInfo getSchemaInfo(final String keyspace) {
-    pathStoreProto.SchemaInfoRequest schemaInfoRequest =
-        pathStoreProto.SchemaInfoRequest.newBuilder().setKeyspace(keyspace).build();
+    SchemaInfoRequest schemaInfoRequest =
+        SchemaInfoRequest.newBuilder().setKeyspace(keyspace).build();
 
     return (SchemaInfo)
-        NetworkUtil.readObject(
-            this.blockingStub.getSchemaInfo(schemaInfoRequest).getResponse());
+        NetworkUtil.readObject(this.blockingStub.getSchemaInfo(schemaInfoRequest).getResponse());
   }
 
   /**
@@ -241,10 +233,8 @@ public class PathStoreServerClient {
    * @see pathstore.system.network.NetworkImpl#validateSession(SessionToken)
    */
   public boolean validateSession(final SessionToken sessionToken) {
-    pathStoreProto.ValidateSessionRequest validateSessionRequest =
-        pathStoreProto
-            .ValidateSessionRequest
-            .newBuilder()
+    ValidateSessionRequest validateSessionRequest =
+        ValidateSessionRequest.newBuilder()
             .setSessionToken(NetworkUtil.writeObject(sessionToken))
             .build();
 
@@ -260,10 +250,8 @@ public class PathStoreServerClient {
    * @see pathstore.system.network.NetworkImpl#forcePush(SessionToken, int)
    */
   public void forcePush(final SessionToken sessionToken, final int lca) {
-    pathStoreProto.ForcePushRequest forcePushRequest =
-        pathStoreProto
-            .ForcePushRequest
-            .newBuilder()
+    ForcePushRequest forcePushRequest =
+        ForcePushRequest.newBuilder()
             .setSessionToken(NetworkUtil.writeObject(sessionToken))
             .setLca(lca)
             .build();
@@ -290,10 +278,8 @@ public class PathStoreServerClient {
    *     see the complete document on github.
    */
   public void forceSynchronize(final SessionToken sessionToken, final int lca) {
-    pathStoreProto.ForceSynchronizationRequest forceSynchronizationRequest =
-        pathStoreProto
-            .ForceSynchronizationRequest
-            .newBuilder()
+    ForceSynchronizationRequest forceSynchronizationRequest =
+        ForceSynchronizationRequest.newBuilder()
             .setSessionToken(NetworkUtil.writeObject(sessionToken))
             .setLca(lca)
             .build();

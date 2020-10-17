@@ -168,8 +168,8 @@ public class PathStoreProperties {
   /** Denotes the node's parent cassandra instance port */
   public int CassandraParentPort = -1;
 
-  /** Denotes credential to local cassandra instance */
-  public Credential credential = null;
+  /** Denotes credential to local cassandra instance NOTE: not in credential cache */
+  public Credential<Integer> credential = null;
 
   /**
    * Denotes batch size
@@ -226,7 +226,7 @@ public class PathStoreProperties {
           this.CassandraIP = this.getProperty(props, CASSANDRA_IP);
           this.CassandraPort = Integer.parseInt(this.getProperty(props, CASSANDRA_PORT));
           this.credential =
-              new Credential(
+              new Credential<>(
                   this.NodeID,
                   this.getProperty(props, USERNAME),
                   this.getProperty(props, PASSWORD));

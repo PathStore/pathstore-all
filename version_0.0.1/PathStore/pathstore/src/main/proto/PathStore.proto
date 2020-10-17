@@ -38,6 +38,10 @@ service PathStoreService{
 
 }
 
+service TestService{
+  rpc testEndpoint(InfoFromServer) returns(InfoFromServer);
+}
+
 message QueryEntry{
   string keyspace = 1;
   string table = 2;

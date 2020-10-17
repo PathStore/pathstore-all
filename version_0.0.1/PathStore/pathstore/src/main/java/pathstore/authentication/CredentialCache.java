@@ -20,25 +20,63 @@ import java.util.stream.StreamSupport;
  * @see pathstore.client.PathStoreCluster
  * @see PathStorePrivilegedCluster
  */
-public final class CredentialCache {
+public final class CredentialCache<T> {
 
   /** Instance of the cache */
-  private static CredentialCache instance = null;
+  private static CredentialCache<Integer> nodeAuth = null;
 
   /** @return returns an instance of the cache. Creates one if not already created */
-  public static synchronized CredentialCache getInstance() {
-    if (instance == null) instance = new CredentialCache();
-    return instance;
+  public static synchronized CredentialCache<Integer> getNodeAuth() {
+    if (nodeAuth == null)
+      nodeAuth =
+          new CredentialCache<>(
+              new CredentialDataLayer<>(
+                  Constants.PATHSTORE_APPLICATIONS,
+                  Constants.LOCAL_AUTH,
+                  Constants.LOCAL_AUTH_COLUMNS.NODE_ID,
+                  Constants.LOCAL_AUTH_COLUMNS.USERNAME,
+                  Constants.LOCAL_AUTH_COLUMNS.PASSWORD));
+    return nodeAuth;
   }
 
-  /** Internal cache of credentials based on node id */
-  private final ConcurrentMap<Integer, Credential> credentials;
+  /** Instance of the client auth cache */
+  private static CredentialCache<String> clientAuth = null;
+
+  /** @return returns an instance of the cache. Creates one if not already created */
+  public static synchronized CredentialCache<String> getClientAuth() {
+    if (clientAuth == null)
+      clientAuth =
+          new CredentialCache<>(
+              new CredentialDataLayer<>(
+                  Constants.PATHSTORE_APPLICATIONS,
+                  Constants.LOCAL_CLIENT_AUTH,
+                  Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME,
+                  Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME,
+                  Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD));
+    return clientAuth;
+  }
 
   /** Session used to modify the local database. */
   private final Session privSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
 
-  /** Load all credentials on object creation */
-  private CredentialCache() {
+  /**
+   * How to perform database operations on the given credential type
+   *
+   * @apiNote This is public because {@link
+   *     pathstore.system.deployment.commands.WriteCredentialsToChildNode}
+   */
+  public final CredentialDataLayer<T> credentialDataLayer;
+
+  /** Internal cache of credentials based on node id */
+  private final ConcurrentMap<T, Credential<T>> credentials;
+
+  /**
+   * Loads all existing credentials from the local table into memory
+   *
+   * @param credentialDataLayer how to readAndWrite
+   */
+  private CredentialCache(final CredentialDataLayer<T> credentialDataLayer) {
+    this.credentialDataLayer = credentialDataLayer;
     this.credentials = this.load();
   }
 
@@ -48,54 +86,57 @@ public final class CredentialCache {
    *
    * @return return concurrent built map of existing credentials in the database
    */
-  private ConcurrentMap<Integer, Credential> load() {
+  private ConcurrentMap<T, Credential<T>> load() {
     return StreamSupport.stream(
             this.privSession
                 .execute(
                     QueryBuilder.select()
                         .all()
-                        .from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_AUTH))
+                        .from(
+                            this.credentialDataLayer.keyspaceName,
+                            this.credentialDataLayer.tableName))
                 .spliterator(),
             true)
-        .map(Credential::buildFromRow)
-        .collect(Collectors.toConcurrentMap(credential -> credential.node_id, Function.identity()));
+        .map(this.credentialDataLayer::buildFromRow)
+        .collect(
+            Collectors.toConcurrentMap(credential -> credential.primaryKey, Function.identity()));
   }
 
   /**
-   * @param nodeId node id of credential
+   * @param primaryKey primary key of credential
    * @param username username of account
    * @param password password of account
    */
-  public void add(final int nodeId, final String username, final String password) {
+  public void add(final T primaryKey, final String username, final String password) {
     this.credentials.put(
-        nodeId,
-        Credential.writeCredentialToRow(
-            this.privSession, new Credential(nodeId, username, password)));
+        primaryKey,
+        this.credentialDataLayer.write(
+            this.privSession, new Credential<>(primaryKey, username, password)));
   }
 
   /**
    * This will remove a specific node id from the internal map and from the table
    *
-   * @param nodeId node id to remove
+   * @param primaryKey node id to remove
+   * @return true if deletion occurred
    */
-  public void remove(final int nodeId) {
-    Credential credential = this.getCredential(nodeId);
+  public boolean remove(final T primaryKey) {
+    Credential<T> credential = this.getCredential(primaryKey);
 
-    if (credential == null) return;
+    if (credential == null) return false;
 
-    this.credentials.remove(nodeId);
+    this.credentials.remove(primaryKey);
 
-    this.privSession.execute(
-        QueryBuilder.delete()
-            .from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_AUTH)
-            .where(QueryBuilder.eq(Constants.LOCAL_AUTH_COLUMNS.NODE_ID, nodeId)));
+    this.credentialDataLayer.delete(this.privSession, credential);
+
+    return true;
   }
 
   /**
-   * @param node_id node id to get credential from
+   * @param primaryKey node id to get credential from
    * @return credential object, may be null
    */
-  public Credential getCredential(final int node_id) {
-    return this.credentials.get(node_id);
+  public Credential<T> getCredential(final T primaryKey) {
+    return this.credentials.get(primaryKey);
   }
 }

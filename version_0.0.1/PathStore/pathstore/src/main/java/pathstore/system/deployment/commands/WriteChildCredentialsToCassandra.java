@@ -1,6 +1,6 @@
 package pathstore.system.deployment.commands;
 
-import pathstore.authentication.AuthenticationUtil;
+import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.authentication.CredentialCache;
 
 /**
@@ -21,7 +21,7 @@ public class WriteChildCredentialsToCassandra implements ICommand {
   /**
    * Randomly generated password
    *
-   * @see AuthenticationUtil#generateAlphaNumericPassword()
+   * @see CassandraAuthenticationUtil#generateAlphaNumericPassword()
    */
   private final String password;
 
@@ -37,10 +37,10 @@ public class WriteChildCredentialsToCassandra implements ICommand {
     this.password = password;
   }
 
-  /** Calls {@link CredentialCache#add(int, String, String)} */
+  /** Calls {@link CredentialCache#add(Object, String, String)} */
   @Override
   public void execute() {
-    CredentialCache.getInstance().add(this.childNodeId, this.username, this.password);
+    CredentialCache.getNodeAuth().add(this.childNodeId, this.username, this.password);
   }
 
   /** @return informs user what is occurring */

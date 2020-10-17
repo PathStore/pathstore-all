@@ -18,7 +18,7 @@ public class RemoveLocalCredential implements ICommand {
   /** Remove the data from the cache and the table */
   @Override
   public void execute() {
-    CredentialCache.getInstance().remove(this.nodeId);
+    CredentialCache.getNodeAuth().remove(this.nodeId);
   }
 
   /** @return command inform message */

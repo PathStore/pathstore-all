@@ -1,6 +1,6 @@
 package pathstore.system.deployment.commands;
 
-import pathstore.authentication.AuthenticationUtil;
+import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.system.PathStorePrivilegedCluster;
 
 /** This command is used to drop a role on the child node during node deployment */
@@ -48,7 +48,7 @@ public class DropRole implements ICommand {
         PathStorePrivilegedCluster.getChildInstance(
             this.connectionUsername, this.connectionPassword, this.ip, this.port);
 
-    AuthenticationUtil.dropRole(childCluster.connect(), this.roleName);
+    CassandraAuthenticationUtil.dropRole(childCluster.connect(), this.roleName);
 
     childCluster.close();
   }

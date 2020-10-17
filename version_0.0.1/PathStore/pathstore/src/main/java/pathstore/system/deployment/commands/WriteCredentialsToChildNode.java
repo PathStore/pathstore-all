@@ -1,13 +1,12 @@
 package pathstore.system.deployment.commands;
 
-import pathstore.authentication.Credential;
 import pathstore.authentication.CredentialCache;
 import pathstore.system.PathStorePrivilegedCluster;
 
 /**
  * This command is used to write the current node's daemon account to the child node's
- * pathstore_applications.local_auth table so they can access the parent node's cassandra during push and pull
- * operations
+ * pathstore_applications.local_auth table so they can access the parent node's cassandra during
+ * push and pull operations
  */
 public class WriteCredentialsToChildNode implements ICommand {
   /** current node id */
@@ -52,8 +51,9 @@ public class WriteCredentialsToChildNode implements ICommand {
         PathStorePrivilegedCluster.getChildInstance(
             this.connectionUsername, this.connectionPassword, this.ip, this.port);
 
-    Credential.writeCredentialToRow(
-        childCluster.connect(), CredentialCache.getInstance().getCredential(this.nodeid));
+    CredentialCache.getNodeAuth()
+        .credentialDataLayer
+        .write(childCluster.connect(), CredentialCache.getNodeAuth().getCredential(this.nodeid));
 
     childCluster.close();
   }
@@ -63,6 +63,6 @@ public class WriteCredentialsToChildNode implements ICommand {
   public String toString() {
     return String.format(
         "Writing account with username %s to child node",
-        CredentialCache.getInstance().getCredential(this.nodeid).username);
+        CredentialCache.getNodeAuth().getCredential(this.nodeid).username);
   }
 }

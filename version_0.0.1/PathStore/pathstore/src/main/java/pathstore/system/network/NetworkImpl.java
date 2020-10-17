@@ -4,9 +4,10 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import org.json.JSONObject;
-import pathstore.authentication.AuthenticationUtil;
+import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.authentication.Credential;
+import pathstore.authentication.CredentialCache;
 import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.client.PathStoreCluster;
 import pathstore.client.PathStoreServerClient;
@@ -117,21 +118,19 @@ public class NetworkImpl {
           .toString();
     }
 
-    Optional<Credential> optionalExistingCredential =
-        ClientAuthenticationUtil.getExistingClientAccount(applicationName);
-
     String clientUsername, clientPassword;
 
-    if (optionalExistingCredential.isPresent()) {
-      Credential existingCredential = optionalExistingCredential.get();
+    Credential<String> existingCredential =
+        CredentialCache.getClientAuth().getCredential(applicationName);
 
+    if (existingCredential != null) {
       clientUsername = existingCredential.username;
       clientPassword = existingCredential.password;
     } else {
-      clientUsername = AuthenticationUtil.generateAlphaNumericPassword().toLowerCase();
-      clientPassword = AuthenticationUtil.generateAlphaNumericPassword();
+      clientUsername = CassandraAuthenticationUtil.generateAlphaNumericPassword().toLowerCase();
+      clientPassword = CassandraAuthenticationUtil.generateAlphaNumericPassword();
 
-      ClientAuthenticationUtil.createClientAccount(applicationName, clientUsername, clientPassword);
+      CredentialCache.getClientAuth().add(applicationName, clientUsername, clientPassword);
     }
 
     return new JSONObject()

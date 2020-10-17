@@ -79,7 +79,7 @@ public class PathStoreServerImpl {
 
       logger.info("Super User connection was initialized successfully");
 
-      if (CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().NodeID)
+      if (CredentialCache.getNodeAuth().getCredential(PathStoreProperties.getInstance().NodeID)
           != null) logger.info("Loaded daemon account successfully");
       else logger.error("Couldn't load daemon account");
 

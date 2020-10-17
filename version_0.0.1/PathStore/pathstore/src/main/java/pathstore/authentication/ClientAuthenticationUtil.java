@@ -10,9 +10,6 @@ import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.tables.NodeSchemaEntry;
 import pathstore.common.tables.NodeSchemaProcessStatus;
-import pathstore.system.PathStorePrivilegedCluster;
-
-import java.util.Optional;
 
 /**
  * This util function encompasses all functions required to register and unregister a temporary
@@ -71,79 +68,5 @@ public class ClientAuthenticationUtil {
         return false;
 
     return true;
-  }
-
-  /**
-   * This function is used to get an exiting client account from the client auth table, if it exists
-   *
-   * @param applicationName application name given
-   * @return optional credential. If it doesn't exist returns empty
-   */
-  public static Optional<Credential> getExistingClientAccount(final String applicationName) {
-    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
-
-    for (Row row :
-        superUserSession.execute(
-            QueryBuilder.select()
-                .all()
-                .from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_CLIENT_AUTH)
-                .where(
-                    QueryBuilder.eq(
-                        Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME, applicationName))))
-      return Optional.of(
-          new Credential(
-              -1,
-              row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME),
-              row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD)));
-
-    return Optional.empty();
-  }
-
-  /**
-   * This function is used to create a temporary role on cassandra for a given application. It will
-   * also store this information in the local client_auth table for later reference.
-   *
-   * @param applicationName application name to grant permission on
-   * @param clientUsername role username (random generated string)
-   * @param clientPassword role password (random generated string)
-   */
-  public static void createClientAccount(
-      final String applicationName, final String clientUsername, final String clientPassword) {
-    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
-
-    AuthenticationUtil.createRole(superUserSession, clientUsername, false, true, clientPassword);
-    AuthenticationUtil.grantAccessToKeyspace(superUserSession, applicationName, clientUsername);
-
-    superUserSession.execute(
-        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_CLIENT_AUTH)
-            .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME, applicationName)
-            .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME, clientUsername)
-            .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD, clientPassword));
-  }
-
-  /**
-   * This function is used to drop a client account from the local database. It also removes it from
-   * the client_auth table
-   *
-   * @param applicationName application name
-   * @return true if a deletion occurred else false
-   */
-  public static boolean deleteClientAccount(final String applicationName) {
-    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
-
-    Optional<Credential> optionalCredential = getExistingClientAccount(applicationName);
-
-    if (optionalCredential.isPresent()) {
-      superUserSession.execute(
-          QueryBuilder.delete()
-              .from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_CLIENT_AUTH)
-              .where(
-                  QueryBuilder.eq(
-                      Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME, applicationName)));
-
-      AuthenticationUtil.dropRole(superUserSession, optionalCredential.get().username);
-    }
-
-    return optionalCredential.isPresent();
   }
 }

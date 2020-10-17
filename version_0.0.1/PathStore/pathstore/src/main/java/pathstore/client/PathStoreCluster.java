@@ -18,8 +18,6 @@
 package pathstore.client;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.QueryOptions;
-import com.datastax.driver.core.SocketOptions;
 import pathstore.authentication.Credential;
 import pathstore.authentication.CredentialCache;
 import pathstore.common.PathStoreProperties;
@@ -63,8 +61,8 @@ public class PathStoreCluster {
    * @see CredentialCache
    */
   public static PathStoreCluster getDaemonInstance() {
-    Credential daemonCredentials =
-        CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().NodeID);
+    Credential<Integer> daemonCredentials =
+        CredentialCache.getNodeAuth().getCredential(PathStoreProperties.getInstance().NodeID);
 
     if (daemonCredentials == null)
       throw new RuntimeException("Daemon credentials are not present within the local auth table");
@@ -78,7 +76,7 @@ public class PathStoreCluster {
   }
 
   /** Credential object used to create the cluster, this is only used for disconnection */
-  private final Credential credential;
+  private final Credential<Integer> credential;
 
   /** Cluster object, used to close the cluster */
   private final Cluster cluster;
@@ -90,30 +88,10 @@ public class PathStoreCluster {
    * @param credential {@link #credential}
    * @param cluster {@link #cluster}
    */
-  public PathStoreCluster(final Credential credential, final Cluster cluster) {
+  public PathStoreCluster(final Credential<Integer> credential, final Cluster cluster) {
     this.credential = credential;
     this.cluster = cluster;
     this.session = new PathStoreSession(this.cluster);
-  }
-
-  // todo: remove
-  public PathStoreCluster(PathStoreProperties custom) {
-    this.credential = null;
-    this.cluster =
-        new Cluster.Builder()
-            .addContactPoints(custom.CassandraIP)
-            .withPort(custom.CassandraPort)
-            .withCredentials("cassandra", "cassandra")
-            .withSocketOptions(
-                new SocketOptions().setTcpNoDelay(true).setReadTimeoutMillis(15000000))
-            .withQueryOptions(
-                new QueryOptions()
-                    .setRefreshNodeIntervalMillis(0)
-                    .setRefreshNodeListIntervalMillis(0)
-                    .setRefreshSchemaIntervalMillis(0))
-            .build();
-
-    session = new PathStoreSession(this.cluster);
   }
 
   /** @return ps session */

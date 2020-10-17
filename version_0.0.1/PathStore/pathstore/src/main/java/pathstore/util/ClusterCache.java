@@ -17,13 +17,13 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class ClusterCache<T> {
   /** Where clusters are cached */
-  private final ConcurrentMap<Credential, T> cache = new ConcurrentHashMap<>();
+  private final ConcurrentMap<Credential<Integer>, T> cache = new ConcurrentHashMap<>();
 
   /** How to build a cluster not present in the cache */
-  private final DoubleConsumerFunction<Credential, Cluster, T> buildFunction;
+  private final DoubleConsumerFunction<Credential<Integer>, Cluster, T> buildFunction;
 
   /** @param buildFunction {@link #buildFunction} */
-  public ClusterCache(final DoubleConsumerFunction<Credential, Cluster, T> buildFunction) {
+  public ClusterCache(final DoubleConsumerFunction<Credential<Integer>, Cluster, T> buildFunction) {
     this.buildFunction = buildFunction;
   }
 
@@ -36,7 +36,7 @@ public class ClusterCache<T> {
    * @param port port of server
    * @return cluster object
    */
-  public T getInstance(final Credential credential, final String ip, final int port) {
+  public T getInstance(final Credential<Integer> credential, final String ip, final int port) {
     T object = this.cache.get(credential);
 
     if (object == null) {
@@ -50,7 +50,7 @@ public class ClusterCache<T> {
   }
 
   /** @param credential credential to remove from cluster */
-  public void remove(final Credential credential) {
+  public void remove(final Credential<Integer> credential) {
     this.cache.remove(credential);
   }
 

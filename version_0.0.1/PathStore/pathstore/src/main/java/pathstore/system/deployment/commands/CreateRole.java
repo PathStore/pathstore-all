@@ -1,6 +1,6 @@
 package pathstore.system.deployment.commands;
 
-import pathstore.authentication.AuthenticationUtil;
+import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.system.PathStorePrivilegedCluster;
 
 /** This command is used to create a role on the child node during deployment */
@@ -61,7 +61,7 @@ public class CreateRole implements ICommand {
             this.connectionUsername, this.connectionPassword, this.ip, this.port);
 
     // load new child role and delete old role.
-    AuthenticationUtil.createRole(
+    CassandraAuthenticationUtil.createRole(
         childCluster.connect(), this.roleName, this.isSuperUser, true, this.rolePassword);
 
     childCluster.close();

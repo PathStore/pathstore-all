@@ -1,6 +1,6 @@
 package pathstore.system.deployment.commands;
 
-import pathstore.authentication.AuthenticationUtil;
+import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.system.PathStorePrivilegedCluster;
 
 /**
@@ -61,7 +61,7 @@ public class GrantReadAndWriteAccess implements ICommand {
         PathStorePrivilegedCluster.getChildInstance(
             this.connectionUsername, this.connectionPassword, this.ip, this.port);
 
-    AuthenticationUtil.grantAccessToKeyspace(childCluster.connect(), this.keyspace, this.roleName);
+    CassandraAuthenticationUtil.grantAccessToKeyspace(childCluster.connect(), this.keyspace, this.roleName);
 
     childCluster.close();
   }

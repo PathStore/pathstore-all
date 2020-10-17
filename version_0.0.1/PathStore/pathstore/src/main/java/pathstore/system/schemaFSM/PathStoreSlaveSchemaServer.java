@@ -6,8 +6,8 @@ import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
-import pathstore.authentication.AuthenticationUtil;
-import pathstore.authentication.ClientAuthenticationUtil;
+import pathstore.authentication.CassandraAuthenticationUtil;
+import pathstore.authentication.CredentialCache;
 import pathstore.client.PathStoreCluster;
 import pathstore.common.*;
 import pathstore.common.tables.NodeSchemaEntry;
@@ -189,7 +189,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
     SchemaInfo.getInstance().loadKeyspace(keyspace);
 
     // grant permissions to daemon account on the write
-    AuthenticationUtil.grantAccessToKeyspace(
+    CassandraAuthenticationUtil.grantAccessToKeyspace(
         superUserSession, keyspace, Constants.PATHSTORE_DAEMON_USERNAME);
 
     this.logger.info(
@@ -228,14 +228,14 @@ public class PathStoreSlaveSchemaServer implements Runnable {
 
     this.logger.info(String.format("Removed cache entries for keyspace %s", keyspace));
 
-    if (ClientAuthenticationUtil.deleteClientAccount(keyspace))
+    if (CredentialCache.getClientAuth().remove(keyspace))
       this.logger.info(String.format("Removed temporary client account for keyspace %s", keyspace));
 
     // called after schema info is removed so that the push server won't call on this keyspace and
     // throw an error
     // TODO: (Myles) do we need to wait for the push server to finish its current trip before
     // revoking permissions on that table
-    AuthenticationUtil.revokeAccessToKeyspace(
+    CassandraAuthenticationUtil.revokeAccessToKeyspace(
         superUserSession, keyspace, Constants.PATHSTORE_DAEMON_USERNAME);
 
     this.logger.info(

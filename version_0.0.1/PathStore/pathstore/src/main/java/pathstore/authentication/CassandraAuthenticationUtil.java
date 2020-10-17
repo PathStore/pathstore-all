@@ -11,7 +11,7 @@ import static org.apache.commons.text.CharacterPredicates.LETTERS;
  *
  * @see CredentialCache
  */
-public class AuthenticationUtil {
+public class CassandraAuthenticationUtil {
 
   /**
    * This function is used to generate an alpha numeric password of size 100
