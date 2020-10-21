@@ -7,7 +7,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This class is used as an internal logger for pathstore and the pathstore api.
+ * TODO: Change log levels to a generic setting
+ *
+ * <p>This class is used as an internal logger for pathstore and the pathstore api.
  *
  * <p>Level ranks:
  *
@@ -34,7 +36,7 @@ public class PathStoreLogger {
   protected PathStoreLogger(final String name) {
     this.name = name;
     this.messages = new ConcurrentHashMap<>();
-    this.displayLevel = LoggerLevel.INFO;
+    this.displayLevel = LoggerLevel.FINEST;
     this.hasNew = false;
   }
 

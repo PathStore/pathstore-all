@@ -23,6 +23,7 @@ import com.google.protobuf.Empty;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import pathstore.authentication.grpc.AuthClientInterceptor;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
@@ -114,7 +115,10 @@ public class PathStoreServerClient {
    * @param port port to connect on
    */
   private PathStoreServerClient(final String ip, final int port) {
-    this(ManagedChannelBuilder.forAddress(ip, port).usePlaintext(true));
+    this(
+        ManagedChannelBuilder.forAddress(ip, port)
+            .intercept(new AuthClientInterceptor())
+            .usePlaintext(true));
   }
 
   /** @param channelBuilder channel build based on ip and port */

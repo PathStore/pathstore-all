@@ -21,6 +21,8 @@ import com.datastax.driver.core.Session;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.grpc.AuthManager;
+import pathstore.authentication.grpc.AuthServerInterceptor;
 import pathstore.common.*;
 import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
 import pathstore.system.deployment.deploymentFSM.PathStoreMasterDeploymentServer;
@@ -93,6 +95,7 @@ public class PathStoreServerImpl {
       server =
           ServerBuilder.forPort(PathStoreProperties.getInstance().GRPCPort)
               .addService(new PathStoreServerImplGRPC())
+              .intercept(new AuthServerInterceptor(new AuthManager()))
               .build();
 
       server.start();

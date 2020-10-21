@@ -1,6 +1,7 @@
 package pathstorestartup.commands;
 
 import pathstore.authentication.Credential;
+import pathstore.authentication.CredentialCache;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.deployment.commands.ICommand;
 
@@ -65,9 +66,11 @@ public class WriteCredentialsToRootNodeBootstrap implements ICommand {
         PathStorePrivilegedCluster.getChildInstance(
             this.connectionUsername, this.connectionPassword, this.ip, this.port);
 
-    Credential.writeCredentialToRow(
-        rootCluster.connect(),
-        new Credential(this.nodeIdToWrite, this.usernameToWrite, this.passwordToWrite));
+    CredentialCache.getNodeAuth()
+        .credentialDataLayer
+        .write(
+            rootCluster.connect(),
+            new Credential<>(this.nodeIdToWrite, this.usernameToWrite, this.passwordToWrite));
 
     rootCluster.close();
   }

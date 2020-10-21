@@ -1,7 +1,7 @@
 package pathstorestartup;
 
 import com.jcraft.jsch.JSchException;
-import pathstore.authentication.AuthenticationUtil;
+import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.common.tables.ServerIdentity;
@@ -197,7 +197,7 @@ public class DevelopmentDeployment {
       System.out.println("Connected");
 
       String childSuperuserUsername = Constants.PATHSTORE_SUPERUSER_USERNAME;
-      String childSuperuserPassword = AuthenticationUtil.generateAlphaNumericPassword();
+      String childSuperuserPassword = CassandraAuthenticationUtil.generateAlphaNumericPassword();
 
       try {
         // Execute all commands in the given list
@@ -263,7 +263,7 @@ public class DevelopmentDeployment {
       final FinalizeRootInstallation finalizeRootInstallation) {
 
     String childDaemonUsername = Constants.PATHSTORE_DAEMON_USERNAME;
-    String childDaemonPassword = AuthenticationUtil.generateAlphaNumericPassword();
+    String childDaemonPassword = CassandraAuthenticationUtil.generateAlphaNumericPassword();
 
     return new BootstrapDeploymentBuilder(sshUtil)
         .initBootstrap()
