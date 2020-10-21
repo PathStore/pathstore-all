@@ -226,6 +226,8 @@ public class DevelopmentDeployment {
           System.out.println(command);
           command.execute();
         }
+
+        System.exit(1);
       } catch (Exception e) {
         e.printStackTrace();
         System.exit(-1);

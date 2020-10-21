@@ -69,15 +69,13 @@ public class WriteCredentialsToRootNodeBootstrap implements ICommand {
         PathStorePrivilegedCluster.getChildInstance(
             this.connectionUsername, this.connectionPassword, this.ip, this.port);
 
-    Session rootSession = rootCluster.connect();
 
-    rootSession.execute(
+    rootCluster.connect().execute(
         QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_AUTH)
             .value(Constants.LOCAL_AUTH_COLUMNS.NODE_ID, this.nodeIdToWrite)
             .value(Constants.LOCAL_AUTH_COLUMNS.USERNAME, this.usernameToWrite)
             .value(Constants.LOCAL_AUTH_COLUMNS.PASSWORD, this.passwordToWrite));
 
-    rootSession.close();
     rootCluster.close();
   }
 
