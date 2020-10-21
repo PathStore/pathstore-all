@@ -77,6 +77,7 @@ public class WriteCredentialsToRootNodeBootstrap implements ICommand {
             .value(Constants.LOCAL_AUTH_COLUMNS.USERNAME, this.usernameToWrite)
             .value(Constants.LOCAL_AUTH_COLUMNS.PASSWORD, this.passwordToWrite));
 
+    rootSession.close();
     rootCluster.close();
   }
 
