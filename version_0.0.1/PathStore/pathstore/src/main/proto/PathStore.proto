@@ -12,7 +12,7 @@ package pathstore;
 // TODO: segregate functions into separate hidden services (force anything should not be public)
 service PathStoreService{
 
-  // add entry to parent (non - covered cache miss occured)
+  // add entry to parent (non - covered cache miss occurred)
   rpc updateCache(QueryEntry) returns(InfoFromServer);
 
   // called by pull server every delta t
@@ -20,9 +20,6 @@ service PathStoreService{
 
   // called on client to local node on initial connection to register connection
   rpc registerApplicationClient(RegisterApplicationRequest) returns (RegisterApplicationResponse);
-
-  // called on client to local node after connection is accepted to get schema for their application
-  rpc getSchemaInfo(SchemaInfoRequest) returns (SchemaInfoResponse);
 
   // called on client to local node after a session was deemed to be invalid
   rpc validateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
@@ -75,16 +72,9 @@ message RegisterApplicationRequest{
 
 message RegisterApplicationResponse{
   // json string
-  string response = 1;
-}
-
-message SchemaInfoRequest{
-  string keyspace = 1;
-}
-
-message SchemaInfoResponse{
+  string credentials = 1;
   // SchemaInfo Object
-  bytes response = 1;
+  bytes schemaInfo = 2;
 }
 
 message ValidateSessionRequest{

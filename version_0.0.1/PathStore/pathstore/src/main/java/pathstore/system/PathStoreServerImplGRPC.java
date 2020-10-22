@@ -94,28 +94,15 @@ public class PathStoreServerImplGRPC extends PathStoreServiceGrpc.PathStoreServi
     String applicationName = request.getApplicationName();
     String password = request.getPassword();
 
-    String response = this.network.registerApplicationClient(applicationName, password);
+    String credentials = this.network.registerApplicationClient(applicationName, password);
 
-    responseObserver.onNext(RegisterApplicationResponse.newBuilder().setResponse(response).build());
-    responseObserver.onCompleted();
-  }
-
-  /**
-   * Get schema info for client from local node after registration of application account
-   *
-   * @param request request send
-   * @param responseObserver way to response
-   * @see NetworkImpl#getSchemaInfo(String)
-   */
-  @Override
-  public void getSchemaInfo(
-      final SchemaInfoRequest request, final StreamObserver<SchemaInfoResponse> responseObserver) {
-    String keyspace = request.getKeyspace();
-
-    SchemaInfo response = this.network.getSchemaInfo(keyspace);
+    SchemaInfo schemaInfo = this.network.getSchemaInfo(applicationName);
 
     responseObserver.onNext(
-        SchemaInfoResponse.newBuilder().setResponse(NetworkUtil.writeObject(response)).build());
+        RegisterApplicationResponse.newBuilder()
+            .setCredentials(credentials)
+            .setSchemaInfo(NetworkUtil.writeObject(schemaInfo))
+            .build());
     responseObserver.onCompleted();
   }
 

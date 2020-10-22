@@ -7,6 +7,7 @@ import pathstore.common.PathStoreProperties;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.ClusterCache;
+import pathstore.util.Pair;
 import pathstore.util.SchemaInfo;
 
 import java.util.Optional;
@@ -37,34 +38,39 @@ public class PathStoreClientAuthenticatedCluster {
   private static PathStoreClientAuthenticatedCluster initInstance(
       final String applicationName, final String masterPassword) {
     if (instance == null) {
-      Optional<String> response =
+      Pair<Optional<String>, Optional<SchemaInfo>> response =
           PathStoreServerClient.getInstance()
               .registerApplicationClient(applicationName, masterPassword);
 
-      if (response.isPresent()) {
-        JSONObject responseObject = new JSONObject(response.get());
-        if (responseObject
-            .getEnum(
-                Constants.REGISTER_APPLICATION.STATUS_STATES.class,
-                Constants.REGISTER_APPLICATION.STATUS)
-            .equals(Constants.REGISTER_APPLICATION.STATUS_STATES.VALID)) {
-          SchemaInfo schemaInfo =
-              PathStoreServerClient.getInstance().getSchemaInfo(applicationName);
+      Optional<String> credentialsOptional = response.t1;
+      Optional<SchemaInfo> schemaInfoOptional = response.t2;
 
-          if (schemaInfo == null)
-            throw new RuntimeException("Could not get schema info from local node");
+      if (credentialsOptional.isPresent()) {
+        if (schemaInfoOptional.isPresent()) {
+          String credentials = credentialsOptional.get();
+          SchemaInfo schemaInfo = schemaInfoOptional.get();
 
-          SchemaInfo.setInstance(schemaInfo);
-          instance =
-              new PathStoreClientAuthenticatedCluster(
-                  responseObject.getString(Constants.REGISTER_APPLICATION.USERNAME),
-                  responseObject.getString(Constants.REGISTER_APPLICATION.PASSWORD));
+          JSONObject responseObject = new JSONObject(credentials);
+          if (responseObject
+              .getEnum(
+                  Constants.REGISTER_APPLICATION.STATUS_STATES.class,
+                  Constants.REGISTER_APPLICATION.STATUS)
+              .equals(Constants.REGISTER_APPLICATION.STATUS_STATES.VALID)) {
+
+            SchemaInfo.setInstance(schemaInfo);
+            instance =
+                new PathStoreClientAuthenticatedCluster(
+                    responseObject.getString(Constants.REGISTER_APPLICATION.USERNAME),
+                    responseObject.getString(Constants.REGISTER_APPLICATION.PASSWORD));
+          } else
+            throw new RuntimeException(
+                responseObject.getString(Constants.REGISTER_APPLICATION.REASON));
         } else
           throw new RuntimeException(
-              responseObject.getString(Constants.REGISTER_APPLICATION.REASON));
+              "Schema info fetched is not present, this is a server error. Please ensure that you don't have version mismatches between the server and the client. Also ensure that you're running a stable version of the code base as with development versions you should expect that some functions don't work as expected. If you're a developer this is thrown on the grpc endpoint registerApplicationClient");
       } else
         throw new RuntimeException(
-            "Response is not present, most likely a network connectivity issue has occurred");
+            "Credentials fetched are not present, this is a server error. Please ensure that you don't have version mismatches between the server and the client. Also ensure that you're running a stable version of the code base as with development versions you should expect that some functions don't work as expected. If you're a developer this is thrown on the grpc endpoint registerApplicationClient");
     }
     return instance;
   }

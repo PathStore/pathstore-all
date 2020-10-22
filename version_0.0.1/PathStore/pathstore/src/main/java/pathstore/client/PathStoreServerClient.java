@@ -32,6 +32,7 @@ import pathstore.grpc.pathStoreProto.*;
 import pathstore.sessions.SessionToken;
 import pathstore.system.network.NetworkImpl;
 import pathstore.system.network.NetworkUtil;
+import pathstore.util.Pair;
 import pathstore.util.SchemaInfo;
 
 import java.io.IOException;
@@ -191,7 +192,7 @@ public class PathStoreServerClient {
    * @return response string
    * @see pathstore.system.network.NetworkImpl#registerApplicationClient(String, String)
    */
-  public Optional<String> registerApplicationClient(
+  public Pair<Optional<String>, Optional<SchemaInfo>> registerApplicationClient(
       final String applicationName, final String password) {
     RegisterApplicationRequest registerApplicationRequest =
         RegisterApplicationRequest.newBuilder()
@@ -199,27 +200,12 @@ public class PathStoreServerClient {
             .setPassword(password)
             .build();
 
-    return Optional.ofNullable(
-        this.blockingStub.registerApplicationClient(registerApplicationRequest).getResponse());
-  }
+    RegisterApplicationResponse response =
+        this.blockingStub.registerApplicationClient(registerApplicationRequest);
 
-  /**
-   * This function is used to get a partition of the schema info from the local node.
-   *
-   * <p>This is only used one in {@link PathStoreClientAuthenticatedCluster#getInstance()} on
-   * initial creation
-   *
-   * @param keyspace keyspace to partition by
-   * @return partitioned schema info
-   * @see SchemaInfo#getSchemaPartition(String)
-   * @see pathstore.system.network.NetworkImpl#getSchemaInfo(String)
-   */
-  public SchemaInfo getSchemaInfo(final String keyspace) {
-    SchemaInfoRequest schemaInfoRequest =
-        SchemaInfoRequest.newBuilder().setKeyspace(keyspace).build();
-
-    return (SchemaInfo)
-        NetworkUtil.readObject(this.blockingStub.getSchemaInfo(schemaInfoRequest).getResponse());
+    return new Pair<>(
+        Optional.ofNullable(response.getCredentials()),
+        Optional.ofNullable((SchemaInfo) NetworkUtil.readObject(response.getSchemaInfo())));
   }
 
   /**
