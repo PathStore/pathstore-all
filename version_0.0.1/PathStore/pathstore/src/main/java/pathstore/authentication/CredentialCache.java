@@ -1,14 +1,11 @@
 package pathstore.authentication;
 
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import pathstore.common.Constants;
+import pathstore.authentication.datalayerimpls.LocalAuth;
+import pathstore.authentication.datalayerimpls.LocalClientAuth;
 import pathstore.system.PathStorePrivilegedCluster;
 
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 /**
  * This class is used to cache all credentials in the pathstore_appliactions.local_auth table into
@@ -27,15 +24,7 @@ public final class CredentialCache<T> {
 
   /** @return returns an instance of the cache. Creates one if not already created */
   public static synchronized CredentialCache<Integer> getNodeAuth() {
-    if (nodeAuth == null)
-      nodeAuth =
-          new CredentialCache<>(
-              new CredentialDataLayer<>(
-                  Constants.PATHSTORE_APPLICATIONS,
-                  Constants.LOCAL_AUTH,
-                  Constants.LOCAL_AUTH_COLUMNS.NODE_ID,
-                  Constants.LOCAL_AUTH_COLUMNS.USERNAME,
-                  Constants.LOCAL_AUTH_COLUMNS.PASSWORD));
+    if (nodeAuth == null) nodeAuth = new CredentialCache<>(new LocalAuth());
     return nodeAuth;
   }
 
@@ -44,15 +33,7 @@ public final class CredentialCache<T> {
 
   /** @return returns an instance of the cache. Creates one if not already created */
   public static synchronized CredentialCache<String> getClientAuth() {
-    if (clientAuth == null)
-      clientAuth =
-          new CredentialCache<>(
-              new CredentialDataLayer<>(
-                  Constants.PATHSTORE_APPLICATIONS,
-                  Constants.LOCAL_CLIENT_AUTH,
-                  Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME,
-                  Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME,
-                  Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD));
+    if (clientAuth == null) clientAuth = new CredentialCache<>(new LocalClientAuth());
     return clientAuth;
   }
 
@@ -77,29 +58,7 @@ public final class CredentialCache<T> {
    */
   private CredentialCache(final CredentialDataLayer<T> credentialDataLayer) {
     this.credentialDataLayer = credentialDataLayer;
-    this.credentials = this.load();
-  }
-
-  /**
-   * Read all records from auth table, transform them to credential objects and build a concurrent
-   * map from it
-   *
-   * @return return concurrent built map of existing credentials in the database
-   */
-  private ConcurrentMap<T, Credential<T>> load() {
-    return StreamSupport.stream(
-            this.privSession
-                .execute(
-                    QueryBuilder.select()
-                        .all()
-                        .from(
-                            this.credentialDataLayer.keyspaceName,
-                            this.credentialDataLayer.tableName))
-                .spliterator(),
-            true)
-        .map(this.credentialDataLayer::buildFromRow)
-        .collect(
-            Collectors.toConcurrentMap(credential -> credential.primaryKey, Function.identity()));
+    this.credentials = this.credentialDataLayer.load(this.privSession);
   }
 
   /**
