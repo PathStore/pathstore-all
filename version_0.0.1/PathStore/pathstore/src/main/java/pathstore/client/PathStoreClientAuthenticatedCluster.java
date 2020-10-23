@@ -46,17 +46,16 @@ public class PathStoreClientAuthenticatedCluster {
       Optional<SchemaInfo> schemaInfoOptional = response.t2;
 
       if (credentialsOptional.isPresent()) {
-        if (schemaInfoOptional.isPresent()) {
-          String credentials = credentialsOptional.get();
-          SchemaInfo schemaInfo = schemaInfoOptional.get();
+        String credentials = credentialsOptional.get();
 
-          JSONObject responseObject = new JSONObject(credentials);
-          if (responseObject
-              .getEnum(
-                  Constants.REGISTER_APPLICATION.STATUS_STATES.class,
-                  Constants.REGISTER_APPLICATION.STATUS)
-              .equals(Constants.REGISTER_APPLICATION.STATUS_STATES.VALID)) {
-
+        JSONObject responseObject = new JSONObject(credentials);
+        if (responseObject
+            .getEnum(
+                Constants.REGISTER_APPLICATION.STATUS_STATES.class,
+                Constants.REGISTER_APPLICATION.STATUS)
+            .equals(Constants.REGISTER_APPLICATION.STATUS_STATES.VALID)) {
+          if (schemaInfoOptional.isPresent()) {
+            SchemaInfo schemaInfo = schemaInfoOptional.get();
             SchemaInfo.setInstance(schemaInfo);
             instance =
                 new PathStoreClientAuthenticatedCluster(
@@ -64,10 +63,10 @@ public class PathStoreClientAuthenticatedCluster {
                     responseObject.getString(Constants.REGISTER_APPLICATION.PASSWORD));
           } else
             throw new RuntimeException(
-                responseObject.getString(Constants.REGISTER_APPLICATION.REASON));
+                "Schema info fetched is not present, this is a server error. Please ensure that you don't have version mismatches between the server and the client. Also ensure that you're running a stable version of the code base as with development versions you should expect that some functions don't work as expected. If you're a developer this is thrown on the grpc endpoint registerApplicationClient");
         } else
           throw new RuntimeException(
-              "Schema info fetched is not present, this is a server error. Please ensure that you don't have version mismatches between the server and the client. Also ensure that you're running a stable version of the code base as with development versions you should expect that some functions don't work as expected. If you're a developer this is thrown on the grpc endpoint registerApplicationClient");
+              responseObject.getString(Constants.REGISTER_APPLICATION.REASON));
       } else
         throw new RuntimeException(
             "Credentials fetched are not present, this is a server error. Please ensure that you don't have version mismatches between the server and the client. Also ensure that you're running a stable version of the code base as with development versions you should expect that some functions don't work as expected. If you're a developer this is thrown on the grpc endpoint registerApplicationClient");
