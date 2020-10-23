@@ -59,7 +59,7 @@ public class LocalClientAuth implements CredentialDataLayer<String> {
       CassandraAuthenticationUtil.grantAccessToKeyspace(
           session, credential.primaryKey, credential.username);
       session.execute(
-          QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_AUTH)
+          QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_CLIENT_AUTH)
               .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME, credential.primaryKey)
               .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME, credential.username)
               .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD, credential.password));
