@@ -22,12 +22,11 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.stub.StreamObserver;
 import pathstore.authentication.grpc.AuthClientInterceptor;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
-import pathstore.grpc.PathStoreServiceGrpc;
+import pathstore.grpc.*;
 import pathstore.grpc.pathStoreProto.*;
 import pathstore.sessions.SessionToken;
 import pathstore.system.network.NetworkImpl;
@@ -45,7 +44,6 @@ import java.util.concurrent.TimeUnit;
  * node, two when a node communicates with its parent and three when a node needs to communicate
  * with another node in the network for Session Consistency.
  *
- * @see pathstore.system.PathStoreServerImplGRPC
  * @see NetworkImpl
  * @implNote This will be migrated to GRPC in the future.
  */
@@ -82,8 +80,22 @@ public class PathStoreServerClient {
    */
   private final ManagedChannel channel;
 
-  /** Stub to local node / parent */
-  private final PathStoreServiceGrpc.PathStoreServiceBlockingStub blockingStub;
+  /** Stub for {@link pathstore.system.network.CommonServiceImpl} */
+  private final CommonServiceGrpc.CommonServiceBlockingStub commonServiceBlockingStub;
+
+  /** Stub for {@link pathstore.system.network.ClientOnlyServiceImpl} */
+  private final ClientOnlyServiceGrpc.ClientOnlyServiceBlockingStub clientOnlyServiceBlockingStub;
+
+  /** Stub for {@link pathstore.system.network.ServerOnlyServiceImpl} */
+  private final ServerOnlyServiceGrpc.ServerOnlyServiceBlockingStub serverOnlyServiceBlockingStub;
+
+  /** Stub for {@link pathstore.system.network.NetworkWideServiceImpl} */
+  private final NetworkWideServiceGrpc.NetworkWideServiceBlockingStub
+      networkWideServiceBlockingStub;
+
+  /** Stub for {@link pathstore.system.network.UnAuthenticatedServiceImpl} */
+  private final UnAuthenticatedServiceGrpc.UnAuthenticatedServiceBlockingStub
+      unAuthenticatedServiceBlockingStub;
 
   /**
    * Creates connection to local node or to parent depending on role. Errors will be throw if any
@@ -125,7 +137,11 @@ public class PathStoreServerClient {
   /** @param channelBuilder channel build based on ip and port */
   private PathStoreServerClient(final ManagedChannelBuilder<?> channelBuilder) {
     this.channel = channelBuilder.build();
-    this.blockingStub = PathStoreServiceGrpc.newBlockingStub(this.channel);
+    this.commonServiceBlockingStub = CommonServiceGrpc.newBlockingStub(channel);
+    this.clientOnlyServiceBlockingStub = ClientOnlyServiceGrpc.newBlockingStub(channel);
+    this.serverOnlyServiceBlockingStub = ServerOnlyServiceGrpc.newBlockingStub(channel);
+    this.networkWideServiceBlockingStub = NetworkWideServiceGrpc.newBlockingStub(channel);
+    this.unAuthenticatedServiceBlockingStub = UnAuthenticatedServiceGrpc.newBlockingStub(channel);
   }
 
   /**
@@ -133,7 +149,7 @@ public class PathStoreServerClient {
    * byte[], int)} on the parent node or local node
    *
    * @param entry entry pass to parent or local node
-   * @see pathstore.system.PathStoreServerImplGRPC#updateCache(QueryEntry, StreamObserver)
+   * @see NetworkImpl#updateCache(String, String, byte[], int)
    */
   public void updateCache(final QueryCacheEntry entry) {
     try {
@@ -145,7 +161,7 @@ public class PathStoreServerClient {
               .setLimit(entry.limit)
               .build();
 
-      this.blockingStub.updateCache(queryEntry);
+      this.commonServiceBlockingStub.updateCache(queryEntry);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -175,7 +191,8 @@ public class PathStoreServerClient {
               .setLimit(entry.limit)
               .build();
 
-      String response = this.blockingStub.createQueryDelta(queryDeltaEntry).getUuid();
+      String response =
+          this.serverOnlyServiceBlockingStub.createQueryDelta(queryDeltaEntry).getUuid();
 
       return response != null && response.length() > 0 ? UUID.fromString(response) : null;
     } catch (IOException e) {
@@ -201,7 +218,8 @@ public class PathStoreServerClient {
             .build();
 
     RegisterApplicationResponse response =
-        this.blockingStub.registerApplicationClient(registerApplicationRequest);
+        this.unAuthenticatedServiceBlockingStub.registerApplicationClient(
+            registerApplicationRequest);
 
     return new Pair<>(
         Optional.ofNullable(response.getCredentials()),
@@ -228,7 +246,7 @@ public class PathStoreServerClient {
             .setSessionToken(NetworkUtil.writeObject(sessionToken))
             .build();
 
-    return this.blockingStub.validateSession(validateSessionRequest).getResponse();
+    return this.clientOnlyServiceBlockingStub.validateSession(validateSessionRequest).getResponse();
   }
 
   /**
@@ -246,7 +264,7 @@ public class PathStoreServerClient {
             .setLca(lca)
             .build();
 
-    this.blockingStub.forcePush(forcePushRequest);
+    this.networkWideServiceBlockingStub.forcePush(forcePushRequest);
   }
 
   /**
@@ -274,7 +292,7 @@ public class PathStoreServerClient {
             .setLca(lca)
             .build();
 
-    this.blockingStub.forceSynchronize(forceSynchronizationRequest);
+    this.serverOnlyServiceBlockingStub.forceSynchronize(forceSynchronizationRequest);
   }
 
   /**
@@ -286,6 +304,6 @@ public class PathStoreServerClient {
    * @see NetworkImpl#getLocalNodeId()
    */
   public int getLocalNodeId() {
-    return this.blockingStub.getLocalNodeId(Empty.newBuilder().build()).getNode();
+    return this.clientOnlyServiceBlockingStub.getLocalNodeId(Empty.newBuilder().build()).getNode();
   }
 }

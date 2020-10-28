@@ -30,6 +30,7 @@ import pathstore.system.deployment.deploymentFSM.PathStoreSlaveDeploymentServer;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerDaemon;
 import pathstore.system.logging.PathStoreLoggerFactory;
+import pathstore.system.network.*;
 import pathstore.system.schemaFSM.PathStoreMasterSchemaServer;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
@@ -94,7 +95,11 @@ public class PathStoreServerImpl {
       // start grpc
       server =
           ServerBuilder.forPort(PathStoreProperties.getInstance().GRPCPort)
-              .addService(new PathStoreServerImplGRPC())
+              .addService(new CommonServiceImpl())
+              .addService(new ClientOnlyServiceImpl())
+              .addService(new ServerOnlyServiceImpl())
+              .addService(new NetworkWideServiceImpl())
+              .addService(new UnAuthenticatedServiceImpl())
               .intercept(new AuthServerInterceptor(new AuthManager()))
               .build();
 

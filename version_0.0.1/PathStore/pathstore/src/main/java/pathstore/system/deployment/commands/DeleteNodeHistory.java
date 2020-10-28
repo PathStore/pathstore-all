@@ -131,4 +131,10 @@ public class DeleteNodeHistory implements ICommand {
 
     session.execute(deploymentDelete);
   }
+
+  /** @return information message to user */
+  @Override
+  public String toString() {
+    return "Deleting nodes history";
+  }
 }

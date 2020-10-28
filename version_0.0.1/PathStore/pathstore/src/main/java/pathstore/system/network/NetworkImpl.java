@@ -29,10 +29,22 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * This is class is the implementation of {@link pathstore.system.PathStoreServerImplGRPC}. That
- * class is purely a transportation wrapper
+ * This is class is the implementation of {@link UnAuthenticatedServiceImpl}. That class is purely a
+ * transportation wrapper
  */
 public class NetworkImpl {
+  /** Instance of class */
+  private static NetworkImpl instance = null;
+
+  /** @return instance of NetworkImpl */
+  public static synchronized NetworkImpl getInstance() {
+    if (instance == null) instance = new NetworkImpl();
+    return instance;
+  }
+
+  /** Private Default Constructor */
+  private NetworkImpl() {}
+
   /** Logger */
   private final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(NetworkImpl.class);
 

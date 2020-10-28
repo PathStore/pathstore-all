@@ -8,31 +8,35 @@ option objc_class_prefix = "PSP";
 
 package pathstore;
 
-// TODO: auth
-// TODO: segregate functions into separate hidden services (force anything should not be public)
-service PathStoreService{
-
+service CommonService{
   // add entry to parent (non - covered cache miss occurred)
   rpc updateCache(QueryEntry) returns(InfoFromServer);
+}
 
-  // called by pull server every delta t
-  rpc createQueryDelta(QueryDeltaEntry) returns (UUIDInfo);
-
-  // called on client to local node on initial connection to register connection
-  rpc registerApplicationClient(RegisterApplicationRequest) returns (RegisterApplicationResponse);
-
+service ClientOnlyService{
   // called on client to local node after a session was deemed to be invalid
   rpc validateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
 
-  // called by local node in validateSession to source node of session to lca
-  rpc forcePush(ForcePushRequest) returns (google.protobuf.Empty);
+  // called by client in ps properties to get local node id for validity
+  rpc getLocalNodeId(google.protobuf.Empty) returns (GetLocalNodeResponse);
+}
+
+service ServerOnlyService{
+  // called by pull server every delta t
+  rpc createQueryDelta(QueryDeltaEntry) returns (UUIDInfo);
 
   // called by local node in validateSession to itself up to lca to sync caches
   rpc forceSynchronize(ForceSynchronizationRequest) returns (google.protobuf.Empty);
+}
 
-  // called by client in ps properties to get local node id for validity
-  rpc getLocalNodeId(google.protobuf.Empty) returns (GetLocalNodeResponse);
+service NetworkWideService{
+  // called by local node in validateSession to source node of session to lca
+  rpc forcePush(ForcePushRequest) returns (google.protobuf.Empty);
+}
 
+service UnAuthenticatedService{
+  // called on client to local node on initial connection to register connection
+  rpc registerApplicationClient(RegisterApplicationRequest) returns (RegisterApplicationResponse);
 }
 
 service TestService{
