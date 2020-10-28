@@ -18,7 +18,6 @@
 package pathstore.common;
 
 import pathstore.authentication.Credential;
-import pathstore.client.PathStoreServerClient;
 
 import java.io.FileInputStream;
 import java.util.Properties;
@@ -91,13 +90,8 @@ public class PathStoreProperties {
 
   /** @return either create new instance and return it or return existing instance */
   public static synchronized PathStoreProperties getInstance() {
-    if (PathStoreProperties.instance == null) {
+    if (PathStoreProperties.instance == null)
       PathStoreProperties.instance = new PathStoreProperties();
-
-      // load node id if role is client
-      if (instance.role == Role.CLIENT)
-        instance.NodeID = PathStoreServerClient.getInstance().getLocalNodeId();
-    }
     return PathStoreProperties.instance;
   }
 

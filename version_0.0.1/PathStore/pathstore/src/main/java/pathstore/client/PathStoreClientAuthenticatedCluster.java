@@ -57,6 +57,8 @@ public class PathStoreClientAuthenticatedCluster {
           if (schemaInfoOptional.isPresent()) {
             SchemaInfo schemaInfo = schemaInfoOptional.get();
             SchemaInfo.setInstance(schemaInfo);
+            PathStoreProperties.getInstance().NodeID =
+                PathStoreServerClient.getInstance().getLocalNodeId();
             instance =
                 new PathStoreClientAuthenticatedCluster(
                     responseObject.getString(Constants.REGISTER_APPLICATION.USERNAME),
