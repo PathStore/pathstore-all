@@ -23,7 +23,11 @@ import io.grpc.ServerBuilder;
 import pathstore.authentication.CredentialCache;
 import pathstore.authentication.grpc.AuthManager;
 import pathstore.authentication.grpc.AuthServerInterceptor;
-import pathstore.common.*;
+import pathstore.common.Constants;
+import pathstore.common.PathStoreProperties;
+import pathstore.common.PathStoreThreadManager;
+import pathstore.common.Role;
+import pathstore.grpc.*;
 import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
 import pathstore.system.deployment.deploymentFSM.PathStoreMasterDeploymentServer;
 import pathstore.system.deployment.deploymentFSM.PathStoreSlaveDeploymentServer;
@@ -95,12 +99,31 @@ public class PathStoreServerImpl {
       // start grpc
       server =
           ServerBuilder.forPort(PathStoreProperties.getInstance().GRPCPort)
-              .addService(new CommonServiceImpl())
-              .addService(new ClientOnlyServiceImpl())
-              .addService(new ServerOnlyServiceImpl())
-              .addService(new NetworkWideServiceImpl())
-              .addService(new UnAuthenticatedServiceImpl())
-              .intercept(new AuthServerInterceptor(new AuthManager()))
+              .addService(new CommonServiceImpl()) // both client and server
+              .addService(new ClientOnlyServiceImpl()) // client only
+              .addService(new ServerOnlyServiceImpl()) // server only
+              .addService(new NetworkWideServiceImpl()) // master
+              .addService(new UnAuthenticatedServiceImpl()) // nothing
+              .intercept(
+                  new AuthServerInterceptor(
+                      AuthManager.newBuilder()
+                          .serverAndClientAuthenticatedEndpoint(
+                              CommonServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getNodeAuth().getAllReference(),
+                              CredentialCache.getClientAuth().getAllReference())
+                          .clientAuthenticatedEndpoint(
+                              ClientOnlyServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getClientAuth().getAllReference())
+                          .serverAuthenticatedEndpoint(
+                              ServerOnlyServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getNodeAuth().getAllReference())
+                          .unauthenticatedEndpoint(
+                              NetworkWideServiceGrpc
+                                  .SERVICE_NAME) // Myles: This is temporary until we build the
+                                                 // master password functionality into orchestration
+                                                 // of the network
+                          .unauthenticatedEndpoint(UnAuthenticatedServiceGrpc.SERVICE_NAME)
+                          .build()))
               .build();
 
       server.start();

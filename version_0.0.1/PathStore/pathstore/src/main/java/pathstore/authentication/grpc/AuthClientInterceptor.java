@@ -8,9 +8,19 @@ import pathstore.system.logging.PathStoreLoggerFactory;
  * This class is used as the auth interceptor for the grpc client. While the message is being build
  * at the end we add all the authentication information required so the expected server can
  */
-public class AuthClientInterceptor implements ClientInterceptor {
+public abstract class AuthClientInterceptor implements ClientInterceptor {
+
+  /** Logger for class */
   private static final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(AuthServerInterceptor.class);
+
+  /**
+   * This function is to be implemented by the child implementor to denote how to set the header
+   * information for outgoing requests to the server.
+   *
+   * @param header header to modify
+   */
+  public abstract void setHeader(final Metadata header);
 
   /**
    * Intercept ClientCall creation by the next Channel.
@@ -69,18 +79,16 @@ public class AuthClientInterceptor implements ClientInterceptor {
        * password. See {@link Keys} to see the definition for each key
        *
        * @param responseListener receives response messages
-       * @param headers headers that will be passed to the server to encapsulate authentication
+       * @param header headers that will be passed to the server to encapsulate authentication
        *     information
        */
       @Override
-      public void start(final Listener<RespT> responseListener, final Metadata headers) {
-        headers.put(Keys.PRIMARY_KEY, "primary_key");
-        headers.put(Keys.USERNAME, "username");
-        headers.put(Keys.PASSWORD, "password");
+      public void start(final Listener<RespT> responseListener, final Metadata header) {
+        setHeader(header);
 
         BackendListener<RespT> backendListener =
             new BackendListener<>(this.methodDescriptor.getFullMethodName(), responseListener);
-        super.start(backendListener, headers);
+        super.start(backendListener, header);
       }
     };
   }

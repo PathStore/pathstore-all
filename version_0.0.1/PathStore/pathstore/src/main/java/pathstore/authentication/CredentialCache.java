@@ -1,10 +1,12 @@
 package pathstore.authentication;
 
 import com.datastax.driver.core.Session;
+import lombok.Getter;
 import pathstore.authentication.datalayerimpls.LocalAuth;
 import pathstore.authentication.datalayerimpls.LocalClientAuth;
 import pathstore.system.PathStorePrivilegedCluster;
 
+import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -19,23 +21,14 @@ import java.util.concurrent.ConcurrentMap;
  */
 public final class CredentialCache<T> {
 
-  /** Instance of the cache */
-  private static CredentialCache<Integer> nodeAuth = null;
-
-  /** @return returns an instance of the cache. Creates one if not already created */
-  public static synchronized CredentialCache<Integer> getNodeAuth() {
-    if (nodeAuth == null) nodeAuth = new CredentialCache<>(new LocalAuth());
-    return nodeAuth;
-  }
+  /** Instance of the node cache */
+  @Getter(lazy = true)
+  private static final CredentialCache<Integer> nodeAuth = new CredentialCache<>(new LocalAuth());
 
   /** Instance of the client auth cache */
-  private static CredentialCache<String> clientAuth = null;
-
-  /** @return returns an instance of the cache. Creates one if not already created */
-  public static synchronized CredentialCache<String> getClientAuth() {
-    if (clientAuth == null) clientAuth = new CredentialCache<>(new LocalClientAuth());
-    return clientAuth;
-  }
+  @Getter(lazy = true)
+  private static final CredentialCache<String> clientAuth =
+      new CredentialCache<>(new LocalClientAuth());
 
   /** Session used to modify the local database. */
   private final Session privSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
@@ -59,6 +52,11 @@ public final class CredentialCache<T> {
   private CredentialCache(final CredentialDataLayer<T> credentialDataLayer) {
     this.credentialDataLayer = credentialDataLayer;
     this.credentials = this.credentialDataLayer.load(this.privSession);
+  }
+
+  /** @return get a reference to all credentials */
+  public Collection<Credential<T>> getAllReference() {
+    return this.credentials.values();
   }
 
   /**

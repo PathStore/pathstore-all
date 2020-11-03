@@ -22,7 +22,11 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import pathstore.authentication.grpc.AuthClientInterceptor;
+import lombok.Getter;
+import lombok.NonNull;
+import pathstore.authentication.CredentialCache;
+import pathstore.authentication.grpc.PathStoreClientInterceptor;
+import pathstore.authentication.grpc.PathStoreServerInterceptor;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
@@ -50,14 +54,8 @@ import java.util.concurrent.TimeUnit;
 public class PathStoreServerClient {
 
   /** Instance of class, only one per runtime */
-  private static PathStoreServerClient instance = null;
-
-  /** @return instance of server client. Either to local node or to parent */
-  public static synchronized PathStoreServerClient getInstance() {
-    if (PathStoreServerClient.instance == null)
-      PathStoreServerClient.instance = new PathStoreServerClient();
-    return PathStoreServerClient.instance;
-  }
+  @Getter(lazy = true)
+  private static final PathStoreServerClient instance = new PathStoreServerClient();
 
   /**
    * Custom Server client, this is used during session migration
@@ -124,13 +122,21 @@ public class PathStoreServerClient {
   /**
    * Constructor for {@link #getCustom(String, int)}
    *
+   * <p>If the role is a client then create an auth client interceptor instance without an account.
+   * As this will get called to attempt to authenticate before proper credentials exist.
+   *
    * @param ip ip to connect to
    * @param port port to connect on
    */
-  private PathStoreServerClient(final String ip, final int port) {
+  private PathStoreServerClient(@NonNull final String ip, @NonNull final int port) {
     this(
         ManagedChannelBuilder.forAddress(ip, port)
-            .intercept(new AuthClientInterceptor())
+            .intercept(
+                PathStoreProperties.getInstance().role == Role.SERVER
+                    ? PathStoreServerInterceptor.getInstance(
+                        CredentialCache.getNodeAuth()
+                            .getCredential(PathStoreProperties.getInstance().ParentID))
+                    : PathStoreClientInterceptor.getInstance())
             .usePlaintext(true));
   }
 

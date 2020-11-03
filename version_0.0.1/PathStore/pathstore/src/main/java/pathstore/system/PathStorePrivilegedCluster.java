@@ -46,7 +46,6 @@ public class PathStorePrivilegedCluster {
    */
   public static PathStorePrivilegedCluster getSuperUserInstance() {
     PathStoreProperties.getInstance().verifyCassandraSuperUserCredentials();
-    PathStoreProperties.getInstance().verifyCassandraConnectionDetails();
 
     return clusterCache.getInstance(
         PathStoreProperties.getInstance().credential,

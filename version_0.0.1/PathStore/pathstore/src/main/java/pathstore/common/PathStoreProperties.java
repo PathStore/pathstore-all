@@ -117,15 +117,6 @@ public class PathStoreProperties {
       throw new RuntimeException("Cassandra Parent Port is not present within the properties file");
   }
 
-  /** Used to verify client authentication details */
-  public void verifyClientAuthenticationDetails() {
-    if (this.applicationName == null)
-      throw new RuntimeException("Application Name is not set in the properties file");
-
-    if (this.applicationMasterPassword == null)
-      throw new RuntimeException("Application Master Password is not set in the properties file");
-  }
-
   /** Denotes the role of the server */
   public Role role;
 
