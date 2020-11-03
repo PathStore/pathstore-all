@@ -31,6 +31,9 @@ public class AuthManager {
      */
     private final Set<String> unauthenticated = new HashSet<>();
 
+    /** Additional credentials */
+    private final Map<String, Set<Credential<?>>> additionalCredentials = new HashMap<>();
+
     /**
      * This function is used to authenticate a service with a collection of server credentials
      *
@@ -77,17 +80,35 @@ public class AuthManager {
     }
 
     /**
-     * @param endpointName endpoint to not have authentication
+     * @param serviceName endpoint to not have authentication
      * @return this
      */
-    public Builder unauthenticatedEndpoint(final String endpointName) {
-      this.unauthenticated.add(endpointName);
+    public Builder unauthenticatedEndpoint(final String serviceName) {
+      this.unauthenticated.add(serviceName);
+      return this;
+    }
+
+    /**
+     * This function is used to add a specific username and password combo to the authentication
+     *
+     * @param serviceName service name to apply to
+     * @param credential credential to add
+     * @return this
+     */
+    public Builder addAdditionalCredentials(
+        final String serviceName, final Credential<?> credential) {
+      this.additionalCredentials.putIfAbsent(serviceName, new HashSet<>());
+      this.additionalCredentials.get(serviceName).add(credential);
       return this;
     }
 
     /** @return built instance of the auth manager */
     public AuthManager build() {
-      return new AuthManager(this.serverCredentials, this.clientCredentials, this.unauthenticated);
+      return new AuthManager(
+          this.serverCredentials,
+          this.clientCredentials,
+          this.unauthenticated,
+          this.additionalCredentials);
     }
   }
 
@@ -104,6 +125,9 @@ public class AuthManager {
 
   /** All unauthenticated endpoints */
   private final Set<String> unauthenticated;
+
+  /** Additional specific credentials add to a service */
+  private final Map<String, Set<Credential<?>>> additionalCredentials;
 
   /**
    * @param endpoint endpoint called
@@ -124,10 +148,18 @@ public class AuthManager {
     // check to ensure the service is registered with the auth manager
     if (!this.serverCredentials.containsKey(endpoint)
         && !this.clientCredentials.containsKey(endpoint)
-        && !this.unauthenticated.contains(endpoint)) return false;
+        && !this.unauthenticated.contains(endpoint)
+        && !this.additionalCredentials.containsKey(endpoint)) return false;
 
     // check if the service is unauthenticated
     if (this.unauthenticated.contains(endpoint)) return true;
+
+    // check to see if the credential is present in the additional credentials before doing the
+    // linear search
+    if (this.additionalCredentials.containsKey(endpoint)
+        && this.additionalCredentials
+            .get(endpoint)
+            .contains(new Credential<>(null, username, password))) return true;
 
     // authenticated services
     if (NumberUtils.isCreatable(primaryKey)) { // server identity, as the primary key is a number

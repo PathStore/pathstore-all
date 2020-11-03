@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
  * <p>TODO: Account 0 comments
  */
 @RequiredArgsConstructor
-@EqualsAndHashCode
+@EqualsAndHashCode(exclude = "primaryKey")
 public final class Credential<T> {
 
   /**
