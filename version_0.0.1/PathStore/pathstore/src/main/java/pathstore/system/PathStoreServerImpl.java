@@ -111,14 +111,12 @@ public class PathStoreServerImpl {
                               CommonServiceGrpc.SERVICE_NAME,
                               CredentialCache.getNodes().getAllReference(),
                               CredentialCache.getClients().getAllReference())
-                          //                          .clientAuthenticatedEndpoint(
-                          //                              ClientOnlyServiceGrpc.SERVICE_NAME,
-                          //
-                          // CredentialCache.getClients().getAllReference())
+                          .clientAuthenticatedEndpoint(
+                              ClientOnlyServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getClients().getAllReference())
                           .serverAuthenticatedEndpoint(
                               ServerOnlyServiceGrpc.SERVICE_NAME,
                               CredentialCache.getNodes().getAllReference())
-                          .unauthenticatedEndpoint(ClientOnlyServiceGrpc.SERVICE_NAME)
                           .unauthenticatedEndpoint(
                               NetworkWideServiceGrpc
                                   .SERVICE_NAME) // Myles: This is temporary until we build the
