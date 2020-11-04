@@ -30,7 +30,7 @@ public class PathStoreClientInterceptor extends AuthClientInterceptor {
    *
    * @see pathstore.client.PathStoreClientAuthenticatedCluster for invokation of setter
    */
-  @Setter private Credential<?> credential = new NoopCredential("noop", "noop");
+  @Getter @Setter private Credential<?> credential = new NoopCredential("noop", "noop");
 
   /** @param header header to modify {@link #credential} */
   @Override

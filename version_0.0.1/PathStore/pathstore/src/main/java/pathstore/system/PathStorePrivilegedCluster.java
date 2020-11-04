@@ -21,7 +21,9 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.credentials.Credential;
 import pathstore.authentication.credentials.NodeCredential;
+import pathstore.authentication.grpc.PathStoreClientInterceptor;
 import pathstore.common.PathStoreProperties;
 import pathstore.system.deployment.commands.WriteCredentialToChildNode;
 import pathstore.util.ClusterCache;
@@ -37,7 +39,7 @@ import java.net.UnknownHostException;
 public class PathStorePrivilegedCluster {
 
   /** Cache of connections based on credential objects */
-  private static final ClusterCache<NodeCredential, PathStorePrivilegedCluster> clusterCache =
+  private static final ClusterCache<Credential<?>, PathStorePrivilegedCluster> clusterCache =
       new ClusterCache<>(PathStorePrivilegedCluster::new);
 
   /**
@@ -46,12 +48,20 @@ public class PathStorePrivilegedCluster {
    * @return super user instance
    */
   public static PathStorePrivilegedCluster getSuperUserInstance() {
-    PathStoreProperties.getInstance().verifyCassandraSuperUserCredentials();
+    try {
+      PathStoreProperties.getInstance().verifyCassandraSuperUserCredentials();
 
-    return clusterCache.getInstance(
-        PathStoreProperties.getInstance().credential,
-        PathStoreProperties.getInstance().CassandraIP,
-        PathStoreProperties.getInstance().CassandraPort);
+      return clusterCache.getInstance(
+          PathStoreProperties.getInstance().credential,
+          PathStoreProperties.getInstance().CassandraIP,
+          PathStoreProperties.getInstance().CassandraPort);
+
+    } catch (RuntimeException e) {
+      return clusterCache.getInstance(
+          PathStoreClientInterceptor.getInstance().getCredential(),
+          PathStoreProperties.getInstance().CassandraIP,
+          PathStoreProperties.getInstance().CassandraPort);
+    }
   }
 
   /**
@@ -59,8 +69,7 @@ public class PathStorePrivilegedCluster {
    *
    * @return daemon instance
    * @see CredentialCache
-   * @see WriteCredentialToChildNode for how these credentials
-   *     are boot strapped
+   * @see WriteCredentialToChildNode for how these credentials are boot strapped
    */
   public static PathStorePrivilegedCluster getDaemonInstance() {
     NodeCredential daemonCredentials =
@@ -82,8 +91,7 @@ public class PathStorePrivilegedCluster {
    *
    * @return parent database instance
    * @see CredentialCache
-   * @see WriteCredentialToChildNode for how the parent
-   *     credentials are boot strapped
+   * @see WriteCredentialToChildNode for how the parent credentials are boot strapped
    */
   public static PathStorePrivilegedCluster getParentInstance() {
     NodeCredential parentCredentials =
@@ -148,7 +156,7 @@ public class PathStorePrivilegedCluster {
   }
 
   /** Credential used */
-  private final NodeCredential credential;
+  private final Credential<?> credential;
 
   /** Cluster */
   private final Cluster cluster;
@@ -160,7 +168,7 @@ public class PathStorePrivilegedCluster {
    * @param credential {@link #credential}
    * @param cluster {@link #cluster}
    */
-  public PathStorePrivilegedCluster(final NodeCredential credential, final Cluster cluster) {
+  public PathStorePrivilegedCluster(final Credential<?> credential, final Cluster cluster) {
     this.credential = credential;
     this.cluster = cluster;
     this.session = cluster.connect();
