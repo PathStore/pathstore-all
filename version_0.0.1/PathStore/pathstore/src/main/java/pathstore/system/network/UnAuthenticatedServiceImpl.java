@@ -1,7 +1,7 @@
 package pathstore.system.network;
 
+import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
-import lombok.SneakyThrows;
 import pathstore.grpc.UnAuthenticatedServiceGrpc;
 import pathstore.grpc.pathStoreProto.RegisterApplicationRequest;
 import pathstore.grpc.pathStoreProto.RegisterApplicationResponse;
@@ -30,7 +30,6 @@ public class UnAuthenticatedServiceImpl
    * @see NetworkImpl#registerApplicationClient(String, String)
    */
   @Override
-  @SneakyThrows
   public void registerApplicationClient(
       final RegisterApplicationRequest request,
       final StreamObserver<RegisterApplicationResponse> responseObserver) {
@@ -41,11 +40,31 @@ public class UnAuthenticatedServiceImpl
 
     SchemaInfo schemaInfo = this.network.getSchemaInfo(applicationName);
 
-    responseObserver.onNext(
-        RegisterApplicationResponse.newBuilder()
-            .setCredentials(credentials)
-            .setSchemaInfo(NetworkUtil.writeObject(schemaInfo))
-            .build());
-    responseObserver.onCompleted();
+    System.out.println("Converting schema info");
+
+    try {
+      ByteString schemaInfoByteString = NetworkUtil.writeObject(schemaInfo);
+
+      System.out.println("Converted Schema Info");
+
+      RegisterApplicationResponse response =
+          RegisterApplicationResponse.newBuilder()
+              .setCredentials(credentials)
+              .setSchemaInfo(schemaInfoByteString)
+              .build();
+
+      System.out.println("Built response");
+
+      responseObserver.onNext(response);
+
+      System.out.println("sent on next");
+
+      responseObserver.onCompleted();
+
+      System.out.println("sent on completed");
+
+    } catch (Exception e) {
+      responseObserver.onError(e);
+    }
   }
 }
