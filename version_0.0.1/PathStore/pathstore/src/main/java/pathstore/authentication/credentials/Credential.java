@@ -1,9 +1,6 @@
 package pathstore.authentication.credentials;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
 /**
  * This is the base credential class. All other credential references should extend this class.
@@ -13,6 +10,7 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 @EqualsAndHashCode(exclude = "searchable")
+@ToString
 public class Credential<SearchableT> {
   /**
    * How to search for clusters in the cache

@@ -158,15 +158,21 @@ public class AuthManager {
 
     Credential<?> credential = new NoopCredential(username, password);
 
+    System.out.println(credential);
+
     // check to see if the credential is present in the additional credentials before doing the
     // linear search
     if (this.additionalCredentials.containsKey(endpoint)
         && this.additionalCredentials.get(endpoint).contains(credential)) return true;
 
+    System.out.println(this.serverCredentials.get(endpoint));
+
     // compare against server credentials
     if (this.serverCredentials.containsKey(endpoint))
       for (NodeCredential server : this.serverCredentials.get(endpoint))
         if (credential.equals(server)) return true;
+
+    System.out.println(this.clientCredentials.get(endpoint));
 
     // compare against client credentials
     if (this.clientCredentials.containsKey(endpoint))
