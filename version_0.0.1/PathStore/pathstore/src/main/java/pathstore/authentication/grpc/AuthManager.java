@@ -164,12 +164,14 @@ public class AuthManager {
         && this.additionalCredentials.get(endpoint).contains(credential)) return true;
 
     // compare against server credentials
-    for (NodeCredential server : this.serverCredentials.get(endpoint))
-      if (server.equals(credential)) return true;
+    if (this.serverCredentials.containsKey(endpoint))
+      for (NodeCredential server : this.serverCredentials.get(endpoint))
+        if (server.equals(credential)) return true;
 
     // compare against client credentials
-    for (ClientCredential client : this.clientCredentials.get(endpoint))
-      if (client.equals(credential)) return true;
+    if (this.clientCredentials.containsKey(endpoint))
+      for (ClientCredential client : this.clientCredentials.get(endpoint))
+        if (client.equals(credential)) return true;
 
     return false;
   }
