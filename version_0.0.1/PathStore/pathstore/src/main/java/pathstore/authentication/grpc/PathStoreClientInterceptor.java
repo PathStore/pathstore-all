@@ -5,7 +5,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pathstore.authentication.credentials.ClientCredential;
+import pathstore.authentication.credentials.Credential;
+import pathstore.authentication.credentials.NoopCredential;
 
 /**
  * This AuthClientInterceptor is specifically used to deal with the case when the grpc client is a
@@ -29,12 +30,11 @@ public class PathStoreClientInterceptor extends AuthClientInterceptor {
    *
    * @see pathstore.client.PathStoreClientAuthenticatedCluster for invokation of setter
    */
-  @Setter private ClientCredential credential = new ClientCredential("noop", "noop", "noop");
+  @Setter private Credential<?> credential = new NoopCredential("noop", "noop");
 
   /** @param header header to modify {@link #credential} */
   @Override
   public void setHeader(final Metadata header) {
-    header.put(Keys.PRIMARY_KEY, this.credential.getSearchable());
     header.put(Keys.USERNAME, this.credential.getUsername());
     header.put(Keys.PASSWORD, this.credential.getPassword());
   }

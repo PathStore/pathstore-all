@@ -10,10 +10,6 @@ import static io.grpc.Metadata.ASCII_STRING_MARSHALLER;
  * <p>TODO: Add to constants file
  */
 public class Keys {
-  /** primary key header key */
-  public static final Metadata.Key<String> PRIMARY_KEY =
-      Metadata.Key.of("primary_key", ASCII_STRING_MARSHALLER);
-
   /** username header key */
   public static final Metadata.Key<String> USERNAME =
       Metadata.Key.of("username", ASCII_STRING_MARSHALLER);

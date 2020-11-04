@@ -33,7 +33,6 @@ public class PathStoreServerInterceptor extends AuthClientInterceptor {
   /** @param header header to modify {@link #credential} */
   @Override
   public void setHeader(final Metadata header) {
-    header.put(Keys.PRIMARY_KEY, String.valueOf(this.credential.getSearchable()));
     header.put(Keys.USERNAME, this.credential.getUsername());
     header.put(Keys.PASSWORD, this.credential.getPassword());
   }

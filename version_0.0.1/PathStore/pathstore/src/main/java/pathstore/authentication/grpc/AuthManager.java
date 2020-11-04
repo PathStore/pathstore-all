@@ -4,8 +4,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.math.NumberUtils;
-import pathstore.authentication.*;
+import pathstore.authentication.CredentialCache;
 import pathstore.authentication.credentials.ClientCredential;
 import pathstore.authentication.credentials.Credential;
 import pathstore.authentication.credentials.NodeCredential;
@@ -137,15 +136,12 @@ public class AuthManager {
 
   /**
    * @param endpoint endpoint called
-   * @param primaryKey primary key given
    * @param username username given
    * @param password and password given
    * @return true if authenticated false if not
    */
-  public boolean isAuthenticated(
-      String endpoint, final String primaryKey, final String username, final String password) {
-    if (endpoint == null || primaryKey == null || username == null || password == null)
-      return false;
+  public boolean isAuthenticated(String endpoint, final String username, final String password) {
+    if (endpoint == null || username == null || password == null) return false;
 
     // get the service name of the endpoint as, authentication is at the service layer not the
     // endpoint layer
@@ -160,27 +156,20 @@ public class AuthManager {
     // check if the service is unauthenticated
     if (this.unauthenticated.contains(endpoint)) return true;
 
+    Credential<?> credential = new NoopCredential(username, password);
+
     // check to see if the credential is present in the additional credentials before doing the
     // linear search
     if (this.additionalCredentials.containsKey(endpoint)
-        && this.additionalCredentials
-            .get(endpoint)
-            .contains(new NoopCredential(username, password))) return true;
+        && this.additionalCredentials.get(endpoint).contains(credential)) return true;
 
-    // authenticated services
-    if (NumberUtils.isCreatable(primaryKey)) { // server identity, as the primary key is a number
-      NodeCredential serverCredential =
-          new NodeCredential(Integer.parseInt(primaryKey), username, password);
+    // compare against server credentials
+    for (NodeCredential server : this.serverCredentials.get(endpoint))
+      if (server.equals(credential)) return true;
 
-      for (NodeCredential server : this.serverCredentials.get(endpoint))
-        if (server.equals(serverCredential)) return true;
-
-    } else { // client identity, as the primary key is not a number
-      ClientCredential clientCredential = new ClientCredential(primaryKey, username, password);
-
-      for (ClientCredential client : this.clientCredentials.get(endpoint))
-        if (client.equals(clientCredential)) return true;
-    }
+    // compare against client credentials
+    for (ClientCredential client : this.clientCredentials.get(endpoint))
+      if (client.equals(credential)) return true;
 
     return false;
   }

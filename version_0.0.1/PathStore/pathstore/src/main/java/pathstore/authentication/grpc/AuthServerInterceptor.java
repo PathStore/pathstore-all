@@ -62,15 +62,11 @@ public class AuthServerInterceptor implements ServerInterceptor {
                 grpcServerCall.getMethodDescriptor().getFullMethodName(),
                 message.toString().replace("\n", "")));
 
-        String primaryKey = metadata.get(Keys.PRIMARY_KEY);
         String username = metadata.get(Keys.USERNAME);
         String password = metadata.get(Keys.PASSWORD);
 
         if (!authManager.isAuthenticated(
-            grpcServerCall.getMethodDescriptor().getFullMethodName(),
-            primaryKey,
-            username,
-            password)) {
+            grpcServerCall.getMethodDescriptor().getFullMethodName(), username, password)) {
           serverCall.close(Status.UNAUTHENTICATED, new Metadata());
         } else super.onMessage(message);
       }
