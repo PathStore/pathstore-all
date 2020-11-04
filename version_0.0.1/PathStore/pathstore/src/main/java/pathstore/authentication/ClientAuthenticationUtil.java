@@ -29,6 +29,8 @@ public class ClientAuthenticationUtil {
    * @return true if loaded else false
    */
   public static boolean isApplicationNotLoaded(@NonNull final String applicationName) {
+    if (applicationName.equals(Constants.PATHSTORE_APPLICATIONS)) return false;
+
     PathStoreSession pathStoreSession = PathStoreCluster.getDaemonInstance().connect();
 
     Select queryNodeSchemasTable =
