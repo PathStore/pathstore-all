@@ -50,7 +50,7 @@ public class UnAuthenticatedServiceImpl
       RegisterApplicationResponse response =
           RegisterApplicationResponse.newBuilder()
               .setCredentials(credentials)
-              .setSchemaInfo(schemaInfoByteString)
+              //              .setSchemaInfo(schemaInfoByteString)
               .build();
 
       System.out.println("Built response");

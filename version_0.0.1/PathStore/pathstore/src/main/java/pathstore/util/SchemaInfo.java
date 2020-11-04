@@ -198,7 +198,7 @@ public class SchemaInfo implements Serializable {
    *
    * @param keyspace keyspace to partition by
    * @return new schema info object if the keyspace passed is valid.
-   * @see PathStoreServer#getSchemaInfo(String)
+   * @see pathstore.system.network.NetworkImpl#getSchemaInfo(String) 
    */
   public SchemaInfo getSchemaPartition(final String keyspace) {
     if (this.keyspacesLoaded.contains(keyspace)) {
