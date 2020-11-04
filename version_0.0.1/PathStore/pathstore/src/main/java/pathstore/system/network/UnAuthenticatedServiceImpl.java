@@ -1,11 +1,10 @@
 package pathstore.system.network;
 
-import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
+import pathstore.common.Constants;
 import pathstore.grpc.UnAuthenticatedServiceGrpc;
 import pathstore.grpc.pathStoreProto.RegisterApplicationRequest;
 import pathstore.grpc.pathStoreProto.RegisterApplicationResponse;
-import pathstore.util.SchemaInfo;
 
 /**
  * This class is used to provide the service between a PathStore Client and a local node or a
@@ -38,26 +37,18 @@ public class UnAuthenticatedServiceImpl
 
     String credentials = this.network.registerApplicationClient(applicationName, password);
 
-    SchemaInfo schemaInfo = this.network.getSchemaInfo(applicationName);
-
-    System.out.println(schemaInfo);
-
-    System.out.println("Converting schema info");
-
     try {
-      ByteString schemaInfoByteString = NetworkUtil.writeObject(schemaInfo);
 
-      System.out.println("Converted Schema Info");
+      RegisterApplicationResponse.Builder responseBuilder =
+          RegisterApplicationResponse.newBuilder().setCredentials(credentials);
 
-      RegisterApplicationResponse response =
-          RegisterApplicationResponse.newBuilder()
-              .setCredentials(credentials)
-              // .setSchemaInfo(schemaInfoByteString)
-              .build();
+      if (!applicationName.equals(Constants.PATHSTORE_APPLICATIONS))
+        responseBuilder.setSchemaInfo(
+            NetworkUtil.writeObject(this.network.getSchemaInfo(applicationName)));
 
       System.out.println("Built response");
 
-      responseObserver.onNext(response);
+      responseObserver.onNext(responseBuilder.build());
 
       System.out.println("sent on next");
 

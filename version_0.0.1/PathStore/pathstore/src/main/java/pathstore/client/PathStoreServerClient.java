@@ -27,6 +27,7 @@ import lombok.NonNull;
 import pathstore.authentication.CredentialCache;
 import pathstore.authentication.grpc.PathStoreClientInterceptor;
 import pathstore.authentication.grpc.PathStoreServerInterceptor;
+import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
@@ -235,7 +236,9 @@ public class PathStoreServerClient {
 
     return new Pair<>(
         Optional.ofNullable(response.getCredentials()),
-        Optional.ofNullable((SchemaInfo) NetworkUtil.readObject(response.getSchemaInfo())));
+        applicationName.equals(Constants.PATHSTORE_APPLICATIONS)
+            ? Optional.empty()
+            : Optional.ofNullable((SchemaInfo) NetworkUtil.readObject(response.getSchemaInfo())));
   }
 
   /**

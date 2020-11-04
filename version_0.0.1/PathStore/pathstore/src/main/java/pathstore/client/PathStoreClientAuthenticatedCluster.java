@@ -71,9 +71,12 @@ public class PathStoreClientAuthenticatedCluster {
               Constants.REGISTER_APPLICATION.STATUS_STATES.class,
               Constants.REGISTER_APPLICATION.STATUS)
           .equals(Constants.REGISTER_APPLICATION.STATUS_STATES.VALID)) {
-        if (schemaInfoOptional.isPresent()) {
-          SchemaInfo schemaInfo = schemaInfoOptional.get();
-          SchemaInfo.setInstance(schemaInfo);
+        if (schemaInfoOptional.isPresent()
+            || applicationName.equals(Constants.PATHSTORE_APPLICATIONS)) {
+          if (schemaInfoOptional.isPresent()) {
+            SchemaInfo schemaInfo = schemaInfoOptional.get();
+            SchemaInfo.setInstance(schemaInfo);
+          }
           return new PathStoreClientAuthenticatedCluster(
               new ClientCredential(
                   applicationName,
