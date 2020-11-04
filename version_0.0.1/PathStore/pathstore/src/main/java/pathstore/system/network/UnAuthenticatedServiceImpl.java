@@ -40,6 +40,8 @@ public class UnAuthenticatedServiceImpl
 
     SchemaInfo schemaInfo = this.network.getSchemaInfo(applicationName);
 
+    System.out.println(schemaInfo);
+
     System.out.println("Converting schema info");
 
     try {
@@ -50,7 +52,7 @@ public class UnAuthenticatedServiceImpl
       RegisterApplicationResponse response =
           RegisterApplicationResponse.newBuilder()
               .setCredentials(credentials)
-              .setSchemaInfo(schemaInfoByteString)
+              // .setSchemaInfo(schemaInfoByteString)
               .build();
 
       System.out.println("Built response");
