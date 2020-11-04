@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstore.common.tables.DeploymentProcessStatus;
 import pathstoreweb.pathstoreadminpanel.services.IService;
@@ -49,7 +49,7 @@ public class DeleteDeploymentRecords implements IService {
   /** Write all records to the database */
   private void delete() {
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     for (DeploymentRecord entry : payload.records) {
 

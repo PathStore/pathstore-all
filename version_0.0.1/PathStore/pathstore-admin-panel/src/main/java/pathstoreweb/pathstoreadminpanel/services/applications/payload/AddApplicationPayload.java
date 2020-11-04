@@ -5,7 +5,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.web.multipart.MultipartFile;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
@@ -73,7 +73,7 @@ public final class AddApplicationPayload extends ValidatedPayload {
 
     String[] errors = {IMPROPER_APPLICATION_NAME_FORM, null};
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     // (2)
     if (this.applicationName.startsWith("pathstore_")) errors[0] = null;

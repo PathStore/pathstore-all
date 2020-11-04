@@ -5,7 +5,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.http.ResponseEntity;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.logs.formatter.LogRecordsFormatter;
@@ -40,7 +40,7 @@ public class GetLogRecords implements IService {
    * @return list of messages filtered by {@link #payload} properties
    */
   private List<String> getLogs() {
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Select selectFilteredLogs =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOGS);

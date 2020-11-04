@@ -1,11 +1,6 @@
 package pathstorestartup.commands;
 
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
-import pathstore.authentication.Credential;
-import pathstore.authentication.CredentialCache;
 import pathstore.common.Constants;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.deployment.commands.ICommand;
@@ -69,12 +64,13 @@ public class WriteCredentialsToRootNodeBootstrap implements ICommand {
         PathStorePrivilegedCluster.getChildInstance(
             this.connectionUsername, this.connectionPassword, this.ip, this.port);
 
-
-    rootCluster.connect().execute(
-        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_AUTH)
-            .value(Constants.LOCAL_AUTH_COLUMNS.NODE_ID, this.nodeIdToWrite)
-            .value(Constants.LOCAL_AUTH_COLUMNS.USERNAME, this.usernameToWrite)
-            .value(Constants.LOCAL_AUTH_COLUMNS.PASSWORD, this.passwordToWrite));
+    rootCluster
+        .connect()
+        .execute(
+            QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_NODE_AUTH)
+                .value(Constants.LOCAL_NODE_AUTH_COLUMNS.NODE_ID, this.nodeIdToWrite)
+                .value(Constants.LOCAL_NODE_AUTH_COLUMNS.USERNAME, this.usernameToWrite)
+                .value(Constants.LOCAL_NODE_AUTH_COLUMNS.PASSWORD, this.passwordToWrite));
 
     rootCluster.close();
   }

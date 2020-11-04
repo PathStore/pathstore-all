@@ -192,6 +192,7 @@ public final class Constants {
   public static final class APPLICATION_CREDENTIALS_COLUMNS {
     public static final String KEYSPACE_NAME = "keyspace_name";
     public static final String PASSWORD = "password";
+    public static final String IS_SUPER_USER = "is_super_user";
   }
 
   public static final String APPS = "apps";
@@ -221,6 +222,7 @@ public final class Constants {
     public static final String KEYSPACE_NAME = "keyspace_name";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
+    public static final String IS_SUPER_USER = "is_super_user";
   }
 
   public static final String LOCAL_AUXILIARY_AUTH = "local_auxiliary_auth";

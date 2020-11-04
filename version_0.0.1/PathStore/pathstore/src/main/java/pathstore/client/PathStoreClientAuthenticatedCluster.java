@@ -74,7 +74,8 @@ public class PathStoreClientAuthenticatedCluster {
               new ClientCredential(
                   applicationName,
                   responseObject.getString(Constants.REGISTER_APPLICATION.USERNAME),
-                  responseObject.getString(Constants.REGISTER_APPLICATION.PASSWORD)));
+                  responseObject.getString(Constants.REGISTER_APPLICATION.PASSWORD),
+                  false)); // idk if this is going to relevant
         } else
           throw new RuntimeException(
               "Schema info fetched is not present, this is a server error. Please ensure that you don't have version mismatches between the server and the client. Also ensure that you're running a stable version of the code base as with development versions you should expect that some functions don't work as expected. If you're a developer this is thrown on the grpc endpoint registerApplicationClient");

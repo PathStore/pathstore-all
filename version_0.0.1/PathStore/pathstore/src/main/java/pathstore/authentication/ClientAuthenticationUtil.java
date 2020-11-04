@@ -4,12 +4,15 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import lombok.NonNull;
 import pathstore.client.PathStoreCluster;
 import pathstore.client.PathStoreSession;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.tables.NodeSchemaEntry;
 import pathstore.common.tables.NodeSchemaProcessStatus;
+
+import java.util.Optional;
 
 /**
  * This util function encompasses all functions required to register and unregister a temporary
@@ -25,7 +28,7 @@ public class ClientAuthenticationUtil {
    * @param applicationName name of application provided by user
    * @return true if loaded else false
    */
-  public static boolean isApplicationNotLoaded(final String applicationName) {
+  public static boolean isApplicationNotLoaded(@NonNull final String applicationName) {
     PathStoreSession pathStoreSession = PathStoreCluster.getDaemonInstance().connect();
 
     Select queryNodeSchemasTable =
@@ -45,15 +48,15 @@ public class ClientAuthenticationUtil {
   }
 
   /**
-   * This function is used to determine if a user passed applicationName and password match the
-   * master application combo defined in {@link Constants#APPLICATION_CREDENTIALS}
+   * This function is used to get the application credential record from the database based on an
+   * application name and password provided from the user
    *
-   * @param applicationName application name to check
-   * @param password password to match
-   * @return true if the combo matches else false.
+   * @param applicationName application name
+   * @param password password
+   * @return optional of an application credential object
    */
-  public static boolean isComboInvalid(final String applicationName, final String password) {
-
+  public static Optional<ApplicationCredential> getApplicationCredentialRow(
+      @NonNull final String applicationName, @NonNull final String password) {
     Session pathStoreSession = PathStoreCluster.getDaemonInstance().connect();
 
     Select queryCombo =
@@ -65,8 +68,11 @@ public class ClientAuthenticationUtil {
 
     for (Row row : pathStoreSession.execute(queryCombo))
       if (row.getString(Constants.APPLICATION_CREDENTIALS_COLUMNS.PASSWORD).equals(password))
-        return false;
-
-    return true;
+        return Optional.of(
+            new ApplicationCredential(
+                row.getString(Constants.APPLICATION_CREDENTIALS_COLUMNS.KEYSPACE_NAME),
+                row.getString(Constants.APPLICATION_CREDENTIALS_COLUMNS.PASSWORD),
+                row.getBool(Constants.APPLICATION_CREDENTIALS_COLUMNS.IS_SUPER_USER)));
+    return Optional.empty();
   }
 }

@@ -3,7 +3,9 @@ package pathstore.system.network;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import lombok.NonNull;
 import org.json.JSONObject;
+import pathstore.authentication.ApplicationCredential;
 import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.authentication.credentials.ClientCredential;
@@ -103,7 +105,8 @@ public class NetworkImpl {
    *     before username and password as those fields may not exist
    * @see pathstore.client.PathStoreClientAuthenticatedCluster
    */
-  public String registerApplicationClient(final String applicationName, final String password) {
+  public String registerApplicationClient(
+      @NonNull final String applicationName, @NonNull final String password) {
     if (ClientAuthenticationUtil.isApplicationNotLoaded(applicationName)) {
       String errorResponse =
           String.format(
@@ -117,7 +120,10 @@ public class NetworkImpl {
           .toString();
     }
 
-    if (ClientAuthenticationUtil.isComboInvalid(applicationName, password)) {
+    Optional<ApplicationCredential> optionalApplicationCredential =
+        ClientAuthenticationUtil.getApplicationCredentialRow(applicationName, password);
+
+    if (!optionalApplicationCredential.isPresent()) {
       String errorResponse =
           String.format(
               "Registration of application credentials for application %s has failed as the provided credentials do not match the master application credentials",
@@ -130,6 +136,7 @@ public class NetworkImpl {
           .toString();
     }
 
+    ApplicationCredential applicationCredential = optionalApplicationCredential.get();
     ClientCredential credential = CredentialCache.getClients().getCredential(applicationName);
 
     if (credential
@@ -139,9 +146,10 @@ public class NetworkImpl {
           CassandraAuthenticationUtil.generateAlphaNumericPassword().toLowerCase();
       String clientPassword = CassandraAuthenticationUtil.generateAlphaNumericPassword();
 
-      credential = new ClientCredential(applicationName, clientUsername, clientPassword);
+      credential =
+          new ClientCredential(
+              applicationName, clientUsername, clientPassword, applicationCredential.isSuperUser());
 
-      // TODO: Need to add support here for super user credentials
       CredentialCache.getClients().add(credential);
     }
 

@@ -5,11 +5,11 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.http.ResponseEntity;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstore.common.tables.NodeSchemaEntry;
-import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.GetApplicationStateFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
+import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.formatter.GetApplicationStateFormatter;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -41,7 +41,7 @@ public class GetApplicationState implements IService {
    */
   @SuppressWarnings("ALL")
   private List<NodeSchemaEntry> getApplicationStates() {
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Select queryAllNodeSchemas =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);

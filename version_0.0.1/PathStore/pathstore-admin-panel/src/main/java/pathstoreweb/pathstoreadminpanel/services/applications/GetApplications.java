@@ -4,10 +4,10 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.http.ResponseEntity;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
-import pathstoreweb.pathstoreadminpanel.services.applications.formatter.GetApplicationsFormatter;
 import pathstoreweb.pathstoreadminpanel.services.IService;
+import pathstoreweb.pathstoreadminpanel.services.applications.formatter.GetApplicationsFormatter;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -31,7 +31,7 @@ public class GetApplications implements IService {
    * @return list of available applications
    */
   private List<Application> getApplications() {
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Select queryApplications =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);

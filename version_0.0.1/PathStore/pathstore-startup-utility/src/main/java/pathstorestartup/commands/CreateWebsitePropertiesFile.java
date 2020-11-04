@@ -1,5 +1,6 @@
 package pathstorestartup.commands;
 
+import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.CommandError;
 import pathstore.system.deployment.commands.ICommand;
@@ -26,33 +27,27 @@ public class CreateWebsitePropertiesFile implements ICommand {
   /** Destination to store file locally */
   private final String destinationToWrite;
 
-  /** admin username */
-  private final String username;
-
   /** admin password */
-  private final String password;
+  private final String masterPassword;
 
   /**
    * @param ip {@link #ip}
    * @param cassandraPort {@link #cassandraPort}
    * @param grpcPort {@link #grpcPort}
    * @param destinationToWrite {@link #destinationToWrite}
-   * @param username {@link #username}
-   * @param password {@link #password}
+   * @param masterPassword {@link #masterPassword}
    */
   public CreateWebsitePropertiesFile(
       final String ip,
       final int cassandraPort,
       final int grpcPort,
       final String destinationToWrite,
-      final String username,
-      final String password) {
+      final String masterPassword) {
     this.ip = ip;
     this.cassandraPort = cassandraPort;
     this.grpcPort = grpcPort;
     this.destinationToWrite = destinationToWrite;
-    this.username = username;
-    this.password = password;
+    this.masterPassword = masterPassword;
   }
 
   /**
@@ -70,8 +65,8 @@ public class CreateWebsitePropertiesFile implements ICommand {
     properties.setProperty(CASSANDRA_PORT, String.valueOf(this.cassandraPort));
     properties.setProperty(GRPC_IP, this.ip);
     properties.setProperty(GRPC_PORT, String.valueOf(this.grpcPort));
-    properties.setProperty(USERNAME, this.username);
-    properties.setProperty(PASSWORD, this.password);
+    properties.setProperty(APPLICATION_NAME, Constants.PATHSTORE_APPLICATIONS);
+    properties.setProperty(APPLICATION_MASTER_PASSWORD, this.masterPassword);
 
     try {
       OutputStream outputStream = new FileOutputStream(this.destinationToWrite);

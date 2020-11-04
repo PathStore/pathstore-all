@@ -1,7 +1,10 @@
 package pathstorestartup;
 
 import com.jcraft.jsch.JSchException;
+import org.w3c.dom.Node;
 import pathstore.authentication.CassandraAuthenticationUtil;
+import pathstore.authentication.credentials.AuxiliaryCredential;
+import pathstore.authentication.credentials.NodeCredential;
 import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.common.tables.ServerIdentity;
@@ -198,6 +201,7 @@ public class DevelopmentDeployment {
 
       String childSuperuserUsername = Constants.PATHSTORE_SUPERUSER_USERNAME;
       String childSuperuserPassword = CassandraAuthenticationUtil.generateAlphaNumericPassword();
+      String masterPassword = CassandraAuthenticationUtil.generateAlphaNumericPassword();
 
       try {
         // Execute all commands in the given list
@@ -210,6 +214,7 @@ public class DevelopmentDeployment {
                 childSuperuserPassword,
                 networkAdminUsername,
                 networkAdminPassword,
+                masterPassword,
                 new FinalizeRootInstallation(
                     childSuperuserUsername,
                     childSuperuserPassword,
@@ -221,6 +226,7 @@ public class DevelopmentDeployment {
                         ? null
                         : new ServerIdentity(privKey, passphrase),
                     password,
+                    masterPassword,
                     sshPort,
                     grpcPort))) {
           System.out.println(command);
@@ -251,6 +257,7 @@ public class DevelopmentDeployment {
    * @param childSuperuserPassword new super user password
    * @param networkAdminUsername network admin username
    * @param networkAdminPassword network admin password
+   * @param masterPassword master password for the pathstore_applications table
    * @param finalizeRootInstallation finalization object to occur at the end of deployment
    * @return list of deployment commands to execute
    */
@@ -262,6 +269,7 @@ public class DevelopmentDeployment {
       final String childSuperuserPassword,
       final String networkAdminUsername,
       final String networkAdminPassword,
+      final String masterPassword,
       final FinalizeRootInstallation finalizeRootInstallation) {
 
     String childDaemonUsername = Constants.PATHSTORE_DAEMON_USERNAME;
@@ -297,8 +305,7 @@ public class DevelopmentDeployment {
             DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
             childSuperuserUsername,
             childSuperuserPassword)
-        .generateWebsiteProperties(
-            "127.0.0.1", cassandraPort, grpcPort, childSuperuserUsername, childSuperuserPassword)
+        .generateWebsiteProperties("127.0.0.1", cassandraPort, grpcPort, masterPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
         .createRole(
@@ -345,28 +352,27 @@ public class DevelopmentDeployment {
             networkAdminUsername,
             networkAdminPassword,
             true)
-        .writeCredentialsToRootNodeBootstrap(
+        .writeNodeCredentialToChildNode(
+            new NodeCredential(1, childDaemonUsername, childDaemonPassword),
             childSuperuserUsername,
             childSuperuserPassword,
             ip,
-            cassandraPort,
-            1,
-            childDaemonUsername,
-            childDaemonPassword)
-        .writeCredentialsToRootNodeBootstrap(
+            cassandraPort) // write root node daemon account
+        .writeAuxiliaryCredentialToChildNode(
+            new AuxiliaryCredential(
+                Constants.AUXILIARY_ACCOUNTS.NETWORK_ADMINISTRATOR,
+                networkAdminUsername,
+                networkAdminPassword),
             childSuperuserUsername,
             childSuperuserPassword,
             ip,
-            cassandraPort,
-            -1,
-            networkAdminUsername,
-            networkAdminPassword)
+            cassandraPort)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
             new WaitForPathStore(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort))
+        .custom(finalizeRootInstallation)
         .startImageAndWait(
             BootstrapDeploymentConstants.RUN_COMMANDS.PATHSTORE_ADMIN_PANEL_RUN, null)
-        .custom(finalizeRootInstallation)
         .build();
   }
 

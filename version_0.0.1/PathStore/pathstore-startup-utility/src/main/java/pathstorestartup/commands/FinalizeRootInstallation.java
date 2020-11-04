@@ -20,6 +20,8 @@ import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.WAIT_FOR;
 import static pathstore.common.Constants.PATHSTORE_META_COLUMNS.*;
 import static pathstore.common.Constants.SERVERS_COLUMNS.*;
 import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
+import static pathstore.common.Constants.APPLICATION_CREDENTIALS_COLUMNS.*;
+import static pathstore.common.Constants.APPLICATION_CREDENTIALS_COLUMNS.PASSWORD;
 
 /**
  * This command will write the server record for the root node and the deployment record for the
@@ -51,6 +53,9 @@ public class FinalizeRootInstallation implements ICommand {
   /** Password to server */
   private final String password;
 
+  /** Master password for the pathstore_applications row in the application credentials */
+  private final String masterPassword;
+
   /** Ssh port to server */
   private final int sshPort;
 
@@ -64,6 +69,7 @@ public class FinalizeRootInstallation implements ICommand {
    * @param cassandraPort {@link #cassandraPort}
    * @param username {@link #username}
    * @param password {@link #password}
+   * @param masterPassword
    * @param sshPort {@link #sshPort}
    * @param grpcPort {@link #grpcPort}
    */
@@ -76,6 +82,7 @@ public class FinalizeRootInstallation implements ICommand {
       final String authType,
       final ServerIdentity serverIdentity,
       final String password,
+      final String masterPassword,
       final int sshPort,
       final int grpcPort) {
     this.cassandraUsername = cassandraUsername;
@@ -86,6 +93,7 @@ public class FinalizeRootInstallation implements ICommand {
     this.authType = authType;
     this.serverIdentity = serverIdentity;
     this.password = password;
+    this.masterPassword = masterPassword;
     this.sshPort = sshPort;
     this.grpcPort = grpcPort;
   }
@@ -138,12 +146,23 @@ public class FinalizeRootInstallation implements ICommand {
 
     session.execute(insert);
 
+    insert =
+        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.APPLICATION_CREDENTIALS)
+            .value(PATHSTORE_VERSION, QueryBuilder.now())
+            .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
+            .value(PATHSTORE_DIRTY, true)
+            .value(KEYSPACE_NAME, Constants.PATHSTORE_APPLICATIONS)
+            .value(PASSWORD, this.masterPassword)
+            .value(IS_SUPER_USER, true);
+
+    session.execute(insert);
+
     cluster.close();
   }
 
   /** @return info message */
   @Override
   public String toString() {
-    return "Writing server and deployment record to roots table";
+    return "Writing server, deployment record, and the application credentials for the admin panel to roots table";
   }
 }

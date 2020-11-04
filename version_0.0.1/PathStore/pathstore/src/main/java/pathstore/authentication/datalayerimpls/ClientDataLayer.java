@@ -55,7 +55,8 @@ public class ClientDataLayer implements CredentialDataLayer<String, ClientCreden
     return new ClientCredential(
         row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME),
         row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME),
-        row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD));
+        row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD),
+        row.getBool(Constants.LOCAL_CLIENT_AUTH_COLUMNS.IS_SUPER_USER));
   }
 
   /**
@@ -67,14 +68,20 @@ public class ClientDataLayer implements CredentialDataLayer<String, ClientCreden
   public ClientCredential write(
       @NonNull final Session session, @NonNull final ClientCredential credential) {
     CassandraAuthenticationUtil.createRole(
-        session, credential.getUsername(), false, true, credential.getPassword());
-    CassandraAuthenticationUtil.grantAccessToKeyspace(
-        session, credential.getSearchable(), credential.getUsername());
+        session,
+        credential.getUsername(),
+        credential.isSuperUser(),
+        true,
+        credential.getPassword());
+    if (!credential.isSuperUser())
+      CassandraAuthenticationUtil.grantAccessToKeyspace(
+          session, credential.getSearchable(), credential.getUsername());
     session.execute(
         QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_CLIENT_AUTH)
             .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME, credential.getSearchable())
             .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME, credential.getUsername())
-            .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD, credential.getPassword()));
+            .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD, credential.getPassword())
+            .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.IS_SUPER_USER, credential.isSuperUser()));
 
     return credential;
   }
@@ -92,8 +99,9 @@ public class ClientDataLayer implements CredentialDataLayer<String, ClientCreden
                 QueryBuilder.eq(
                     Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME,
                     credential.getSearchable())));
-    CassandraAuthenticationUtil.revokeAccessToKeyspace(
-        session, credential.getSearchable(), credential.getUsername());
+    if (!credential.isSuperUser())
+      CassandraAuthenticationUtil.revokeAccessToKeyspace(
+          session, credential.getSearchable(), credential.getUsername());
     CassandraAuthenticationUtil.dropRole(session, credential.getUsername());
   }
 }

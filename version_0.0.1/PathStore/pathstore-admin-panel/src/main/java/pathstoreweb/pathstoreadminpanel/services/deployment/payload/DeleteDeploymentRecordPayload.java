@@ -4,7 +4,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstore.common.tables.DeploymentProcessStatus;
 import pathstoreweb.pathstoreadminpanel.services.deployment.DeploymentRecord;
@@ -15,7 +15,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static pathstoreweb.pathstoreadminpanel.validator.ErrorConstants.DELETE_DEPLOYMENT_RECORD_PAYLOAD.*;
+import static pathstoreweb.pathstoreadminpanel.validator.ErrorConstants.DELETE_DEPLOYMENT_RECORD_PAYLOAD.EMPTY;
+import static pathstoreweb.pathstoreadminpanel.validator.ErrorConstants.DELETE_DEPLOYMENT_RECORD_PAYLOAD.INVALID_RECORD;
 
 /**
  * Delete deployment record payload. This payload is used to request the deletion of a given node
@@ -44,7 +45,7 @@ public class DeleteDeploymentRecordPayload extends ValidatedPayload {
     Map<Integer, DeploymentRecord> mapFromIdToRecord =
         this.records.stream().collect(Collectors.toMap(k -> k.newNodeId, Function.identity()));
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Select deploymentQuery =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);

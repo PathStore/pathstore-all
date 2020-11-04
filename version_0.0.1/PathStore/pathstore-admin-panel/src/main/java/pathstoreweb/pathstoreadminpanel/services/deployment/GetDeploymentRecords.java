@@ -5,7 +5,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.http.ResponseEntity;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstore.common.tables.DeploymentEntry;
 import pathstoreweb.pathstoreadminpanel.services.IService;
@@ -33,7 +33,7 @@ public class GetDeploymentRecords implements IService {
    */
   private List<DeploymentEntry> getRecords() {
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Select queryAllRecords =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);

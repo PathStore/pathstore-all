@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.Update;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstore.common.tables.ServerAuthType;
 import pathstore.common.tables.ServerIdentity;
@@ -46,7 +46,7 @@ public class UpdateServer implements IService {
   /** Set all rows with values from website as there is no need to make a read and then a select */
   private void updateServer() throws IOException {
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
 

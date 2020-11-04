@@ -1,6 +1,7 @@
 package pathstore.authentication.credentials;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 
 /**
@@ -11,6 +12,10 @@ import lombok.NonNull;
  */
 @EqualsAndHashCode(callSuper = true)
 public class ClientCredential extends Credential<String> {
+
+  /** Denotes whether the client is a super user */
+  @Getter private final boolean isSuperUser;
+
   /**
    * @param searchable application name
    * @param username username
@@ -19,7 +24,9 @@ public class ClientCredential extends Credential<String> {
   public ClientCredential(
       final @NonNull String searchable,
       final @NonNull String username,
-      final @NonNull String password) {
+      final @NonNull String password,
+      final @NonNull boolean isSuperUser) {
     super(searchable, username, password);
+    this.isSuperUser = isSuperUser;
   }
 }

@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.applications.payload.RemoveApplicationPayload;
@@ -38,7 +38,7 @@ public class RemoveApplication implements IService {
 
   /** Delete the given application record from the table */
   private void removeApplication() {
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Delete removeApp = QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.APPS);
     removeApp.where(

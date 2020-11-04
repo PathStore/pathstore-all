@@ -4,7 +4,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.deployment.DeploymentRecord;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
@@ -63,7 +63,7 @@ public final class AddDeploymentRecordPayload extends ValidatedPayload {
     // (3)
     if (nodeIdSet.size() != this.records.size()) errors[1] = NODE_ID_DUPLICATES;
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     // (4) & (5) & (6)
     Select deploymentSelect =

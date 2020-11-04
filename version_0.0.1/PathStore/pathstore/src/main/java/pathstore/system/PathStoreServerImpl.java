@@ -96,31 +96,6 @@ public class PathStoreServerImpl {
 
       System.out.println(PathStoreProperties.getInstance().ExternalAddress);
 
-      AuthManager.Builder authManagerBuilder =
-          AuthManager.newBuilder()
-              .serverAndClientAuthenticatedEndpoint(
-                  CommonServiceGrpc.SERVICE_NAME,
-                  CredentialCache.getNodes().getAllReference(),
-                  CredentialCache.getClients().getAllReference())
-              .clientAuthenticatedEndpoint(
-                  ClientOnlyServiceGrpc.SERVICE_NAME,
-                  CredentialCache.getClients().getAllReference())
-              .serverAuthenticatedEndpoint(
-                  ServerOnlyServiceGrpc.SERVICE_NAME,
-                  CredentialCache.getNodes().getAllReference())
-              .unauthenticatedEndpoint(
-                  NetworkWideServiceGrpc
-                      .SERVICE_NAME) // Myles: This is temporary until we build the
-              // master password functionality into orchestration
-              // of the network
-              .unauthenticatedEndpoint(UnAuthenticatedServiceGrpc.SERVICE_NAME);
-
-      // Myles: This is temporary. As the website uses the super user credentials you must allow
-      // them to access the grpc service.
-      if (PathStoreProperties.getInstance().role == Role.ROOTSERVER)
-        authManagerBuilder.addAdditionalCredentials(
-            CommonServiceGrpc.SERVICE_NAME, PathStoreProperties.getInstance().credential);
-
       // start grpc
       server =
           ServerBuilder.forPort(PathStoreProperties.getInstance().GRPCPort)
@@ -129,7 +104,26 @@ public class PathStoreServerImpl {
               .addService(new ServerOnlyServiceImpl()) // server only
               .addService(new NetworkWideServiceImpl()) // master
               .addService(new UnAuthenticatedServiceImpl()) // nothing
-              .intercept(new AuthServerInterceptor(authManagerBuilder.build()))
+              .intercept(
+                  new AuthServerInterceptor(
+                      AuthManager.newBuilder()
+                          .serverAndClientAuthenticatedEndpoint(
+                              CommonServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getNodes().getAllReference(),
+                              CredentialCache.getClients().getAllReference())
+                          .clientAuthenticatedEndpoint(
+                              ClientOnlyServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getClients().getAllReference())
+                          .serverAuthenticatedEndpoint(
+                              ServerOnlyServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getNodes().getAllReference())
+                          .unauthenticatedEndpoint(
+                              NetworkWideServiceGrpc
+                                  .SERVICE_NAME) // Myles: This is temporary until we build the
+                          // master password functionality into orchestration
+                          // of the network
+                          .unauthenticatedEndpoint(UnAuthenticatedServiceGrpc.SERVICE_NAME)
+                          .build()))
               .build();
 
       server.start();
