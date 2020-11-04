@@ -27,7 +27,6 @@ import lombok.NonNull;
 import pathstore.authentication.CredentialCache;
 import pathstore.authentication.grpc.PathStoreClientInterceptor;
 import pathstore.authentication.grpc.PathStoreServerInterceptor;
-import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
@@ -40,6 +39,8 @@ import pathstore.util.Pair;
 import pathstore.util.SchemaInfo;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -228,17 +229,23 @@ public class PathStoreServerClient {
 
     System.out.println("Calling registerApplicationClient");
 
-    RegisterApplicationResponse response =
+    Iterator<RegisterApplicationResponse> iteratorResponse =
         this.unAuthenticatedServiceBlockingStub.registerApplicationClient(
             registerApplicationRequest);
 
     System.out.println("Done");
 
-    return new Pair<>(
-        Optional.ofNullable(response.getCredentials()),
-        applicationName.equals(Constants.PATHSTORE_APPLICATIONS)
-            ? Optional.empty()
-            : Optional.ofNullable((SchemaInfo) NetworkUtil.readObject(response.getSchemaInfo())));
+    List<Object> results =
+        NetworkUtil.concatenate(
+            iteratorResponse,
+            RegisterApplicationResponse::getStatus,
+            (RegisterApplicationResponse response) -> response.getCredentials().toByteArray(),
+            (RegisterApplicationResponse response) -> response.getSchemaInfo().toByteArray());
+
+    if (results.size() != 2) return new Pair<>(Optional.empty(), Optional.empty());
+    else
+      return new Pair<>(
+          Optional.of((String) results.get(0)), Optional.of((SchemaInfo) results.get(1)));
   }
 
   /**

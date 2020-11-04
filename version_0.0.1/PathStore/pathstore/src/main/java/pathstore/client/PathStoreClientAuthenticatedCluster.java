@@ -1,6 +1,7 @@
 package pathstore.client;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
 import lombok.Getter;
 import lombok.NonNull;
 import org.json.JSONObject;
@@ -17,8 +18,11 @@ import pathstore.util.SchemaInfo;
 import java.util.Optional;
 
 /**
- * This class is the front facing class users will use to connect to their local pathstore node with
- * their application name and the associated master password.
+ * TODO: Client side needs to be aware if the account if a super user. If it is allow it to create a
+ * privileged session
+ *
+ * <p>This class is the front facing class users will use to connect to their local pathstore node
+ * with their application name and the associated master password.
  */
 public class PathStoreClientAuthenticatedCluster {
 
@@ -71,18 +75,16 @@ public class PathStoreClientAuthenticatedCluster {
               Constants.REGISTER_APPLICATION.STATUS_STATES.class,
               Constants.REGISTER_APPLICATION.STATUS)
           .equals(Constants.REGISTER_APPLICATION.STATUS_STATES.VALID)) {
-        if (schemaInfoOptional.isPresent()
-            || applicationName.equals(Constants.PATHSTORE_APPLICATIONS)) {
-          if (schemaInfoOptional.isPresent()) {
-            SchemaInfo schemaInfo = schemaInfoOptional.get();
-            SchemaInfo.setInstance(schemaInfo);
-          }
+        if (schemaInfoOptional
+            .isPresent()) { // check to ensure that the schema info object is present
+          SchemaInfo schemaInfo = schemaInfoOptional.get();
+          SchemaInfo.setInstance(schemaInfo);
           return new PathStoreClientAuthenticatedCluster(
               new ClientCredential(
                   applicationName,
                   responseObject.getString(Constants.REGISTER_APPLICATION.USERNAME),
                   responseObject.getString(Constants.REGISTER_APPLICATION.PASSWORD),
-                  false)); // idk if this is going to relevant
+                  responseObject.getBoolean(Constants.REGISTER_APPLICATION.IS_SUPER_USER)));
         } else
           throw new RuntimeException(
               "Schema info fetched is not present, this is a server error. Please ensure that you don't have version mismatches between the server and the client. Also ensure that you're running a stable version of the code base as with development versions you should expect that some functions don't work as expected. If you're a developer this is thrown on the grpc endpoint registerApplicationClient");
@@ -93,17 +95,24 @@ public class PathStoreClientAuthenticatedCluster {
           "Credentials fetched are not present, this is a server error. Please ensure that you don't have version mismatches between the server and the client. Also ensure that you're running a stable version of the code base as with development versions you should expect that some functions don't work as expected. If you're a developer this is thrown on the grpc endpoint registerApplicationClient");
   }
 
+  /** Credential used to connect */
+  private final ClientCredential credential;
+
   /** Cluster connection using client credentials */
   private final Cluster cluster;
 
+  /** Raw session */
+  private final Session rawSession;
+
   /** PathStoreSession created using cluster */
-  private final PathStoreSession session;
+  private final PathStoreSession psSession;
 
   /**
    * @param clientCredential client credential passed from the local node that is used to
    *     communicate via cassandra and GRPC
    */
   private PathStoreClientAuthenticatedCluster(final ClientCredential clientCredential) {
+    this.credential = clientCredential;
     this.cluster =
         ClusterCache.createCluster(
             PathStoreProperties.getInstance().CassandraIP,
@@ -111,7 +120,9 @@ public class PathStoreClientAuthenticatedCluster {
             clientCredential.getUsername(),
             clientCredential.getPassword());
 
-    this.session = new PathStoreSession(this.cluster);
+    this.rawSession = this.cluster.connect();
+
+    this.psSession = new PathStoreSession(this.rawSession);
 
     // As of now the client is considered connected and properly ready to communicate with the local
     // node
@@ -123,14 +134,21 @@ public class PathStoreClientAuthenticatedCluster {
 
   /** @return local node db session */
   public PathStoreSession connect() {
-    return this.session;
+    return this.psSession;
+  }
+
+  /** @return raw session iff the user is a super user */
+  public Session connectRaw() {
+    if (!this.credential.isSuperUser())
+      throw new RuntimeException("Only super user clients can use the raw session");
+    return this.rawSession;
   }
 
   /** Close session and cluster */
   public void close() throws InterruptedException {
     PathStoreServerClient.getInstance().shutdown();
     logger.debug("Shutdown grpc connection to local node");
-    this.session.close();
+    this.rawSession.close();
     logger.debug("Closed cassandra session");
     this.cluster.close();
     logger.debug("Closed cassandra cluster connection");

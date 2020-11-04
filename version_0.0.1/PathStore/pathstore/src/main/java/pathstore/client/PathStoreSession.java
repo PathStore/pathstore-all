@@ -54,9 +54,9 @@ public class PathStoreSession implements Session {
   /** Raw session used to execute queries */
   private final Session session;
 
-  /** @param cluster cluster to create session */
-  public PathStoreSession(final Cluster cluster) {
-    this.session = cluster.connect();
+  /** @param session session to use */
+  public PathStoreSession(final Session session) {
+    this.session = session;
   }
 
   public String getLoggedKeyspace() {
@@ -385,7 +385,7 @@ public class PathStoreSession implements Session {
   }
 
   public void close() {
-    this.session.close();
+    throw new RuntimeException("Call close from the cluster");
   }
 
   public boolean isClosed() {

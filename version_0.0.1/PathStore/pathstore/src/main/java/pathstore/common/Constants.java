@@ -248,6 +248,7 @@ public final class Constants {
     public static final String REASON = "reason";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
+    public static final String IS_SUPER_USER = "isSuperUser";
   }
 
   public static final class SESSION_TOKEN {

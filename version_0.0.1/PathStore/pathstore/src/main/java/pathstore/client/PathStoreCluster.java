@@ -18,6 +18,7 @@
 package pathstore.client;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
 import pathstore.authentication.CredentialCache;
 import pathstore.authentication.credentials.NodeCredential;
 import pathstore.common.PathStoreProperties;
@@ -81,8 +82,11 @@ public class PathStoreCluster {
   /** Cluster object, used to close the cluster */
   private final Cluster cluster;
 
+  /** Raw session */
+  private final Session rawSession;
+
   /** PathStoreSession, used to compress the responses from the database */
-  private final PathStoreSession session;
+  private final PathStoreSession psSession;
 
   /**
    * @param credential {@link #credential}
@@ -91,12 +95,13 @@ public class PathStoreCluster {
   public PathStoreCluster(final NodeCredential credential, final Cluster cluster) {
     this.credential = credential;
     this.cluster = cluster;
-    this.session = new PathStoreSession(this.cluster);
+    this.rawSession = this.cluster.connect();
+    this.psSession = new PathStoreSession(this.rawSession);
   }
 
   /** @return ps session */
   public PathStoreSession connect() {
-    return this.session;
+    return this.psSession;
   }
 
   /**
@@ -104,7 +109,7 @@ public class PathStoreCluster {
    * disconnected.
    */
   public void close() {
-    this.session.close();
+    this.rawSession.close();
     this.cluster.close();
     clusterCache.remove(this.credential);
   }

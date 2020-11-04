@@ -36,7 +36,7 @@ service NetworkWideService{
 
 service UnAuthenticatedService{
   // called on client to local node on initial connection to register connection
-  rpc registerApplicationClient(RegisterApplicationRequest) returns (RegisterApplicationResponse);
+  rpc registerApplicationClient(RegisterApplicationRequest) returns (stream RegisterApplicationResponse);
 }
 
 service TestService{
@@ -76,9 +76,16 @@ message RegisterApplicationRequest{
 
 message RegisterApplicationResponse{
   // json string
-  string credentials = 1;
+  bytes credentials = 1;
   // SchemaInfo Object
   bytes schemaInfo = 2;
+  // status of payloads
+  Status status = 3;
+}
+
+enum Status{
+  PENDING = 0;
+  DONE = 1;
 }
 
 message ValidateSessionRequest{

@@ -78,7 +78,7 @@
         <!-- Cassandra Driver Dependencies  -->
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId> <!-- -nop -->
+            <artifactId>slf4j-nop</artifactId> <!-- -nop -->
             <version>1.7.6</version>
             <scope>runtime</scope>
         </dependency>

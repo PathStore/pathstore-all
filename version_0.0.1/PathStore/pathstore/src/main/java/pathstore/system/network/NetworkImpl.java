@@ -161,6 +161,7 @@ public class NetworkImpl {
             Constants.REGISTER_APPLICATION.STATUS_STATES.VALID)
         .put(Constants.REGISTER_APPLICATION.USERNAME, credential.getUsername())
         .put(Constants.REGISTER_APPLICATION.PASSWORD, credential.getPassword())
+        .put(Constants.REGISTER_APPLICATION.IS_SUPER_USER, credential.isSuperUser())
         .toString();
   }
 
