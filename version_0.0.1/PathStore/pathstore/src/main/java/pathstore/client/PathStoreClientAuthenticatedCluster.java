@@ -130,6 +130,8 @@ public class PathStoreClientAuthenticatedCluster {
 
     // All operations to perform after connection is complete
     PathStoreProperties.getInstance().NodeID = PathStoreServerClient.getInstance().getLocalNodeId();
+
+    if (this.credential.isSuperUser()) SchemaInfo.getInstance().setSession(this.rawSession);
   }
 
   /** @return local node db session */

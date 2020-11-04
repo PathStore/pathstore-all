@@ -21,6 +21,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import io.netty.util.internal.ConcurrentSet;
+import lombok.Setter;
 import pathstore.common.Constants;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.logging.PathStoreLogger;
@@ -144,7 +145,7 @@ public class SchemaInfo implements Serializable {
   private final ConcurrentMap<String, Collection<Type>> typeInfo;
 
   /** @see PathStorePrivilegedCluster */
-  private final transient Session session;
+  @Setter private transient Session session;
 
   /**
    * @param session must be a raw connection to a cassandra database. Not a pathstore wrapped
@@ -198,7 +199,7 @@ public class SchemaInfo implements Serializable {
    *
    * @param keyspace keyspace to partition by
    * @return new schema info object if the keyspace passed is valid.
-   * @see pathstore.system.network.NetworkImpl#getSchemaInfo(String) 
+   * @see pathstore.system.network.NetworkImpl#getSchemaInfo(String)
    */
   public SchemaInfo getSchemaPartition(final String keyspace) {
     if (this.keyspacesLoaded.contains(keyspace)) {
