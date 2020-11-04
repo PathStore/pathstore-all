@@ -1,14 +1,16 @@
 package pathstore.system.deployment.commands;
 
+import pathstore.authentication.Credential;
 import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.NodeCredential;
 
 /**
  * This command is used to write child daemon credential information to the local node. This is used
  * to connect to the child node on un-deployment to force push all dirty data.
  *
- * @implNote This class uses {@link CredentialCache} as when this gets written it also gets stored in
- *     memory for more convenient access when used in the future
+ * @implNote This class uses {@link CredentialCache} as when this gets written it also gets stored
+ *     in memory for more convenient access when used in the future
  */
 public class WriteChildCredentialsToCassandra implements ICommand {
 
@@ -37,10 +39,11 @@ public class WriteChildCredentialsToCassandra implements ICommand {
     this.password = password;
   }
 
-  /** Calls {@link CredentialCache#add(Object, String, String)} */
+  /** Calls {@link CredentialCache#add(Credential)} */
   @Override
   public void execute() {
-    CredentialCache.getNodeAuth().add(this.childNodeId, this.username, this.password);
+    CredentialCache.getNodeAuth()
+        .add(new NodeCredential(this.childNodeId, this.username, this.password));
   }
 
   /** @return informs user what is occurring */

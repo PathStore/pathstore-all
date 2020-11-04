@@ -3,7 +3,7 @@ package pathstore.authentication.grpc;
 import io.grpc.Metadata;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import pathstore.authentication.Credential;
+import pathstore.authentication.NodeCredential;
 
 /**
  * This AuthClientInterceptor is specifically used to deal with the case when the grpc client is a
@@ -22,19 +22,19 @@ public class PathStoreServerInterceptor extends AuthClientInterceptor {
    * @see pathstore.client.PathStoreServerClient
    */
   public static synchronized PathStoreServerInterceptor getInstance(
-      final Credential<Integer> daemonCredentials) {
+      final NodeCredential daemonCredentials) {
     if (instance == null) instance = new PathStoreServerInterceptor(daemonCredentials);
     return instance;
   }
 
   /** Credential from caller */
-  private final Credential<Integer> credential;
+  private final NodeCredential credential;
 
   /** @param header header to modify {@link #credential} */
   @Override
   public void setHeader(final Metadata header) {
-    header.put(Keys.PRIMARY_KEY, String.valueOf(this.credential.primaryKey));
-    header.put(Keys.USERNAME, this.credential.username);
-    header.put(Keys.PASSWORD, this.credential.password);
+    header.put(Keys.PRIMARY_KEY, String.valueOf(this.credential.getSearchable()));
+    header.put(Keys.USERNAME, this.credential.getUsername());
+    header.put(Keys.PASSWORD, this.credential.getPassword());
   }
 }

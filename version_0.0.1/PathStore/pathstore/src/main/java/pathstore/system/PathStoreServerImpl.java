@@ -115,7 +115,8 @@ public class PathStoreServerImpl {
               // of the network
               .unauthenticatedEndpoint(UnAuthenticatedServiceGrpc.SERVICE_NAME);
 
-      // Myles: This is temporary. As the website uses the super user credentials you must
+      // Myles: This is temporary. As the website uses the super user credentials you must allow
+      // them to access the grpc service.
       if (PathStoreProperties.getInstance().role == Role.ROOTSERVER)
         authManagerBuilder.addAdditionalCredentials(
             CommonServiceGrpc.SERVICE_NAME, PathStoreProperties.getInstance().credential);

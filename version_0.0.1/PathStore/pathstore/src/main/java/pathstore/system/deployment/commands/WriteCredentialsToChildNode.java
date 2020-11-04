@@ -63,6 +63,6 @@ public class WriteCredentialsToChildNode implements ICommand {
   public String toString() {
     return String.format(
         "Writing account with username %s to child node",
-        CredentialCache.getNodeAuth().getCredential(this.nodeid).username);
+        CredentialCache.getNodeAuth().getCredential(this.nodeid).getUsername());
   }
 }

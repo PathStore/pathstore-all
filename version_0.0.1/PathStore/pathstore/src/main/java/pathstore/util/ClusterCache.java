@@ -13,17 +13,18 @@ import java.util.concurrent.ConcurrentMap;
  * This class is used by {@link pathstore.client.PathStoreCluster} and {@link
  * PathStorePrivilegedCluster} to cache their clusters based on credentials.
  *
- * @param <T>
+ * @param <CredentialT> Credential type to be used to store auth information for a cluster
+ * @param <ClusterT> cluster type to store
  */
-public class ClusterCache<T> {
+public class ClusterCache<CredentialT extends Credential<?>, ClusterT> {
   /** Where clusters are cached */
-  private final ConcurrentMap<Credential<Integer>, T> cache = new ConcurrentHashMap<>();
+  private final ConcurrentMap<CredentialT, ClusterT> cache = new ConcurrentHashMap<>();
 
   /** How to build a cluster not present in the cache */
-  private final DoubleConsumerFunction<Credential<Integer>, Cluster, T> buildFunction;
+  private final DoubleConsumerFunction<CredentialT, Cluster, ClusterT> buildFunction;
 
   /** @param buildFunction {@link #buildFunction} */
-  public ClusterCache(final DoubleConsumerFunction<Credential<Integer>, Cluster, T> buildFunction) {
+  public ClusterCache(final DoubleConsumerFunction<CredentialT, Cluster, ClusterT> buildFunction) {
     this.buildFunction = buildFunction;
   }
 
@@ -36,13 +37,14 @@ public class ClusterCache<T> {
    * @param port port of server
    * @return cluster object
    */
-  public T getInstance(final Credential<Integer> credential, final String ip, final int port) {
-    T object = this.cache.get(credential);
+  public ClusterT getInstance(final CredentialT credential, final String ip, final int port) {
+    ClusterT object = this.cache.get(credential);
 
     if (object == null) {
       object =
           this.buildFunction.apply(
-              credential, createCluster(ip, port, credential.username, credential.password));
+              credential,
+              createCluster(ip, port, credential.getUsername(), credential.getPassword()));
       this.cache.put(credential, object);
     }
 
@@ -50,7 +52,7 @@ public class ClusterCache<T> {
   }
 
   /** @param credential credential to remove from cluster */
-  public void remove(final Credential<Integer> credential) {
+  public void remove(final CredentialT credential) {
     this.cache.remove(credential);
   }
 

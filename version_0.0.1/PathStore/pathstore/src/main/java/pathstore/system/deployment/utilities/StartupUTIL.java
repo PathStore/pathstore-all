@@ -138,8 +138,8 @@ public class StartupUTIL {
             childSuperuserPassword,
             ip,
             cassandraPort,
-            CredentialCache.getNodeAuth().getCredential(-1).username,
-            CredentialCache.getNodeAuth().getCredential(-1).password,
+            CredentialCache.getNodeAuth().getCredential(-1).getUsername(),
+            CredentialCache.getNodeAuth().getCredential(-1).getPassword(),
             true)
         .writeChildAccountToCassandra(nodeID, childDaemonUsername, childDaemonPassword)
         .writeCredentialsToChildNode( // Writes parent credentials to child node

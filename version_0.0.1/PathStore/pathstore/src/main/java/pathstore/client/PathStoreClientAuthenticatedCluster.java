@@ -4,7 +4,7 @@ import com.datastax.driver.core.Cluster;
 import lombok.Getter;
 import lombok.NonNull;
 import org.json.JSONObject;
-import pathstore.authentication.Credential;
+import pathstore.authentication.ClientCredential;
 import pathstore.authentication.grpc.PathStoreClientInterceptor;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
@@ -71,7 +71,7 @@ public class PathStoreClientAuthenticatedCluster {
           SchemaInfo schemaInfo = schemaInfoOptional.get();
           SchemaInfo.setInstance(schemaInfo);
           return new PathStoreClientAuthenticatedCluster(
-              new Credential<>(
+              new ClientCredential(
                   applicationName,
                   responseObject.getString(Constants.REGISTER_APPLICATION.USERNAME),
                   responseObject.getString(Constants.REGISTER_APPLICATION.PASSWORD)));
@@ -95,13 +95,13 @@ public class PathStoreClientAuthenticatedCluster {
    * @param clientCredential client credential passed from the local node that is used to
    *     communicate via cassandra and GRPC
    */
-  private PathStoreClientAuthenticatedCluster(final Credential<String> clientCredential) {
+  private PathStoreClientAuthenticatedCluster(final ClientCredential clientCredential) {
     this.cluster =
         ClusterCache.createCluster(
             PathStoreProperties.getInstance().CassandraIP,
             PathStoreProperties.getInstance().CassandraPort,
-            clientCredential.username,
-            clientCredential.password);
+            clientCredential.getUsername(),
+            clientCredential.getPassword());
 
     this.session = new PathStoreSession(this.cluster);
 

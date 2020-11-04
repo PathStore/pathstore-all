@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.Select;
 import org.json.JSONObject;
 import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
-import pathstore.authentication.Credential;
+import pathstore.authentication.ClientCredential;
 import pathstore.authentication.CredentialCache;
 import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.client.PathStoreCluster;
@@ -130,27 +130,27 @@ public class NetworkImpl {
           .toString();
     }
 
-    String clientUsername, clientPassword;
+    ClientCredential credential = CredentialCache.getClientAuth().getCredential(applicationName);
 
-    Credential<String> existingCredential =
-        CredentialCache.getClientAuth().getCredential(applicationName);
+    if (credential
+        == null) { // Create a new client account if an account for that application doesn't already
+      // exist
+      String clientUsername =
+          CassandraAuthenticationUtil.generateAlphaNumericPassword().toLowerCase();
+      String clientPassword = CassandraAuthenticationUtil.generateAlphaNumericPassword();
 
-    if (existingCredential != null) {
-      clientUsername = existingCredential.username;
-      clientPassword = existingCredential.password;
-    } else {
-      clientUsername = CassandraAuthenticationUtil.generateAlphaNumericPassword().toLowerCase();
-      clientPassword = CassandraAuthenticationUtil.generateAlphaNumericPassword();
+      credential = new ClientCredential(applicationName, clientUsername, clientPassword);
 
-      CredentialCache.getClientAuth().add(applicationName, clientUsername, clientPassword);
+      // TODO: Need to add support here for super user credentials
+      CredentialCache.getClientAuth().add(credential);
     }
 
     return new JSONObject()
         .put(
             Constants.REGISTER_APPLICATION.STATUS,
             Constants.REGISTER_APPLICATION.STATUS_STATES.VALID)
-        .put(Constants.REGISTER_APPLICATION.USERNAME, clientUsername)
-        .put(Constants.REGISTER_APPLICATION.PASSWORD, clientPassword)
+        .put(Constants.REGISTER_APPLICATION.USERNAME, credential.getUsername())
+        .put(Constants.REGISTER_APPLICATION.PASSWORD, credential.getPassword())
         .toString();
   }
 

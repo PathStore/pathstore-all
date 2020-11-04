@@ -2,6 +2,7 @@ package pathstore.authentication;
 
 import com.datastax.driver.core.Session;
 import lombok.Getter;
+import lombok.NonNull;
 import pathstore.authentication.datalayerimpls.LocalAuth;
 import pathstore.authentication.datalayerimpls.LocalClientAuth;
 import pathstore.system.PathStorePrivilegedCluster;
@@ -19,15 +20,16 @@ import java.util.concurrent.ConcurrentMap;
  * @see pathstore.client.PathStoreCluster
  * @see PathStorePrivilegedCluster
  */
-public final class CredentialCache<T> {
+public final class CredentialCache<SearchableT, CredentialT extends Credential<SearchableT>> {
 
   /** Instance of the node cache */
   @Getter(lazy = true)
-  private static final CredentialCache<Integer> nodeAuth = new CredentialCache<>(new LocalAuth());
+  private static final CredentialCache<Integer, NodeCredential> nodeAuth =
+      new CredentialCache<>(new LocalAuth());
 
   /** Instance of the client auth cache */
   @Getter(lazy = true)
-  private static final CredentialCache<String> clientAuth =
+  private static final CredentialCache<String, ClientCredential> clientAuth =
       new CredentialCache<>(new LocalClientAuth());
 
   /** Session used to modify the local database. */
@@ -39,36 +41,30 @@ public final class CredentialCache<T> {
    * @apiNote This is public because {@link
    *     pathstore.system.deployment.commands.WriteCredentialsToChildNode}
    */
-  public final CredentialDataLayer<T> credentialDataLayer;
+  public final CredentialDataLayer<SearchableT, CredentialT> credentialDataLayer;
 
   /** Internal cache of credentials based on node id */
-  private final ConcurrentMap<T, Credential<T>> credentials;
+  private final ConcurrentMap<SearchableT, CredentialT> credentials;
 
   /**
    * Loads all existing credentials from the local table into memory
    *
    * @param credentialDataLayer how to readAndWrite
    */
-  private CredentialCache(final CredentialDataLayer<T> credentialDataLayer) {
+  private CredentialCache(final CredentialDataLayer<SearchableT, CredentialT> credentialDataLayer) {
     this.credentialDataLayer = credentialDataLayer;
     this.credentials = this.credentialDataLayer.load(this.privSession);
   }
 
   /** @return get a reference to all credentials */
-  public Collection<Credential<T>> getAllReference() {
+  public Collection<CredentialT> getAllReference() {
     return this.credentials.values();
   }
 
-  /**
-   * @param primaryKey primary key of credential
-   * @param username username of account
-   * @param password password of account
-   */
-  public void add(final T primaryKey, final String username, final String password) {
+  /** @param credential credential to add to the cache */
+  public void add(@NonNull final CredentialT credential) {
     this.credentials.put(
-        primaryKey,
-        this.credentialDataLayer.write(
-            this.privSession, new Credential<>(primaryKey, username, password)));
+        credential.getSearchable(), this.credentialDataLayer.write(this.privSession, credential));
   }
 
   /**
@@ -77,8 +73,8 @@ public final class CredentialCache<T> {
    * @param primaryKey node id to remove
    * @return true if deletion occurred
    */
-  public boolean remove(final T primaryKey) {
-    Credential<T> credential = this.getCredential(primaryKey);
+  public boolean remove(final SearchableT primaryKey) {
+    CredentialT credential = this.getCredential(primaryKey);
 
     if (credential == null) return false;
 
@@ -93,7 +89,7 @@ public final class CredentialCache<T> {
    * @param primaryKey node id to get credential from
    * @return credential object, may be null
    */
-  public Credential<T> getCredential(final T primaryKey) {
+  public CredentialT getCredential(final SearchableT primaryKey) {
     return this.credentials.get(primaryKey);
   }
 }

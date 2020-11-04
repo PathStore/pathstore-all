@@ -20,8 +20,8 @@ package pathstore.system;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
-import pathstore.authentication.Credential;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.NodeCredential;
 import pathstore.common.PathStoreProperties;
 import pathstore.util.ClusterCache;
 
@@ -36,7 +36,7 @@ import java.net.UnknownHostException;
 public class PathStorePrivilegedCluster {
 
   /** Cache of connections based on credential objects */
-  private static final ClusterCache<PathStorePrivilegedCluster> clusterCache =
+  private static final ClusterCache<NodeCredential, PathStorePrivilegedCluster> clusterCache =
       new ClusterCache<>(PathStorePrivilegedCluster::new);
 
   /**
@@ -62,7 +62,7 @@ public class PathStorePrivilegedCluster {
    *     are boot strapped
    */
   public static PathStorePrivilegedCluster getDaemonInstance() {
-    Credential<Integer> daemonCredentials =
+    NodeCredential daemonCredentials =
         CredentialCache.getNodeAuth().getCredential(PathStoreProperties.getInstance().NodeID);
 
     if (daemonCredentials == null)
@@ -85,7 +85,7 @@ public class PathStorePrivilegedCluster {
    *     credentials are boot strapped
    */
   public static PathStorePrivilegedCluster getParentInstance() {
-    Credential<Integer> parentCredentials =
+    NodeCredential parentCredentials =
         CredentialCache.getNodeAuth().getCredential(PathStoreProperties.getInstance().ParentID);
 
     if (parentCredentials == null)
@@ -124,7 +124,7 @@ public class PathStorePrivilegedCluster {
    */
   public static PathStorePrivilegedCluster getChildInstance(
       final String username, final String password, final String ip, final int port) {
-    return clusterCache.getInstance(new Credential<>(ipToInt(ip), username, password), ip, port);
+    return clusterCache.getInstance(new NodeCredential(ipToInt(ip), username, password), ip, port);
   }
 
   /**
@@ -147,7 +147,7 @@ public class PathStorePrivilegedCluster {
   }
 
   /** Credential used */
-  private final Credential<Integer> credential;
+  private final NodeCredential credential;
 
   /** Cluster */
   private final Cluster cluster;
@@ -159,7 +159,7 @@ public class PathStorePrivilegedCluster {
    * @param credential {@link #credential}
    * @param cluster {@link #cluster}
    */
-  public PathStorePrivilegedCluster(final Credential<Integer> credential, final Cluster cluster) {
+  public PathStorePrivilegedCluster(final NodeCredential credential, final Cluster cluster) {
     this.credential = credential;
     this.cluster = cluster;
     this.session = cluster.connect();

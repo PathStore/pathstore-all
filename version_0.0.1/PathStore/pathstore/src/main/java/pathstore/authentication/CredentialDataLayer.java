@@ -11,30 +11,31 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @see CredentialCache#getNodeAuth() For the pathstore_applications.local_auth table
  * @see CredentialCache#getClientAuth() For the pathstore_applications.local_client_auth table
- * @param <T> Data type of primary key
+ * @param <SearchableT> Data type of primary key
+ * @param <CredentialT> Credential Type
  */
-public interface CredentialDataLayer<T> {
+public interface CredentialDataLayer<SearchableT, CredentialT extends Credential<SearchableT>> {
 
   /** @return map from primary key of Credential to credential object */
-  ConcurrentMap<T, Credential<T>> load(final Session session);
+  ConcurrentMap<SearchableT, CredentialT> load(final Session session);
 
   /**
    * @param row row from a keyspace and table that stores a credential object
    * @see Credential
    * @return Credential credential parsed row
    */
-  Credential<T> buildFromRow(final Row row);
+  CredentialT buildFromRow(final Row row);
 
   /**
    * @param session session object to write to the database
    * @param credential credentials to write
    * @return credential object that was passed
    */
-  Credential<T> write(final Session session, final Credential<T> credential);
+  CredentialT write(final Session session, final CredentialT credential);
 
   /**
    * @param session session object to delete to the database
    * @param credential credentials to delete
    */
-  void delete(final Session session, final Credential<T> credential);
+  void delete(final Session session, final CredentialT credential);
 }

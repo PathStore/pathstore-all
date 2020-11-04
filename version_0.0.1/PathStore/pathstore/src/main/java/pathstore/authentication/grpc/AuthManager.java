@@ -2,10 +2,10 @@ package pathstore.authentication.grpc;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.math.NumberUtils;
-import pathstore.authentication.Credential;
-import pathstore.authentication.CredentialCache;
+import pathstore.authentication.*;
 
 import java.util.*;
 
@@ -20,10 +20,10 @@ public class AuthManager {
   @NoArgsConstructor(access = AccessLevel.PRIVATE)
   public static final class Builder {
     /** map from service name to collection of valid server credentials */
-    private final Map<String, Collection<Credential<Integer>>> serverCredentials = new HashMap<>();
+    private final Map<String, Collection<NodeCredential>> serverCredentials = new HashMap<>();
 
     /** map from service name to collection of valid client credentials */
-    private final Map<String, Collection<Credential<String>>> clientCredentials = new HashMap<>();
+    private final Map<String, Collection<ClientCredential>> clientCredentials = new HashMap<>();
 
     /**
      * Set of unauthenticated services. As in regardless of credentials provided you will be able to
@@ -43,8 +43,9 @@ public class AuthManager {
      * @see CredentialCache#getNodeAuth()
      */
     public Builder serverAuthenticatedEndpoint(
-        final String serviceName, final Collection<Credential<Integer>> serverCredentials) {
-      if (serverCredentials != null) this.serverCredentials.put(serviceName, serverCredentials);
+        @NonNull final String serviceName,
+        @NonNull final Collection<NodeCredential> serverCredentials) {
+      this.serverCredentials.put(serviceName, serverCredentials);
       return this;
     }
 
@@ -57,8 +58,9 @@ public class AuthManager {
      * @see CredentialCache#getClientAuth()
      */
     public Builder clientAuthenticatedEndpoint(
-        final String serviceName, final Collection<Credential<String>> clientCredentials) {
-      if (clientCredentials != null) this.clientCredentials.put(serviceName, clientCredentials);
+        @NonNull final String serviceName,
+        @NonNull final Collection<ClientCredential> clientCredentials) {
+      this.clientCredentials.put(serviceName, clientCredentials);
       return this;
     }
 
@@ -72,8 +74,8 @@ public class AuthManager {
      */
     public Builder serverAndClientAuthenticatedEndpoint(
         final String serviceName,
-        final Collection<Credential<Integer>> serverCredentials,
-        final Collection<Credential<String>> clientCredentials) {
+        final Collection<NodeCredential> serverCredentials,
+        final Collection<ClientCredential> clientCredentials) {
       this.serverAuthenticatedEndpoint(serviceName, serverCredentials);
       this.clientAuthenticatedEndpoint(serviceName, clientCredentials);
       return this;
@@ -118,10 +120,10 @@ public class AuthManager {
   }
 
   /** All credentials between servers */
-  private final Map<String, Collection<Credential<Integer>>> serverCredentials;
+  private final Map<String, Collection<NodeCredential>> serverCredentials;
 
   /** All credentials between client */
-  private final Map<String, Collection<Credential<String>>> clientCredentials;
+  private final Map<String, Collection<ClientCredential>> clientCredentials;
 
   /** All unauthenticated endpoints */
   private final Set<String> unauthenticated;
@@ -159,20 +161,20 @@ public class AuthManager {
     if (this.additionalCredentials.containsKey(endpoint)
         && this.additionalCredentials
             .get(endpoint)
-            .contains(new Credential<>(null, username, password))) return true;
+            .contains(new NoopCredential(username, password))) return true;
 
     // authenticated services
     if (NumberUtils.isCreatable(primaryKey)) { // server identity, as the primary key is a number
-      Credential<Integer> serverCredential =
-          new Credential<>(Integer.parseInt(primaryKey), username, password);
+      NodeCredential serverCredential =
+          new NodeCredential(Integer.parseInt(primaryKey), username, password);
 
-      for (Credential<Integer> server : this.serverCredentials.get(endpoint))
+      for (NodeCredential server : this.serverCredentials.get(endpoint))
         if (server.equals(serverCredential)) return true;
 
     } else { // client identity, as the primary key is not a number
-      Credential<String> clientCredential = new Credential<>(primaryKey, username, password);
+      ClientCredential clientCredential = new ClientCredential(primaryKey, username, password);
 
-      for (Credential<String> client : this.clientCredentials.get(endpoint))
+      for (ClientCredential client : this.clientCredentials.get(endpoint))
         if (client.equals(clientCredential)) return true;
     }
 

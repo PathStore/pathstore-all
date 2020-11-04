@@ -3,8 +3,10 @@ package pathstore.authentication.datalayerimpls;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import pathstore.authentication.CassandraAuthenticationUtil;
+import lombok.NonNull;
 import pathstore.authentication.Credential;
+import pathstore.authentication.CassandraAuthenticationUtil;
+import pathstore.authentication.ClientCredential;
 import pathstore.authentication.CredentialDataLayer;
 import pathstore.common.Constants;
 
@@ -16,11 +18,11 @@ import java.util.stream.StreamSupport;
 /**
  * This is an impl of {@link CredentialDataLayer} and is used to manage the Local Client Auth Table
  */
-public class LocalClientAuth implements CredentialDataLayer<String> {
+public class LocalClientAuth implements CredentialDataLayer<String, ClientCredential> {
 
   /** @return map from primary key of Credential to credential object */
   @Override
-  public ConcurrentMap<String, Credential<String>> load(final Session session) {
+  public ConcurrentMap<String, ClientCredential> load(final Session session) {
     return StreamSupport.stream(
             session
                 .execute(
@@ -30,8 +32,7 @@ public class LocalClientAuth implements CredentialDataLayer<String> {
                 .spliterator(),
             true)
         .map(this::buildFromRow)
-        .collect(
-            Collectors.toConcurrentMap(credential -> credential.primaryKey, Function.identity()));
+        .collect(Collectors.toConcurrentMap(Credential::getSearchable, Function.identity()));
   }
 
   /**
@@ -39,8 +40,8 @@ public class LocalClientAuth implements CredentialDataLayer<String> {
    * @return Credential credential parsed row
    */
   @Override
-  public Credential<String> buildFromRow(final Row row) {
-    return new Credential<>(
+  public ClientCredential buildFromRow(final Row row) {
+    return new ClientCredential(
         row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME),
         row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME),
         row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD));
@@ -52,18 +53,18 @@ public class LocalClientAuth implements CredentialDataLayer<String> {
    * @return credential object that was passed
    */
   @Override
-  public Credential<String> write(final Session session, final Credential<String> credential) {
-    if (session != null && credential != null) {
-      CassandraAuthenticationUtil.createRole(
-          session, credential.username, false, true, credential.password);
-      CassandraAuthenticationUtil.grantAccessToKeyspace(
-          session, credential.primaryKey, credential.username);
-      session.execute(
-          QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_CLIENT_AUTH)
-              .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME, credential.primaryKey)
-              .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME, credential.username)
-              .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD, credential.password));
-    }
+  public ClientCredential write(
+      @NonNull final Session session, @NonNull final ClientCredential credential) {
+    CassandraAuthenticationUtil.createRole(
+        session, credential.getUsername(), false, true, credential.getPassword());
+    CassandraAuthenticationUtil.grantAccessToKeyspace(
+        session, credential.getSearchable(), credential.getUsername());
+    session.execute(
+        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_CLIENT_AUTH)
+            .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME, credential.getSearchable())
+            .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME, credential.getUsername())
+            .value(Constants.LOCAL_CLIENT_AUTH_COLUMNS.PASSWORD, credential.getPassword()));
+
     return credential;
   }
 
@@ -72,17 +73,16 @@ public class LocalClientAuth implements CredentialDataLayer<String> {
    * @param credential credentials to delete
    */
   @Override
-  public void delete(final Session session, final Credential<String> credential) {
-    if (session != null && credential != null) {
-      session.execute(
-          QueryBuilder.delete()
-              .from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_CLIENT_AUTH)
-              .where(
-                  QueryBuilder.eq(
-                      Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME, credential.primaryKey)));
-      CassandraAuthenticationUtil.revokeAccessToKeyspace(
-          session, credential.primaryKey, credential.username);
-      CassandraAuthenticationUtil.dropRole(session, credential.username);
-    }
+  public void delete(@NonNull final Session session, @NonNull final ClientCredential credential) {
+    session.execute(
+        QueryBuilder.delete()
+            .from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_CLIENT_AUTH)
+            .where(
+                QueryBuilder.eq(
+                    Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME,
+                    credential.getSearchable())));
+    CassandraAuthenticationUtil.revokeAccessToKeyspace(
+        session, credential.getSearchable(), credential.getUsername());
+    CassandraAuthenticationUtil.dropRole(session, credential.getUsername());
   }
 }

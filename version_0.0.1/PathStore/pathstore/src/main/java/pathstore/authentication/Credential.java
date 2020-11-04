@@ -1,27 +1,31 @@
 package pathstore.authentication;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Row in pathstore_applications.local_auth or pathstore_applications.local_client_auth with node_id
- * of -1 is for the network administrator account
+ * This is the base credential class. All other credential references should extend this class.
  *
- * <p>TODO: Account 0 comments
+ * @param <SearchableT> type of class you want to be able to index by in {@link
+ *     pathstore.util.ClusterCache}
  */
 @RequiredArgsConstructor
-@EqualsAndHashCode(exclude = "primaryKey")
-public final class Credential<T> {
-
+@EqualsAndHashCode(exclude = "searchable")
+public class Credential<SearchableT> {
   /**
-   * Node id which the credential is associated with, if -1 then its the network administrator
-   * account else its the daemon account for that specific node
+   * How to search for clusters in the cache
+   *
+   * @see NoopCredential If you wish to just compare a username and password to a credential in the
+   *     cache without extracting the information from the credential and performing a manual
+   *     comparison
    */
-  public final T primaryKey;
+  @Getter @NonNull private final SearchableT searchable;
 
-  /** username */
-  public final String username;
+  /** Username of the credential */
+  @Getter @NonNull private final String username;
 
-  /** password */
-  public final String password;
+  /** Password of the credential */
+  @Getter @NonNull private final String password;
 }

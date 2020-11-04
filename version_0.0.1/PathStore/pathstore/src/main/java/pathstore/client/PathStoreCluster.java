@@ -18,8 +18,8 @@
 package pathstore.client;
 
 import com.datastax.driver.core.Cluster;
-import pathstore.authentication.Credential;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.NodeCredential;
 import pathstore.common.PathStoreProperties;
 import pathstore.util.ClusterCache;
 
@@ -35,7 +35,7 @@ import pathstore.util.ClusterCache;
 public class PathStoreCluster {
 
   /** Cache of pathstore cluster objects based on credential */
-  private static final ClusterCache<PathStoreCluster> clusterCache =
+  private static final ClusterCache<NodeCredential, PathStoreCluster> clusterCache =
       new ClusterCache<>(PathStoreCluster::new);
 
   /**
@@ -61,7 +61,7 @@ public class PathStoreCluster {
    * @see CredentialCache
    */
   public static PathStoreCluster getDaemonInstance() {
-    Credential<Integer> daemonCredentials =
+    NodeCredential daemonCredentials =
         CredentialCache.getNodeAuth().getCredential(PathStoreProperties.getInstance().NodeID);
 
     if (daemonCredentials == null)
@@ -76,7 +76,7 @@ public class PathStoreCluster {
   }
 
   /** Credential object used to create the cluster, this is only used for disconnection */
-  private final Credential<Integer> credential;
+  private final NodeCredential credential;
 
   /** Cluster object, used to close the cluster */
   private final Cluster cluster;
@@ -88,7 +88,7 @@ public class PathStoreCluster {
    * @param credential {@link #credential}
    * @param cluster {@link #cluster}
    */
-  public PathStoreCluster(final Credential<Integer> credential, final Cluster cluster) {
+  public PathStoreCluster(final NodeCredential credential, final Cluster cluster) {
     this.credential = credential;
     this.cluster = cluster;
     this.session = new PathStoreSession(this.cluster);

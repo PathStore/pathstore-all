@@ -128,14 +128,15 @@ public class PathStoreServerClient {
    * @param ip ip to connect to
    * @param port port to connect on
    */
-  private PathStoreServerClient(@NonNull final String ip, @NonNull final int port) {
+  private PathStoreServerClient(@NonNull final String ip, @NonNull final Integer port) {
     this(
         ManagedChannelBuilder.forAddress(ip, port)
             .intercept(
                 PathStoreProperties.getInstance().role == Role.SERVER
                     ? PathStoreServerInterceptor.getInstance(
                         CredentialCache.getNodeAuth()
-                            .getCredential(PathStoreProperties.getInstance().ParentID))
+                            .getCredential(
+                                PathStoreProperties.getInstance().ParentID))
                     : PathStoreClientInterceptor.getInstance())
             .usePlaintext(true));
   }

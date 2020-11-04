@@ -17,7 +17,8 @@
  */
 package pathstore.common;
 
-import pathstore.authentication.Credential;
+import lombok.ToString;
+import pathstore.authentication.NodeCredential;
 
 import java.io.FileInputStream;
 import java.util.Properties;
@@ -80,6 +81,7 @@ import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
  * <p>{@link Constants.PROPERTIES_CONSTANTS#PASSWORD} Note: This is only used for privileged
  * clients, ones run by the network admin. Otherwise it is used for all servers
  */
+@ToString
 public class PathStoreProperties {
 
   /**
@@ -154,7 +156,7 @@ public class PathStoreProperties {
   public int CassandraParentPort = -1;
 
   /** Denotes credential to local cassandra instance NOTE: not in credential cache */
-  public Credential<Integer> credential = null;
+  public NodeCredential credential = null;
 
   /**
    * Denotes batch size
@@ -205,16 +207,16 @@ public class PathStoreProperties {
           this.ExternalAddress = this.getProperty(props, EXTERNAL_ADDRESS);
           this.NodeID = Integer.parseInt(this.getProperty(props, NODE_ID));
           this.ParentID = Integer.parseInt(this.getProperty(props, PARENT_ID));
+          this.credential =
+              new NodeCredential(
+                  this.NodeID,
+                  this.getProperty(props, USERNAME),
+                  this.getProperty(props, PASSWORD));
         case CLIENT:
           this.GRPCIP = this.getProperty(props, GRPC_IP);
           this.GRPCPort = Integer.parseInt(this.getProperty(props, GRPC_PORT));
           this.CassandraIP = this.getProperty(props, CASSANDRA_IP);
           this.CassandraPort = Integer.parseInt(this.getProperty(props, CASSANDRA_PORT));
-          this.credential =
-              new Credential<>(
-                  this.NodeID,
-                  this.getProperty(props, USERNAME),
-                  this.getProperty(props, PASSWORD));
           break;
         default:
           throw new Exception();
@@ -245,50 +247,5 @@ public class PathStoreProperties {
     String response = properties.getProperty(key);
     if (response != null) return response.trim();
     else return "";
-  }
-
-  /** @return string of all properties */
-  @Override
-  public String toString() {
-    return "PathStoreProperties{"
-        + "role="
-        + role
-        + ", ExternalAddress='"
-        + ExternalAddress
-        + '\''
-        + ", NodeID="
-        + NodeID
-        + ", ParentID="
-        + ParentID
-        + ", GRPCIP='"
-        + GRPCIP
-        + '\''
-        + ", GRPCPort="
-        + GRPCPort
-        + ", GRPCParentIP='"
-        + GRPCParentIP
-        + '\''
-        + ", GRPCParentPort="
-        + GRPCParentPort
-        + ", CassandraIP='"
-        + CassandraIP
-        + '\''
-        + ", CassandraPort="
-        + CassandraPort
-        + ", CassandraParentIP='"
-        + CassandraParentIP
-        + '\''
-        + ", CassandraParentPort="
-        + CassandraParentPort
-        + ", MaxBatchSize="
-        + MaxBatchSize
-        + ", PullSleep="
-        + PullSleep
-        + ", PushSleep="
-        + PushSleep
-        + ", sessionFile='"
-        + sessionFile
-        + '\''
-        + '}';
   }
 }
