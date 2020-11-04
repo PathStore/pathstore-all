@@ -51,9 +51,13 @@ public class PathStoreClientAuthenticatedCluster {
   private static PathStoreClientAuthenticatedCluster initInstance(
       @NonNull final String applicationName, @NonNull final String masterPassword) {
 
+    System.out.println("Calling");
+
     Pair<Optional<String>, Optional<SchemaInfo>> response =
         PathStoreServerClient.getInstance()
             .registerApplicationClient(applicationName, masterPassword);
+
+    System.out.println("called");
 
     Optional<String> credentialsOptional = response.t1;
     Optional<SchemaInfo> schemaInfoOptional = response.t2;

@@ -135,20 +135,21 @@ public class PathStoreServerClient {
                 PathStoreProperties.getInstance().role == Role.SERVER
                     ? PathStoreServerInterceptor.getInstance(
                         CredentialCache.getNodes()
-                            .getCredential(
-                                PathStoreProperties.getInstance().ParentID))
+                            .getCredential(PathStoreProperties.getInstance().ParentID))
                     : PathStoreClientInterceptor.getInstance())
             .usePlaintext(true));
   }
 
   /** @param channelBuilder channel build based on ip and port */
   private PathStoreServerClient(final ManagedChannelBuilder<?> channelBuilder) {
+    System.out.println("PS Server Client creating stubs");
     this.channel = channelBuilder.build();
     this.commonServiceBlockingStub = CommonServiceGrpc.newBlockingStub(channel);
     this.clientOnlyServiceBlockingStub = ClientOnlyServiceGrpc.newBlockingStub(channel);
     this.serverOnlyServiceBlockingStub = ServerOnlyServiceGrpc.newBlockingStub(channel);
     this.networkWideServiceBlockingStub = NetworkWideServiceGrpc.newBlockingStub(channel);
     this.unAuthenticatedServiceBlockingStub = UnAuthenticatedServiceGrpc.newBlockingStub(channel);
+    System.out.println("Done");
   }
 
   /**
@@ -224,9 +225,13 @@ public class PathStoreServerClient {
             .setPassword(password)
             .build();
 
+    System.out.println("Calling registerApplicationClient");
+
     RegisterApplicationResponse response =
         this.unAuthenticatedServiceBlockingStub.registerApplicationClient(
             registerApplicationRequest);
+
+    System.out.println("Done");
 
     return new Pair<>(
         Optional.ofNullable(response.getCredentials()),

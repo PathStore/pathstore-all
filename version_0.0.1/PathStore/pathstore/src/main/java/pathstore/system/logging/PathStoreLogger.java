@@ -36,7 +36,7 @@ public class PathStoreLogger {
   protected PathStoreLogger(final String name) {
     this.name = name;
     this.messages = new ConcurrentHashMap<>();
-    this.displayLevel = LoggerLevel.INFO;
+    this.displayLevel = LoggerLevel.FINEST;
     this.hasNew = false;
   }
 

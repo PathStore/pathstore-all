@@ -1,6 +1,7 @@
 package pathstore.system.network;
 
 import io.grpc.stub.StreamObserver;
+import lombok.SneakyThrows;
 import pathstore.grpc.UnAuthenticatedServiceGrpc;
 import pathstore.grpc.pathStoreProto.RegisterApplicationRequest;
 import pathstore.grpc.pathStoreProto.RegisterApplicationResponse;
@@ -29,6 +30,7 @@ public class UnAuthenticatedServiceImpl
    * @see NetworkImpl#registerApplicationClient(String, String)
    */
   @Override
+  @SneakyThrows
   public void registerApplicationClient(
       final RegisterApplicationRequest request,
       final StreamObserver<RegisterApplicationResponse> responseObserver) {

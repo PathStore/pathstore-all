@@ -4,6 +4,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import org.json.JSONObject;
 import pathstore.authentication.ApplicationCredential;
 import pathstore.authentication.CassandraAuthenticationUtil;
@@ -105,6 +106,7 @@ public class NetworkImpl {
    *     before username and password as those fields may not exist
    * @see pathstore.client.PathStoreClientAuthenticatedCluster
    */
+  @SneakyThrows
   public String registerApplicationClient(
       @NonNull final String applicationName, @NonNull final String password) {
     if (ClientAuthenticationUtil.isApplicationNotLoaded(applicationName)) {
@@ -170,6 +172,7 @@ public class NetworkImpl {
    * @return schemainfo solely on that application
    * @see SchemaInfo#getSchemaPartition(String)
    */
+  @SneakyThrows
   public SchemaInfo getSchemaInfo(final String keyspace) {
     return SchemaInfo.getInstance().getSchemaPartition(keyspace);
   }
