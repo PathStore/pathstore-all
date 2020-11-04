@@ -8,7 +8,7 @@ import pathstore.authentication.CredentialCache;
 import pathstore.authentication.credentials.ClientCredential;
 import pathstore.authentication.credentials.Credential;
 import pathstore.authentication.credentials.NodeCredential;
-import pathstore.authentication.credentials.NoopCredential;
+import pathstore.authentication.credentials.NopCredential;
 
 import java.util.*;
 
@@ -156,28 +156,22 @@ public class AuthManager {
     // check if the service is unauthenticated
     if (this.unauthenticated.contains(endpoint)) return true;
 
-    Credential<?> credential = new NoopCredential(username, password);
-
-    System.out.println(credential);
+    NopCredential credential = new NopCredential(username, password);
 
     // check to see if the credential is present in the additional credentials before doing the
     // linear search
     if (this.additionalCredentials.containsKey(endpoint)
         && this.additionalCredentials.get(endpoint).contains(credential)) return true;
 
-    System.out.println(this.serverCredentials.get(endpoint));
-
     // compare against server credentials
     if (this.serverCredentials.containsKey(endpoint))
       for (NodeCredential server : this.serverCredentials.get(endpoint))
-        if (credential.equals(server)) return true;
-
-    System.out.println(this.clientCredentials.get(endpoint));
+        if (credential.isSame(server)) return true;
 
     // compare against client credentials
     if (this.clientCredentials.containsKey(endpoint))
       for (ClientCredential client : this.clientCredentials.get(endpoint))
-        if (credential.equals(client)) return true;
+        if (credential.isSame(client)) return true;
 
     return false;
   }

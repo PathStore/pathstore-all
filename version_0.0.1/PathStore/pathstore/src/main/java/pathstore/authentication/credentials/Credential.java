@@ -15,7 +15,7 @@ public class Credential<SearchableT> {
   /**
    * How to search for clusters in the cache
    *
-   * @see NoopCredential If you wish to just compare a username and password to a credential in the
+   * @see NopCredential If you wish to just compare a username and password to a credential in the
    *     cache without extracting the information from the credential and performing a manual
    *     comparison
    */
@@ -26,4 +26,17 @@ public class Credential<SearchableT> {
 
   /** Password of the credential */
   @Getter @NonNull private final String password;
+
+  /**
+   * Compare any credential type to the parent class to see if the authentication information is the
+   * same.
+   *
+   * @param credentialT object to compare
+   * @param <CredentialT> some Credential type
+   * @return true if username and password are equal, else false
+   */
+  public <CredentialT extends Credential<?>> boolean isSame(final CredentialT credentialT) {
+    return this.getUsername().equals(credentialT.getUsername())
+        && this.getPassword().equals(credentialT.getPassword());
+  }
 }
