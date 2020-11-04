@@ -18,6 +18,7 @@ public class NetworkUtil {
       out.flush();
       return ByteString.copyFrom(bos.toByteArray());
     } catch (IOException e) {
+      e.printStackTrace();
       throw new RuntimeException(e);
     }
   }
@@ -31,6 +32,7 @@ public class NetworkUtil {
         new ObjectInputStream(new ByteArrayInputStream(byteString.toByteArray()))) {
       return in.readObject();
     } catch (IOException | ClassNotFoundException e) {
+      e.printStackTrace();
       throw new RuntimeException(e);
     }
   }
