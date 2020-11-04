@@ -86,7 +86,7 @@ public class PathStoreServerImpl {
 
       logger.info("Super User connection was initialized successfully");
 
-      if (CredentialCache.getNodeAuth().getCredential(PathStoreProperties.getInstance().NodeID)
+      if (CredentialCache.getNodes().getCredential(PathStoreProperties.getInstance().NodeID)
           != null) logger.info("Loaded daemon account successfully");
       else logger.error("Couldn't load daemon account");
 
@@ -100,14 +100,14 @@ public class PathStoreServerImpl {
           AuthManager.newBuilder()
               .serverAndClientAuthenticatedEndpoint(
                   CommonServiceGrpc.SERVICE_NAME,
-                  CredentialCache.getNodeAuth().getAllReference(),
-                  CredentialCache.getClientAuth().getAllReference())
+                  CredentialCache.getNodes().getAllReference(),
+                  CredentialCache.getClients().getAllReference())
               .clientAuthenticatedEndpoint(
                   ClientOnlyServiceGrpc.SERVICE_NAME,
-                  CredentialCache.getClientAuth().getAllReference())
+                  CredentialCache.getClients().getAllReference())
               .serverAuthenticatedEndpoint(
                   ServerOnlyServiceGrpc.SERVICE_NAME,
-                  CredentialCache.getNodeAuth().getAllReference())
+                  CredentialCache.getNodes().getAllReference())
               .unauthenticatedEndpoint(
                   NetworkWideServiceGrpc
                       .SERVICE_NAME) // Myles: This is temporary until we build the

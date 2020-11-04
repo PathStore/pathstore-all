@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.Select;
 import org.json.JSONObject;
 import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
-import pathstore.authentication.ClientCredential;
+import pathstore.authentication.credentials.ClientCredential;
 import pathstore.authentication.CredentialCache;
 import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.client.PathStoreCluster;
@@ -130,7 +130,7 @@ public class NetworkImpl {
           .toString();
     }
 
-    ClientCredential credential = CredentialCache.getClientAuth().getCredential(applicationName);
+    ClientCredential credential = CredentialCache.getClients().getCredential(applicationName);
 
     if (credential
         == null) { // Create a new client account if an account for that application doesn't already
@@ -142,7 +142,7 @@ public class NetworkImpl {
       credential = new ClientCredential(applicationName, clientUsername, clientPassword);
 
       // TODO: Need to add support here for super user credentials
-      CredentialCache.getClientAuth().add(credential);
+      CredentialCache.getClients().add(credential);
     }
 
     return new JSONObject()

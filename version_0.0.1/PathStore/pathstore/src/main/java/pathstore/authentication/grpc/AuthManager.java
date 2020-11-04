@@ -6,6 +6,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.math.NumberUtils;
 import pathstore.authentication.*;
+import pathstore.authentication.credentials.ClientCredential;
+import pathstore.authentication.credentials.Credential;
+import pathstore.authentication.credentials.NodeCredential;
+import pathstore.authentication.credentials.NoopCredential;
 
 import java.util.*;
 
@@ -40,7 +44,7 @@ public class AuthManager {
      * @param serviceName service name to set permissions on
      * @param serverCredentials server credentials to provide
      * @return this
-     * @see CredentialCache#getNodeAuth()
+     * @see CredentialCache#getNodes()
      */
     public Builder serverAuthenticatedEndpoint(
         @NonNull final String serviceName,
@@ -55,7 +59,7 @@ public class AuthManager {
      * @param serviceName service name to set permissions on
      * @param clientCredentials client credentials to provide
      * @return this
-     * @see CredentialCache#getClientAuth()
+     * @see CredentialCache#getClients()
      */
     public Builder clientAuthenticatedEndpoint(
         @NonNull final String serviceName,

@@ -21,8 +21,9 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
 import pathstore.authentication.CredentialCache;
-import pathstore.authentication.NodeCredential;
+import pathstore.authentication.credentials.NodeCredential;
 import pathstore.common.PathStoreProperties;
+import pathstore.system.deployment.commands.WriteCredentialToChildNode;
 import pathstore.util.ClusterCache;
 
 import java.net.InetAddress;
@@ -58,12 +59,12 @@ public class PathStorePrivilegedCluster {
    *
    * @return daemon instance
    * @see CredentialCache
-   * @see pathstore.system.deployment.commands.WriteCredentialsToChildNode for how these credentials
+   * @see WriteCredentialToChildNode for how these credentials
    *     are boot strapped
    */
   public static PathStorePrivilegedCluster getDaemonInstance() {
     NodeCredential daemonCredentials =
-        CredentialCache.getNodeAuth().getCredential(PathStoreProperties.getInstance().NodeID);
+        CredentialCache.getNodes().getCredential(PathStoreProperties.getInstance().NodeID);
 
     if (daemonCredentials == null)
       throw new RuntimeException("Daemon credentials are not present in the local auth table");
@@ -81,12 +82,12 @@ public class PathStorePrivilegedCluster {
    *
    * @return parent database instance
    * @see CredentialCache
-   * @see pathstore.system.deployment.commands.WriteCredentialsToChildNode for how the parent
+   * @see WriteCredentialToChildNode for how the parent
    *     credentials are boot strapped
    */
   public static PathStorePrivilegedCluster getParentInstance() {
     NodeCredential parentCredentials =
-        CredentialCache.getNodeAuth().getCredential(PathStoreProperties.getInstance().ParentID);
+        CredentialCache.getNodes().getCredential(PathStoreProperties.getInstance().ParentID);
 
     if (parentCredentials == null)
       throw new RuntimeException("Parent credentials are not present within the local auth table");
@@ -110,7 +111,7 @@ public class PathStorePrivilegedCluster {
   public static PathStorePrivilegedCluster getChildInstance(
       final int childNodeId, final String ip, final int port) {
     return clusterCache.getInstance(
-        CredentialCache.getNodeAuth().getCredential(childNodeId), ip, port);
+        CredentialCache.getNodes().getCredential(childNodeId), ip, port);
   }
 
   /**

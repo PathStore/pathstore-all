@@ -3,9 +3,15 @@ package pathstore.authentication;
 import com.datastax.driver.core.Session;
 import lombok.Getter;
 import lombok.NonNull;
-import pathstore.authentication.datalayerimpls.LocalAuth;
-import pathstore.authentication.datalayerimpls.LocalClientAuth;
+import pathstore.authentication.credentials.AuxiliaryCredential;
+import pathstore.authentication.credentials.ClientCredential;
+import pathstore.authentication.credentials.Credential;
+import pathstore.authentication.credentials.NodeCredential;
+import pathstore.authentication.datalayerimpls.AuxiliaryDataLayer;
+import pathstore.authentication.datalayerimpls.NodeDataLayer;
+import pathstore.authentication.datalayerimpls.ClientDataLayer;
 import pathstore.system.PathStorePrivilegedCluster;
+import pathstore.system.deployment.commands.WriteCredentialToChildNode;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
@@ -24,13 +30,18 @@ public final class CredentialCache<SearchableT, CredentialT extends Credential<S
 
   /** Instance of the node cache */
   @Getter(lazy = true)
-  private static final CredentialCache<Integer, NodeCredential> nodeAuth =
-      new CredentialCache<>(new LocalAuth());
+  private static final CredentialCache<Integer, NodeCredential> nodes =
+      new CredentialCache<>(NodeDataLayer.getInstance());
 
   /** Instance of the client auth cache */
   @Getter(lazy = true)
-  private static final CredentialCache<String, ClientCredential> clientAuth =
-      new CredentialCache<>(new LocalClientAuth());
+  private static final CredentialCache<String, ClientCredential> clients =
+      new CredentialCache<>(ClientDataLayer.getInstance());
+
+  /** Instance of the auxiliary auth cache */
+  @Getter(lazy = true)
+  private static final CredentialCache<String, AuxiliaryCredential> auxiliary =
+      new CredentialCache<>(AuxiliaryDataLayer.getInstance());
 
   /** Session used to modify the local database. */
   private final Session privSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
@@ -38,10 +49,9 @@ public final class CredentialCache<SearchableT, CredentialT extends Credential<S
   /**
    * How to perform database operations on the given credential type
    *
-   * @apiNote This is public because {@link
-   *     pathstore.system.deployment.commands.WriteCredentialsToChildNode}
+   * @apiNote This is public because {@link WriteCredentialToChildNode}
    */
-  public final CredentialDataLayer<SearchableT, CredentialT> credentialDataLayer;
+  private final CredentialDataLayer<SearchableT, CredentialT> credentialDataLayer;
 
   /** Internal cache of credentials based on node id */
   private final ConcurrentMap<SearchableT, CredentialT> credentials;

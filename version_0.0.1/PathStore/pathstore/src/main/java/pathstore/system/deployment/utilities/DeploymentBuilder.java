@@ -1,6 +1,10 @@
 package pathstore.system.deployment.utilities;
 
 import com.datastax.driver.core.Session;
+import pathstore.authentication.credentials.AuxiliaryCredential;
+import pathstore.authentication.credentials.NodeCredential;
+import pathstore.authentication.datalayerimpls.AuxiliaryDataLayer;
+import pathstore.authentication.datalayerimpls.NodeDataLayer;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
 
@@ -258,21 +262,54 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   /**
    * Write a credential to the child pathstore_applications.local_auth table
    *
-   * @param nodeId node id to get credentials from
+   * @param credential creedentials to write
    * @param connectionUsername username to connect with
    * @param connectionPassword password to connect with
    * @param ip ip of child
    * @param port port of child
    * @return this
    */
-  public T writeCredentialsToChildNode(
-      final int nodeId,
+  public T writeNodeCredentialToChildNode(
+      final NodeCredential credential,
       final String connectionUsername,
       final String connectionPassword,
       final String ip,
       final int port) {
     this.commands.add(
-        new WriteCredentialsToChildNode(nodeId, connectionUsername, connectionPassword, ip, port));
+        new WriteCredentialToChildNode<>(
+            NodeDataLayer.getInstance(),
+            credential,
+            connectionUsername,
+            connectionPassword,
+            ip,
+            port));
+    return (T) this;
+  }
+
+  /**
+   * Write a credential to the child pathstore_applications.local_auth table
+   *
+   * @param credential auxiliary credential object to pass
+   * @param connectionUsername username to connect with
+   * @param connectionPassword password to connect with
+   * @param ip ip of child
+   * @param port port of child
+   * @return this
+   */
+  public T writeAuxiliaryCredentialToChildNode(
+      final AuxiliaryCredential credential,
+      final String connectionUsername,
+      final String connectionPassword,
+      final String ip,
+      final int port) {
+    this.commands.add(
+        new WriteCredentialToChildNode<>(
+            AuxiliaryDataLayer.getInstance(),
+            credential,
+            connectionUsername,
+            connectionPassword,
+            ip,
+            port));
     return (T) this;
   }
 

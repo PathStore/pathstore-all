@@ -3,10 +3,13 @@ package pathstore.authentication.datalayerimpls;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import pathstore.authentication.Credential;
+import pathstore.authentication.credentials.Credential;
 import pathstore.authentication.CassandraAuthenticationUtil;
-import pathstore.authentication.ClientCredential;
+import pathstore.authentication.credentials.ClientCredential;
 import pathstore.authentication.CredentialDataLayer;
 import pathstore.common.Constants;
 
@@ -18,11 +21,19 @@ import java.util.stream.StreamSupport;
 /**
  * This is an impl of {@link CredentialDataLayer} and is used to manage the Local Client Auth Table
  */
-public class LocalClientAuth implements CredentialDataLayer<String, ClientCredential> {
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public class ClientDataLayer implements CredentialDataLayer<String, ClientCredential> {
 
-  /** @return map from primary key of Credential to credential object */
+  /** Instance of this data layer */
+  @Getter(lazy = true)
+  private static final ClientDataLayer instance = new ClientDataLayer();
+
+  /**
+   * @param session session to execute on
+   * @return map from primary key of Credential to credential object
+   */
   @Override
-  public ConcurrentMap<String, ClientCredential> load(final Session session) {
+  public ConcurrentMap<String, ClientCredential> load(@NonNull final Session session) {
     return StreamSupport.stream(
             session
                 .execute(
@@ -40,7 +51,7 @@ public class LocalClientAuth implements CredentialDataLayer<String, ClientCreden
    * @return Credential credential parsed row
    */
   @Override
-  public ClientCredential buildFromRow(final Row row) {
+  public ClientCredential buildFromRow(@NonNull final Row row) {
     return new ClientCredential(
         row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.KEYSPACE_NAME),
         row.getString(Constants.LOCAL_CLIENT_AUTH_COLUMNS.USERNAME),

@@ -18,7 +18,7 @@
 package pathstore.common;
 
 import lombok.ToString;
-import pathstore.authentication.NodeCredential;
+import pathstore.authentication.credentials.NodeCredential;
 
 import java.io.FileInputStream;
 import java.util.Properties;

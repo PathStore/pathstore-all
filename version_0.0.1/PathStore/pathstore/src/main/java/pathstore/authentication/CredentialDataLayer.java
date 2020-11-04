@@ -2,6 +2,7 @@ package pathstore.authentication;
 
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import pathstore.authentication.credentials.Credential;
 
 import java.util.concurrent.ConcurrentMap;
 
@@ -9,8 +10,8 @@ import java.util.concurrent.ConcurrentMap;
  * This class is used to denote how to store a credential object in the database depending on where
  * it is generated
  *
- * @see CredentialCache#getNodeAuth() For the pathstore_applications.local_auth table
- * @see CredentialCache#getClientAuth() For the pathstore_applications.local_client_auth table
+ * @see CredentialCache#getNodes() For the pathstore_applications.local_auth table
+ * @see CredentialCache#getClients() For the pathstore_applications.local_client_auth table
  * @param <SearchableT> Data type of primary key
  * @param <CredentialT> Credential Type
  */

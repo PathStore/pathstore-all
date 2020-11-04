@@ -1,4 +1,4 @@
-package pathstore.authentication;
+package pathstore.authentication.credentials;
 
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;

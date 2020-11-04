@@ -1,6 +1,7 @@
 package pathstore.system.deployment.commands;
 
-import pathstore.authentication.CredentialCache;
+import pathstore.authentication.CredentialDataLayer;
+import pathstore.authentication.credentials.Credential;
 import pathstore.system.PathStorePrivilegedCluster;
 
 /**
@@ -8,9 +9,13 @@ import pathstore.system.PathStorePrivilegedCluster;
  * pathstore_applications.local_auth table so they can access the parent node's cassandra during
  * push and pull operations
  */
-public class WriteCredentialsToChildNode implements ICommand {
-  /** current node id */
-  private final int nodeid;
+public class WriteCredentialToChildNode<SearchableT, CredentialT extends Credential<SearchableT>>
+    implements ICommand {
+  /** Data layer to write to */
+  private final CredentialDataLayer<SearchableT, CredentialT> dataLayer;
+
+  /** Credential to write */
+  private final CredentialT credential;
 
   /** Username to connect to child with */
   private final String connectionUsername;
@@ -25,19 +30,22 @@ public class WriteCredentialsToChildNode implements ICommand {
   private final int port;
 
   /**
-   * @param nodeid {@link #nodeid}
+   * @param dataLayer {@link #dataLayer}
+   * @param credential {@link #credential}
    * @param connectionUsername {@link #connectionUsername}
    * @param connectionPassword {@link #connectionPassword}
    * @param ip {@link #ip}
    * @param port {@link #port}
    */
-  public WriteCredentialsToChildNode(
-      final int nodeid,
+  public WriteCredentialToChildNode(
+      final CredentialDataLayer<SearchableT, CredentialT> dataLayer,
+      final CredentialT credential,
       final String connectionUsername,
       final String connectionPassword,
       final String ip,
       final int port) {
-    this.nodeid = nodeid;
+    this.dataLayer = dataLayer;
+    this.credential = credential;
     this.connectionUsername = connectionUsername;
     this.connectionPassword = connectionPassword;
     this.ip = ip;
@@ -51,9 +59,7 @@ public class WriteCredentialsToChildNode implements ICommand {
         PathStorePrivilegedCluster.getChildInstance(
             this.connectionUsername, this.connectionPassword, this.ip, this.port);
 
-    CredentialCache.getNodeAuth()
-        .credentialDataLayer
-        .write(childCluster.connect(), CredentialCache.getNodeAuth().getCredential(this.nodeid));
+    this.dataLayer.write(childCluster.connect(), this.credential);
 
     childCluster.close();
   }
@@ -62,7 +68,6 @@ public class WriteCredentialsToChildNode implements ICommand {
   @Override
   public String toString() {
     return String.format(
-        "Writing account with username %s to child node",
-        CredentialCache.getNodeAuth().getCredential(this.nodeid).getUsername());
+        "Writing account with username %s to child node", this.credential.getUsername());
   }
 }

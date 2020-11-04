@@ -4,7 +4,7 @@ import com.datastax.driver.core.Cluster;
 import lombok.Getter;
 import lombok.NonNull;
 import org.json.JSONObject;
-import pathstore.authentication.ClientCredential;
+import pathstore.authentication.credentials.ClientCredential;
 import pathstore.authentication.grpc.PathStoreClientInterceptor;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;

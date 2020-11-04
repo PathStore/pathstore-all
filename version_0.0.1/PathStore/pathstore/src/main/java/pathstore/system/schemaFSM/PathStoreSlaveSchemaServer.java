@@ -228,7 +228,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
 
     this.logger.info(String.format("Removed cache entries for keyspace %s", keyspace));
 
-    if (CredentialCache.getClientAuth().remove(keyspace))
+    if (CredentialCache.getClients().remove(keyspace))
       this.logger.info(String.format("Removed temporary client account for keyspace %s", keyspace));
 
     // called after schema info is removed so that the push server won't call on this keyspace and

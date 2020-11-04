@@ -5,7 +5,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pathstore.authentication.ClientCredential;
+import pathstore.authentication.credentials.ClientCredential;
 
 /**
  * This AuthClientInterceptor is specifically used to deal with the case when the grpc client is a

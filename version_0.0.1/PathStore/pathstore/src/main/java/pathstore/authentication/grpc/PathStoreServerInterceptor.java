@@ -3,7 +3,7 @@ package pathstore.authentication.grpc;
 import io.grpc.Metadata;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import pathstore.authentication.NodeCredential;
+import pathstore.authentication.credentials.NodeCredential;
 
 /**
  * This AuthClientInterceptor is specifically used to deal with the case when the grpc client is a

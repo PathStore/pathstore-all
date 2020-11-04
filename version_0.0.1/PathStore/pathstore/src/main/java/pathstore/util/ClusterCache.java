@@ -3,7 +3,7 @@ package pathstore.util;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.SocketOptions;
-import pathstore.authentication.Credential;
+import pathstore.authentication.credentials.Credential;
 import pathstore.system.PathStorePrivilegedCluster;
 
 import java.util.concurrent.ConcurrentHashMap;

@@ -19,7 +19,7 @@ package pathstore.client;
 
 import com.datastax.driver.core.Cluster;
 import pathstore.authentication.CredentialCache;
-import pathstore.authentication.NodeCredential;
+import pathstore.authentication.credentials.NodeCredential;
 import pathstore.common.PathStoreProperties;
 import pathstore.util.ClusterCache;
 
@@ -62,7 +62,7 @@ public class PathStoreCluster {
    */
   public static PathStoreCluster getDaemonInstance() {
     NodeCredential daemonCredentials =
-        CredentialCache.getNodeAuth().getCredential(PathStoreProperties.getInstance().NodeID);
+        CredentialCache.getNodes().getCredential(PathStoreProperties.getInstance().NodeID);
 
     if (daemonCredentials == null)
       throw new RuntimeException("Daemon credentials are not present within the local auth table");

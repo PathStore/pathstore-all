@@ -134,7 +134,7 @@ public class PathStoreServerClient {
             .intercept(
                 PathStoreProperties.getInstance().role == Role.SERVER
                     ? PathStoreServerInterceptor.getInstance(
-                        CredentialCache.getNodeAuth()
+                        CredentialCache.getNodes()
                             .getCredential(
                                 PathStoreProperties.getInstance().ParentID))
                     : PathStoreClientInterceptor.getInstance())

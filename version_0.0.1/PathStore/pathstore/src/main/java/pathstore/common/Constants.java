@@ -207,9 +207,9 @@ public final class Constants {
     public static final String TASK_DONE = "task_done";
   }
 
-  public static final String LOCAL_AUTH = "local_auth";
+  public static final String LOCAL_NODE_AUTH = "local_node_auth";
 
-  public static final class LOCAL_AUTH_COLUMNS {
+  public static final class LOCAL_NODE_AUTH_COLUMNS {
     public static final String NODE_ID = "node_id";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
@@ -221,6 +221,18 @@ public final class Constants {
     public static final String KEYSPACE_NAME = "keyspace_name";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
+  }
+
+  public static final String LOCAL_AUXILIARY_AUTH = "local_auxiliary_auth";
+
+  public static final class LOCAL_AUXILIARY_AUTH_COLUMNS {
+    public static final String NAME = "name";
+    public static final String USERNAME = "username";
+    public static final String PASSWORD = "password";
+  }
+
+  public static final class AUXILIARY_ACCOUNTS {
+    public static final String NETWORK_ADMINISTRATOR = "network-administrator";
   }
 
   public static final class REGISTER_APPLICATION {
