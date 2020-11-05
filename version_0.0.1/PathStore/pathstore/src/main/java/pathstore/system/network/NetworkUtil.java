@@ -1,7 +1,7 @@
 package pathstore.system.network;
 
 import com.google.protobuf.ByteString;
-import pathstore.grpc.pathStoreProto;
+import pathstore.grpc.pathStoreProto.Status;
 
 import java.io.*;
 import java.util.*;
@@ -26,10 +26,27 @@ public class NetworkUtil {
     }
   }
 
-  // 1mb
+  /** How large a split can be. For now it is 1mb */
   private static final int PAYLOAD_SIZE = 1024 * 1024;
 
-  // TODO: Comment
+  /**
+   * This function should be used when you're trying to send some number of objects to the user over
+   * a server-side stream call. The idea here is to split these objects into some number of windows
+   * where each window is the PAYLOAD_SIZE except for the last window where it will be at most the
+   * payload size. (Ideally, currently the payloads are not optimized, see the github issue related
+   * to this, we have at most n unoptimized splits)
+   *
+   * <p>Also note that when we create a window we must add the largest amount we can of each object
+   * if they haven't already been written to the stream. This is because we want to write them in
+   * some linear fashion and not have "gaps" in the payloads
+   *
+   * @param objects objects to split
+   * @return list of windows. If you passed n objects as the parameters each window would be of size
+   *     n. Each objects chunk is at their ordered index of insertion in the window. For example if
+   *     you called this function with o1, and o2 in that order at the 0 index of each window you
+   *     would find a chunk for o1. If there are no more chunks to be written we set it to null at
+   *     their index.
+   */
   public static List<List<ByteString>> objectToByteChunksWindows(final Object... objects) {
     List<byte[]> objectsInBytes = new ArrayList<>();
 
@@ -49,78 +66,82 @@ public class NetworkUtil {
 
     List<List<ByteString>> objectInChunkWindows = new ArrayList<>();
 
+    // While there are still objects that haven't been written fully to the stream
     Set<Integer> neededPartitions;
-    while ((neededPartitions = getNeededPartitions(objectsInBytes, position)).size() > 0) {
+    while ((neededPartitions = stillHaveData(objectsInBytes, position)).size() > 0) {
 
       List<ByteString> window = new ArrayList<>();
 
       int chunkSize = PAYLOAD_SIZE / neededPartitions.size();
-
       int added = 0;
-
       for (int i = 0; i < objectsInBytes.size(); i++) {
         byte[] objectInBytes = objectsInBytes.get(i);
+
+        // for all objects that still have data to be written to the stream
         if (neededPartitions.contains(i)) {
           int toAdd = Math.min(position + chunkSize, objectInBytes.length);
           window.add(ByteString.copyFrom(Arrays.copyOfRange(objectInBytes, position, toAdd)));
           added = Math.max(toAdd, added);
-          System.out.println(
-              String.format(
-                  "i: %d, toAdd: %d, added: %d, sent: %d", i, toAdd, added, toAdd - position));
         } else window.add(null);
       }
+
+      // update the position to the place of the max added chunk.
+      // As the only time it is less than max is when an object has been exhausted
       position += (added - position);
-      System.out.println(
-          String.format(
-              "Partitions: %s, added: %d, position: %d", neededPartitions, added, position));
       objectInChunkWindows.add(window);
     }
-
-    int maxObjectLength = 0;
-    for (byte[] objectsInByte : objectsInBytes)
-      if (objectsInByte.length > maxObjectLength) maxObjectLength = objectsInByte.length;
-
-    System.out.println(
-        String.format(
-            "Final position: %d, Max object length: %d, Difference (should be 0): %d",
-            position, maxObjectLength, maxObjectLength - position));
 
     return objectInChunkWindows;
   }
 
-  // TODO: Comment
-  private static Set<Integer> getNeededPartitions(
-      final List<byte[]> objectBytes, final int position) {
+  /**
+   * This function is used to calculate a set of indices that still require chunks to be sent. In
+   * other words they should be included in the next window
+   *
+   * @param objectBytes bytes to search through
+   * @param position position after most recent write
+   * @return set of indices that have lesser length than the position
+   */
+  private static Set<Integer> stillHaveData(final List<byte[]> objectBytes, final int position) {
     Set<Integer> neededPartitions = new HashSet<>();
     for (int i = 0; i < objectBytes.size(); i++)
       if (position < objectBytes.get(i).length) neededPartitions.add(i);
     return neededPartitions;
   }
 
-  // TODO: Comment
+  /**
+   * This function is used to calculate a set of indices that still require chunks to be sent. In
+   * other words they should be included in the next window
+   *
+   * @param iterator iterator from a blocking stub response
+   * @param getStatus function to transfer a RespT object to a Status. (Status is used to determine
+   *     when the data is done flowing)
+   * @param getByteArrays a var args of functions to denote how to get the byte arrays from the
+   *     fields inside RespT
+   * @param <RespT> Response Type
+   */
   @SafeVarargs
-  public static <T> List<Object> concatenate(
-      final Iterator<T> iterator,
-      final Function<T, pathStoreProto.Status> getStatus,
-      final Function<T, byte[]>... getByteArrays) {
+  public static <RespT> List<Object> concatenate(
+      final Iterator<RespT> iterator,
+      final Function<RespT, Status> getStatus,
+      final Function<RespT, byte[]>... getByteArrays) {
     try {
       List<ByteArrayOutputStream> arrayOutputStreams = new ArrayList<>();
       // init output stream
       for (int i = 0; i < getByteArrays.length; i++)
         arrayOutputStreams.add(new ByteArrayOutputStream());
 
-      T value = iterator.next();
-      do {
+      for (RespT value = iterator.next();
+          !getStatus.apply(value).equals(Status.PENDING);
+          value = iterator.next()) {
         int i = 0;
         int counter = 0;
-        for (Function<T, byte[]> function : getByteArrays) {
+        for (Function<RespT, byte[]> function : getByteArrays) {
           byte[] array = function.apply(value);
           counter = Math.max(array.length, counter);
           arrayOutputStreams.get(i++).write(array);
         }
-        System.out.println(String.format("Got %d bytes", counter));
-        value = iterator.next();
-      } while (getStatus.apply(value).equals(pathStoreProto.Status.PENDING));
+      }
 
       List<Object> objects = new ArrayList<>();
       for (ByteArrayOutputStream arrayOutputStream : arrayOutputStreams)
