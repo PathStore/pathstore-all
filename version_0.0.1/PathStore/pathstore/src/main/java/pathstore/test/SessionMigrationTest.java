@@ -6,14 +6,11 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
 import pathstore.client.PathStoreClientAuthenticatedCluster;
-import pathstore.client.PathStoreServerClient;
 import pathstore.client.PathStoreSession;
 import pathstore.sessions.PathStoreSessionManager;
 
 public class SessionMigrationTest {
   public static void main(String[] args) throws Exception {
-    System.out.println(PathStoreServerClient.getInstance().getLocalNodeId());
-
     PathStoreSession session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     if (args.length == 0) {
