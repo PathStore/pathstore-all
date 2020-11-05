@@ -1,8 +1,8 @@
 package pathstore.system.deployment.commands;
 
-import pathstore.authentication.credentials.Credential;
-import pathstore.authentication.CassandraAuthenticationUtil;
+import lombok.RequiredArgsConstructor;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.credentials.Credential;
 import pathstore.authentication.credentials.NodeCredential;
 
 /**
@@ -12,38 +12,16 @@ import pathstore.authentication.credentials.NodeCredential;
  * @implNote This class uses {@link CredentialCache} as when this gets written it also gets stored
  *     in memory for more convenient access when used in the future
  */
+@RequiredArgsConstructor
 public class WriteChildCredentialsToCassandra implements ICommand {
 
-  /** Child node Id */
-  private final int childNodeId;
-
-  /** Child daemon username {@link pathstore.common.Constants#PATHSTORE_DAEMON_USERNAME} */
-  private final String username;
-
-  /**
-   * Randomly generated password
-   *
-   * @see CassandraAuthenticationUtil#generateAlphaNumericPassword()
-   */
-  private final String password;
-
-  /**
-   * @param childNodeId {@link #childNodeId}
-   * @param username {@link #username}
-   * @param password {@link #password}
-   */
-  public WriteChildCredentialsToCassandra(
-      final int childNodeId, final String username, final String password) {
-    this.childNodeId = childNodeId;
-    this.username = username;
-    this.password = password;
-  }
+  /** Child credential */
+  private final NodeCredential childCredential;
 
   /** Calls {@link CredentialCache#add(Credential)} */
   @Override
   public void execute() {
-    CredentialCache.getNodes()
-        .add(new NodeCredential(this.childNodeId, this.username, this.password));
+    CredentialCache.getNodes().add(this.childCredential);
   }
 
   /** @return informs user what is occurring */

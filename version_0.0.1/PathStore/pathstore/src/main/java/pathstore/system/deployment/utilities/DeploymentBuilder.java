@@ -316,14 +316,11 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   /**
    * Write a the child daemon account to the local node cassandra instance
    *
-   * @param childNodeId child node id
-   * @param username daemon username of child
-   * @param password daemon password of child
+   * @param childCredential child credential to write
    * @return this
    */
-  public T writeChildAccountToCassandra(
-      final int childNodeId, final String username, final String password) {
-    this.commands.add(new WriteChildCredentialsToCassandra(childNodeId, username, password));
+  public T writeChildAccountToCassandra(final NodeCredential childCredential) {
+    this.commands.add(new WriteChildCredentialsToCassandra(childCredential));
     return (T) this;
   }
 

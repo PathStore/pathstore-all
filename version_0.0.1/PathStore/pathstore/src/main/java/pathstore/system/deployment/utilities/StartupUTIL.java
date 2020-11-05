@@ -2,6 +2,7 @@ package pathstore.system.deployment.utilities;
 
 import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.credentials.NodeCredential;
 import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.common.tables.DeploymentEntry;
@@ -68,6 +69,9 @@ public class StartupUTIL {
 
     String childDaemonUsername = Constants.PATHSTORE_DAEMON_USERNAME;
     String childDaemonPassword = CassandraAuthenticationUtil.generateAlphaNumericPassword();
+
+    NodeCredential childNodeCredential =
+        new NodeCredential(nodeID, childDaemonUsername, childDaemonPassword);
 
     return new DeploymentBuilder<>(sshUtil)
         .init()
@@ -145,7 +149,7 @@ public class StartupUTIL {
                 .getCredential(Constants.AUXILIARY_ACCOUNTS.NETWORK_ADMINISTRATOR)
                 .getPassword(),
             true)
-        .writeChildAccountToCassandra(nodeID, childDaemonUsername, childDaemonPassword)
+        .writeChildAccountToCassandra(childNodeCredential)
         .writeNodeCredentialToChildNode( // Writes parent credentials to child node
             CredentialCache.getNodes().getCredential(parentNodeId),
             childSuperuserUsername,
@@ -153,11 +157,7 @@ public class StartupUTIL {
             ip,
             cassandraPort)
         .writeNodeCredentialToChildNode( // Writes daemon account to child node
-            CredentialCache.getNodes().getCredential(nodeID),
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort)
+            childNodeCredential, childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
         .writeAuxiliaryCredentialToChildNode( // Writes network admin account
             CredentialCache.getAuxiliary()
                 .getCredential(Constants.AUXILIARY_ACCOUNTS.NETWORK_ADMINISTRATOR),
