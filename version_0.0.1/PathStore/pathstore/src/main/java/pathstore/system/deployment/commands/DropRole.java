@@ -1,43 +1,25 @@
 package pathstore.system.deployment.commands;
 
 import pathstore.authentication.CassandraAuthenticationUtil;
+import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.system.PathStorePrivilegedCluster;
 
 /** This command is used to drop a role on the child node during node deployment */
 public class DropRole implements ICommand {
 
-  /** Username to connect to child with */
-  private final String connectionUsername;
-
-  /** Password to connect to child with */
-  private final String connectionPassword;
-
-  /** Ip of child */
-  private final String ip;
-
-  /** Port of child */
-  private final int port;
+  /** Cassandra credentials to connect with */
+  private final DeploymentCredential cassandraCredentials;
 
   /** Role to drop */
   private final String roleName;
 
   /**
-   * @param connectionUsername {@link #connectionUsername}
-   * @param connectionPassword {@link #connectionPassword}
-   * @param ip {@link #ip}
-   * @param port {@link #port}
+   * @param cassandraCredentials {@link #cassandraCredentials}
    * @param roleName {@link #roleName}
    */
   public DropRole(
-      final String connectionUsername,
-      final String connectionPassword,
-      final String ip,
-      final int port,
-      final String roleName) {
-    this.connectionUsername = connectionUsername;
-    this.connectionPassword = connectionPassword;
-    this.ip = ip;
-    this.port = port;
+          final DeploymentCredential cassandraCredentials, final String roleName) {
+    this.cassandraCredentials = cassandraCredentials;
     this.roleName = roleName;
   }
 
@@ -45,8 +27,7 @@ public class DropRole implements ICommand {
   @Override
   public void execute() {
     PathStorePrivilegedCluster childCluster =
-        PathStorePrivilegedCluster.getChildInstance(
-            this.connectionUsername, this.connectionPassword, this.ip, this.port);
+        PathStorePrivilegedCluster.getChildInstance(this.cassandraCredentials);
 
     CassandraAuthenticationUtil.dropRole(childCluster.connect(), this.roleName);
 

@@ -235,6 +235,7 @@ public final class Constants {
 
   public static final class AUXILIARY_ACCOUNTS {
     public static final String NETWORK_ADMINISTRATOR = "network-administrator";
+    public static final String NETWORK_WIDE_GRPC_CREDENTIAL = "network-wide-grpc-credential";
   }
 
   public static final class REGISTER_APPLICATION {

@@ -117,11 +117,11 @@ public class PathStoreServerImpl {
                           .serverAuthenticatedEndpoint(
                               ServerOnlyServiceGrpc.SERVICE_NAME,
                               CredentialCache.getNodes().getAllReference())
-                          .unauthenticatedEndpoint(
-                              NetworkWideServiceGrpc
-                                  .SERVICE_NAME) // Myles: This is temporary until we build the
-                          // master password functionality into orchestration
-                          // of the network
+                          .addAdditionalCredentials(
+                              NetworkWideServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getAuxiliary()
+                                  .getCredential(
+                                      Constants.AUXILIARY_ACCOUNTS.NETWORK_WIDE_GRPC_CREDENTIAL))
                           .unauthenticatedEndpoint(UnAuthenticatedServiceGrpc.SERVICE_NAME)
                           .build()))
               .build();

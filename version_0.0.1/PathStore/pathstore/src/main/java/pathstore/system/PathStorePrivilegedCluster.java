@@ -21,6 +21,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.authentication.credentials.NodeCredential;
 import pathstore.common.PathStoreProperties;
 import pathstore.system.deployment.commands.WriteCredentialToChildNode;
@@ -115,15 +116,16 @@ public class PathStorePrivilegedCluster {
   /**
    * Credentials to a child node that is not in the cluster cache (Used during deployment)
    *
-   * @param username username
-   * @param password password
-   * @param ip child ip
-   * @param port child port
+   * @param credential custom credential to connect with
    * @return child connection
    */
   public static PathStorePrivilegedCluster getChildInstance(
-      final String username, final String password, final String ip, final int port) {
-    return clusterCache.getInstance(new NodeCredential(ipToInt(ip), username, password), ip, port);
+      final DeploymentCredential credential) {
+    return clusterCache.getInstance(
+        new NodeCredential(
+            ipToInt(credential.getIp()), credential.getUsername(), credential.getPassword()),
+        credential.getIp(),
+        credential.getPort());
   }
 
   /**

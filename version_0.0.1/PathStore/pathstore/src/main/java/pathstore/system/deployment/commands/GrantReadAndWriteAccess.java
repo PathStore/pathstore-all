@@ -1,6 +1,7 @@
 package pathstore.system.deployment.commands;
 
 import pathstore.authentication.CassandraAuthenticationUtil;
+import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.system.PathStorePrivilegedCluster;
 
 /**
@@ -10,20 +11,8 @@ import pathstore.system.PathStorePrivilegedCluster;
  */
 public class GrantReadAndWriteAccess implements ICommand {
 
-  /**
-   * Login username for cassandra, this role must be capable of granting role permissions (most
-   * likely a super user username)
-   */
-  private final String connectionUsername;
-
-  /** Login password for cassandra */
-  private final String connectionPassword;
-
-  /** Ip of cassandra instance */
-  private final String ip;
-
-  /** Native transport port for cassandra */
-  private final int port;
+  /** Cassandra credentials to connect with */
+  private final DeploymentCredential cassandraCredentials;
 
   /** Role to give permissions to */
   private final String roleName;
@@ -32,24 +21,15 @@ public class GrantReadAndWriteAccess implements ICommand {
   private final String keyspace;
 
   /**
-   * @param connectionUsername {@link #connectionUsername}
-   * @param connectionPassword {@link #connectionPassword}
-   * @param ip {@link #ip}
-   * @param port {@link #port}
+   * @param cassandraCredentials {@link #cassandraCredentials}
    * @param roleName {@link #roleName}
    * @param keyspace {@link #keyspace}
    */
   public GrantReadAndWriteAccess(
-      final String connectionUsername,
-      final String connectionPassword,
-      final String ip,
-      final int port,
+      final DeploymentCredential cassandraCredentials,
       final String roleName,
       final String keyspace) {
-    this.connectionUsername = connectionUsername;
-    this.connectionPassword = connectionPassword;
-    this.ip = ip;
-    this.port = port;
+    this.cassandraCredentials = cassandraCredentials;
     this.roleName = roleName;
     this.keyspace = keyspace;
   }
@@ -58,10 +38,10 @@ public class GrantReadAndWriteAccess implements ICommand {
   @Override
   public void execute() {
     PathStorePrivilegedCluster childCluster =
-        PathStorePrivilegedCluster.getChildInstance(
-            this.connectionUsername, this.connectionPassword, this.ip, this.port);
+        PathStorePrivilegedCluster.getChildInstance(this.cassandraCredentials);
 
-    CassandraAuthenticationUtil.grantAccessToKeyspace(childCluster.connect(), this.keyspace, this.roleName);
+    CassandraAuthenticationUtil.grantAccessToKeyspace(
+        childCluster.connect(), this.keyspace, this.roleName);
 
     childCluster.close();
   }

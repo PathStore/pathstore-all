@@ -1,6 +1,7 @@
 package pathstorestartup.commands;
 
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import pathstore.authentication.credentials.DeploymentCredential;;
 import pathstore.common.Constants;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.deployment.commands.ICommand;
@@ -10,17 +11,8 @@ import pathstore.system.deployment.commands.ICommand;
  * local_keyspace.auth table.
  */
 public class WriteCredentialsToRootNodeBootstrap implements ICommand {
-  /** Username to connect with */
-  private final String connectionUsername;
-
-  /** Password to connect with */
-  private final String connectionPassword;
-
-  /** ip of root node */
-  private final String ip;
-
-  /** Port of root node */
-  private final int port;
+  /** Cassandra credentials to connect to */
+  private final DeploymentCredential cassandraCredentials;
 
   /** Node id to write to table */
   private final int nodeIdToWrite;
@@ -32,26 +24,17 @@ public class WriteCredentialsToRootNodeBootstrap implements ICommand {
   private final String passwordToWrite;
 
   /**
-   * @param connectionUsername {@link #connectionUsername}
-   * @param connectionPassword {@link #connectionPassword}
-   * @param ip {@link #ip}
-   * @param port {@link #port}
+   * @param cassandraCredentials {@link #cassandraCredentials}
    * @param nodeIdToWrite {@link #nodeIdToWrite}
    * @param usernameToWrite {@link #usernameToWrite}
    * @param passwordToWrite {@link #passwordToWrite}
    */
   public WriteCredentialsToRootNodeBootstrap(
-      final String connectionUsername,
-      final String connectionPassword,
-      final String ip,
-      final int port,
+      final DeploymentCredential cassandraCredentials,
       final int nodeIdToWrite,
       final String usernameToWrite,
       final String passwordToWrite) {
-    this.connectionUsername = connectionUsername;
-    this.connectionPassword = connectionPassword;
-    this.ip = ip;
-    this.port = port;
+    this.cassandraCredentials = cassandraCredentials;
     this.nodeIdToWrite = nodeIdToWrite;
     this.usernameToWrite = usernameToWrite;
     this.passwordToWrite = passwordToWrite;
@@ -61,8 +44,7 @@ public class WriteCredentialsToRootNodeBootstrap implements ICommand {
   @Override
   public void execute() {
     PathStorePrivilegedCluster rootCluster =
-        PathStorePrivilegedCluster.getChildInstance(
-            this.connectionUsername, this.connectionPassword, this.ip, this.port);
+        PathStorePrivilegedCluster.getChildInstance(this.cassandraCredentials);
 
     rootCluster
         .connect()

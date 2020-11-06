@@ -15,6 +15,11 @@ import java.util.*;
 /**
  * This class is used for the registration, storage and comparison of credentials related to a grpc
  * server.
+ *
+ * @implNote The reason why the builder takes {@link CredentialCache#getAllReference()} is because
+ *     as the credentials change in the cache they will also change within this class. In the future
+ *     we may want to add a more complex event handling system to allow for constant time look up of
+ *     if a credential is valid or not. (Myles)
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class AuthManager {
@@ -35,7 +40,7 @@ public class AuthManager {
     private final Set<String> unauthenticated = new HashSet<>();
 
     /** Additional credentials */
-    private final Map<String, Set<Credential<?>>> additionalCredentials = new HashMap<>();
+    private final Map<String, Collection<Credential<?>>> additionalCredentials = new HashMap<>();
 
     /**
      * This function is used to authenticate a service with a collection of server credentials
@@ -102,7 +107,7 @@ public class AuthManager {
      */
     public Builder addAdditionalCredentials(
         final String serviceName, final Credential<?> credential) {
-      this.additionalCredentials.putIfAbsent(serviceName, new HashSet<>());
+      this.additionalCredentials.putIfAbsent(serviceName, new ArrayList<>());
       this.additionalCredentials.get(serviceName).add(credential);
       return this;
     }
@@ -132,7 +137,7 @@ public class AuthManager {
   private final Set<String> unauthenticated;
 
   /** Additional specific credentials add to a service */
-  private final Map<String, Set<Credential<?>>> additionalCredentials;
+  private final Map<String, Collection<Credential<?>>> additionalCredentials;
 
   /**
    * @param endpoint endpoint called
@@ -140,39 +145,57 @@ public class AuthManager {
    * @param password and password given
    * @return true if authenticated false if not
    */
-  public boolean isAuthenticated(String endpoint, final String username, final String password) {
+  public boolean isAuthenticated(
+      final String endpoint, final String username, final String password) {
     if (endpoint == null || username == null || password == null) return false;
 
     // get the service name of the endpoint as, authentication is at the service layer not the
     // endpoint layer
-    endpoint = endpoint.substring(0, endpoint.indexOf('/'));
+    String service = endpoint.substring(0, endpoint.indexOf('/'));
 
     // check to ensure the service is registered with the auth manager
-    if (!this.serverCredentials.containsKey(endpoint)
-        && !this.clientCredentials.containsKey(endpoint)
-        && !this.unauthenticated.contains(endpoint)
-        && !this.additionalCredentials.containsKey(endpoint)) return false;
+    if (!this.serverCredentials.containsKey(service)
+        && !this.clientCredentials.containsKey(service)
+        && !this.unauthenticated.contains(service)
+        && !this.additionalCredentials.containsKey(service)) return false;
 
     // check if the service is unauthenticated
-    if (this.unauthenticated.contains(endpoint)) return true;
+    if (this.unauthenticated.contains(service)) return true;
 
-    NopCredential credential = new NopCredential(username, password);
+    NopCredential providedCredential = new NopCredential(username, password);
 
-    // check to see if the credential is present in the additional credentials before doing the
-    // linear search
-    if (this.additionalCredentials.containsKey(endpoint)
-        && this.additionalCredentials.get(endpoint).contains(credential)) return true;
+    // check the additional credentials collection
+    if (this.doesCollectionContain(service, this.additionalCredentials, providedCredential))
+      return true;
 
-    // compare against server credentials
-    if (this.serverCredentials.containsKey(endpoint))
-      for (NodeCredential server : this.serverCredentials.get(endpoint))
-        if (credential.isSame(server)) return true;
+    // check client credentials
+    if (this.doesCollectionContain(service, this.clientCredentials, providedCredential))
+      return true;
 
-    // compare against client credentials
-    if (this.clientCredentials.containsKey(endpoint))
-      for (ClientCredential client : this.clientCredentials.get(endpoint))
-        if (credential.isSame(client)) return true;
+    // check server credentials
+    return this.doesCollectionContain(service, this.serverCredentials, providedCredential);
+  }
 
+  /**
+   * This function is used to check if a credential is available in one of three possible ways to
+   * register it for a service. We use the {@link Credential#isSame(Credential)} function to
+   * determine which credentials are equal regardless of class type. If we could guarantee class
+   * type we would use the {@link Credential#equals(Object)} operand
+   *
+   * @param service service called
+   * @param map map of service name to a collection of credentials as a point of valid credentials
+   * @param credentialToCompare credential to compare to
+   * @param <CredentialT> credential object type
+   * @return true if the credential to compare is the same as one of the credentials in the map.
+   *     Otherwise false
+   */
+  private <CredentialT extends Credential<?>> boolean doesCollectionContain(
+      final String service,
+      final Map<String, Collection<CredentialT>> map,
+      final NopCredential credentialToCompare) {
+    if (map.containsKey(service))
+      for (CredentialT credential : map.get(service))
+        if (credential.isSame(credentialToCompare)) return true;
     return false;
   }
 }

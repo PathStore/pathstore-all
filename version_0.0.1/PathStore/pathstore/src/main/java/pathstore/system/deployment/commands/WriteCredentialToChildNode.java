@@ -2,6 +2,7 @@ package pathstore.system.deployment.commands;
 
 import pathstore.authentication.CredentialDataLayer;
 import pathstore.authentication.credentials.Credential;
+import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.system.PathStorePrivilegedCluster;
 
 /**
@@ -17,47 +18,28 @@ public class WriteCredentialToChildNode<SearchableT, CredentialT extends Credent
   /** Credential to write */
   private final CredentialT credential;
 
-  /** Username to connect to child with */
-  private final String connectionUsername;
-
-  /** Password to connect to child with */
-  private final String connectionPassword;
-
-  /** Child ip */
-  private final String ip;
-
-  /** Child port */
-  private final int port;
+  /** Cassandra credentials to connect with */
+  private final DeploymentCredential cassandraCredentials;
 
   /**
    * @param dataLayer {@link #dataLayer}
    * @param credential {@link #credential}
-   * @param connectionUsername {@link #connectionUsername}
-   * @param connectionPassword {@link #connectionPassword}
-   * @param ip {@link #ip}
-   * @param port {@link #port}
+   * @param cassandraCredentials {@link #cassandraCredentials}
    */
   public WriteCredentialToChildNode(
       final CredentialDataLayer<SearchableT, CredentialT> dataLayer,
       final CredentialT credential,
-      final String connectionUsername,
-      final String connectionPassword,
-      final String ip,
-      final int port) {
+      final DeploymentCredential cassandraCredentials) {
     this.dataLayer = dataLayer;
     this.credential = credential;
-    this.connectionUsername = connectionUsername;
-    this.connectionPassword = connectionPassword;
-    this.ip = ip;
-    this.port = port;
+    this.cassandraCredentials = cassandraCredentials;
   }
 
   /** Connect to the child node, write the credentials to that node, and close the cluster */
   @Override
   public void execute() {
     PathStorePrivilegedCluster childCluster =
-        PathStorePrivilegedCluster.getChildInstance(
-            this.connectionUsername, this.connectionPassword, this.ip, this.port);
+        PathStorePrivilegedCluster.getChildInstance(this.cassandraCredentials);
 
     this.dataLayer.write(childCluster.connect(), this.credential);
 

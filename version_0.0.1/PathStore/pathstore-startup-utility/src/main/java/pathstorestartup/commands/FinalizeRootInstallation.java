@@ -3,6 +3,8 @@ package pathstorestartup.commands;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import pathstore.authentication.credentials.DeploymentCassandraCredentials;
+import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.common.Constants;
 import pathstore.common.tables.DeploymentProcessStatus;
 import pathstore.common.tables.ServerAuthType;
@@ -29,17 +31,8 @@ import static pathstore.common.Constants.APPLICATION_CREDENTIALS_COLUMNS.PASSWOR
  */
 public class FinalizeRootInstallation implements ICommand {
 
-  /** Cassandra account username */
-  private final String cassandraUsername;
-
-  /** Cassandra account password */
-  private final String cassandraPassword;
-
-  /** Ip of root node */
-  private final String ip;
-
-  /** Cassandra port for root node */
-  private final int cassandraPort;
+  /** Cassandra credential to connect to server with */
+  private final DeploymentCredential cassandraCredential;
 
   /** Username to server */
   private final String username;
@@ -63,10 +56,7 @@ public class FinalizeRootInstallation implements ICommand {
   private final int grpcPort;
 
   /**
-   * @param cassandraUsername {@link #cassandraUsername}
-   * @param cassandraPassword {@link #cassandraPassword}
-   * @param ip {@link #ip}
-   * @param cassandraPort {@link #cassandraPort}
+   * @param cassandraCredentials {@link #cassandraCredential}
    * @param username {@link #username}
    * @param password {@link #password}
    * @param masterPassword
@@ -74,10 +64,7 @@ public class FinalizeRootInstallation implements ICommand {
    * @param grpcPort {@link #grpcPort}
    */
   public FinalizeRootInstallation(
-      final String cassandraUsername,
-      final String cassandraPassword,
-      final String ip,
-      final int cassandraPort,
+      final DeploymentCredential cassandraCredentials,
       final String username,
       final String authType,
       final ServerIdentity serverIdentity,
@@ -85,10 +72,7 @@ public class FinalizeRootInstallation implements ICommand {
       final String masterPassword,
       final int sshPort,
       final int grpcPort) {
-    this.cassandraUsername = cassandraUsername;
-    this.cassandraPassword = cassandraPassword;
-    this.ip = ip;
-    this.cassandraPort = cassandraPort;
+    this.cassandraCredential = cassandraCredentials;
     this.username = username;
     this.authType = authType;
     this.serverIdentity = serverIdentity;
@@ -106,8 +90,7 @@ public class FinalizeRootInstallation implements ICommand {
   public void execute() {
 
     PathStorePrivilegedCluster cluster =
-        PathStorePrivilegedCluster.getChildInstance(
-            this.cassandraUsername, this.cassandraPassword, this.ip, this.cassandraPort);
+        PathStorePrivilegedCluster.getChildInstance(this.cassandraCredential);
     Session session = cluster.connect();
 
     UUID serverUUID = UUID.randomUUID();
@@ -118,7 +101,7 @@ public class FinalizeRootInstallation implements ICommand {
             .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
             .value(PATHSTORE_DIRTY, true)
             .value(SERVER_UUID, serverUUID.toString())
-            .value(IP, this.ip)
+            .value(IP, this.cassandraCredential.getIp())
             .value(USERNAME, this.username)
             .value(SSH_PORT, this.sshPort)
             .value(GRPC_PORT, this.grpcPort)
