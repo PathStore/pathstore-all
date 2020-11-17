@@ -21,6 +21,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.*;
+import lombok.Getter;
 import pathstore.client.PathStoreServerClient;
 import pathstore.sessions.SessionToken;
 import pathstore.system.PathStorePrivilegedCluster;
@@ -49,13 +50,8 @@ import java.util.concurrent.ConcurrentMap;
 public class QueryCache {
 
   /** Local instance of query cache */
-  private static QueryCache instance = null;
-
-  /** @return get query cache instance */
-  public static synchronized QueryCache getInstance() {
-    if (QueryCache.instance == null) QueryCache.instance = new QueryCache();
-    return QueryCache.instance;
-  }
+  @Getter(lazy = true)
+  private static final QueryCache instance = new QueryCache();
 
   /** All qc entries */
   private final ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> entries =

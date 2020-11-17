@@ -97,6 +97,9 @@ public class PathStoreServerImpl {
       System.out.println(PathStoreProperties.getInstance().ExternalAddress);
 
       // start grpc
+      // Myles: We're over authenticating here as when we provide all nodes that references the
+      // parent node and children nodes instead of just the children.
+      // This will need to be addressed later.
       server =
           ServerBuilder.forPort(PathStoreProperties.getInstance().GRPCPort)
               .addService(new CommonServiceImpl()) // both client and server

@@ -25,6 +25,9 @@ import io.grpc.ManagedChannelBuilder;
 import lombok.Getter;
 import lombok.NonNull;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.credentials.Credential;
+import pathstore.authentication.grpc.AuthClientInterceptor;
+import pathstore.authentication.grpc.CustomClientInterceptor;
 import pathstore.authentication.grpc.PathStoreClientInterceptor;
 import pathstore.authentication.grpc.PathStoreServerInterceptor;
 import pathstore.common.PathStoreProperties;
@@ -64,10 +67,13 @@ public class PathStoreServerClient {
    *
    * @param ip ip of server to connect to
    * @param port port of server to connect on
+   * @param credential credential to authenticate with
+   * @param <CredentialT> Credential token type
    * @return new instance if valid
    */
-  public static PathStoreServerClient getCustom(final String ip, final int port) {
-    return new PathStoreServerClient(ip, port);
+  public static <CredentialT extends Credential<?>> PathStoreServerClient getCustom(
+      final String ip, final int port, final CredentialT credential) {
+    return new PathStoreServerClient(ip, port, new CustomClientInterceptor<>(credential));
   }
 
   /**
@@ -101,6 +107,8 @@ public class PathStoreServerClient {
    * Creates connection to local node or to parent depending on role. Errors will be throw if any
    * information required is missing or if the connection cannot be created as the information that
    * was provided is pointing to an invalid source
+   *
+   * <p>If the role is a server we will create
    */
   private PathStoreServerClient() {
     this(
@@ -109,7 +117,12 @@ public class PathStoreServerClient {
             : PathStoreProperties.getInstance().GRPCIP,
         PathStoreProperties.getInstance().role == Role.SERVER
             ? PathStoreProperties.getInstance().GRPCParentPort
-            : PathStoreProperties.getInstance().GRPCPort);
+            : PathStoreProperties.getInstance().GRPCPort,
+        PathStoreProperties.getInstance().role == Role.SERVER
+            ? PathStoreServerInterceptor.getInstance(
+                CredentialCache.getNodes()
+                    .getCredential(PathStoreProperties.getInstance().ParentID))
+            : PathStoreClientInterceptor.getInstance());
   }
 
   /**
@@ -122,36 +135,35 @@ public class PathStoreServerClient {
   }
 
   /**
-   * Constructor for {@link #getCustom(String, int)}
+   * Constructor for {@link #getCustom(String, int, Credential)}
    *
    * <p>If the role is a client then create an auth client interceptor instance without an account.
    * As this will get called to attempt to authenticate before proper credentials exist.
    *
    * @param ip ip to connect to
    * @param port port to connect on
+   * @param authClientInterceptor how to intercept each request and apply the proper credential
+   *     information to it
    */
-  private PathStoreServerClient(@NonNull final String ip, @NonNull final Integer port) {
+  private PathStoreServerClient(
+      @NonNull final String ip,
+      @NonNull final Integer port,
+      @NonNull final AuthClientInterceptor authClientInterceptor) {
     this(
         ManagedChannelBuilder.forAddress(ip, port)
-            .intercept(
-                PathStoreProperties.getInstance().role == Role.SERVER
-                    ? PathStoreServerInterceptor.getInstance(
-                        CredentialCache.getNodes()
-                            .getCredential(PathStoreProperties.getInstance().ParentID))
-                    : PathStoreClientInterceptor.getInstance())
+            .intercept(authClientInterceptor)
             .usePlaintext(true));
   }
 
   /** @param channelBuilder channel build based on ip and port */
   private PathStoreServerClient(final ManagedChannelBuilder<?> channelBuilder) {
-    System.out.println("PS Server Client creating stubs");
     this.channel = channelBuilder.build();
-    this.commonServiceBlockingStub = CommonServiceGrpc.newBlockingStub(channel);
-    this.clientOnlyServiceBlockingStub = ClientOnlyServiceGrpc.newBlockingStub(channel);
-    this.serverOnlyServiceBlockingStub = ServerOnlyServiceGrpc.newBlockingStub(channel);
-    this.networkWideServiceBlockingStub = NetworkWideServiceGrpc.newBlockingStub(channel);
-    this.unAuthenticatedServiceBlockingStub = UnAuthenticatedServiceGrpc.newBlockingStub(channel);
-    System.out.println("Done");
+    this.commonServiceBlockingStub = CommonServiceGrpc.newBlockingStub(this.channel);
+    this.clientOnlyServiceBlockingStub = ClientOnlyServiceGrpc.newBlockingStub(this.channel);
+    this.serverOnlyServiceBlockingStub = ServerOnlyServiceGrpc.newBlockingStub(this.channel);
+    this.networkWideServiceBlockingStub = NetworkWideServiceGrpc.newBlockingStub(this.channel);
+    this.unAuthenticatedServiceBlockingStub =
+        UnAuthenticatedServiceGrpc.newBlockingStub(this.channel);
   }
 
   /**

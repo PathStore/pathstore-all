@@ -278,7 +278,11 @@ public class NetworkImpl {
         ServerEntry serverEntry = ServerEntry.fromRow(serverRow);
 
         PathStoreServerClient sourceNode =
-            PathStoreServerClient.getCustom(serverEntry.ip, serverEntry.grpcPort);
+            PathStoreServerClient.getCustom(
+                serverEntry.ip,
+                serverEntry.grpcPort,
+                CredentialCache.getAuxiliary()
+                    .getCredential(Constants.AUXILIARY_ACCOUNTS.NETWORK_WIDE_GRPC_CREDENTIAL));
 
         // force push all of K or T of session from sourceNode to lca if the sourceNode isn't the
         // lca
