@@ -8,7 +8,7 @@ import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
 import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.authentication.CredentialCache;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreSession;
 import pathstore.common.*;
 import pathstore.common.tables.NodeSchemaEntry;
 import pathstore.common.tables.NodeSchemaProcessStatus;
@@ -35,7 +35,8 @@ public class PathStoreSlaveSchemaServer implements Runnable {
       PathStoreLoggerFactory.getLogger(PathStoreSlaveSchemaServer.class);
 
   /** Session used to interact with pathstore */
-  private final Session session = PathStoreCluster.getDaemonInstance().connect();
+  private final PathStoreSession session =
+      PathStorePrivilegedCluster.getDaemonInstance().psConnect();
 
   /** Node id so you don't need to query the properties file every run */
   private final int nodeId = PathStoreProperties.getInstance().NodeID;
@@ -178,7 +179,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
    */
   private void installApplication(final String keyspace, final String augmentedSchema) {
 
-    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().rawConnect();
 
     PathStoreSchemaLoaderUtils.parseSchema(augmentedSchema).forEach(superUserSession::execute);
 
@@ -216,7 +217,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
    */
   private void removeApplication(final String keyspace) {
 
-    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().rawConnect();
 
     if (PathStoreProperties.getInstance().role == Role.SERVER) this.forcePush(keyspace);
 
@@ -268,8 +269,8 @@ public class PathStoreSlaveSchemaServer implements Runnable {
         SchemaInfo.getInstance().getTablesFromKeyspace(keyspace).stream()
             .filter(PathStorePushServer.filterOutViewAndLocal)
             .collect(Collectors.toList()),
-        PathStorePrivilegedCluster.getDaemonInstance().connect(),
-        PathStorePrivilegedCluster.getParentInstance().connect(),
+        PathStorePrivilegedCluster.getDaemonInstance().rawConnect(),
+        PathStorePrivilegedCluster.getParentInstance().rawConnect(),
         SchemaInfo.getInstance(),
         PathStoreProperties.getInstance().NodeID);
   }

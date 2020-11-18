@@ -90,15 +90,12 @@ public class FinalizeRootInstallation implements ICommand {
 
     PathStorePrivilegedCluster cluster =
         PathStorePrivilegedCluster.getChildInstance(this.cassandraCredential);
-    Session session = cluster.connect();
+    Session session = cluster.psConnect();
 
     UUID serverUUID = UUID.randomUUID();
 
     Insert insert =
         QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS)
-            .value(PATHSTORE_VERSION, QueryBuilder.now())
-            .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
-            .value(PATHSTORE_DIRTY, true)
             .value(SERVER_UUID, serverUUID.toString())
             .value(IP, this.cassandraCredential.getIp())
             .value(USERNAME, this.username)
@@ -117,9 +114,6 @@ public class FinalizeRootInstallation implements ICommand {
 
     insert =
         QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT)
-            .value(PATHSTORE_VERSION, QueryBuilder.now())
-            .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
-            .value(PATHSTORE_DIRTY, true)
             .value(NEW_NODE_ID, 1)
             .value(PARENT_NODE_ID, -1)
             .value(PROCESS_STATUS, DeploymentProcessStatus.DEPLOYED.toString())
@@ -130,9 +124,6 @@ public class FinalizeRootInstallation implements ICommand {
 
     insert =
         QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.APPLICATION_CREDENTIALS)
-            .value(PATHSTORE_VERSION, QueryBuilder.now())
-            .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
-            .value(PATHSTORE_DIRTY, true)
             .value(KEYSPACE_NAME, Constants.PATHSTORE_APPLICATIONS)
             .value(PASSWORD, this.masterPassword)
             .value(IS_SUPER_USER, true);

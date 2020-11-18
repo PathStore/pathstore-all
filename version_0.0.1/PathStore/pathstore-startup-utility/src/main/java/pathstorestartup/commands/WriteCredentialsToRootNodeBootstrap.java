@@ -47,7 +47,7 @@ public class WriteCredentialsToRootNodeBootstrap implements ICommand {
         PathStorePrivilegedCluster.getChildInstance(this.cassandraCredentials);
 
     rootCluster
-        .connect()
+        .rawConnect()
         .execute(
             QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_NODE_AUTH)
                 .value(Constants.LOCAL_NODE_AUTH_COLUMNS.NODE_ID, this.nodeIdToWrite)

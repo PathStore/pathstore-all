@@ -73,7 +73,7 @@ public class SchemaInfo implements Serializable {
   public static synchronized SchemaInfo getInstance() {
     if (SchemaInfo.instance == null)
       SchemaInfo.instance =
-          new SchemaInfo(PathStorePrivilegedCluster.getSuperUserInstance().connect());
+          new SchemaInfo(PathStorePrivilegedCluster.getSuperUserInstance().rawConnect());
     return SchemaInfo.instance;
   }
 

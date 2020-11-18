@@ -82,7 +82,7 @@ public class PathStoreServerImpl {
         logger.info("Loaded super user account successfully");
       else logger.error("Couldn't load super user account");
 
-      Session local = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+      Session local = PathStorePrivilegedCluster.getSuperUserInstance().rawConnect();
 
       logger.info("Super User connection was initialized successfully");
 
@@ -90,7 +90,7 @@ public class PathStoreServerImpl {
           != null) logger.info("Loaded daemon account successfully");
       else logger.error("Couldn't load daemon account");
 
-      PathStorePrivilegedCluster.getDaemonInstance().connect();
+      PathStorePrivilegedCluster.getDaemonInstance().rawConnect();
 
       logger.info("Daemon connection was initialized successfully");
 

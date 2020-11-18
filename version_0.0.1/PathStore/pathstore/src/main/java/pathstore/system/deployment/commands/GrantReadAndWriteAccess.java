@@ -41,7 +41,7 @@ public class GrantReadAndWriteAccess implements ICommand {
         PathStorePrivilegedCluster.getChildInstance(this.cassandraCredentials);
 
     CassandraAuthenticationUtil.grantAccessToKeyspace(
-        childCluster.connect(), this.keyspace, this.roleName);
+        childCluster.rawConnect(), this.keyspace, this.roleName);
 
     childCluster.close();
   }

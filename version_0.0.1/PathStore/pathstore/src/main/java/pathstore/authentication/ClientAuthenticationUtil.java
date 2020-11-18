@@ -1,16 +1,15 @@
 package pathstore.authentication;
 
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import lombok.NonNull;
-import pathstore.client.PathStoreCluster;
 import pathstore.client.PathStoreSession;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.tables.NodeSchemaEntry;
 import pathstore.common.tables.NodeSchemaProcessStatus;
+import pathstore.system.PathStorePrivilegedCluster;
 
 import java.util.Optional;
 
@@ -31,7 +30,7 @@ public class ClientAuthenticationUtil {
   public static boolean isApplicationNotLoaded(@NonNull final String applicationName) {
     if (applicationName.equals(Constants.PATHSTORE_APPLICATIONS)) return false;
 
-    PathStoreSession pathStoreSession = PathStoreCluster.getDaemonInstance().connect();
+    PathStoreSession pathStoreSession = PathStorePrivilegedCluster.getDaemonInstance().psConnect();
 
     Select queryNodeSchemasTable =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.NODE_SCHEMAS);
@@ -59,7 +58,7 @@ public class ClientAuthenticationUtil {
    */
   public static Optional<ApplicationCredential> getApplicationCredentialRow(
       @NonNull final String applicationName, @NonNull final String password) {
-    Session pathStoreSession = PathStoreCluster.getDaemonInstance().connect();
+    PathStoreSession pathStoreSession = PathStorePrivilegedCluster.getDaemonInstance().psConnect();
 
     Select queryCombo =
         QueryBuilder.select()

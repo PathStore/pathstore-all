@@ -37,14 +37,14 @@ public class ForcePush implements ICommand {
    */
   @Override
   public void execute() {
-    Session child = this.cluster.connect();
+    Session child = this.cluster.rawConnect();
 
     SchemaInfo childSchemaInfo = new SchemaInfo(child);
 
     PathStorePushServer.push(
         PathStorePushServer.buildCollectionOfTablesFromSchemaInfo(childSchemaInfo),
         child,
-        PathStorePrivilegedCluster.getDaemonInstance().connect(),
+        PathStorePrivilegedCluster.getDaemonInstance().rawConnect(),
         childSchemaInfo,
         this.nodeId);
 

@@ -12,7 +12,6 @@ import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.authentication.credentials.ClientCredential;
 import pathstore.authentication.CredentialCache;
 import pathstore.client.PathStoreClientAuthenticatedCluster;
-import pathstore.client.PathStoreCluster;
 import pathstore.client.PathStoreServerClient;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
@@ -222,7 +221,7 @@ public class NetworkImpl {
 
       selectNodeId.allowFiltering();
 
-      if (PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId).empty())
+      if (PathStorePrivilegedCluster.getDaemonInstance().psConnect().execute(selectNodeId).empty())
         return false;
 
       // validity check of data
@@ -255,7 +254,8 @@ public class NetworkImpl {
             QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
 
         Optional<Row> deploymentRow =
-            PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId).stream()
+            PathStorePrivilegedCluster.getDaemonInstance().psConnect().execute(selectNodeId)
+                .stream()
                 .findFirst();
 
         if (!deploymentRow.isPresent())
@@ -267,7 +267,8 @@ public class NetworkImpl {
                 deploymentRow.get().getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID)));
 
         Optional<Row> optionalServerRow =
-            PathStoreCluster.getDaemonInstance().connect().execute(querySourceNodeAddress).stream()
+            PathStorePrivilegedCluster.getDaemonInstance().psConnect()
+                .execute(querySourceNodeAddress).stream()
                 .findFirst();
 
         if (!optionalServerRow.isPresent())
@@ -318,8 +319,8 @@ public class NetworkImpl {
               nodeId, sessionToken.sessionName, lca));
       PathStorePushServer.push(
           sessionToken.stream().collect(Collectors.toList()),
-          PathStorePrivilegedCluster.getDaemonInstance().connect(),
-          PathStorePrivilegedCluster.getParentInstance().connect(),
+          PathStorePrivilegedCluster.getDaemonInstance().rawConnect(),
+          PathStorePrivilegedCluster.getParentInstance().rawConnect(),
           SchemaInfo.getInstance(),
           nodeId);
 
@@ -429,7 +430,8 @@ public class NetworkImpl {
 
     // build child -> parent set from db.
     Map<Integer, Integer> childToParentMap =
-        PathStoreCluster.getDaemonInstance().connect().execute(allDeployedNodes).stream()
+        PathStorePrivilegedCluster.getDaemonInstance().psConnect().execute(allDeployedNodes)
+            .stream()
             .map(DeploymentEntry::fromRow)
             .collect(Collectors.toMap(entry -> entry.newNodeId, entry -> entry.parentNodeId));
 

@@ -66,7 +66,7 @@ public class WaitForPathStore implements ICommand {
 
     PathStorePrivilegedCluster cluster =
         PathStorePrivilegedCluster.getChildInstance(this.cassandraCredentials);
-    Session session = cluster.connect();
+    Session session = cluster.rawConnect();
 
     Select tasks =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_STARTUP);

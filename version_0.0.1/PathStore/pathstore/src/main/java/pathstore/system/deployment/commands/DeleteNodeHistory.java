@@ -1,13 +1,13 @@
 package pathstore.system.deployment.commands;
 
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreSession;
 import pathstore.common.Constants;
 import pathstore.common.tables.NodeSchemaEntry;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.logging.LoggerLevel;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
@@ -51,7 +51,7 @@ public class DeleteNodeHistory implements ICommand {
    */
   @Override
   public void execute() {
-    Session session = PathStoreCluster.getDaemonInstance().connect();
+    PathStoreSession session = PathStorePrivilegedCluster.getDaemonInstance().psConnect();
 
     this.logger.info(
         String.format("Deleting Available log dates and logs for node %d", this.newNodeId));

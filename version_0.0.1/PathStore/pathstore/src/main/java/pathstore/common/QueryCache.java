@@ -347,7 +347,7 @@ public class QueryCache {
     // ensure that the passed entry exists within your cache
     this.updateCache(keyspace, table, clausesSerialized, limit);
 
-    Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
+    Session local = PathStorePrivilegedCluster.getDaemonInstance().rawConnect();
 
     try {
 
@@ -460,8 +460,8 @@ public class QueryCache {
    * @param deltaID delta id of the primary key in view_$table, if null regular fetch is performed
    */
   private void fetchData(final QueryCacheEntry entry, final UUID deltaID) {
-    Session parent = PathStorePrivilegedCluster.getParentInstance().connect();
-    Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
+    Session parent = PathStorePrivilegedCluster.getParentInstance().rawConnect();
+    Session local = PathStorePrivilegedCluster.getDaemonInstance().rawConnect();
 
     String table = deltaID != null ? Constants.VIEW_PREFIX + entry.table : entry.table;
 

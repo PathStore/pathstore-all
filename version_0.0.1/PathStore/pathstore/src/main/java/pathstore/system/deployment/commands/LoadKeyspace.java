@@ -43,7 +43,7 @@ public class LoadKeyspace implements ICommand {
     PathStorePrivilegedCluster childCluster =
         PathStorePrivilegedCluster.getChildInstance(this.cassandraCredentials);
 
-    this.loadKeyspaceFunction.accept(childCluster.connect());
+    this.loadKeyspaceFunction.accept(childCluster.rawConnect());
 
     childCluster.close();
   }

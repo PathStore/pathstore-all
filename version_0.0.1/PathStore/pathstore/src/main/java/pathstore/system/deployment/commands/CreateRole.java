@@ -39,7 +39,7 @@ public class CreateRole implements ICommand {
 
     // load new child role and delete old role.
     CassandraAuthenticationUtil.createRole(
-        childCluster.connect(),
+        childCluster.rawConnect(),
         this.credential.getUsername(),
         this.isSuperUser,
         true,

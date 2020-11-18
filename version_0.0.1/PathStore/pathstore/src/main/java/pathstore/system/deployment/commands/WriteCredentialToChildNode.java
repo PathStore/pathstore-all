@@ -41,7 +41,7 @@ public class WriteCredentialToChildNode<SearchableT, CredentialT extends Credent
     PathStorePrivilegedCluster childCluster =
         PathStorePrivilegedCluster.getChildInstance(this.cassandraCredentials);
 
-    this.dataLayer.write(childCluster.connect(), this.credential);
+    this.dataLayer.write(childCluster.rawConnect(), this.credential);
 
     childCluster.close();
   }

@@ -29,7 +29,7 @@ public class DropRole implements ICommand {
     PathStorePrivilegedCluster childCluster =
         PathStorePrivilegedCluster.getChildInstance(this.cassandraCredentials);
 
-    CassandraAuthenticationUtil.dropRole(childCluster.connect(), this.roleName);
+    CassandraAuthenticationUtil.dropRole(childCluster.rawConnect(), this.roleName);
 
     childCluster.close();
   }

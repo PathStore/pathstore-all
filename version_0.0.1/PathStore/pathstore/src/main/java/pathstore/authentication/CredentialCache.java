@@ -44,7 +44,7 @@ public final class CredentialCache<SearchableT, CredentialT extends Credential<S
       new CredentialCache<>(AuxiliaryDataLayer.getInstance());
 
   /** Session used to modify the local database. */
-  private final Session privSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+  private final Session privSession = PathStorePrivilegedCluster.getSuperUserInstance().rawConnect();
 
   /**
    * How to perform database operations on the given credential type

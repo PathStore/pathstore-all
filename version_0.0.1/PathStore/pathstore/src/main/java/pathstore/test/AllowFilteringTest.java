@@ -4,7 +4,6 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.system.PathStorePrivilegedCluster;
 
@@ -22,7 +21,7 @@ import pathstore.system.PathStorePrivilegedCluster;
 public class AllowFilteringTest {
   public static void main(String[] args) {
 
-    Session psSession = PathStoreCluster.getSuperUserInstance().connect();
+    Session psSession = PathStorePrivilegedCluster.getSuperUserInstance().psConnect();
 
     Select select =
         QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
@@ -42,7 +41,6 @@ public class AllowFilteringTest {
               row.getList(Constants.DEPLOYMENT_COLUMNS.WAIT_FOR, Integer.class)));
     }
 
-    PathStoreCluster.getSuperUserInstance().close();
     PathStorePrivilegedCluster.getSuperUserInstance().close();
     System.out.println("Test complete");
   }

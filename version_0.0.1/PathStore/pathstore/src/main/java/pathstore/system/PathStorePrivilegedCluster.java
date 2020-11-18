@@ -23,6 +23,7 @@ import com.datastax.driver.core.Session;
 import pathstore.authentication.CredentialCache;
 import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.authentication.credentials.NodeCredential;
+import pathstore.client.PathStoreSession;
 import pathstore.common.PathStoreProperties;
 import pathstore.system.deployment.commands.WriteCredentialToChildNode;
 import pathstore.util.ClusterCache;
@@ -138,6 +139,9 @@ public class PathStorePrivilegedCluster {
   /** Session */
   private final Session session;
 
+  /** PathStoreSession */
+  private final PathStoreSession psSession;
+
   /**
    * @param credential {@link #credential}
    * @param cluster {@link #cluster}
@@ -146,6 +150,7 @@ public class PathStorePrivilegedCluster {
     this.credential = credential;
     this.cluster = cluster;
     this.session = cluster.connect();
+    this.psSession = new PathStoreSession(this.session);
   }
 
   /**
@@ -158,8 +163,13 @@ public class PathStorePrivilegedCluster {
   }
 
   /** @return session object */
-  public Session connect() {
+  public Session rawConnect() {
     return this.session;
+  }
+
+  /** @return ps wrapped session */
+  public PathStoreSession psConnect() {
+    return this.psSession;
   }
 
   /** Close session and remove from cache */

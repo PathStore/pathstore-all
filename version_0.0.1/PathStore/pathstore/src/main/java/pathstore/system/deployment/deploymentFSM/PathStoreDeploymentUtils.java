@@ -3,10 +3,11 @@ package pathstore.system.deployment.deploymentFSM;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Update;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreSession;
 import pathstore.common.Constants;
 import pathstore.common.tables.DeploymentEntry;
 import pathstore.common.tables.DeploymentProcessStatus;
+import pathstore.system.PathStorePrivilegedCluster;
 
 import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
 
@@ -37,7 +38,7 @@ public class PathStoreDeploymentUtils {
    */
   public static void updateState(
       final DeploymentEntry entry, final DeploymentProcessStatus status) {
-    Session clientSession = PathStoreCluster.getDaemonInstance().connect();
+    PathStoreSession clientSession = PathStorePrivilegedCluster.getDaemonInstance().psConnect();
 
     Update update = QueryBuilder.update(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);
     update

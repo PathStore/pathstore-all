@@ -33,7 +33,7 @@
         <dependency>
             <groupId>smartpath</groupId>
             <artifactId>pathstore</artifactId>
-            <version>0.1.84</version>
+            <version>0.1.85</version>
         </dependency>
 
         <dependency>
