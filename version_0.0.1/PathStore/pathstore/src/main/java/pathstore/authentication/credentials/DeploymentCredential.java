@@ -1,9 +1,11 @@
 package pathstore.authentication.credentials;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 
 /** This class is used to denote some authentication information to connect to the child node */
+@EqualsAndHashCode(callSuper = true)
 public class DeploymentCredential extends NopCredential {
 
   /** Cassandra ip address */

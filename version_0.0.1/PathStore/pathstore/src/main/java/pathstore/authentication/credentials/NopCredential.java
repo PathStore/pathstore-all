@@ -1,11 +1,13 @@
 package pathstore.authentication.credentials;
 
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 
 /**
  * This credential class is solely used for comparisons between another credential that was pulled
  * from the cache.
  */
+@EqualsAndHashCode(callSuper = true)
 public class NopCredential extends Credential<Boolean> {
   /**
    * @param username username to compare
