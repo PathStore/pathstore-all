@@ -132,7 +132,7 @@ public class DevelopmentDeployment {
    * This function will prompt the user for the connection information to a server and ask for the
    * grpc port to start the root server with
    *
-   * @see #initList(SSHUtil, int, DeploymentCredentials, AuxiliaryCredential, String,
+   * @see #initList(SSHUtil, int, DeploymentCredential, AuxiliaryCredential, String,
    *     FinalizeRootInstallation)
    * @see FinalizeRootInstallation
    */

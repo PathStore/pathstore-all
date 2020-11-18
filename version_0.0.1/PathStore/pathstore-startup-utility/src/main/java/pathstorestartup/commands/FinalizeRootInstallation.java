@@ -3,7 +3,6 @@ package pathstorestartup.commands;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import pathstore.authentication.credentials.DeploymentCassandraCredentials;
 import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.common.Constants;
 import pathstore.common.tables.DeploymentProcessStatus;
