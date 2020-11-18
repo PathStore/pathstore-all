@@ -5,12 +5,15 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import org.springframework.http.ResponseEntity;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.availablelogdates.formatter.GetAvailableLogDatesFormatter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This service is used to read the available log dates table to inform the website of which logs
@@ -27,7 +30,7 @@ public class GetAvailableLogDates implements IService {
   /** @return parsed response from database. The select statement filters based on the payload */
   private Map<Integer, List<String>> getAvailableLogDates() {
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Select selectAll =
         QueryBuilder.select()

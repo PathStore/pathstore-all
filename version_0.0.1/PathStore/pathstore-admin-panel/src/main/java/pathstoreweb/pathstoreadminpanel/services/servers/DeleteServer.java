@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.servers.payload.DeleteServerPayload;
@@ -43,7 +43,7 @@ public class DeleteServer implements IService {
   /** Simply deletes the server record from the table based on what uuid was passed */
   private void deleteServer() {
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Delete delete = QueryBuilder.delete().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
     delete.where(

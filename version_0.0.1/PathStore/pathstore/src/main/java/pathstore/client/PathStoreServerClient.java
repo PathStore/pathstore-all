@@ -22,18 +22,28 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.stub.StreamObserver;
+import lombok.Getter;
+import lombok.NonNull;
+import pathstore.authentication.CredentialCache;
+import pathstore.authentication.credentials.Credential;
+import pathstore.authentication.grpc.AuthClientInterceptor;
+import pathstore.authentication.grpc.CustomClientInterceptor;
+import pathstore.authentication.grpc.PathStoreClientInterceptor;
+import pathstore.authentication.grpc.PathStoreServerInterceptor;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCacheEntry;
 import pathstore.common.Role;
-import pathstore.grpc.PathStoreServiceGrpc;
-import pathstore.grpc.pathStoreProto;
+import pathstore.grpc.*;
+import pathstore.grpc.pathStoreProto.*;
 import pathstore.sessions.SessionToken;
 import pathstore.system.network.NetworkImpl;
 import pathstore.system.network.NetworkUtil;
+import pathstore.util.Pair;
 import pathstore.util.SchemaInfo;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -43,31 +53,27 @@ import java.util.concurrent.TimeUnit;
  * node, two when a node communicates with its parent and three when a node needs to communicate
  * with another node in the network for Session Consistency.
  *
- * @see pathstore.system.PathStoreServerImplGRPC
  * @see NetworkImpl
  * @implNote This will be migrated to GRPC in the future.
  */
 public class PathStoreServerClient {
 
   /** Instance of class, only one per runtime */
-  private static PathStoreServerClient instance = null;
-
-  /** @return instance of server client. Either to local node or to parent */
-  public static synchronized PathStoreServerClient getInstance() {
-    if (PathStoreServerClient.instance == null)
-      PathStoreServerClient.instance = new PathStoreServerClient();
-    return PathStoreServerClient.instance;
-  }
+  @Getter(lazy = true)
+  private static final PathStoreServerClient instance = new PathStoreServerClient();
 
   /**
    * Custom Server client, this is used during session migration
    *
    * @param ip ip of server to connect to
    * @param port port of server to connect on
+   * @param credential credential to authenticate with
+   * @param <CredentialT> Credential token type
    * @return new instance if valid
    */
-  public static PathStoreServerClient getCustom(final String ip, final int port) {
-    return new PathStoreServerClient(ip, port);
+  public static <CredentialT extends Credential<?>> PathStoreServerClient getCustom(
+      final String ip, final int port, final CredentialT credential) {
+    return new PathStoreServerClient(ip, port, new CustomClientInterceptor<>(credential));
   }
 
   /**
@@ -80,13 +86,29 @@ public class PathStoreServerClient {
    */
   private final ManagedChannel channel;
 
-  /** Stub to local node / parent */
-  private final PathStoreServiceGrpc.PathStoreServiceBlockingStub blockingStub;
+  /** Stub for {@link pathstore.system.network.CommonServiceImpl} */
+  private final CommonServiceGrpc.CommonServiceBlockingStub commonServiceBlockingStub;
+
+  /** Stub for {@link pathstore.system.network.ClientOnlyServiceImpl} */
+  private final ClientOnlyServiceGrpc.ClientOnlyServiceBlockingStub clientOnlyServiceBlockingStub;
+
+  /** Stub for {@link pathstore.system.network.ServerOnlyServiceImpl} */
+  private final ServerOnlyServiceGrpc.ServerOnlyServiceBlockingStub serverOnlyServiceBlockingStub;
+
+  /** Stub for {@link pathstore.system.network.NetworkWideServiceImpl} */
+  private final NetworkWideServiceGrpc.NetworkWideServiceBlockingStub
+      networkWideServiceBlockingStub;
+
+  /** Stub for {@link pathstore.system.network.UnAuthenticatedServiceImpl} */
+  private final UnAuthenticatedServiceGrpc.UnAuthenticatedServiceBlockingStub
+      unAuthenticatedServiceBlockingStub;
 
   /**
    * Creates connection to local node or to parent depending on role. Errors will be throw if any
    * information required is missing or if the connection cannot be created as the information that
    * was provided is pointing to an invalid source
+   *
+   * <p>If the role is a server we will create
    */
   private PathStoreServerClient() {
     this(
@@ -95,7 +117,12 @@ public class PathStoreServerClient {
             : PathStoreProperties.getInstance().GRPCIP,
         PathStoreProperties.getInstance().role == Role.SERVER
             ? PathStoreProperties.getInstance().GRPCParentPort
-            : PathStoreProperties.getInstance().GRPCPort);
+            : PathStoreProperties.getInstance().GRPCPort,
+        PathStoreProperties.getInstance().role == Role.SERVER
+            ? PathStoreServerInterceptor.getInstance(
+                CredentialCache.getNodes()
+                    .getCredential(PathStoreProperties.getInstance().ParentID))
+            : PathStoreClientInterceptor.getInstance());
   }
 
   /**
@@ -108,19 +135,35 @@ public class PathStoreServerClient {
   }
 
   /**
-   * Constructor for {@link #getCustom(String, int)}
+   * Constructor for {@link #getCustom(String, int, Credential)}
+   *
+   * <p>If the role is a client then create an auth client interceptor instance without an account.
+   * As this will get called to attempt to authenticate before proper credentials exist.
    *
    * @param ip ip to connect to
    * @param port port to connect on
+   * @param authClientInterceptor how to intercept each request and apply the proper credential
+   *     information to it
    */
-  private PathStoreServerClient(final String ip, final int port) {
-    this(ManagedChannelBuilder.forAddress(ip, port).usePlaintext(true));
+  private PathStoreServerClient(
+      @NonNull final String ip,
+      @NonNull final Integer port,
+      @NonNull final AuthClientInterceptor authClientInterceptor) {
+    this(
+        ManagedChannelBuilder.forAddress(ip, port)
+            .intercept(authClientInterceptor)
+            .usePlaintext(true));
   }
 
   /** @param channelBuilder channel build based on ip and port */
   private PathStoreServerClient(final ManagedChannelBuilder<?> channelBuilder) {
     this.channel = channelBuilder.build();
-    this.blockingStub = PathStoreServiceGrpc.newBlockingStub(this.channel);
+    this.commonServiceBlockingStub = CommonServiceGrpc.newBlockingStub(this.channel);
+    this.clientOnlyServiceBlockingStub = ClientOnlyServiceGrpc.newBlockingStub(this.channel);
+    this.serverOnlyServiceBlockingStub = ServerOnlyServiceGrpc.newBlockingStub(this.channel);
+    this.networkWideServiceBlockingStub = NetworkWideServiceGrpc.newBlockingStub(this.channel);
+    this.unAuthenticatedServiceBlockingStub =
+        UnAuthenticatedServiceGrpc.newBlockingStub(this.channel);
   }
 
   /**
@@ -128,22 +171,19 @@ public class PathStoreServerClient {
    * byte[], int)} on the parent node or local node
    *
    * @param entry entry pass to parent or local node
-   * @see pathstore.system.PathStoreServerImplGRPC#updateCache(pathStoreProto.QueryEntry,
-   *     StreamObserver)
+   * @see NetworkImpl#updateCache(String, String, byte[], int)
    */
   public void updateCache(final QueryCacheEntry entry) {
     try {
-      pathStoreProto.QueryEntry queryEntry =
-          pathStoreProto
-              .QueryEntry
-              .newBuilder()
+      QueryEntry queryEntry =
+          QueryEntry.newBuilder()
               .setKeyspace(entry.keyspace)
               .setTable(entry.table)
               .setClauses(ByteString.copyFrom(entry.getClausesSerialized()))
               .setLimit(entry.limit)
               .build();
 
-      this.blockingStub.updateCache(queryEntry);
+      this.commonServiceBlockingStub.updateCache(queryEntry);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -163,10 +203,8 @@ public class PathStoreServerClient {
    */
   public UUID createQueryDelta(final QueryCacheEntry entry) {
     try {
-      pathStoreProto.QueryDeltaEntry queryDeltaEntry =
-          pathStoreProto
-              .QueryDeltaEntry
-              .newBuilder()
+      QueryDeltaEntry queryDeltaEntry =
+          QueryDeltaEntry.newBuilder()
               .setKeyspace(entry.keyspace)
               .setTable(entry.table)
               .setClauses(ByteString.copyFrom(entry.getClausesSerialized()))
@@ -175,7 +213,8 @@ public class PathStoreServerClient {
               .setLimit(entry.limit)
               .build();
 
-      String response = this.blockingStub.createQueryDelta(queryDeltaEntry).getUuid();
+      String response =
+          this.serverOnlyServiceBlockingStub.createQueryDelta(queryDeltaEntry).getUuid();
 
       return response != null && response.length() > 0 ? UUID.fromString(response) : null;
     } catch (IOException e) {
@@ -192,38 +231,33 @@ public class PathStoreServerClient {
    * @return response string
    * @see pathstore.system.network.NetworkImpl#registerApplicationClient(String, String)
    */
-  public Optional<String> registerApplicationClient(
+  public Pair<Optional<String>, Optional<SchemaInfo>> registerApplicationClient(
       final String applicationName, final String password) {
-    pathStoreProto.RegisterApplicationRequest registerApplicationRequest =
-        pathStoreProto
-            .RegisterApplicationRequest
-            .newBuilder()
+    RegisterApplicationRequest registerApplicationRequest =
+        RegisterApplicationRequest.newBuilder()
             .setApplicationName(applicationName)
             .setPassword(password)
             .build();
 
-    return Optional.ofNullable(
-        this.blockingStub.registerApplicationClient(registerApplicationRequest).getResponse());
-  }
+    System.out.println("Calling registerApplicationClient");
 
-  /**
-   * This function is used to get a partition of the schema info from the local node.
-   *
-   * <p>This is only used one in {@link PathStoreClientAuthenticatedCluster#getInstance()} on
-   * initial creation
-   *
-   * @param keyspace keyspace to partition by
-   * @return partitioned schema info
-   * @see SchemaInfo#getSchemaPartition(String)
-   * @see pathstore.system.network.NetworkImpl#getSchemaInfo(String)
-   */
-  public SchemaInfo getSchemaInfo(final String keyspace) {
-    pathStoreProto.SchemaInfoRequest schemaInfoRequest =
-        pathStoreProto.SchemaInfoRequest.newBuilder().setKeyspace(keyspace).build();
+    Iterator<RegisterApplicationResponse> iteratorResponse =
+        this.unAuthenticatedServiceBlockingStub.registerApplicationClient(
+            registerApplicationRequest);
 
-    return (SchemaInfo)
-        NetworkUtil.readObject(
-            this.blockingStub.getSchemaInfo(schemaInfoRequest).getResponse());
+    System.out.println("Done");
+
+    List<Object> results =
+        NetworkUtil.concatenate(
+            iteratorResponse,
+            RegisterApplicationResponse::getStatus,
+            (RegisterApplicationResponse response) -> response.getCredentials().toByteArray(),
+            (RegisterApplicationResponse response) -> response.getSchemaInfo().toByteArray());
+
+    if (results.size() != 2) return new Pair<>(Optional.empty(), Optional.empty());
+    else
+      return new Pair<>(
+          Optional.of((String) results.get(0)), Optional.ofNullable((SchemaInfo) results.get(1)));
   }
 
   /**
@@ -241,14 +275,12 @@ public class PathStoreServerClient {
    * @see pathstore.system.network.NetworkImpl#validateSession(SessionToken)
    */
   public boolean validateSession(final SessionToken sessionToken) {
-    pathStoreProto.ValidateSessionRequest validateSessionRequest =
-        pathStoreProto
-            .ValidateSessionRequest
-            .newBuilder()
+    ValidateSessionRequest validateSessionRequest =
+        ValidateSessionRequest.newBuilder()
             .setSessionToken(NetworkUtil.writeObject(sessionToken))
             .build();
 
-    return this.blockingStub.validateSession(validateSessionRequest).getResponse();
+    return this.clientOnlyServiceBlockingStub.validateSession(validateSessionRequest).getResponse();
   }
 
   /**
@@ -260,15 +292,13 @@ public class PathStoreServerClient {
    * @see pathstore.system.network.NetworkImpl#forcePush(SessionToken, int)
    */
   public void forcePush(final SessionToken sessionToken, final int lca) {
-    pathStoreProto.ForcePushRequest forcePushRequest =
-        pathStoreProto
-            .ForcePushRequest
-            .newBuilder()
+    ForcePushRequest forcePushRequest =
+        ForcePushRequest.newBuilder()
             .setSessionToken(NetworkUtil.writeObject(sessionToken))
             .setLca(lca)
             .build();
 
-    this.blockingStub.forcePush(forcePushRequest);
+    this.networkWideServiceBlockingStub.forcePush(forcePushRequest);
   }
 
   /**
@@ -290,15 +320,13 @@ public class PathStoreServerClient {
    *     see the complete document on github.
    */
   public void forceSynchronize(final SessionToken sessionToken, final int lca) {
-    pathStoreProto.ForceSynchronizationRequest forceSynchronizationRequest =
-        pathStoreProto
-            .ForceSynchronizationRequest
-            .newBuilder()
+    ForceSynchronizationRequest forceSynchronizationRequest =
+        ForceSynchronizationRequest.newBuilder()
             .setSessionToken(NetworkUtil.writeObject(sessionToken))
             .setLca(lca)
             .build();
 
-    this.blockingStub.forceSynchronize(forceSynchronizationRequest);
+    this.serverOnlyServiceBlockingStub.forceSynchronize(forceSynchronizationRequest);
   }
 
   /**
@@ -310,6 +338,6 @@ public class PathStoreServerClient {
    * @see NetworkImpl#getLocalNodeId()
    */
   public int getLocalNodeId() {
-    return this.blockingStub.getLocalNodeId(Empty.newBuilder().build()).getNode();
+    return this.clientOnlyServiceBlockingStub.getLocalNodeId(Empty.newBuilder().build()).getNode();
   }
 }

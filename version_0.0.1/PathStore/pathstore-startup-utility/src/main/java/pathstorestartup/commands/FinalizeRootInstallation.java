@@ -3,6 +3,7 @@ package pathstorestartup.commands;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.common.Constants;
 import pathstore.common.tables.DeploymentProcessStatus;
 import pathstore.common.tables.ServerAuthType;
@@ -20,6 +21,8 @@ import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.WAIT_FOR;
 import static pathstore.common.Constants.PATHSTORE_META_COLUMNS.*;
 import static pathstore.common.Constants.SERVERS_COLUMNS.*;
 import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
+import static pathstore.common.Constants.APPLICATION_CREDENTIALS_COLUMNS.*;
+import static pathstore.common.Constants.APPLICATION_CREDENTIALS_COLUMNS.PASSWORD;
 
 /**
  * This command will write the server record for the root node and the deployment record for the
@@ -27,17 +30,8 @@ import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
  */
 public class FinalizeRootInstallation implements ICommand {
 
-  /** Cassandra account username */
-  private final String cassandraUsername;
-
-  /** Cassandra account password */
-  private final String cassandraPassword;
-
-  /** Ip of root node */
-  private final String ip;
-
-  /** Cassandra port for root node */
-  private final int cassandraPort;
+  /** Cassandra credential to connect to server with */
+  private final DeploymentCredential cassandraCredential;
 
   /** Username to server */
   private final String username;
@@ -51,6 +45,9 @@ public class FinalizeRootInstallation implements ICommand {
   /** Password to server */
   private final String password;
 
+  /** Master password for the pathstore_applications row in the application credentials */
+  private final String masterPassword;
+
   /** Ssh port to server */
   private final int sshPort;
 
@@ -58,34 +55,28 @@ public class FinalizeRootInstallation implements ICommand {
   private final int grpcPort;
 
   /**
-   * @param cassandraUsername {@link #cassandraUsername}
-   * @param cassandraPassword {@link #cassandraPassword}
-   * @param ip {@link #ip}
-   * @param cassandraPort {@link #cassandraPort}
+   * @param cassandraCredentials {@link #cassandraCredential}
    * @param username {@link #username}
    * @param password {@link #password}
+   * @param masterPassword
    * @param sshPort {@link #sshPort}
    * @param grpcPort {@link #grpcPort}
    */
   public FinalizeRootInstallation(
-      final String cassandraUsername,
-      final String cassandraPassword,
-      final String ip,
-      final int cassandraPort,
+      final DeploymentCredential cassandraCredentials,
       final String username,
       final String authType,
       final ServerIdentity serverIdentity,
       final String password,
+      final String masterPassword,
       final int sshPort,
       final int grpcPort) {
-    this.cassandraUsername = cassandraUsername;
-    this.cassandraPassword = cassandraPassword;
-    this.ip = ip;
-    this.cassandraPort = cassandraPort;
+    this.cassandraCredential = cassandraCredentials;
     this.username = username;
     this.authType = authType;
     this.serverIdentity = serverIdentity;
     this.password = password;
+    this.masterPassword = masterPassword;
     this.sshPort = sshPort;
     this.grpcPort = grpcPort;
   }
@@ -98,19 +89,15 @@ public class FinalizeRootInstallation implements ICommand {
   public void execute() {
 
     PathStorePrivilegedCluster cluster =
-        PathStorePrivilegedCluster.getChildInstance(
-            this.cassandraUsername, this.cassandraPassword, this.ip, this.cassandraPort);
-    Session session = cluster.connect();
+        PathStorePrivilegedCluster.getChildInstance(this.cassandraCredential);
+    Session session = cluster.psConnect();
 
     UUID serverUUID = UUID.randomUUID();
 
     Insert insert =
         QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS)
-            .value(PATHSTORE_VERSION, QueryBuilder.now())
-            .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
-            .value(PATHSTORE_DIRTY, true)
             .value(SERVER_UUID, serverUUID.toString())
-            .value(IP, this.ip)
+            .value(IP, this.cassandraCredential.getIp())
             .value(USERNAME, this.username)
             .value(SSH_PORT, this.sshPort)
             .value(GRPC_PORT, this.grpcPort)
@@ -127,14 +114,19 @@ public class FinalizeRootInstallation implements ICommand {
 
     insert =
         QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT)
-            .value(PATHSTORE_VERSION, QueryBuilder.now())
-            .value(PATHSTORE_PARENT_TIMESTAMP, QueryBuilder.now())
-            .value(PATHSTORE_DIRTY, true)
             .value(NEW_NODE_ID, 1)
             .value(PARENT_NODE_ID, -1)
             .value(PROCESS_STATUS, DeploymentProcessStatus.DEPLOYED.toString())
             .value(WAIT_FOR, new LinkedList<>(Collections.singleton(-1)))
             .value(SERVER_UUID, serverUUID.toString());
+
+    session.execute(insert);
+
+    insert =
+        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.APPLICATION_CREDENTIALS)
+            .value(KEYSPACE_NAME, Constants.PATHSTORE_APPLICATIONS)
+            .value(PASSWORD, this.masterPassword)
+            .value(IS_SUPER_USER, true);
 
     session.execute(insert);
 
@@ -144,6 +136,6 @@ public class FinalizeRootInstallation implements ICommand {
   /** @return info message */
   @Override
   public String toString() {
-    return "Writing server and deployment record to roots table";
+    return "Writing server, deployment record, and the application credentials for the admin panel to roots table";
   }
 }

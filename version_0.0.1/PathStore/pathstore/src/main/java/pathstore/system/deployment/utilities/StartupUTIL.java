@@ -1,12 +1,14 @@
 package pathstore.system.deployment.utilities;
 
-import pathstore.authentication.AuthenticationUtil;
+import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.credentials.DeploymentCredential;
+import pathstore.authentication.credentials.NodeCredential;
 import pathstore.common.Constants;
 import pathstore.common.Role;
-import pathstore.system.deployment.commands.*;
 import pathstore.common.tables.DeploymentEntry;
 import pathstore.common.tables.ServerEntry;
+import pathstore.system.deployment.commands.*;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 
 import java.io.File;
@@ -63,11 +65,25 @@ public class StartupUTIL {
       final String cassandraParentIP,
       final int cassandraParentPort) {
 
-    String childSuperuserUsername = Constants.PATHSTORE_SUPERUSER_USERNAME;
-    String childSuperuserPassword = AuthenticationUtil.generateAlphaNumericPassword();
+    DeploymentCredential defaultLogin =
+        new DeploymentCredential(
+            Constants.DEFAULT_CASSANDRA_USERNAME,
+            Constants.DEFAULT_CASSANDRA_PASSWORD,
+            ip,
+            cassandraPort);
 
-    String childDaemonUsername = Constants.PATHSTORE_DAEMON_USERNAME;
-    String childDaemonPassword = AuthenticationUtil.generateAlphaNumericPassword();
+    DeploymentCredential childSuperUserCredential =
+        new DeploymentCredential(
+            Constants.PATHSTORE_SUPERUSER_USERNAME,
+            CassandraAuthenticationUtil.generateAlphaNumericPassword(),
+            ip,
+            cassandraPort);
+
+    NodeCredential childDaemonCredential =
+        new NodeCredential(
+            nodeID,
+            Constants.PATHSTORE_DAEMON_USERNAME,
+            CassandraAuthenticationUtil.generateAlphaNumericPassword());
 
     return new DeploymentBuilder<>(sshUtil)
         .init()
@@ -93,64 +109,42 @@ public class StartupUTIL {
             cassandraParentPort,
             DeploymentConstants.GENERATE_PROPERTIES.LOCAL_TEMP_PROPERTIES_FILE,
             DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
-            childSuperuserUsername,
-            childSuperuserPassword)
+            childSuperUserCredential.getUsername(),
+            childSuperUserCredential.getPassword())
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
-        .createRole(
-            Constants.DEFAULT_CASSANDRA_USERNAME,
-            Constants.DEFAULT_CASSANDRA_PASSWORD,
-            ip,
-            cassandraPort,
-            childSuperuserUsername,
-            childSuperuserPassword,
-            true)
-        .dropRole(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
-            Constants.DEFAULT_CASSANDRA_USERNAME)
+            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(defaultLogin))
+        .createRole(defaultLogin, childSuperUserCredential, true)
+        .dropRole(childSuperUserCredential, Constants.DEFAULT_CASSANDRA_USERNAME)
         .loadKeyspace(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
+            childSuperUserCredential,
             PathStoreSchemaLoaderUtils::loadApplicationSchema,
             Constants.PATHSTORE_APPLICATIONS)
-        .createRole(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
-            childDaemonUsername,
-            childDaemonPassword,
-            false)
+        .createRole(childSuperUserCredential, childDaemonCredential, false)
         .grantReadAndWriteAccess(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
-            childDaemonUsername,
+            childSuperUserCredential,
+            childDaemonCredential.getUsername(),
             Constants.PATHSTORE_APPLICATIONS)
         .createRole(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
-            CredentialCache.getInstance().getCredential(-1).username,
-            CredentialCache.getInstance().getCredential(-1).password,
+            childSuperUserCredential,
+            CredentialCache.getAuxiliary()
+                .getCredential(Constants.AUXILIARY_ACCOUNTS.NETWORK_ADMINISTRATOR),
             true)
-        .writeChildAccountToCassandra(nodeID, childDaemonUsername, childDaemonPassword)
-        .writeCredentialsToChildNode( // Writes parent credentials to child node
-            parentNodeId, childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
-        .writeCredentialsToChildNode( // Writes daemon account to child node
-            nodeID, childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
-        .writeCredentialsToChildNode( // Writes network admin account
-            -1, childSuperuserUsername, childSuperuserPassword, ip, cassandraPort)
+        .writeChildAccountToCassandra(childDaemonCredential)
+        .writeNodeCredentialToChildNode( // Writes parent credentials to child node
+            CredentialCache.getNodes().getCredential(parentNodeId), childSuperUserCredential)
+        .writeNodeCredentialToChildNode( // Writes daemon account to child node
+            childDaemonCredential, childSuperUserCredential)
+        .writeAuxiliaryCredentialToChildNode( // Writes network admin account
+            CredentialCache.getAuxiliary()
+                .getCredential(Constants.AUXILIARY_ACCOUNTS.NETWORK_ADMINISTRATOR),
+            childSuperUserCredential)
+        .writeAuxiliaryCredentialToChildNode( // Writes network wide grpc credential
+            CredentialCache.getAuxiliary()
+                .getCredential(Constants.AUXILIARY_ACCOUNTS.NETWORK_WIDE_GRPC_CREDENTIAL),
+            childSuperUserCredential)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
-            new WaitForPathStore(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort))
+            new WaitForPathStore(childSuperUserCredential))
         .build();
   }
 

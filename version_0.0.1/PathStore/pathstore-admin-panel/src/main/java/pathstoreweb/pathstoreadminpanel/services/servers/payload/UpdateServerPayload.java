@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.jcraft.jsch.JSchException;
 import org.springframework.web.multipart.MultipartFile;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstore.common.tables.ServerAuthType;
 import pathstore.system.deployment.utilities.SSHUtil;
@@ -112,7 +112,7 @@ public final class UpdateServerPayload extends ValidatedPayload {
 
     String[] errors = {SERVER_UUID_DOESNT_EXIST, null, null, null, null, null};
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     // (2) & (3) & (4)
     Select serverSelect =

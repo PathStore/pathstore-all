@@ -4,6 +4,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.common.Constants;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
@@ -31,17 +32,8 @@ public class WaitForPathStore implements ICommand {
    */
   private static final int maxWaitTime = 60 * 5;
 
-  /** Child username */
-  private final String username;
-
-  /** Child password */
-  private final String password;
-
-  /** Child ip */
-  private final String ip;
-
-  /** Child cassandra port */
-  private final int port;
+  /** Cassandra credentials to connect with */
+  private final DeploymentCredential cassandraCredentials;
 
   /** Denotes the current amount of time waited in seconds */
   private int currentWaitCount;
@@ -52,17 +44,10 @@ public class WaitForPathStore implements ICommand {
   /**
    * Creates cluster
    *
-   * @param username child username
-   * @param password child password
-   * @param ip ip of new root
-   * @param port cassandra port
+   * @param cassandraCredentials {@link #cassandraCredentials}
    */
-  public WaitForPathStore(
-      final String username, final String password, final String ip, final int port) {
-    this.username = username;
-    this.password = password;
-    this.ip = ip;
-    this.port = port;
+  public WaitForPathStore(final DeploymentCredential cassandraCredentials) {
+    this.cassandraCredentials = cassandraCredentials;
     this.currentWaitCount = 0;
     this.neededRecords = new HashMap<>();
     this.neededRecords.put(0, "GRPC Server started");
@@ -80,11 +65,11 @@ public class WaitForPathStore implements ICommand {
   public void execute() throws CommandError {
 
     PathStorePrivilegedCluster cluster =
-        PathStorePrivilegedCluster.getChildInstance(
-            this.username, this.password, this.ip, this.port);
-    Session session = cluster.connect();
+        PathStorePrivilegedCluster.getChildInstance(this.cassandraCredentials);
+    Session session = cluster.rawConnect();
 
-    Select tasks = QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_STARTUP);
+    Select tasks =
+        QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_STARTUP);
 
     for (Row row : session.execute(tasks)) {
       int task = row.getInt(Constants.LOCAL_STARTUP_COLUMNS.TASK_DONE);

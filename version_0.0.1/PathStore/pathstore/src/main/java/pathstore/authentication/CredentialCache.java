@@ -1,14 +1,20 @@
 package pathstore.authentication;
 
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import pathstore.common.Constants;
+import lombok.Getter;
+import lombok.NonNull;
+import pathstore.authentication.credentials.AuxiliaryCredential;
+import pathstore.authentication.credentials.ClientCredential;
+import pathstore.authentication.credentials.Credential;
+import pathstore.authentication.credentials.NodeCredential;
+import pathstore.authentication.datalayerimpls.AuxiliaryDataLayer;
+import pathstore.authentication.datalayerimpls.NodeDataLayer;
+import pathstore.authentication.datalayerimpls.ClientDataLayer;
 import pathstore.system.PathStorePrivilegedCluster;
+import pathstore.system.deployment.commands.WriteCredentialToChildNode;
 
+import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 /**
  * This class is used to cache all credentials in the pathstore_appliactions.local_auth table into
@@ -20,82 +26,80 @@ import java.util.stream.StreamSupport;
  * @see pathstore.client.PathStoreCluster
  * @see PathStorePrivilegedCluster
  */
-public final class CredentialCache {
+public final class CredentialCache<SearchableT, CredentialT extends Credential<SearchableT>> {
 
-  /** Instance of the cache */
-  private static CredentialCache instance = null;
+  /** Instance of the node cache */
+  @Getter(lazy = true)
+  private static final CredentialCache<Integer, NodeCredential> nodes =
+      new CredentialCache<>(NodeDataLayer.getInstance());
 
-  /** @return returns an instance of the cache. Creates one if not already created */
-  public static synchronized CredentialCache getInstance() {
-    if (instance == null) instance = new CredentialCache();
-    return instance;
-  }
+  /** Instance of the client auth cache */
+  @Getter(lazy = true)
+  private static final CredentialCache<String, ClientCredential> clients =
+      new CredentialCache<>(ClientDataLayer.getInstance());
 
-  /** Internal cache of credentials based on node id */
-  private final ConcurrentMap<Integer, Credential> credentials;
+  /** Instance of the auxiliary auth cache */
+  @Getter(lazy = true)
+  private static final CredentialCache<String, AuxiliaryCredential> auxiliary =
+      new CredentialCache<>(AuxiliaryDataLayer.getInstance());
 
   /** Session used to modify the local database. */
-  private final Session privSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
-
-  /** Load all credentials on object creation */
-  private CredentialCache() {
-    this.credentials = this.load();
-  }
+  private final Session privSession = PathStorePrivilegedCluster.getSuperUserInstance().rawConnect();
 
   /**
-   * Read all records from auth table, transform them to credential objects and build a concurrent
-   * map from it
+   * How to perform database operations on the given credential type
    *
-   * @return return concurrent built map of existing credentials in the database
+   * @apiNote This is public because {@link WriteCredentialToChildNode}
    */
-  private ConcurrentMap<Integer, Credential> load() {
-    return StreamSupport.stream(
-            this.privSession
-                .execute(
-                    QueryBuilder.select()
-                        .all()
-                        .from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_AUTH))
-                .spliterator(),
-            true)
-        .map(Credential::buildFromRow)
-        .collect(Collectors.toConcurrentMap(credential -> credential.node_id, Function.identity()));
-  }
+  private final CredentialDataLayer<SearchableT, CredentialT> credentialDataLayer;
+
+  /** Internal cache of credentials based on node id */
+  private final ConcurrentMap<SearchableT, CredentialT> credentials;
 
   /**
-   * @param nodeId node id of credential
-   * @param username username of account
-   * @param password password of account
+   * Loads all existing credentials from the local table into memory
+   *
+   * @param credentialDataLayer how to readAndWrite
    */
-  public void add(final int nodeId, final String username, final String password) {
+  private CredentialCache(final CredentialDataLayer<SearchableT, CredentialT> credentialDataLayer) {
+    this.credentialDataLayer = credentialDataLayer;
+    this.credentials = this.credentialDataLayer.load(this.privSession);
+  }
+
+  /** @return get a reference to all credentials */
+  public Collection<CredentialT> getAllReference() {
+    return this.credentials.values();
+  }
+
+  /** @param credential credential to add to the cache */
+  public void add(@NonNull final CredentialT credential) {
     this.credentials.put(
-        nodeId,
-        Credential.writeCredentialToRow(
-            this.privSession, new Credential(nodeId, username, password)));
+        credential.getSearchable(), this.credentialDataLayer.write(this.privSession, credential));
   }
 
   /**
    * This will remove a specific node id from the internal map and from the table
    *
-   * @param nodeId node id to remove
+   * @param primaryKey node id to remove
+   * @return true if deletion occurred
    */
-  public void remove(final int nodeId) {
-    Credential credential = this.getCredential(nodeId);
+  public boolean remove(final SearchableT primaryKey) {
+    CredentialT credential = this.getCredential(primaryKey);
 
-    if (credential == null) return;
+    if (credential == null) return false;
 
-    this.credentials.remove(nodeId);
+    this.credentials.remove(primaryKey);
 
-    this.privSession.execute(
-        QueryBuilder.delete()
-            .from(Constants.PATHSTORE_APPLICATIONS, Constants.LOCAL_AUTH)
-            .where(QueryBuilder.eq(Constants.LOCAL_AUTH_COLUMNS.NODE_ID, nodeId)));
+    this.credentialDataLayer.delete(this.privSession, credential);
+
+    return true;
   }
 
   /**
-   * @param node_id node id to get credential from
+   * @param primaryKey node id to get credential from
    * @return credential object, may be null
    */
-  public Credential getCredential(final int node_id) {
-    return this.credentials.get(node_id);
+  public CredentialT getCredential(final SearchableT primaryKey) {
+    return this.credentials.get(primaryKey);
   }
 }

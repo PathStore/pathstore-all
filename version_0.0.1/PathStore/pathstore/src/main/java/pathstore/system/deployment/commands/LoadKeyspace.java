@@ -1,26 +1,15 @@
 package pathstore.system.deployment.commands;
 
 import com.datastax.driver.core.Session;
+import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.system.PathStorePrivilegedCluster;
 
 import java.util.function.Consumer;
 
 /** This command is used to load a keyspace onto the child node */
 public class LoadKeyspace implements ICommand {
-  /**
-   * User to connect to cassandra with. This account needs access to create keyspaces, tables,
-   * UDT's, and secondary indexes
-   */
-  private final String connectionUsername;
-
-  /** Password to connect to cassandra with */
-  private final String connectionPassword;
-
-  /** Ip of cassandra instance */
-  private final String ip;
-
-  /** Cassandra native transport port */
-  private final int port;
+  /** Cassandra credentials to connect with */
+  private final DeploymentCredential cassandraCredentials;
 
   /**
    * Function that will take a session object as a param and load a keyspace to it
@@ -35,24 +24,15 @@ public class LoadKeyspace implements ICommand {
   private final String keyspaceName;
 
   /**
-   * @param connectionUsername {@link #connectionUsername}
-   * @param connectionPassword {@link #connectionPassword}
-   * @param ip {@link #ip}
-   * @param port {@link #port}
+   * @param cassandraCredentials {@link #cassandraCredentials}
    * @param loadKeyspaceFunction {@link #loadKeyspaceFunction}
    * @param keyspaceName {@link #keyspaceName}
    */
   public LoadKeyspace(
-      final String connectionUsername,
-      final String connectionPassword,
-      final String ip,
-      final int port,
+      final DeploymentCredential cassandraCredentials,
       final Consumer<Session> loadKeyspaceFunction,
       final String keyspaceName) {
-    this.connectionUsername = connectionUsername;
-    this.connectionPassword = connectionPassword;
-    this.ip = ip;
-    this.port = port;
+    this.cassandraCredentials = cassandraCredentials;
     this.loadKeyspaceFunction = loadKeyspaceFunction;
     this.keyspaceName = keyspaceName;
   }
@@ -61,10 +41,9 @@ public class LoadKeyspace implements ICommand {
   @Override
   public void execute() {
     PathStorePrivilegedCluster childCluster =
-        PathStorePrivilegedCluster.getChildInstance(
-            this.connectionUsername, this.connectionPassword, this.ip, this.port);
+        PathStorePrivilegedCluster.getChildInstance(this.cassandraCredentials);
 
-    this.loadKeyspaceFunction.accept(childCluster.connect());
+    this.loadKeyspaceFunction.accept(childCluster.rawConnect());
 
     childCluster.close();
   }

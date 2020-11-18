@@ -4,13 +4,13 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstore.common.tables.DeploymentProcessStatus;
 import pathstoreweb.pathstoreadminpanel.services.deployment.DeploymentRecord;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
-import static pathstoreweb.pathstoreadminpanel.validator.ErrorConstants.UPDATE_DEPLOYMENT_RECORD_PAYLOAD.*;
+import static pathstoreweb.pathstoreadminpanel.validator.ErrorConstants.UPDATE_DEPLOYMENT_RECORD_PAYLOAD.INVALID_FAILED_ENTRY;
 
 /** This payload is used to pass a record that has valid and update it to deploying */
 public final class UpdateDeploymentRecordPayload extends ValidatedPayload {
@@ -33,7 +33,7 @@ public final class UpdateDeploymentRecordPayload extends ValidatedPayload {
 
     String[] errors = {INVALID_FAILED_ENTRY};
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     // (1)
     Select select =

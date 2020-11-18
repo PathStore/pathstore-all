@@ -1,17 +1,22 @@
 package pathstorestartup;
 
 import com.jcraft.jsch.JSchException;
-import pathstore.authentication.AuthenticationUtil;
+import pathstore.authentication.CassandraAuthenticationUtil;
+import pathstore.authentication.credentials.AuxiliaryCredential;
+import pathstore.authentication.credentials.DeploymentCredential;
+import pathstore.authentication.credentials.NodeCredential;
 import pathstore.common.Constants;
 import pathstore.common.Role;
 import pathstore.common.tables.ServerIdentity;
-import pathstore.system.deployment.commands.*;
+import pathstore.system.deployment.commands.ICommand;
+import pathstore.system.deployment.commands.WaitForCassandra;
+import pathstore.system.deployment.commands.WaitForPathStore;
 import pathstore.system.deployment.utilities.DeploymentConstants;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstorestartup.commands.FinalizeRootInstallation;
-import pathstorestartup.constants.BootstrapDeploymentConstants;
 import pathstorestartup.constants.BootstrapDeploymentBuilder;
+import pathstorestartup.constants.BootstrapDeploymentConstants;
 
 import java.io.File;
 import java.io.IOException;
@@ -127,7 +132,8 @@ public class DevelopmentDeployment {
    * This function will prompt the user for the connection information to a server and ask for the
    * grpc port to start the root server with
    *
-   * @see #initList(SSHUtil, String, int, String, String, String, String, FinalizeRootInstallation)
+   * @see #initList(SSHUtil, int, DeploymentCredential, AuxiliaryCredential, String,
+   *     FinalizeRootInstallation)
    * @see FinalizeRootInstallation
    */
   private void deploy() {
@@ -176,6 +182,12 @@ public class DevelopmentDeployment {
         Utils.askQuestionWithInvalidResponse(
             this.scanner, BootstrapDeploymentConstants.NETWORK_ADMIN_PASSWORD_PROMPT, null);
 
+    AuxiliaryCredential networkAdministratorAccount =
+        new AuxiliaryCredential(
+            Constants.AUXILIARY_ACCOUNTS.NETWORK_ADMINISTRATOR,
+            networkAdminUsername,
+            networkAdminPassword);
+
     try {
       SSHUtil sshUtil;
 
@@ -196,36 +208,40 @@ public class DevelopmentDeployment {
 
       System.out.println("Connected");
 
-      String childSuperuserUsername = Constants.PATHSTORE_SUPERUSER_USERNAME;
-      String childSuperuserPassword = AuthenticationUtil.generateAlphaNumericPassword();
+      DeploymentCredential childSuperUserCredential =
+          new DeploymentCredential(
+              Constants.PATHSTORE_SUPERUSER_USERNAME,
+              CassandraAuthenticationUtil.generateAlphaNumericPassword(),
+              ip,
+              cassandraPort);
+
+      String masterPassword = CassandraAuthenticationUtil.generateAlphaNumericPassword();
 
       try {
         // Execute all commands in the given list
         for (ICommand command :
             this.initList(
                 sshUtil,
-                ip,
                 grpcPort,
-                childSuperuserUsername,
-                childSuperuserPassword,
-                networkAdminUsername,
-                networkAdminPassword,
+                childSuperUserCredential,
+                networkAdministratorAccount,
+                masterPassword,
                 new FinalizeRootInstallation(
-                    childSuperuserUsername,
-                    childSuperuserPassword,
-                    ip,
-                    cassandraPort,
+                    childSuperUserCredential,
                     username,
                     authType,
                     authType.equals(BootstrapDeploymentConstants.AUTH_TYPES.PASSWORD)
                         ? null
                         : new ServerIdentity(privKey, passphrase),
                     password,
+                    masterPassword,
                     sshPort,
                     grpcPort))) {
           System.out.println(command);
           command.execute();
         }
+
+        System.exit(1);
       } catch (Exception e) {
         e.printStackTrace();
         System.exit(-1);
@@ -242,28 +258,39 @@ public class DevelopmentDeployment {
 
   /**
    * @param sshUtil used for commands that need to use ssh
-   * @param ip ip of new node
    * @param grpcPort new node's local grpc registry port
-   * @param childSuperuserUsername new super user username {@link
-   *     Constants#PATHSTORE_SUPERUSER_USERNAME}
-   * @param childSuperuserPassword new super user password
-   * @param networkAdminUsername network admin username
-   * @param networkAdminPassword network admin password
+   * @param childSuperUserCredentials super user credentials for the root node
+   * @param networkAdministratorCredential network administrator account
+   * @param masterPassword master password for the pathstore_applications table
    * @param finalizeRootInstallation finalization object to occur at the end of deployment
    * @return list of deployment commands to execute
    */
   private List<ICommand> initList(
       final SSHUtil sshUtil,
-      final String ip,
       final int grpcPort,
-      final String childSuperuserUsername,
-      final String childSuperuserPassword,
-      final String networkAdminUsername,
-      final String networkAdminPassword,
+      final DeploymentCredential childSuperUserCredentials,
+      final AuxiliaryCredential networkAdministratorCredential,
+      final String masterPassword,
       final FinalizeRootInstallation finalizeRootInstallation) {
 
-    String childDaemonUsername = Constants.PATHSTORE_DAEMON_USERNAME;
-    String childDaemonPassword = AuthenticationUtil.generateAlphaNumericPassword();
+    DeploymentCredential defaultLogin =
+        new DeploymentCredential(
+            Constants.DEFAULT_CASSANDRA_USERNAME,
+            Constants.DEFAULT_CASSANDRA_PASSWORD,
+            childSuperUserCredentials.getIp(),
+            cassandraPort);
+
+    NodeCredential childDaemonCredential =
+        new NodeCredential(
+            1,
+            Constants.PATHSTORE_DAEMON_USERNAME,
+            CassandraAuthenticationUtil.generateAlphaNumericPassword());
+
+    AuxiliaryCredential networkWideGrpcCredential =
+        new AuxiliaryCredential(
+            Constants.AUXILIARY_ACCOUNTS.NETWORK_WIDE_GRPC_CREDENTIAL,
+            CassandraAuthenticationUtil.generateAlphaNumericPassword(),
+            CassandraAuthenticationUtil.generateAlphaNumericPassword());
 
     return new BootstrapDeploymentBuilder(sshUtil)
         .initBootstrap()
@@ -280,7 +307,7 @@ public class DevelopmentDeployment {
                 .REMOTE_PATHSTORE_ADMIN_PANEL_TAR)
         .generatePropertiesFiles(
             1,
-            ip,
+            childSuperUserCredentials.getIp(),
             -1,
             Role.ROOTSERVER,
             "127.0.0.1",
@@ -293,78 +320,35 @@ public class DevelopmentDeployment {
             cassandraPort,
             BootstrapDeploymentConstants.LOCAL_TEMP_PROPERTIES_FILE,
             DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
-            childSuperuserUsername,
-            childSuperuserPassword)
-        .generateWebsiteProperties(
-            "127.0.0.1", cassandraPort, grpcPort, childSuperuserUsername, childSuperuserPassword)
+            childSuperUserCredentials.getUsername(),
+            childSuperUserCredentials.getPassword())
+        .generateWebsiteProperties("127.0.0.1", cassandraPort, grpcPort, masterPassword)
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(ip, cassandraPort))
-        .createRole(
-            Constants.DEFAULT_CASSANDRA_USERNAME,
-            Constants.DEFAULT_CASSANDRA_PASSWORD,
-            ip,
-            cassandraPort,
-            childSuperuserUsername,
-            childSuperuserPassword,
-            true)
-        .dropRole(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
-            Constants.DEFAULT_CASSANDRA_USERNAME)
+            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(defaultLogin))
+        .createRole(defaultLogin, childSuperUserCredentials, true)
+        .dropRole(childSuperUserCredentials, Constants.DEFAULT_CASSANDRA_USERNAME)
         .loadKeyspace(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
+            childSuperUserCredentials,
             PathStoreSchemaLoaderUtils::loadApplicationSchema,
             Constants.PATHSTORE_APPLICATIONS)
-        .createRole(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
-            childDaemonUsername,
-            childDaemonPassword,
-            false)
+        .createRole(childSuperUserCredentials, childDaemonCredential, false)
         .grantReadAndWriteAccess(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
-            childDaemonUsername,
+            childSuperUserCredentials,
+            childDaemonCredential.getUsername(),
             Constants.PATHSTORE_APPLICATIONS)
-        .createRole(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
-            networkAdminUsername,
-            networkAdminPassword,
-            true)
-        .writeCredentialsToRootNodeBootstrap(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
-            1,
-            childDaemonUsername,
-            childDaemonPassword)
-        .writeCredentialsToRootNodeBootstrap(
-            childSuperuserUsername,
-            childSuperuserPassword,
-            ip,
-            cassandraPort,
-            -1,
-            networkAdminUsername,
-            networkAdminPassword)
+        .createRole(childSuperUserCredentials, networkAdministratorCredential, true)
+        .writeNodeCredentialToChildNode(
+            childDaemonCredential, childSuperUserCredentials) // write root node daemon account
+        .writeAuxiliaryCredentialToChildNode( // write network administrator account to root
+            networkAdministratorCredential, childSuperUserCredentials)
+        .writeAuxiliaryCredentialToChildNode( // write network wide grpc account to root
+            networkWideGrpcCredential, childSuperUserCredentials)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
-            new WaitForPathStore(childSuperuserUsername, childSuperuserPassword, ip, cassandraPort))
+            new WaitForPathStore(childSuperUserCredentials))
+        .custom(finalizeRootInstallation)
         .startImageAndWait(
             BootstrapDeploymentConstants.RUN_COMMANDS.PATHSTORE_ADMIN_PANEL_RUN, null)
-        .custom(finalizeRootInstallation)
         .build();
   }
 

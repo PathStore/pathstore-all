@@ -4,19 +4,21 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.springframework.http.ResponseEntity;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
-import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstore.util.SchemaInfo;
+import pathstoreweb.pathstoreadminpanel.services.IService;
 import pathstoreweb.pathstoreadminpanel.services.RuntimeErrorFormatter;
 import pathstoreweb.pathstoreadminpanel.services.applications.formatter.AddApplicationFormatter;
-import pathstoreweb.pathstoreadminpanel.services.IService;
+import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.Map;
-import pathstoreweb.pathstoreadminpanel.services.applications.payload.AddApplicationPayload;
 
 /**
  * Creates an available application for the user to deploy on the network.
@@ -37,7 +39,7 @@ public class AddApplication implements IService {
   /** @param payload {@link #addApplicationPayload} */
   public AddApplication(final AddApplicationPayload payload) {
     this.addApplicationPayload = payload;
-    this.session = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+    this.session = PathStoreClientAuthenticatedCluster.getInstance().connectRaw();
     this.schemaInfo = SchemaInfo.getInstance();
   }
 
@@ -87,7 +89,7 @@ public class AddApplication implements IService {
 
   /** This function is used to write the master password to the application credentials table */
   private void writeMasterPassword() {
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Insert insert =
         QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.APPLICATION_CREDENTIALS)
@@ -96,7 +98,8 @@ public class AddApplication implements IService {
                 this.addApplicationPayload.applicationName)
             .value(
                 Constants.APPLICATION_CREDENTIALS_COLUMNS.PASSWORD,
-                this.addApplicationPayload.masterPassword);
+                this.addApplicationPayload.masterPassword)
+            .value(Constants.APPLICATION_CREDENTIALS_COLUMNS.IS_SUPER_USER, false);
 
     session.execute(insert);
   }
@@ -136,7 +139,9 @@ public class AddApplication implements IService {
 
     insertApplicationSchema(
         this.addApplicationPayload.applicationName,
-        PathStorePrivilegedCluster.getSuperUserInstance()
+        PathStoreClientAuthenticatedCluster.getInstance()
+            .connectRaw()
+            .getCluster()
             .getMetadata()
             .getKeyspace(this.addApplicationPayload.applicationName)
             .exportAsString());

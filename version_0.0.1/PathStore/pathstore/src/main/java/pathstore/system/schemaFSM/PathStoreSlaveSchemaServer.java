@@ -6,9 +6,9 @@ import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
-import pathstore.authentication.AuthenticationUtil;
-import pathstore.authentication.ClientAuthenticationUtil;
-import pathstore.client.PathStoreCluster;
+import pathstore.authentication.CassandraAuthenticationUtil;
+import pathstore.authentication.CredentialCache;
+import pathstore.client.PathStoreSession;
 import pathstore.common.*;
 import pathstore.common.tables.NodeSchemaEntry;
 import pathstore.common.tables.NodeSchemaProcessStatus;
@@ -35,7 +35,8 @@ public class PathStoreSlaveSchemaServer implements Runnable {
       PathStoreLoggerFactory.getLogger(PathStoreSlaveSchemaServer.class);
 
   /** Session used to interact with pathstore */
-  private final Session session = PathStoreCluster.getDaemonInstance().connect();
+  private final PathStoreSession session =
+      PathStorePrivilegedCluster.getDaemonInstance().psConnect();
 
   /** Node id so you don't need to query the properties file every run */
   private final int nodeId = PathStoreProperties.getInstance().NodeID;
@@ -178,7 +179,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
    */
   private void installApplication(final String keyspace, final String augmentedSchema) {
 
-    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().rawConnect();
 
     PathStoreSchemaLoaderUtils.parseSchema(augmentedSchema).forEach(superUserSession::execute);
 
@@ -189,7 +190,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
     SchemaInfo.getInstance().loadKeyspace(keyspace);
 
     // grant permissions to daemon account on the write
-    AuthenticationUtil.grantAccessToKeyspace(
+    CassandraAuthenticationUtil.grantAccessToKeyspace(
         superUserSession, keyspace, Constants.PATHSTORE_DAEMON_USERNAME);
 
     this.logger.info(
@@ -216,7 +217,7 @@ public class PathStoreSlaveSchemaServer implements Runnable {
    */
   private void removeApplication(final String keyspace) {
 
-    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+    Session superUserSession = PathStorePrivilegedCluster.getSuperUserInstance().rawConnect();
 
     if (PathStoreProperties.getInstance().role == Role.SERVER) this.forcePush(keyspace);
 
@@ -228,14 +229,14 @@ public class PathStoreSlaveSchemaServer implements Runnable {
 
     this.logger.info(String.format("Removed cache entries for keyspace %s", keyspace));
 
-    if (ClientAuthenticationUtil.deleteClientAccount(keyspace))
+    if (CredentialCache.getClients().remove(keyspace))
       this.logger.info(String.format("Removed temporary client account for keyspace %s", keyspace));
 
     // called after schema info is removed so that the push server won't call on this keyspace and
     // throw an error
     // TODO: (Myles) do we need to wait for the push server to finish its current trip before
     // revoking permissions on that table
-    AuthenticationUtil.revokeAccessToKeyspace(
+    CassandraAuthenticationUtil.revokeAccessToKeyspace(
         superUserSession, keyspace, Constants.PATHSTORE_DAEMON_USERNAME);
 
     this.logger.info(
@@ -268,8 +269,8 @@ public class PathStoreSlaveSchemaServer implements Runnable {
         SchemaInfo.getInstance().getTablesFromKeyspace(keyspace).stream()
             .filter(PathStorePushServer.filterOutViewAndLocal)
             .collect(Collectors.toList()),
-        PathStorePrivilegedCluster.getDaemonInstance().connect(),
-        PathStorePrivilegedCluster.getParentInstance().connect(),
+        PathStorePrivilegedCluster.getDaemonInstance().rawConnect(),
+        PathStorePrivilegedCluster.getParentInstance().rawConnect(),
         SchemaInfo.getInstance(),
         PathStoreProperties.getInstance().NodeID);
   }

@@ -1,14 +1,14 @@
 package pathstore.system.schemaFSM;
 
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreSession;
 import pathstore.common.Constants;
 import pathstore.common.tables.NodeSchemaEntry;
 import pathstore.common.tables.NodeSchemaProcessStatus;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
@@ -32,7 +32,8 @@ public class PathStoreMasterSchemaServer implements Runnable {
       PathStoreLoggerFactory.getLogger(PathStoreMasterSchemaServer.class);
 
   /** Session used to interact with pathstore */
-  private final Session session = PathStoreCluster.getDaemonInstance().connect();
+  private final PathStoreSession session =
+      PathStorePrivilegedCluster.getDaemonInstance().psConnect();
 
   /**
    * This daemon will transition rows that are WAITING_INSTALL to INSTALLING. The steps are:

@@ -21,13 +21,20 @@ import com.datastax.driver.core.Session;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import pathstore.authentication.CredentialCache;
-import pathstore.common.*;
+import pathstore.authentication.grpc.AuthManager;
+import pathstore.authentication.grpc.AuthServerInterceptor;
+import pathstore.common.Constants;
+import pathstore.common.PathStoreProperties;
+import pathstore.common.PathStoreThreadManager;
+import pathstore.common.Role;
+import pathstore.grpc.*;
 import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
 import pathstore.system.deployment.deploymentFSM.PathStoreMasterDeploymentServer;
 import pathstore.system.deployment.deploymentFSM.PathStoreSlaveDeploymentServer;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerDaemon;
 import pathstore.system.logging.PathStoreLoggerFactory;
+import pathstore.system.network.*;
 import pathstore.system.schemaFSM.PathStoreMasterSchemaServer;
 import pathstore.system.schemaFSM.PathStoreSchemaLoaderUtils;
 import pathstore.system.schemaFSM.PathStoreSlaveSchemaServer;
@@ -75,24 +82,54 @@ public class PathStoreServerImpl {
         logger.info("Loaded super user account successfully");
       else logger.error("Couldn't load super user account");
 
-      Session local = PathStorePrivilegedCluster.getSuperUserInstance().connect();
+      Session local = PathStorePrivilegedCluster.getSuperUserInstance().rawConnect();
 
       logger.info("Super User connection was initialized successfully");
 
-      if (CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().NodeID)
+      if (CredentialCache.getNodes().getCredential(PathStoreProperties.getInstance().NodeID)
           != null) logger.info("Loaded daemon account successfully");
       else logger.error("Couldn't load daemon account");
 
-      PathStorePrivilegedCluster.getDaemonInstance().connect();
+      PathStorePrivilegedCluster.getDaemonInstance().rawConnect();
 
       logger.info("Daemon connection was initialized successfully");
 
       System.out.println(PathStoreProperties.getInstance().ExternalAddress);
 
       // start grpc
+      // Myles: We're over authenticating here as when we provide all nodes that references the
+      // parent node and children nodes instead of just the children.
+      // This will need to be addressed later.
       server =
           ServerBuilder.forPort(PathStoreProperties.getInstance().GRPCPort)
-              .addService(new PathStoreServerImplGRPC())
+              .addService(new CommonServiceImpl()) // both client and server
+              .addService(new ClientOnlyServiceImpl()) // client only
+              .addService(new ServerOnlyServiceImpl()) // server only
+              .addService(new NetworkWideServiceImpl()) // master and server
+              .addService(new UnAuthenticatedServiceImpl()) // nothing
+              .intercept(
+                  new AuthServerInterceptor(
+                      AuthManager.newBuilder()
+                          .serverAndClientAuthenticatedEndpoint(
+                              CommonServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getNodes().getAllReference(),
+                              CredentialCache.getClients().getAllReference())
+                          .clientAuthenticatedEndpoint(
+                              ClientOnlyServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getClients().getAllReference())
+                          .serverAuthenticatedEndpoint(
+                              ServerOnlyServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getNodes().getAllReference())
+                          .addAdditionalCredentials(
+                              NetworkWideServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getAuxiliary()
+                                  .getCredential(
+                                      Constants.AUXILIARY_ACCOUNTS.NETWORK_WIDE_GRPC_CREDENTIAL))
+                          .serverAuthenticatedEndpoint(
+                              NetworkWideServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getNodes().getAllReference())
+                          .unauthenticatedEndpoint(UnAuthenticatedServiceGrpc.SERVICE_NAME)
+                          .build()))
               .build();
 
       server.start();

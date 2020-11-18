@@ -3,9 +3,9 @@ package pathstore.system.logging;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import pathstore.client.PathStoreCluster;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.deployment.utilities.DeploymentConstants;
 
 import java.io.*;
@@ -33,7 +33,7 @@ public class PathStoreLoggerDaemon extends Thread {
   private String currentDate;
 
   public PathStoreLoggerDaemon() {
-    this.session = PathStoreCluster.getDaemonInstance().connect();
+    this.session = PathStorePrivilegedCluster.getDaemonInstance().psConnect();
 
     this.currentDate = this.getAndSetDate();
   }

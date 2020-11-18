@@ -3,12 +3,15 @@ package pathstore.system.network;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import lombok.NonNull;
+import lombok.SneakyThrows;
 import org.json.JSONObject;
-import pathstore.authentication.AuthenticationUtil;
+import pathstore.authentication.ApplicationCredential;
+import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
-import pathstore.authentication.Credential;
+import pathstore.authentication.credentials.ClientCredential;
+import pathstore.authentication.CredentialCache;
 import pathstore.client.PathStoreClientAuthenticatedCluster;
-import pathstore.client.PathStoreCluster;
 import pathstore.client.PathStoreServerClient;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
@@ -28,10 +31,22 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * This is class is the implementation of {@link pathstore.system.PathStoreServerImplGRPC}. That
- * class is purely a transportation wrapper
+ * This is class is the implementation of {@link UnAuthenticatedServiceImpl}. That class is purely a
+ * transportation wrapper
  */
 public class NetworkImpl {
+  /** Instance of class */
+  private static NetworkImpl instance = null;
+
+  /** @return instance of NetworkImpl */
+  public static synchronized NetworkImpl getInstance() {
+    if (instance == null) instance = new NetworkImpl();
+    return instance;
+  }
+
+  /** Private Default Constructor */
+  private NetworkImpl() {}
+
   /** Logger */
   private final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(NetworkImpl.class);
 
@@ -90,7 +105,9 @@ public class NetworkImpl {
    *     before username and password as those fields may not exist
    * @see pathstore.client.PathStoreClientAuthenticatedCluster
    */
-  public String registerApplicationClient(final String applicationName, final String password) {
+  @SneakyThrows
+  public String registerApplicationClient(
+      @NonNull final String applicationName, @NonNull final String password) {
     if (ClientAuthenticationUtil.isApplicationNotLoaded(applicationName)) {
       String errorResponse =
           String.format(
@@ -104,7 +121,10 @@ public class NetworkImpl {
           .toString();
     }
 
-    if (ClientAuthenticationUtil.isComboInvalid(applicationName, password)) {
+    Optional<ApplicationCredential> optionalApplicationCredential =
+        ClientAuthenticationUtil.getApplicationCredentialRow(applicationName, password);
+
+    if (!optionalApplicationCredential.isPresent()) {
       String errorResponse =
           String.format(
               "Registration of application credentials for application %s has failed as the provided credentials do not match the master application credentials",
@@ -117,29 +137,30 @@ public class NetworkImpl {
           .toString();
     }
 
-    Optional<Credential> optionalExistingCredential =
-        ClientAuthenticationUtil.getExistingClientAccount(applicationName);
+    ApplicationCredential applicationCredential = optionalApplicationCredential.get();
+    ClientCredential credential = CredentialCache.getClients().getCredential(applicationName);
 
-    String clientUsername, clientPassword;
+    if (credential
+        == null) { // Create a new client account if an account for that application doesn't already
+      // exist
+      String clientUsername =
+          CassandraAuthenticationUtil.generateAlphaNumericPassword().toLowerCase();
+      String clientPassword = CassandraAuthenticationUtil.generateAlphaNumericPassword();
 
-    if (optionalExistingCredential.isPresent()) {
-      Credential existingCredential = optionalExistingCredential.get();
+      credential =
+          new ClientCredential(
+              applicationName, clientUsername, clientPassword, applicationCredential.isSuperUser());
 
-      clientUsername = existingCredential.username;
-      clientPassword = existingCredential.password;
-    } else {
-      clientUsername = AuthenticationUtil.generateAlphaNumericPassword().toLowerCase();
-      clientPassword = AuthenticationUtil.generateAlphaNumericPassword();
-
-      ClientAuthenticationUtil.createClientAccount(applicationName, clientUsername, clientPassword);
+      CredentialCache.getClients().add(credential);
     }
 
     return new JSONObject()
         .put(
             Constants.REGISTER_APPLICATION.STATUS,
             Constants.REGISTER_APPLICATION.STATUS_STATES.VALID)
-        .put(Constants.REGISTER_APPLICATION.USERNAME, clientUsername)
-        .put(Constants.REGISTER_APPLICATION.PASSWORD, clientPassword)
+        .put(Constants.REGISTER_APPLICATION.USERNAME, credential.getUsername())
+        .put(Constants.REGISTER_APPLICATION.PASSWORD, credential.getPassword())
+        .put(Constants.REGISTER_APPLICATION.IS_SUPER_USER, credential.isSuperUser())
         .toString();
   }
 
@@ -151,6 +172,7 @@ public class NetworkImpl {
    * @return schemainfo solely on that application
    * @see SchemaInfo#getSchemaPartition(String)
    */
+  @SneakyThrows
   public SchemaInfo getSchemaInfo(final String keyspace) {
     return SchemaInfo.getInstance().getSchemaPartition(keyspace);
   }
@@ -199,7 +221,7 @@ public class NetworkImpl {
 
       selectNodeId.allowFiltering();
 
-      if (PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId).empty())
+      if (PathStorePrivilegedCluster.getDaemonInstance().psConnect().execute(selectNodeId).empty())
         return false;
 
       // validity check of data
@@ -232,7 +254,8 @@ public class NetworkImpl {
             QueryBuilder.select().all().from(Constants.PATHSTORE_APPLICATIONS, Constants.SERVERS);
 
         Optional<Row> deploymentRow =
-            PathStoreCluster.getDaemonInstance().connect().execute(selectNodeId).stream()
+            PathStorePrivilegedCluster.getDaemonInstance().psConnect().execute(selectNodeId)
+                .stream()
                 .findFirst();
 
         if (!deploymentRow.isPresent())
@@ -244,7 +267,8 @@ public class NetworkImpl {
                 deploymentRow.get().getString(Constants.DEPLOYMENT_COLUMNS.SERVER_UUID)));
 
         Optional<Row> optionalServerRow =
-            PathStoreCluster.getDaemonInstance().connect().execute(querySourceNodeAddress).stream()
+            PathStorePrivilegedCluster.getDaemonInstance().psConnect()
+                .execute(querySourceNodeAddress).stream()
                 .findFirst();
 
         if (!optionalServerRow.isPresent())
@@ -255,7 +279,11 @@ public class NetworkImpl {
         ServerEntry serverEntry = ServerEntry.fromRow(serverRow);
 
         PathStoreServerClient sourceNode =
-            PathStoreServerClient.getCustom(serverEntry.ip, serverEntry.grpcPort);
+            PathStoreServerClient.getCustom(
+                serverEntry.ip,
+                serverEntry.grpcPort,
+                CredentialCache.getAuxiliary()
+                    .getCredential(Constants.AUXILIARY_ACCOUNTS.NETWORK_WIDE_GRPC_CREDENTIAL));
 
         // force push all of K or T of session from sourceNode to lca if the sourceNode isn't the
         // lca
@@ -291,8 +319,8 @@ public class NetworkImpl {
               nodeId, sessionToken.sessionName, lca));
       PathStorePushServer.push(
           sessionToken.stream().collect(Collectors.toList()),
-          PathStorePrivilegedCluster.getDaemonInstance().connect(),
-          PathStorePrivilegedCluster.getParentInstance().connect(),
+          PathStorePrivilegedCluster.getDaemonInstance().rawConnect(),
+          PathStorePrivilegedCluster.getParentInstance().rawConnect(),
           SchemaInfo.getInstance(),
           nodeId);
 
@@ -402,7 +430,8 @@ public class NetworkImpl {
 
     // build child -> parent set from db.
     Map<Integer, Integer> childToParentMap =
-        PathStoreCluster.getDaemonInstance().connect().execute(allDeployedNodes).stream()
+        PathStorePrivilegedCluster.getDaemonInstance().psConnect().execute(allDeployedNodes)
+            .stream()
             .map(DeploymentEntry::fromRow)
             .collect(Collectors.toMap(entry -> entry.newNodeId, entry -> entry.parentNodeId));
 

@@ -21,6 +21,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.*;
+import lombok.Getter;
 import pathstore.client.PathStoreServerClient;
 import pathstore.sessions.SessionToken;
 import pathstore.system.PathStorePrivilegedCluster;
@@ -49,13 +50,8 @@ import java.util.concurrent.ConcurrentMap;
 public class QueryCache {
 
   /** Local instance of query cache */
-  private static QueryCache instance = null;
-
-  /** @return get query cache instance */
-  public static synchronized QueryCache getInstance() {
-    if (QueryCache.instance == null) QueryCache.instance = new QueryCache();
-    return QueryCache.instance;
-  }
+  @Getter(lazy = true)
+  private static final QueryCache instance = new QueryCache();
 
   /** All qc entries */
   private final ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> entries =
@@ -94,7 +90,9 @@ public class QueryCache {
    */
   private void addTable(final String keyspace, final String table) {
     addKeyspace(keyspace);
-    this.entries.get(keyspace).putIfAbsent(table, new ArrayList<>());
+    // Myles: This may cause issues. We very well might need to convert this to a concurrent set or
+    // queue.
+    this.entries.get(keyspace).putIfAbsent(table, Collections.synchronizedList(new ArrayList<>()));
   }
 
   /**
@@ -349,7 +347,7 @@ public class QueryCache {
     // ensure that the passed entry exists within your cache
     this.updateCache(keyspace, table, clausesSerialized, limit);
 
-    Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
+    Session local = PathStorePrivilegedCluster.getDaemonInstance().rawConnect();
 
     try {
 
@@ -462,8 +460,8 @@ public class QueryCache {
    * @param deltaID delta id of the primary key in view_$table, if null regular fetch is performed
    */
   private void fetchData(final QueryCacheEntry entry, final UUID deltaID) {
-    Session parent = PathStorePrivilegedCluster.getParentInstance().connect();
-    Session local = PathStorePrivilegedCluster.getDaemonInstance().connect();
+    Session parent = PathStorePrivilegedCluster.getParentInstance().rawConnect();
+    Session local = PathStorePrivilegedCluster.getDaemonInstance().rawConnect();
 
     String table = deltaID != null ? Constants.VIEW_PREFIX + entry.table : entry.table;
 

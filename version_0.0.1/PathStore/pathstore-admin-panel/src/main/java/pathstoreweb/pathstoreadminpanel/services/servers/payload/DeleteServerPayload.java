@@ -4,7 +4,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
@@ -43,7 +43,7 @@ public final class DeleteServerPayload extends ValidatedPayload {
 
     String[] errors = {SERVER_UUID_DOESNT_EXIST, null};
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     // (2)
     Select serverSelect =

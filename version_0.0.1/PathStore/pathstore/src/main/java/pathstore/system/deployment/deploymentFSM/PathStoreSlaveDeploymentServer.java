@@ -1,11 +1,10 @@
 package pathstore.system.deployment.deploymentFSM;
 
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.jcraft.jsch.JSchException;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreSession;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.PathStoreThreadManager;
@@ -13,6 +12,7 @@ import pathstore.common.Role;
 import pathstore.common.tables.DeploymentEntry;
 import pathstore.common.tables.DeploymentProcessStatus;
 import pathstore.common.tables.ServerEntry;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.deployment.commands.CommandError;
 import pathstore.system.deployment.commands.ICommand;
 import pathstore.system.deployment.utilities.SSHUtil;
@@ -20,7 +20,8 @@ import pathstore.system.deployment.utilities.StartupUTIL;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
-import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID;
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.SERVER_UUID;
 
 /**
  * This slave deployment server will listen for a deploying state record in the deployment table
@@ -39,7 +40,7 @@ public class PathStoreSlaveDeploymentServer implements Runnable {
       PathStoreLoggerFactory.getLogger(PathStoreSlaveDeploymentServer.class);
 
   /** Session used to interact with pathstore */
-  private final Session session = PathStoreCluster.getDaemonInstance().connect();
+  private final PathStoreSession session = PathStorePrivilegedCluster.getDaemonInstance().psConnect();
 
   /** Node id so you don't need to query the properties file every run */
   private final int nodeId = PathStoreProperties.getInstance().NodeID;

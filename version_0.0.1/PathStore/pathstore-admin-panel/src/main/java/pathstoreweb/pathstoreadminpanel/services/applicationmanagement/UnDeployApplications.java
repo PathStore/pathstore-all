@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstore.common.tables.NodeSchemaProcessStatus;
 import pathstoreweb.pathstoreadminpanel.services.IService;
@@ -38,7 +38,7 @@ public class UnDeployApplications implements IService {
 
   /** Writes all records to the table with the WAITING_REMOVE status */
   private void writeRecords() {
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     for (ApplicationRecord record : this.payload.records) {
       Insert insert =

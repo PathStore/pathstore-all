@@ -4,7 +4,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstoreweb.pathstoreadminpanel.services.applicationmanagement.ApplicationRecord;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
@@ -44,7 +44,7 @@ public class AddApplicationDeploymentRecordPayload extends ValidatedPayload {
     if (records.stream().map(i -> i.keyspaceName).distinct().count() != 1)
       return new String[] {TO_MANY_KEYSPACES};
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     Select queryAllDeployment =
         QueryBuilder.select().from(Constants.PATHSTORE_APPLICATIONS, Constants.DEPLOYMENT);

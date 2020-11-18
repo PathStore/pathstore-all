@@ -1,10 +1,10 @@
 package pathstore.system.deployment.commands;
 
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
-import pathstore.common.Constants;
+import pathstore.authentication.credentials.DeploymentCredential;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
-import pathstore.system.PathStorePrivilegedCluster;
 
 /**
  * This class is used to denote a single step where after launching cassandra we wait for a
@@ -23,22 +23,15 @@ public class WaitForCassandra implements ICommand {
    */
   private static final int maxWaitTime = 60 * 5;
 
-  /** Ip of new root node */
-  private final String ip;
-
-  /** Cassandra port */
-  private final int port;
+  /** Cassandra credentials */
+  private final DeploymentCredential cassandraCredentials;
 
   /** Denotes the current amount of time waited */
   private int currentWaitCount;
 
-  /**
-   * @param ip {@link #ip}
-   * @param port {@link #port}
-   */
-  public WaitForCassandra(final String ip, final int port) {
-    this.ip = ip;
-    this.port = port;
+  /** @param cassandraCredentials {@link #cassandraCredentials} */
+  public WaitForCassandra(final DeploymentCredential cassandraCredentials) {
+    this.cassandraCredentials = cassandraCredentials;
     this.currentWaitCount = 0;
   }
 
@@ -52,12 +45,7 @@ public class WaitForCassandra implements ICommand {
   public void execute() throws CommandError {
     PathStorePrivilegedCluster cluster = null;
     try {
-      cluster =
-          PathStorePrivilegedCluster.getChildInstance(
-              Constants.DEFAULT_CASSANDRA_USERNAME,
-              Constants.DEFAULT_CASSANDRA_PASSWORD,
-              this.ip,
-              this.port);
+      cluster = PathStorePrivilegedCluster.getChildInstance(cassandraCredentials);
 
       logger.info("Cassandra is online");
 

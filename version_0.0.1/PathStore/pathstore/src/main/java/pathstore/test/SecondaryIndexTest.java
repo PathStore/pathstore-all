@@ -6,7 +6,7 @@ import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
-import pathstore.client.PathStoreCluster;
+import pathstore.system.PathStorePrivilegedCluster;
 
 /**
  * This test will check to make sure that the secondary index recognition works. In order to perform
@@ -27,7 +27,8 @@ import pathstore.client.PathStoreCluster;
  * working properly.
  */
 public class SecondaryIndexTest {
-  private static final Session psSession = PathStoreCluster.getDaemonInstance().connect();
+  private static final Session psSession =
+      PathStorePrivilegedCluster.getDaemonInstance().psConnect();
 
   public static void main(String[] args) {
 

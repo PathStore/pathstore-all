@@ -1,6 +1,12 @@
 package pathstore.system.deployment.utilities;
 
 import com.datastax.driver.core.Session;
+import pathstore.authentication.credentials.AuxiliaryCredential;
+import pathstore.authentication.credentials.Credential;
+import pathstore.authentication.credentials.DeploymentCredential;
+import pathstore.authentication.credentials.NodeCredential;
+import pathstore.authentication.datalayerimpls.AuxiliaryDataLayer;
+import pathstore.authentication.datalayerimpls.NodeDataLayer;
 import pathstore.common.Role;
 import pathstore.system.deployment.commands.*;
 
@@ -187,70 +193,45 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   /**
    * Create a role on the child node
    *
-   * @param connectionUsername username to connect
-   * @param connectionPassword password to connect
-   * @param ip ip of child
-   * @param port port of child
-   * @param roleName role to create
-   * @param rolePassword role password
+   * @param deploymentCredential connection credential
+   * @param credential of account to write
    * @param isSuperUser whether the user is a super user or not
    * @return this
    */
   public T createRole(
-      final String connectionUsername,
-      final String connectionPassword,
-      final String ip,
-      final int port,
-      final String roleName,
-      final String rolePassword,
+      final DeploymentCredential deploymentCredential,
+      final Credential<?> credential,
       final boolean isSuperUser) {
-    this.commands.add(
-        new CreateRole(
-            connectionUsername, connectionPassword, ip, port, roleName, rolePassword, isSuperUser));
+    this.commands.add(new CreateRole(deploymentCredential, credential, isSuperUser));
     return (T) this;
   }
 
   /**
    * Drop a role on the child node
    *
-   * @param connectionUsername username to connect
-   * @param connectionPassword password to connect
-   * @param ip ip of child
-   * @param port port of child
+   * @param cassandraCredentials cassandra credentials to connect with
    * @param roleName role to drop
    * @return this
    */
   public T dropRole(
-      final String connectionUsername,
-      final String connectionPassword,
-      final String ip,
-      final int port,
-      final String roleName) {
-    this.commands.add(new DropRole(connectionUsername, connectionPassword, ip, port, roleName));
+          final DeploymentCredential cassandraCredentials, final String roleName) {
+    this.commands.add(new DropRole(cassandraCredentials, roleName));
     return (T) this;
   }
 
   /**
    * Grant read and write access on a keyspace to a role on the child
    *
-   * @param connectionUsername username to connect
-   * @param connectionPassword password to connect
-   * @param ip ip of child
-   * @param port port of child
+   * @param cassandraCredentials cassandra credentials to connect with
    * @param roleName role name to grant to
    * @param keyspace keyspace to grant on
    * @return this
    */
   public T grantReadAndWriteAccess(
-      final String connectionUsername,
-      final String connectionPassword,
-      final String ip,
-      final int port,
+      final DeploymentCredential cassandraCredentials,
       final String roleName,
       final String keyspace) {
-    this.commands.add(
-        new GrantReadAndWriteAccess(
-            connectionUsername, connectionPassword, ip, port, roleName, keyspace));
+    this.commands.add(new GrantReadAndWriteAccess(cassandraCredentials, roleName, keyspace));
 
     return (T) this;
   }
@@ -258,59 +239,58 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   /**
    * Write a credential to the child pathstore_applications.local_auth table
    *
-   * @param nodeId node id to get credentials from
-   * @param connectionUsername username to connect with
-   * @param connectionPassword password to connect with
-   * @param ip ip of child
-   * @param port port of child
+   * @param credential creedentials to write
+   * @param cassandraCredentials cassandra credentials to connect with
    * @return this
    */
-  public T writeCredentialsToChildNode(
-      final int nodeId,
-      final String connectionUsername,
-      final String connectionPassword,
-      final String ip,
-      final int port) {
+  public T writeNodeCredentialToChildNode(
+      final NodeCredential credential, final DeploymentCredential cassandraCredentials) {
     this.commands.add(
-        new WriteCredentialsToChildNode(nodeId, connectionUsername, connectionPassword, ip, port));
+        new WriteCredentialToChildNode<>(
+            NodeDataLayer.getInstance(), credential, cassandraCredentials));
+    return (T) this;
+  }
+
+  /**
+   * Write a credential to the child pathstore_applications.local_auth table
+   *
+   * @param credential auxiliary credential object to pass
+   * @param cassandraCredentials cassandra credential to connect to
+   * @return this
+   */
+  public T writeAuxiliaryCredentialToChildNode(
+      final AuxiliaryCredential credential,
+      final DeploymentCredential cassandraCredentials) {
+    this.commands.add(
+        new WriteCredentialToChildNode<>(
+            AuxiliaryDataLayer.getInstance(), credential, cassandraCredentials));
     return (T) this;
   }
 
   /**
    * Write a the child daemon account to the local node cassandra instance
    *
-   * @param childNodeId child node id
-   * @param username daemon username of child
-   * @param password daemon password of child
+   * @param childCredential child credential to write
    * @return this
    */
-  public T writeChildAccountToCassandra(
-      final int childNodeId, final String username, final String password) {
-    this.commands.add(new WriteChildCredentialsToCassandra(childNodeId, username, password));
+  public T writeChildAccountToCassandra(final NodeCredential childCredential) {
+    this.commands.add(new WriteChildCredentialsToCassandra(childCredential));
     return (T) this;
   }
 
   /**
    * Load a keyspace on the child node
    *
-   * @param connectionUsername username to connect with
-   * @param connectionPassword password to connect with
-   * @param ip ip of child
-   * @param port child port
+   * @param cassandraCredentials cassandra credentials to connect with
    * @param loadKeyspaceFunction function that consumes a session object to load the keyspace
    * @param keyspaceName keyspace name
    * @return this
    */
   public T loadKeyspace(
-      final String connectionUsername,
-      final String connectionPassword,
-      final String ip,
-      final int port,
+      final DeploymentCredential cassandraCredentials,
       final Consumer<Session> loadKeyspaceFunction,
       final String keyspaceName) {
-    this.commands.add(
-        new LoadKeyspace(
-            connectionUsername, connectionPassword, ip, port, loadKeyspaceFunction, keyspaceName));
+    this.commands.add(new LoadKeyspace(cassandraCredentials, loadKeyspaceFunction, keyspaceName));
     return (T) this;
   }
 

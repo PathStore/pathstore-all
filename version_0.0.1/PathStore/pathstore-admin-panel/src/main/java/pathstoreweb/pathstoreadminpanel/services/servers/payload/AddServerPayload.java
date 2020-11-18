@@ -6,17 +6,17 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.jcraft.jsch.JSchException;
 import org.springframework.web.multipart.MultipartFile;
-import pathstore.client.PathStoreCluster;
+import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.common.Constants;
 import pathstore.common.tables.ServerAuthType;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstoreweb.pathstoreadminpanel.services.servers.Server;
 import pathstoreweb.pathstoreadminpanel.validator.ValidatedPayload;
 
-import static pathstoreweb.pathstoreadminpanel.validator.ErrorConstants.ADD_SERVER_PAYLOAD.*;
-
 import java.io.IOException;
 import java.util.UUID;
+
+import static pathstoreweb.pathstoreadminpanel.validator.ErrorConstants.ADD_SERVER_PAYLOAD.*;
 
 /**
  * This payload is used when a user makes a request to add a server to the {@link
@@ -98,7 +98,7 @@ public final class AddServerPayload extends ValidatedPayload {
 
     String[] errors = {null, null, null, null};
 
-    Session session = PathStoreCluster.getSuperUserInstance().connect();
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
     // (2) & (3)
     Select serverSelectAll =

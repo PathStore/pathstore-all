@@ -20,13 +20,13 @@ package pathstore.system;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
-import pathstore.authentication.Credential;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.credentials.DeploymentCredential;
+import pathstore.authentication.credentials.NodeCredential;
+import pathstore.client.PathStoreSession;
 import pathstore.common.PathStoreProperties;
+import pathstore.system.deployment.commands.WriteCredentialToChildNode;
 import pathstore.util.ClusterCache;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 /**
  * This cluster is used to create a raw connection to the local node's database. This is used to
@@ -36,7 +36,7 @@ import java.net.UnknownHostException;
 public class PathStorePrivilegedCluster {
 
   /** Cache of connections based on credential objects */
-  private static final ClusterCache<PathStorePrivilegedCluster> clusterCache =
+  private static final ClusterCache<DeploymentCredential, PathStorePrivilegedCluster> clusterCache =
       new ClusterCache<>(PathStorePrivilegedCluster::new);
 
   /**
@@ -46,12 +46,13 @@ public class PathStorePrivilegedCluster {
    */
   public static PathStorePrivilegedCluster getSuperUserInstance() {
     PathStoreProperties.getInstance().verifyCassandraSuperUserCredentials();
-    PathStoreProperties.getInstance().verifyCassandraConnectionDetails();
 
     return clusterCache.getInstance(
-        PathStoreProperties.getInstance().credential,
-        PathStoreProperties.getInstance().CassandraIP,
-        PathStoreProperties.getInstance().CassandraPort);
+        new DeploymentCredential(
+            PathStoreProperties.getInstance().credential.getUsername(),
+            PathStoreProperties.getInstance().credential.getPassword(),
+            PathStoreProperties.getInstance().CassandraIP,
+            PathStoreProperties.getInstance().CassandraPort));
   }
 
   /**
@@ -59,12 +60,11 @@ public class PathStorePrivilegedCluster {
    *
    * @return daemon instance
    * @see CredentialCache
-   * @see pathstore.system.deployment.commands.WriteCredentialsToChildNode for how these credentials
-   *     are boot strapped
+   * @see WriteCredentialToChildNode for how these credentials are boot strapped
    */
   public static PathStorePrivilegedCluster getDaemonInstance() {
-    Credential daemonCredentials =
-        CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().NodeID);
+    NodeCredential daemonCredentials =
+        CredentialCache.getNodes().getCredential(PathStoreProperties.getInstance().NodeID);
 
     if (daemonCredentials == null)
       throw new RuntimeException("Daemon credentials are not present in the local auth table");
@@ -72,9 +72,11 @@ public class PathStorePrivilegedCluster {
     PathStoreProperties.getInstance().verifyCassandraConnectionDetails();
 
     return clusterCache.getInstance(
-        daemonCredentials,
-        PathStoreProperties.getInstance().CassandraIP,
-        PathStoreProperties.getInstance().CassandraPort);
+        new DeploymentCredential(
+            daemonCredentials.getUsername(),
+            daemonCredentials.getPassword(),
+            PathStoreProperties.getInstance().CassandraIP,
+            PathStoreProperties.getInstance().CassandraPort));
   }
 
   /**
@@ -82,12 +84,11 @@ public class PathStorePrivilegedCluster {
    *
    * @return parent database instance
    * @see CredentialCache
-   * @see pathstore.system.deployment.commands.WriteCredentialsToChildNode for how the parent
-   *     credentials are boot strapped
+   * @see WriteCredentialToChildNode for how the parent credentials are boot strapped
    */
   public static PathStorePrivilegedCluster getParentInstance() {
-    Credential parentCredentials =
-        CredentialCache.getInstance().getCredential(PathStoreProperties.getInstance().ParentID);
+    NodeCredential parentCredentials =
+        CredentialCache.getNodes().getCredential(PathStoreProperties.getInstance().ParentID);
 
     if (parentCredentials == null)
       throw new RuntimeException("Parent credentials are not present within the local auth table");
@@ -95,9 +96,11 @@ public class PathStorePrivilegedCluster {
     PathStoreProperties.getInstance().verifyParentCassandraConnectionDetails();
 
     return clusterCache.getInstance(
-        parentCredentials,
-        PathStoreProperties.getInstance().CassandraParentIP,
-        PathStoreProperties.getInstance().CassandraParentPort);
+        new DeploymentCredential(
+            parentCredentials.getUsername(),
+            parentCredentials.getPassword(),
+            PathStoreProperties.getInstance().CassandraParentIP,
+            PathStoreProperties.getInstance().CassandraParentPort));
   }
 
   /**
@@ -110,45 +113,25 @@ public class PathStorePrivilegedCluster {
    */
   public static PathStorePrivilegedCluster getChildInstance(
       final int childNodeId, final String ip, final int port) {
+    NodeCredential childCredential = CredentialCache.getNodes().getCredential(childNodeId);
+
     return clusterCache.getInstance(
-        CredentialCache.getInstance().getCredential(childNodeId), ip, port);
+        new DeploymentCredential(
+            childCredential.getUsername(), childCredential.getPassword(), ip, port));
   }
 
   /**
    * Credentials to a child node that is not in the cluster cache (Used during deployment)
    *
-   * @param username username
-   * @param password password
-   * @param ip child ip
-   * @param port child port
+   * @param credential custom credential to connect with
    * @return child connection
    */
-  public static PathStorePrivilegedCluster getChildInstance(
-      final String username, final String password, final String ip, final int port) {
-    return clusterCache.getInstance(new Credential(ipToInt(ip), username, password), ip, port);
-  }
-
-  /**
-   * Converts an ipv4 address to an integer. This avoids collisions in the cluster cache
-   *
-   * @param ip ip to convert
-   * @return converted ip
-   */
-  private static int ipToInt(final String ip) {
-    try {
-      int result = 0;
-
-      for (byte b : InetAddress.getByName(ip).getAddress()) result = result << 8 | (b & 0xFF);
-
-      return result;
-    } catch (UnknownHostException e) {
-      e.printStackTrace();
-    }
-    return -1;
+  public static PathStorePrivilegedCluster getChildInstance(final DeploymentCredential credential) {
+    return clusterCache.getInstance(credential);
   }
 
   /** Credential used */
-  private final Credential credential;
+  private final DeploymentCredential credential;
 
   /** Cluster */
   private final Cluster cluster;
@@ -156,14 +139,18 @@ public class PathStorePrivilegedCluster {
   /** Session */
   private final Session session;
 
+  /** PathStoreSession */
+  private final PathStoreSession psSession;
+
   /**
    * @param credential {@link #credential}
    * @param cluster {@link #cluster}
    */
-  public PathStorePrivilegedCluster(final Credential credential, final Cluster cluster) {
+  public PathStorePrivilegedCluster(final DeploymentCredential credential, final Cluster cluster) {
     this.credential = credential;
     this.cluster = cluster;
     this.session = cluster.connect();
+    this.psSession = new PathStoreSession(this.session);
   }
 
   /**
@@ -176,8 +163,13 @@ public class PathStorePrivilegedCluster {
   }
 
   /** @return session object */
-  public Session connect() {
+  public Session rawConnect() {
     return this.session;
+  }
+
+  /** @return ps wrapped session */
+  public PathStoreSession psConnect() {
+    return this.psSession;
   }
 
   /** Close session and remove from cache */
