@@ -98,8 +98,8 @@ public class PathStorePrivilegedCluster {
         new DeploymentCredential(
             parentCredentials.getUsername(),
             parentCredentials.getPassword(),
-            PathStoreProperties.getInstance().CassandraIP,
-            PathStoreProperties.getInstance().CassandraPort));
+            PathStoreProperties.getInstance().CassandraParentIP,
+            PathStoreProperties.getInstance().CassandraParentPort));
   }
 
   /**
