@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.json.JSONObject;
 import pathstore.authentication.credentials.ClientCredential;
+import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.authentication.grpc.PathStoreClientInterceptor;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
@@ -115,10 +116,11 @@ public class PathStoreClientAuthenticatedCluster {
     this.credential = clientCredential;
     this.cluster =
         ClusterCache.createCluster(
-            PathStoreProperties.getInstance().CassandraIP,
-            PathStoreProperties.getInstance().CassandraPort,
-            clientCredential.getUsername(),
-            clientCredential.getPassword());
+            new DeploymentCredential(
+                clientCredential.getUsername(),
+                clientCredential.getPassword(),
+                PathStoreProperties.getInstance().CassandraIP,
+                PathStoreProperties.getInstance().CassandraPort));
 
     this.rawSession = this.cluster.connect();
 

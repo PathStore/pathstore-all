@@ -20,6 +20,7 @@ package pathstore.client;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.authentication.credentials.NodeCredential;
 import pathstore.common.PathStoreProperties;
 import pathstore.util.ClusterCache;
@@ -36,7 +37,7 @@ import pathstore.util.ClusterCache;
 public class PathStoreCluster {
 
   /** Cache of pathstore cluster objects based on credential */
-  private static final ClusterCache<NodeCredential, PathStoreCluster> clusterCache =
+  private static final ClusterCache<DeploymentCredential, PathStoreCluster> clusterCache =
       new ClusterCache<>(PathStoreCluster::new);
 
   /**
@@ -50,9 +51,11 @@ public class PathStoreCluster {
     PathStoreProperties.getInstance().verifyCassandraConnectionDetails();
 
     return clusterCache.getInstance(
-        PathStoreProperties.getInstance().credential,
-        PathStoreProperties.getInstance().CassandraIP,
-        PathStoreProperties.getInstance().CassandraPort);
+        new DeploymentCredential(
+            PathStoreProperties.getInstance().credential.getUsername(),
+            PathStoreProperties.getInstance().credential.getPassword(),
+            PathStoreProperties.getInstance().CassandraIP,
+            PathStoreProperties.getInstance().CassandraPort));
   }
 
   /**
@@ -71,13 +74,15 @@ public class PathStoreCluster {
     PathStoreProperties.getInstance().verifyCassandraConnectionDetails();
 
     return clusterCache.getInstance(
-        daemonCredentials,
-        PathStoreProperties.getInstance().CassandraIP,
-        PathStoreProperties.getInstance().CassandraPort);
+        new DeploymentCredential(
+            daemonCredentials.getUsername(),
+            daemonCredentials.getPassword(),
+            PathStoreProperties.getInstance().CassandraIP,
+            PathStoreProperties.getInstance().CassandraPort));
   }
 
   /** Credential object used to create the cluster, this is only used for disconnection */
-  private final NodeCredential credential;
+  private final DeploymentCredential credential;
 
   /** Cluster object, used to close the cluster */
   private final Cluster cluster;
@@ -92,7 +97,7 @@ public class PathStoreCluster {
    * @param credential {@link #credential}
    * @param cluster {@link #cluster}
    */
-  public PathStoreCluster(final NodeCredential credential, final Cluster cluster) {
+  public PathStoreCluster(final DeploymentCredential credential, final Cluster cluster) {
     this.credential = credential;
     this.cluster = cluster;
     this.rawSession = this.cluster.connect();

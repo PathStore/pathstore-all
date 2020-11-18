@@ -21,15 +21,11 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
 import pathstore.authentication.CredentialCache;
-import pathstore.authentication.credentials.Credential;
 import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.authentication.credentials.NodeCredential;
 import pathstore.common.PathStoreProperties;
 import pathstore.system.deployment.commands.WriteCredentialToChildNode;
 import pathstore.util.ClusterCache;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 /**
  * This cluster is used to create a raw connection to the local node's database. This is used to
@@ -39,7 +35,7 @@ import java.net.UnknownHostException;
 public class PathStorePrivilegedCluster {
 
   /** Cache of connections based on credential objects */
-  private static final ClusterCache<Credential<?>, PathStorePrivilegedCluster> clusterCache =
+  private static final ClusterCache<DeploymentCredential, PathStorePrivilegedCluster> clusterCache =
       new ClusterCache<>(PathStorePrivilegedCluster::new);
 
   /**
@@ -51,9 +47,11 @@ public class PathStorePrivilegedCluster {
     PathStoreProperties.getInstance().verifyCassandraSuperUserCredentials();
 
     return clusterCache.getInstance(
-        PathStoreProperties.getInstance().credential,
-        PathStoreProperties.getInstance().CassandraIP,
-        PathStoreProperties.getInstance().CassandraPort);
+        new DeploymentCredential(
+            PathStoreProperties.getInstance().credential.getUsername(),
+            PathStoreProperties.getInstance().credential.getPassword(),
+            PathStoreProperties.getInstance().CassandraIP,
+            PathStoreProperties.getInstance().CassandraPort));
   }
 
   /**
@@ -73,9 +71,11 @@ public class PathStorePrivilegedCluster {
     PathStoreProperties.getInstance().verifyCassandraConnectionDetails();
 
     return clusterCache.getInstance(
-        daemonCredentials,
-        PathStoreProperties.getInstance().CassandraIP,
-        PathStoreProperties.getInstance().CassandraPort);
+        new DeploymentCredential(
+            daemonCredentials.getUsername(),
+            daemonCredentials.getPassword(),
+            PathStoreProperties.getInstance().CassandraIP,
+            PathStoreProperties.getInstance().CassandraPort));
   }
 
   /**
@@ -95,9 +95,11 @@ public class PathStorePrivilegedCluster {
     PathStoreProperties.getInstance().verifyParentCassandraConnectionDetails();
 
     return clusterCache.getInstance(
-        parentCredentials,
-        PathStoreProperties.getInstance().CassandraParentIP,
-        PathStoreProperties.getInstance().CassandraParentPort);
+        new DeploymentCredential(
+            parentCredentials.getUsername(),
+            parentCredentials.getPassword(),
+            PathStoreProperties.getInstance().CassandraIP,
+            PathStoreProperties.getInstance().CassandraPort));
   }
 
   /**
@@ -110,8 +112,11 @@ public class PathStorePrivilegedCluster {
    */
   public static PathStorePrivilegedCluster getChildInstance(
       final int childNodeId, final String ip, final int port) {
+    NodeCredential childCredential = CredentialCache.getNodes().getCredential(childNodeId);
+
     return clusterCache.getInstance(
-        CredentialCache.getNodes().getCredential(childNodeId), ip, port);
+        new DeploymentCredential(
+            childCredential.getUsername(), childCredential.getPassword(), ip, port));
   }
 
   /**
@@ -121,30 +126,11 @@ public class PathStorePrivilegedCluster {
    * @return child connection
    */
   public static PathStorePrivilegedCluster getChildInstance(final DeploymentCredential credential) {
-    return clusterCache.getInstance(credential, credential.getIp(), credential.getPort());
-  }
-
-  /**
-   * Converts an ipv4 address to an integer. This avoids collisions in the cluster cache
-   *
-   * @param ip ip to convert
-   * @return converted ip
-   */
-  private static int ipToInt(final String ip) {
-    try {
-      int result = 0;
-
-      for (byte b : InetAddress.getByName(ip).getAddress()) result = result << 8 | (b & 0xFF);
-
-      return result;
-    } catch (UnknownHostException e) {
-      e.printStackTrace();
-    }
-    return -1;
+    return clusterCache.getInstance(credential);
   }
 
   /** Credential used */
-  private final Credential<?> credential;
+  private final DeploymentCredential credential;
 
   /** Cluster */
   private final Cluster cluster;
@@ -156,7 +142,7 @@ public class PathStorePrivilegedCluster {
    * @param credential {@link #credential}
    * @param cluster {@link #cluster}
    */
-  public PathStorePrivilegedCluster(final Credential<?> credential, final Cluster cluster) {
+  public PathStorePrivilegedCluster(final DeploymentCredential credential, final Cluster cluster) {
     this.credential = credential;
     this.cluster = cluster;
     this.session = cluster.connect();

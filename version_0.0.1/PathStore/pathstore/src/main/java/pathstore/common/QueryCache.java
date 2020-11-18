@@ -90,7 +90,9 @@ public class QueryCache {
    */
   private void addTable(final String keyspace, final String table) {
     addKeyspace(keyspace);
-    this.entries.get(keyspace).putIfAbsent(table, new ArrayList<>());
+    // Myles: This may cause issues. We very well might need to convert this to a concurrent set or
+    // queue.
+    this.entries.get(keyspace).putIfAbsent(table, Collections.synchronizedList(new ArrayList<>()));
   }
 
   /**
