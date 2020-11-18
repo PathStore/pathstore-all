@@ -257,7 +257,7 @@ public class PathStoreServerClient {
     if (results.size() != 2) return new Pair<>(Optional.empty(), Optional.empty());
     else
       return new Pair<>(
-          Optional.of((String) results.get(0)), Optional.of((SchemaInfo) results.get(1)));
+          Optional.of((String) results.get(0)), Optional.ofNullable((SchemaInfo) results.get(1)));
   }
 
   /**

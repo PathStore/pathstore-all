@@ -131,9 +131,8 @@ public class NetworkUtil {
       for (int i = 0; i < getByteArrays.length; i++)
         arrayOutputStreams.add(new ByteArrayOutputStream());
 
-      for (RespT value = iterator.next();
-          !getStatus.apply(value).equals(Status.PENDING);
-          value = iterator.next()) {
+      RespT value = iterator.next();
+      do {
         int i = 0;
         int counter = 0;
         for (Function<RespT, byte[]> function : getByteArrays) {
@@ -141,7 +140,8 @@ public class NetworkUtil {
           counter = Math.max(array.length, counter);
           arrayOutputStreams.get(i++).write(array);
         }
-      }
+        value = iterator.next();
+      } while (getStatus.apply(value).equals(Status.PENDING));
 
       List<Object> objects = new ArrayList<>();
       for (ByteArrayOutputStream arrayOutputStream : arrayOutputStreams)

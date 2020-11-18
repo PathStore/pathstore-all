@@ -105,7 +105,7 @@ public class PathStoreServerImpl {
               .addService(new CommonServiceImpl()) // both client and server
               .addService(new ClientOnlyServiceImpl()) // client only
               .addService(new ServerOnlyServiceImpl()) // server only
-              .addService(new NetworkWideServiceImpl()) // master
+              .addService(new NetworkWideServiceImpl()) // master and server
               .addService(new UnAuthenticatedServiceImpl()) // nothing
               .intercept(
                   new AuthServerInterceptor(
@@ -125,6 +125,9 @@ public class PathStoreServerImpl {
                               CredentialCache.getAuxiliary()
                                   .getCredential(
                                       Constants.AUXILIARY_ACCOUNTS.NETWORK_WIDE_GRPC_CREDENTIAL))
+                          .serverAuthenticatedEndpoint(
+                              NetworkWideServiceGrpc.SERVICE_NAME,
+                              CredentialCache.getNodes().getAllReference())
                           .unauthenticatedEndpoint(UnAuthenticatedServiceGrpc.SERVICE_NAME)
                           .build()))
               .build();
