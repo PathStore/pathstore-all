@@ -41,11 +41,14 @@ public class ClusterCache<CredentialT extends Credential<?>, ClusterT> {
     ClusterT object = this.cache.get(credential);
 
     if (object == null) {
+      System.out.println(String.format("Cluster cache miss for credential %s", credential));
       object =
           this.buildFunction.apply(
               credential,
               createCluster(ip, port, credential.getUsername(), credential.getPassword()));
       this.cache.put(credential, object);
+    } else {
+      System.out.println(String.format("Cluster cache hit for credential %s", credential));
     }
 
     return object;
