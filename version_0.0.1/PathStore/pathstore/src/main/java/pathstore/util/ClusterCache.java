@@ -6,8 +6,8 @@ import com.datastax.driver.core.SocketOptions;
 import pathstore.authentication.credentials.Credential;
 import pathstore.system.PathStorePrivilegedCluster;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * This class is used by {@link pathstore.client.PathStoreCluster} and {@link
@@ -18,7 +18,9 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class ClusterCache<CredentialT extends Credential<?>, ClusterT> {
   /** Where clusters are cached */
-  private final ConcurrentMap<CredentialT, ClusterT> cache = new ConcurrentHashMap<>();
+  private final ConcurrentMap<CredentialT, ClusterT> cache =
+      new ConcurrentSkipListMap<>(
+          (credential1, credential2) -> credential1.isSame(credential2) ? 0 : 1);
 
   /** How to build a cluster not present in the cache */
   private final DoubleConsumerFunction<CredentialT, Cluster, ClusterT> buildFunction;

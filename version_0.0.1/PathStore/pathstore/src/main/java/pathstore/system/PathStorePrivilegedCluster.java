@@ -21,6 +21,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
 import pathstore.authentication.CredentialCache;
+import pathstore.authentication.credentials.Credential;
 import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.authentication.credentials.NodeCredential;
 import pathstore.common.PathStoreProperties;
@@ -38,7 +39,7 @@ import java.net.UnknownHostException;
 public class PathStorePrivilegedCluster {
 
   /** Cache of connections based on credential objects */
-  private static final ClusterCache<NodeCredential, PathStorePrivilegedCluster> clusterCache =
+  private static final ClusterCache<Credential<?>, PathStorePrivilegedCluster> clusterCache =
       new ClusterCache<>(PathStorePrivilegedCluster::new);
 
   /**
@@ -119,13 +120,8 @@ public class PathStorePrivilegedCluster {
    * @param credential custom credential to connect with
    * @return child connection
    */
-  public static PathStorePrivilegedCluster getChildInstance(
-      final DeploymentCredential credential) {
-    return clusterCache.getInstance(
-        new NodeCredential(
-            ipToInt(credential.getIp()), credential.getUsername(), credential.getPassword()),
-        credential.getIp(),
-        credential.getPort());
+  public static PathStorePrivilegedCluster getChildInstance(final DeploymentCredential credential) {
+    return clusterCache.getInstance(credential, credential.getIp(), credential.getPort());
   }
 
   /**
@@ -148,7 +144,7 @@ public class PathStorePrivilegedCluster {
   }
 
   /** Credential used */
-  private final NodeCredential credential;
+  private final Credential<?> credential;
 
   /** Cluster */
   private final Cluster cluster;
@@ -160,7 +156,7 @@ public class PathStorePrivilegedCluster {
    * @param credential {@link #credential}
    * @param cluster {@link #cluster}
    */
-  public PathStorePrivilegedCluster(final NodeCredential credential, final Cluster cluster) {
+  public PathStorePrivilegedCluster(final Credential<?> credential, final Cluster cluster) {
     this.credential = credential;
     this.cluster = cluster;
     this.session = cluster.connect();
