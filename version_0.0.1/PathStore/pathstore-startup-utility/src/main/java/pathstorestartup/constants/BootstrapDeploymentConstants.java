@@ -1,7 +1,6 @@
 package pathstorestartup.constants;
 
 import pathstore.system.deployment.utilities.DeploymentConstants;
-import pathstore.system.deployment.utilities.SSHUtil;
 import pathstorestartup.DevelopmentDeployment;
 
 import java.util.Arrays;
@@ -16,6 +15,21 @@ public class BootstrapDeploymentConstants {
   /* local paths to relative information */
   public static final String PATHSTORE_ADMIN_PANEL = "pathstore-admin-panel";
   public static final String LOCAL_TEMP_PROPERTIES_FILE = "temp-properties-file.properties";
+
+  public static final String REGISTRY_DIRECTORY =
+      String.format("%s/%s", "pathstore-install", "pathstore-registry");
+
+  public static String CASSANDRA_BUILD(final String rootIP) {
+    return String.format(
+        "docker run --network=host -dit --restart always --name %s %s/%s",
+        "cassandra", rootIP, "cassandra");
+  }
+
+  public static String PATHSTORE_BUILD(final String rootIP) {
+    return String.format(
+        "docker run --network=host -dit --restart always -v ~/%s:/etc/pathstore --user $(id -u):$(id -g) --name %s %s/%s",
+        String.format("%s/%s", "pathstore-install", "pathstore"), "pathstore", rootIP, "pathstore");
+  }
 
   /* Prompts and notifications */
   public static final String ENTRY = "Development Deployment utility";
@@ -157,11 +171,13 @@ public class BootstrapDeploymentConstants {
   public static final class RUN_COMMANDS {
 
     // how to store the admin panel
-    public static final String PATHSTORE_ADMIN_PANEL_RUN =
-        String.format(
-            "docker run --network=host -dit --restart always -v ~/%s:/etc/pathstore --name %s %s",
-            REMOTE_DIRECTORIES_AND_FILES.REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR,
-            PATHSTORE_ADMIN_PANEL,
-            PATHSTORE_ADMIN_PANEL);
+    public static String PATHSTORE_ADMIN_PANEL_RUN(final String rootIP) {
+      return String.format(
+          "docker run --network=host -dit --restart always -v ~/%s:/etc/pathstore --name %s %s/%s",
+          REMOTE_DIRECTORIES_AND_FILES.REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR,
+          PATHSTORE_ADMIN_PANEL,
+          rootIP,
+          PATHSTORE_ADMIN_PANEL);
+    }
   }
 }

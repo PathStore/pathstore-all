@@ -21,6 +21,7 @@ import pathstorestartup.constants.BootstrapDeploymentConstants;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -29,7 +30,11 @@ import static pathstorestartup.constants.BootstrapDeploymentConstants.DEVELOPMEN
 /**
  * This represents the development deployment process
  *
- * <p>TODO: Error check build command responses
+ * <p>Setup build stuff -> get connection information -> create registry -> upload stuff -> perform
+ * normal setup
+ *
+ * <p>Only part of normal setup that needs to be changed is that copy and load should perform some
+ * pull from the created registry
  */
 public class DevelopmentDeployment {
 
@@ -85,11 +90,6 @@ public class DevelopmentDeployment {
             DeploymentConstants.CASSANDRA,
             BUILD_IMAGE(DeploymentConstants.CASSANDRA, cassandraPath),
             0)
-        .execute(
-            SAVING_IMAGE_TAG,
-            DeploymentConstants.CASSANDRA,
-            SAVING_IMAGE(this.cassandraTar, DeploymentConstants.CASSANDRA),
-            0)
         .build();
 
     // build pathstore
@@ -99,11 +99,6 @@ public class DevelopmentDeployment {
             BUILDING_IMAGE_TAG,
             DeploymentConstants.PATHSTORE,
             BUILD_IMAGE(DeploymentConstants.PATHSTORE, pathstorePath),
-            0)
-        .execute(
-            SAVING_IMAGE_TAG,
-            DeploymentConstants.PATHSTORE,
-            SAVING_IMAGE(this.pathstoreTar, DeploymentConstants.PATHSTORE),
             0)
         .build();
 
@@ -116,13 +111,10 @@ public class DevelopmentDeployment {
             BUILD_IMAGE(
                 BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL, pathstoreAdminPanelPath),
             0)
-        .execute(
-            SAVING_IMAGE_TAG,
-            BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL,
-            SAVING_IMAGE(
-                this.pathstoreAdminPanelTar, BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL),
-            0)
         .build();
+
+    // remove all certs before hand
+    this.cleanUp();
 
     // deploy the built images to a server
     this.deploy();
@@ -293,18 +285,20 @@ public class DevelopmentDeployment {
             CassandraAuthenticationUtil.generateAlphaNumericPassword());
 
     return new BootstrapDeploymentBuilder(sshUtil)
-        .initBootstrap()
+        .mkcertSetup(childSuperUserCredentials.getIp())
         .init()
         .createRemoteDirectory(DeploymentConstants.REMOTE_PATHSTORE_LOGS_SUB_DIR)
         .createRemoteDirectory(
             BootstrapDeploymentConstants.REMOTE_DIRECTORIES_AND_FILES
                 .REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR)
-        .copyAndLoad(this.cassandraTar, DeploymentConstants.COPY_AND_LOAD.REMOTE_CASSANDRA_TAR)
-        .copyAndLoad(this.pathstoreTar, DeploymentConstants.COPY_AND_LOAD.REMOTE_PATHSTORE_TAR)
-        .copyAndLoad(
-            this.pathstoreAdminPanelTar,
-            BootstrapDeploymentConstants.REMOTE_DIRECTORIES_AND_FILES
-                .REMOTE_PATHSTORE_ADMIN_PANEL_TAR)
+        .createRemoteDirectory(BootstrapDeploymentConstants.REGISTRY_DIRECTORY)
+        .copyRegistryCertsTo(childSuperUserCredentials.getIp())
+        .createDockerRegistry(childSuperUserCredentials.getIp())
+        .pushToRegistry(DeploymentConstants.CASSANDRA, childSuperUserCredentials.getIp())
+        .pushToRegistry(DeploymentConstants.PATHSTORE, childSuperUserCredentials.getIp())
+        .pushToRegistry(
+            BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL, childSuperUserCredentials.getIp())
+        // get the certs and start the registry
         .generatePropertiesFiles(
             1,
             childSuperUserCredentials.getIp(),
@@ -324,7 +318,8 @@ public class DevelopmentDeployment {
             childSuperUserCredentials.getPassword())
         .generateWebsiteProperties("127.0.0.1", cassandraPort, grpcPort, masterPassword)
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(defaultLogin))
+            BootstrapDeploymentConstants.CASSANDRA_BUILD(childSuperUserCredentials.getIp()),
+            new WaitForCassandra(defaultLogin))
         .createRole(defaultLogin, childSuperUserCredentials, true)
         .dropRole(childSuperUserCredentials, Constants.DEFAULT_CASSANDRA_USERNAME)
         .loadKeyspace(
@@ -344,11 +339,13 @@ public class DevelopmentDeployment {
         .writeAuxiliaryCredentialToChildNode( // write network wide grpc account to root
             networkWideGrpcCredential, childSuperUserCredentials)
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
+            BootstrapDeploymentConstants.PATHSTORE_BUILD(childSuperUserCredentials.getIp()),
             new WaitForPathStore(childSuperUserCredentials))
         .custom(finalizeRootInstallation)
         .startImageAndWait(
-            BootstrapDeploymentConstants.RUN_COMMANDS.PATHSTORE_ADMIN_PANEL_RUN, null)
+            BootstrapDeploymentConstants.RUN_COMMANDS.PATHSTORE_ADMIN_PANEL_RUN(
+                childSuperUserCredentials.getIp()),
+            null)
         .build();
   }
 
@@ -359,13 +356,7 @@ public class DevelopmentDeployment {
    */
   private void cleanUp() {
     new DevelopmentBuilder()
-        .execute(DELETE_TAR_TAG, this.cassandraTar, DELETE_TAR(this.cassandraTar), -1)
-        .execute(DELETE_TAR_TAG, this.pathstoreTar, DELETE_TAR(this.pathstoreTar), -1)
-        .execute(
-            DELETE_TAR_TAG,
-            this.pathstoreAdminPanelTar,
-            DELETE_TAR(this.pathstoreAdminPanelTar),
-            -1)
+        .execute("Remove certs", "/etc/docker/certs.d/*", Arrays.asList("rm", "-rf", "/etc/docker/certs.d/*"), 0)
         .build();
   }
 }
