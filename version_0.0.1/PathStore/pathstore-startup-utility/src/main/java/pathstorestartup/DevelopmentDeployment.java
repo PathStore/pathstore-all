@@ -350,13 +350,18 @@ public class DevelopmentDeployment {
   }
 
   /**
-   * This function is used at the end or on shutdown to cleanup the local image tars. As if these
-   * aren't cleaned up and this runs again, it will rebuild the image with a copy of the previous
-   * image which will exponentially make the image size larger.
+   * This function is used at the start and end to remove any dangling certificates from the system.
+   *
+   * @implNote Please see issue 27 on github for the reason why we need to run the command in bash.
+   *     It has to do with the wildcard not being resolved properly
    */
   private void cleanUp() {
     new DevelopmentBuilder()
-        .execute("Remove certs", "/etc/docker/certs.d/*", Arrays.asList("rm", "-rf", "/etc/docker/certs.d/*"), 0)
+        .execute(
+            "Remove certs",
+            "/etc/docker/certs.d/*",
+            Arrays.asList("bash", "-c", "rm -rf /etc/docker/certs.d/*"),
+            0)
         .build();
   }
 }
