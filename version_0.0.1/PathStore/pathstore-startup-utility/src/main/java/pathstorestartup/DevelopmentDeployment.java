@@ -292,7 +292,6 @@ public class DevelopmentDeployment {
         .createRemoteDirectory(
             BootstrapDeploymentConstants.REMOTE_DIRECTORIES_AND_FILES
                 .REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR)
-        .createRemoteDirectory(DeploymentConstants.PATHSTORE_REGISTRY_DIRECTORY)
         .copyRegistryCertsTo(childSuperUserCredentials.getIp())
         .createDockerRegistry(childSuperUserCredentials.getIp())
         .pushToRegistry(DeploymentConstants.CASSANDRA, childSuperUserCredentials.getIp())

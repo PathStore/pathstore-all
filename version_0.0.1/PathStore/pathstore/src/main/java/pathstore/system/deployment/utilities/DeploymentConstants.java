@@ -27,8 +27,6 @@ public class DeploymentConstants {
 
   // pathstore registry directories
   public static final String PATHSTORE_REGISTRY = "pathstore-registry";
-  public static final String PATHSTORE_REGISTRY_DIRECTORY =
-      String.format("%s/%s", "pathstore-install", PATHSTORE_REGISTRY);
 
   /**
    * Constants for the remove function
@@ -73,7 +71,7 @@ public class DeploymentConstants {
    * Constants for generate properties command
    *
    * @see DeploymentBuilder#generatePropertiesFiles(int, String, int, Role, String, int, String,
-   *     int, String, int, String, int, String, String, String, String)
+   *     int, String, int, String, int, String, String, String, String, String)
    */
   public static final class GENERATE_PROPERTIES {
     public static final String LOCAL_TEMP_PROPERTIES_FILE =

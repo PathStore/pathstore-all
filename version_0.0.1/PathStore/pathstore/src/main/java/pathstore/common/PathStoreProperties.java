@@ -209,7 +209,6 @@ public class PathStoreProperties {
               Integer.parseInt(this.getProperty(props, CASSANDRA_PARENT_PORT));
           this.PullSleep = Integer.parseInt(this.getProperty(props, PULL_SLEEP));
           this.PushSleep = Integer.parseInt(this.getProperty(props, PUSH_SLEEP));
-          this.registryIP = this.getProperty(props, REGISTRY_IP);
         case ROOTSERVER:
           this.ExternalAddress = this.getProperty(props, EXTERNAL_ADDRESS);
           this.NodeID = Integer.parseInt(this.getProperty(props, NODE_ID));
@@ -219,6 +218,7 @@ public class PathStoreProperties {
                   this.NodeID,
                   this.getProperty(props, USERNAME),
                   this.getProperty(props, PASSWORD));
+          this.registryIP = this.getProperty(props, REGISTRY_IP);
         case CLIENT:
           this.GRPCIP = this.getProperty(props, GRPC_IP);
           this.GRPCPort = Integer.parseInt(this.getProperty(props, GRPC_PORT));

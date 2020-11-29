@@ -113,8 +113,8 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
     this.commands.add(
         new FileTransfer(
             this.remoteHostConnect,
-            "~/pathstore-install/pathstore-registry/pathstore-registry.crt",
-            "~/pathstore-install/pathstore-registry/pathstore-registry.crt"));
+            "/etc/pathstore/pathstore-registry.crt",
+            "pathstore-install/pathstore/pathstore-registry.crt"));
 
     return (T) this;
   }
@@ -136,7 +136,7 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
         new Exec(
             this.remoteHostConnect,
             String.format(
-                "cp ~/pathstore-install/pathstore-registry/pathstore-registry.crt /etc/docker/certs.d/%s/ca.crt",
+                "cp ~/pathstore-install/pathstore/pathstore-registry.crt /etc/docker/certs.d/%s/ca.crt",
                 registryIP),
             0));
 

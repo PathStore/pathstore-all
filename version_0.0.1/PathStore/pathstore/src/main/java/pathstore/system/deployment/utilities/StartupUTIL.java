@@ -91,7 +91,6 @@ public class StartupUTIL {
     return new DeploymentBuilder<>(sshUtil)
         .init()
         .createRemoteDirectory(DeploymentConstants.REMOTE_PATHSTORE_LOGS_SUB_DIR)
-        .createRemoteDirectory(DeploymentConstants.PATHSTORE_REGISTRY_DIRECTORY)
         .copyRegistryCertificate(registryIP)
         .loadRegistryCertificateOnChild(registryIP)
         .generatePropertiesFiles(

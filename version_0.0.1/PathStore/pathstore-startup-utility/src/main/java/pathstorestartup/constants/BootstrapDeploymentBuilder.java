@@ -145,7 +145,7 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
         new Exec(
             this.remoteHostConnect,
             String.format(
-                "mv ~/%s.pem ~/pathstore-install/pathstore-registry/pathstore-registry.crt",
+                "mv ~/%s.pem ~/pathstore-install/pathstore/pathstore-registry.crt",
                 registryIP),
             0));
 
@@ -154,7 +154,7 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
         new Exec(
             this.remoteHostConnect,
             String.format(
-                "mv ~/%s-key.pem ~/pathstore-install/pathstore-registry/pathstore-registry.key",
+                "mv ~/%s-key.pem ~/pathstore-install/pathstore/pathstore-registry.key",
                 registryIP),
             0));
 
@@ -162,7 +162,7 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
     this.commands.add(
         new Exec(
             this.remoteHostConnect,
-            "docker run -d --restart=always --name pathstore-registry -v \"$(pwd)\"/pathstore-install/pathstore-registry:/certs -e REGISTRY_HTTP_ADDR=0.0.0.0:443 -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/pathstore-registry.crt -e REGISTRY_HTTP_TLS_KEY=/certs/pathstore-registry.key -p 443:443 registry:2",
+            "docker run -d --restart=always --name pathstore-registry -v \"$(pwd)\"/pathstore-install/pathstore:/certs -e REGISTRY_HTTP_ADDR=0.0.0.0:443 -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/pathstore-registry.crt -e REGISTRY_HTTP_TLS_KEY=/certs/pathstore-registry.key -p 443:443 registry:2",
             0));
 
     String dir = String.format("/etc/docker/certs.d/%s", registryIP);
@@ -175,7 +175,7 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
         new Exec(
             this.remoteHostConnect,
             String.format(
-                "cp ~/pathstore-install/pathstore-registry/pathstore-registry.crt /etc/docker/certs.d/%s/ca.crt",
+                "cp ~/pathstore-install/pathstore/pathstore-registry.crt /etc/docker/certs.d/%s/ca.crt",
                 registryIP),
             0));
 
