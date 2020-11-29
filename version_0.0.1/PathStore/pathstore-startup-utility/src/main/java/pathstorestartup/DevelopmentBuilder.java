@@ -1,5 +1,7 @@
 package pathstorestartup;
 
+import pathstorestartup.constants.LocalCommand;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,45 +14,8 @@ import java.util.List;
  */
 public class DevelopmentBuilder {
 
-  /** This private class is used to denote an event that needs to occur and its related variables */
-  private static final class Event {
-    /** Process builder based on user passed command */
-    public final ProcessBuilder processBuilder;
-
-    /** Message to display before executing the command */
-    public final String entry;
-
-    /** Message to display after the command has finished executing */
-    public final String exit;
-
-    /** Message to display on error of the process */
-    public final String error;
-
-    /** Desired exit status for the process (-1 if irrelevant) */
-    public final int desiredExitStatus;
-
-    /**
-     * @param processBuilder {@link #processBuilder}
-     * @param entry {@link #entry}
-     * @param exit {@link #exit}
-     * @param error {@link #error}
-     */
-    private Event(
-        final ProcessBuilder processBuilder,
-        final String entry,
-        final String exit,
-        final String error,
-        final int desiredExitStatus) {
-      this.processBuilder = processBuilder;
-      this.entry = entry;
-      this.exit = exit;
-      this.error = error;
-      this.desiredExitStatus = desiredExitStatus;
-    }
-  }
-
   /** Synchronous list of processes to execute */
-  private final List<Event> processes = new ArrayList<>();
+  private final List<LocalCommand> processes = new ArrayList<>();
 
   /**
    * Add a command to the end of the sequence
@@ -66,8 +31,8 @@ public class DevelopmentBuilder {
       final List<String> commands,
       final int desiredExitStatus) {
     this.processes.add(
-        new Event(
-            new ProcessBuilder(commands),
+        new LocalCommand(
+            commands,
             this.format(commandName + ": %s", commandContext),
             this.format("Finished " + commandName + " %s", commandContext),
             this.format("Error " + commandName + " %s", commandContext),

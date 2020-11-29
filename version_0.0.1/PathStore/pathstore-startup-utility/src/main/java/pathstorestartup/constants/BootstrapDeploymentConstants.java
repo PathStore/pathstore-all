@@ -16,21 +16,6 @@ public class BootstrapDeploymentConstants {
   public static final String PATHSTORE_ADMIN_PANEL = "pathstore-admin-panel";
   public static final String LOCAL_TEMP_PROPERTIES_FILE = "temp-properties-file.properties";
 
-  public static final String REGISTRY_DIRECTORY =
-      String.format("%s/%s", "pathstore-install", "pathstore-registry");
-
-  public static String CASSANDRA_BUILD(final String rootIP) {
-    return String.format(
-        "docker run --network=host -dit --restart always --name %s %s/%s",
-        "cassandra", rootIP, "cassandra");
-  }
-
-  public static String PATHSTORE_BUILD(final String rootIP) {
-    return String.format(
-        "docker run --network=host -dit --restart always -v ~/%s:/etc/pathstore --user $(id -u):$(id -g) --name %s %s/%s",
-        String.format("%s/%s", "pathstore-install", "pathstore"), "pathstore", rootIP, "pathstore");
-  }
-
   /* Prompts and notifications */
   public static final String ENTRY = "Development Deployment utility";
   public static final String DIRECTORY_PROMPT = "PathStore Directory: ";
@@ -59,19 +44,6 @@ public class BootstrapDeploymentConstants {
    * pathstorestartup.DevelopmentBuilder}
    */
   public static final class DEVELOPMENT_BUILDER {
-    // Operation to print out whilst deleting a local tar if applicable
-    public static final String DELETE_TAR_TAG = "Deleting";
-
-    /**
-     * This function is used to generate the command to delete a tar file
-     *
-     * @param tarLocation absolute location of tar file
-     * @return command to execute
-     */
-    public static List<String> DELETE_TAR(final String tarLocation) {
-      return Arrays.asList("rm", "-f", tarLocation);
-    }
-
     // Operation to print whilst packing the program locally
     public static final String MVN_PACKAGE_TAG = "Building";
 
@@ -98,23 +70,9 @@ public class BootstrapDeploymentConstants {
     public static List<String> BUILD_IMAGE(final String name, final String path) {
       return Arrays.asList("docker", "build", "-t", name, path);
     }
-
-    // Operation to print tag whilst saving a docker image
-    public static final String SAVING_IMAGE_TAG = "Saving image";
-
-    /**
-     * This function generates a docker save command to a specific output tar directory
-     *
-     * @param outputTar where to save the docker tar
-     * @param imageName what image to save
-     * @return docker save command
-     */
-    public static List<String> SAVING_IMAGE(final String outputTar, final String imageName) {
-      return Arrays.asList("docker", "save", "-o", outputTar, imageName);
-    }
   }
 
-  /** This class stores constants for {@link BootstrapDeploymentBuilder#initBootstrap()} */
+  /** This class stores constants for {@link BootstrapDeploymentBuilder#bootstrapInit()} */
   public static final class INIT_BOOTSTRAP_COMMANDS {
     // command to kill the pathstore admin panel container
     public static final String KILL_PATHSTORE_ADMIN_PANEL =
@@ -124,9 +82,13 @@ public class BootstrapDeploymentConstants {
     public static final String REMOVE_PATHSTORE_ADMIN_PANEL =
         String.format("docker rm %s", PATHSTORE_ADMIN_PANEL);
 
-    // command to remove the old pathstore admin panel image
-    public static final String REMOVE_PATHSTORE_ADMIN_PANEL_IMAGE =
-        String.format("docker image rm %s", PATHSTORE_ADMIN_PANEL);
+    /** command to kill the pathstore registry container */
+    public static final String KILL_PATHSTORE_REGISTRY =
+        String.format("docker kill %s", DeploymentConstants.PATHSTORE_REGISTRY);
+
+    // command to remove the pathstore registry container
+    public static final String REMOVE_PATHSTORE_REGISTRY =
+        String.format("docker rm %s", DeploymentConstants.PATHSTORE_REGISTRY);
   }
 
   /**
@@ -157,10 +119,6 @@ public class BootstrapDeploymentConstants {
     // subdir on the remote host for the website
     public static final String REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR =
         String.format("%s/%s", DeploymentConstants.REMOTE_BASE_DIRECTORY, PATHSTORE_ADMIN_PANEL);
-
-    // where to store the tar on the remote host
-    public static final String REMOTE_PATHSTORE_ADMIN_PANEL_TAR =
-        String.format("%s/%s.tar", REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR, PATHSTORE_ADMIN_PANEL);
 
     // where to store the website properties file on the remote host
     public static final String REMOTE_PATHSTORE_ADMIN_PANEL_PROPERTIES_FILE =

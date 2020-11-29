@@ -287,18 +287,18 @@ public class DevelopmentDeployment {
     return new BootstrapDeploymentBuilder(sshUtil)
         .mkcertSetup(childSuperUserCredentials.getIp())
         .init()
+        .bootstrapInit()
         .createRemoteDirectory(DeploymentConstants.REMOTE_PATHSTORE_LOGS_SUB_DIR)
         .createRemoteDirectory(
             BootstrapDeploymentConstants.REMOTE_DIRECTORIES_AND_FILES
                 .REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR)
-        .createRemoteDirectory(BootstrapDeploymentConstants.REGISTRY_DIRECTORY)
+        .createRemoteDirectory(DeploymentConstants.PATHSTORE_REGISTRY_DIRECTORY)
         .copyRegistryCertsTo(childSuperUserCredentials.getIp())
         .createDockerRegistry(childSuperUserCredentials.getIp())
         .pushToRegistry(DeploymentConstants.CASSANDRA, childSuperUserCredentials.getIp())
         .pushToRegistry(DeploymentConstants.PATHSTORE, childSuperUserCredentials.getIp())
         .pushToRegistry(
             BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL, childSuperUserCredentials.getIp())
-        // get the certs and start the registry
         .generatePropertiesFiles(
             1,
             childSuperUserCredentials.getIp(),
@@ -315,10 +315,11 @@ public class DevelopmentDeployment {
             BootstrapDeploymentConstants.LOCAL_TEMP_PROPERTIES_FILE,
             DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
             childSuperUserCredentials.getUsername(),
-            childSuperUserCredentials.getPassword())
+            childSuperUserCredentials.getPassword(),
+            childSuperUserCredentials.getIp())
         .generateWebsiteProperties("127.0.0.1", cassandraPort, grpcPort, masterPassword)
         .startImageAndWait(
-            BootstrapDeploymentConstants.CASSANDRA_BUILD(childSuperUserCredentials.getIp()),
+            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN(childSuperUserCredentials.getIp()),
             new WaitForCassandra(defaultLogin))
         .createRole(defaultLogin, childSuperUserCredentials, true)
         .dropRole(childSuperUserCredentials, Constants.DEFAULT_CASSANDRA_USERNAME)
@@ -339,7 +340,7 @@ public class DevelopmentDeployment {
         .writeAuxiliaryCredentialToChildNode( // write network wide grpc account to root
             networkWideGrpcCredential, childSuperUserCredentials)
         .startImageAndWait(
-            BootstrapDeploymentConstants.PATHSTORE_BUILD(childSuperUserCredentials.getIp()),
+            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN(childSuperUserCredentials.getIp()),
             new WaitForPathStore(childSuperUserCredentials))
         .custom(finalizeRootInstallation)
         .startImageAndWait(

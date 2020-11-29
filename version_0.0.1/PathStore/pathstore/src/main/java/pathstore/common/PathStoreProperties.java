@@ -183,6 +183,12 @@ public class PathStoreProperties {
   public String applicationMasterPassword = null;
 
   /**
+   * This is the ip address of the internal registry used to pull containers. We need to provide
+   * this to any child deployed by this node
+   */
+  public String registryIP = null;
+
+  /**
    * Parses the data in accordance to what is needed per role. See class Java doc for description on
    * what is parsed
    */
@@ -203,6 +209,7 @@ public class PathStoreProperties {
               Integer.parseInt(this.getProperty(props, CASSANDRA_PARENT_PORT));
           this.PullSleep = Integer.parseInt(this.getProperty(props, PULL_SLEEP));
           this.PushSleep = Integer.parseInt(this.getProperty(props, PUSH_SLEEP));
+          this.registryIP = this.getProperty(props, REGISTRY_IP);
         case ROOTSERVER:
           this.ExternalAddress = this.getProperty(props, EXTERNAL_ADDRESS);
           this.NodeID = Integer.parseInt(this.getProperty(props, NODE_ID));

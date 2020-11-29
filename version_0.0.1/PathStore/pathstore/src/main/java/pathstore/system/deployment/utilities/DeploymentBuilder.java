@@ -30,8 +30,8 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   }
 
   /**
-   * This function will kill pathstore and remove its image, then optional force push data then kill
-   * cassandra and remove its image, then remove the installation directory
+   * This function will remove pathstore, optionally force push, then remove cassandra. Then it will
+   * clean up any left over directories
    *
    * @param forcePush if you wish to force push data you need to provide an instance of that class
    * @return this
@@ -40,33 +40,29 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
 
     this.commands.add(
         new Exec(this.remoteHostConnect, DeploymentConstants.REMOVAL_COMMANDS.KILL_PATHSTORE, -1));
+
     this.commands.add(
         new Exec(
             this.remoteHostConnect, DeploymentConstants.REMOVAL_COMMANDS.REMOVE_PATHSTORE, -1));
-    this.commands.add(
-        new Exec(
-            this.remoteHostConnect,
-            DeploymentConstants.REMOVAL_COMMANDS.REMOVE_PATHSTORE_IMAGE,
-            -1));
 
     if (forcePush != null) this.commands.add(forcePush);
 
     this.commands.add(
         new Exec(this.remoteHostConnect, DeploymentConstants.REMOVAL_COMMANDS.KILL_CASSANDRA, -1));
+
     this.commands.add(
         new Exec(
             this.remoteHostConnect, DeploymentConstants.REMOVAL_COMMANDS.REMOVE_CASSANDRA, -1));
-    this.commands.add(
-        new Exec(
-            this.remoteHostConnect,
-            DeploymentConstants.REMOVAL_COMMANDS.REMOVE_CASSANDRA_IMAGE,
-            -1));
 
     this.commands.add(
         new Exec(
             this.remoteHostConnect,
             DeploymentConstants.REMOVAL_COMMANDS.REMOVE_BASE_DIRECTORY,
             -1));
+
+    this.commands.add(
+        new Exec(
+            this.remoteHostConnect, DeploymentConstants.REMOVAL_COMMANDS.REMOVE_DOCKER_CERTS, -1));
 
     return (T) this;
   }
@@ -107,20 +103,49 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   }
 
   /**
-   * This function will copy a local tar to the remote host and load that tar into the docker
-   * registry
+   * This function is used to copy the pathstore-registry certificates from the current node to the
+   * new child
    *
-   * @param localTar local tar to copy
-   * @param remoteTar where to copy this local tar on the remote host
+   * @param registryIP registry ip
    * @return this
    */
-  public T copyAndLoad(final String localTar, final String remoteTar) {
-    this.commands.add(new FileTransfer(this.remoteHostConnect, localTar, remoteTar));
+  public T copyRegistryCertificate(final String registryIP) {
+    this.commands.add(
+        new FileTransfer(
+            this.remoteHostConnect,
+            "~/pathstore-install/pathstore-registry/pathstore-registry.crt",
+            "~/pathstore-install/pathstore-registry/pathstore-registry.crt"));
+
+    return (T) this;
+  }
+
+  /**
+   * This function is used to load the registry certificaates on the child node
+   *
+   * @param registryIP registry ip
+   * @return this
+   */
+  public T loadRegistryCertificateOnChild(final String registryIP) {
+    String dir = String.format("/etc/docker/certs.d/%s", registryIP);
+
+    // create certs directory
+    this.commands.add(new Exec(this.remoteHostConnect, String.format("mkdir -p %s", dir), 0));
+
+    // copy cert into directory
     this.commands.add(
         new Exec(
             this.remoteHostConnect,
-            String.format(DeploymentConstants.COPY_AND_LOAD.LOAD_DOCKER_IMAGE, remoteTar),
+            String.format(
+                "cp ~/pathstore-install/pathstore-registry/pathstore-registry.crt /etc/docker/certs.d/%s/ca.crt",
+                registryIP),
             0));
+
+    // set dir group
+    this.commands.add(
+        new Exec(this.remoteHostConnect, String.format("chgrp docker -R %s", dir), 0));
+
+    // set dir permissions
+    this.commands.add(new Exec(this.remoteHostConnect, String.format("chmod 775 -R %s", dir), 0));
 
     return (T) this;
   }
@@ -145,6 +170,7 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    * @param remoteProperties where to transfer to
    * @param username username to local cassandra node
    * @param password password to local cassandra node
+   * @param registryIP registry ip to pull containers from
    * @return this
    */
   public T generatePropertiesFiles(
@@ -163,7 +189,8 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
       final String localProperties,
       final String remoteProperties,
       final String username,
-      final String password) {
+      final String password,
+      final String registryIP) {
 
     this.commands.add(
         new GeneratePropertiesFile(
@@ -181,7 +208,8 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
             cassandraParentPort,
             localProperties,
             username,
-            password));
+            password,
+            registryIP));
 
     this.commands.add(new FileTransfer(this.remoteHostConnect, localProperties, remoteProperties));
 
@@ -213,8 +241,7 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    * @param roleName role to drop
    * @return this
    */
-  public T dropRole(
-          final DeploymentCredential cassandraCredentials, final String roleName) {
+  public T dropRole(final DeploymentCredential cassandraCredentials, final String roleName) {
     this.commands.add(new DropRole(cassandraCredentials, roleName));
     return (T) this;
   }
@@ -259,8 +286,7 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    * @return this
    */
   public T writeAuxiliaryCredentialToChildNode(
-      final AuxiliaryCredential credential,
-      final DeploymentCredential cassandraCredentials) {
+      final AuxiliaryCredential credential, final DeploymentCredential cassandraCredentials) {
     this.commands.add(
         new WriteCredentialToChildNode<>(
             AuxiliaryDataLayer.getInstance(), credential, cassandraCredentials));
