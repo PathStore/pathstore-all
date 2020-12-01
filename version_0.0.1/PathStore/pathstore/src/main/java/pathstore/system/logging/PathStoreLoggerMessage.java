@@ -2,6 +2,7 @@ package pathstore.system.logging;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /** This class denotes some log message in the system */
@@ -21,20 +22,21 @@ public class PathStoreLoggerMessage {
   private final String loggerName;
 
   /** Formatted message */
-  private final String formattedMessage = this.formatMessage();
+  @Getter(lazy = true)
+  private final String formattedMessage = formatMessage(this.loggerLevel, this.loggerName, this.message);
 
   /**
    * Formats a message to [type][type][loggername] message
    *
    * @return formatted message
    */
-  private String formatMessage() {
+  private static String formatMessage(final LoggerLevel loggerLevel, final String loggerName, final String message) {
     return String.format(
         "[%-6s][%-40s][%s] %s",
-        this.loggerLevel.toString(),
-        this.loggerName,
+        loggerLevel.toString(),
+        loggerName,
         new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()),
-        this.message);
+        message);
   }
 
   /** @return count */
@@ -45,10 +47,5 @@ public class PathStoreLoggerMessage {
   /** @return logger level of message */
   public LoggerLevel getLoggerLevel() {
     return this.loggerLevel;
-  }
-
-  /** @return formatted message */
-  public String getFormattedMessage() {
-    return this.formattedMessage;
   }
 }
