@@ -1,6 +1,7 @@
 package pathstore.system.deployment.commands;
 
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import lombok.RequiredArgsConstructor;
 import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.logging.PathStoreLogger;
@@ -11,6 +12,7 @@ import pathstore.system.logging.PathStoreLoggerFactory;
  * connection to be possible. This is because if we don't want for cassandra to start up pathstore
  * will have to do it.
  */
+@RequiredArgsConstructor
 public class WaitForCassandra implements ICommand {
 
   /** Logger */
@@ -27,13 +29,7 @@ public class WaitForCassandra implements ICommand {
   private final DeploymentCredential cassandraCredentials;
 
   /** Denotes the current amount of time waited */
-  private int currentWaitCount;
-
-  /** @param cassandraCredentials {@link #cassandraCredentials} */
-  public WaitForCassandra(final DeploymentCredential cassandraCredentials) {
-    this.cassandraCredentials = cassandraCredentials;
-    this.currentWaitCount = 0;
-  }
+  private int currentWaitCount = 0;
 
   /**
    * Continue to try and make a connection, if an exception is thrown wait 1 second and try again

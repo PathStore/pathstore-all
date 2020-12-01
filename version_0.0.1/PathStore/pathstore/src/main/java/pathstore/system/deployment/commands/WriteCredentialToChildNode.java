@@ -1,5 +1,6 @@
 package pathstore.system.deployment.commands;
 
+import lombok.RequiredArgsConstructor;
 import pathstore.authentication.CredentialDataLayer;
 import pathstore.authentication.credentials.Credential;
 import pathstore.authentication.credentials.DeploymentCredential;
@@ -10,6 +11,7 @@ import pathstore.system.PathStorePrivilegedCluster;
  * pathstore_applications.local_auth table so they can access the parent node's cassandra during
  * push and pull operations
  */
+@RequiredArgsConstructor
 public class WriteCredentialToChildNode<SearchableT, CredentialT extends Credential<SearchableT>>
     implements ICommand {
   /** Data layer to write to */
@@ -20,20 +22,6 @@ public class WriteCredentialToChildNode<SearchableT, CredentialT extends Credent
 
   /** Cassandra credentials to connect with */
   private final DeploymentCredential cassandraCredentials;
-
-  /**
-   * @param dataLayer {@link #dataLayer}
-   * @param credential {@link #credential}
-   * @param cassandraCredentials {@link #cassandraCredentials}
-   */
-  public WriteCredentialToChildNode(
-      final CredentialDataLayer<SearchableT, CredentialT> dataLayer,
-      final CredentialT credential,
-      final DeploymentCredential cassandraCredentials) {
-    this.dataLayer = dataLayer;
-    this.credential = credential;
-    this.cassandraCredentials = cassandraCredentials;
-  }
 
   /** Connect to the child node, write the credentials to that node, and close the cluster */
   @Override

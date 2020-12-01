@@ -2,7 +2,10 @@ package pathstore.system.logging;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import lombok.RequiredArgsConstructor;
 
+/** This class denotes some log message in the system */
+@RequiredArgsConstructor
 public class PathStoreLoggerMessage {
 
   /** What position in the array are you */
@@ -18,23 +21,7 @@ public class PathStoreLoggerMessage {
   private final String loggerName;
 
   /** Formatted message */
-  private final String formattedMessage;
-
-  /**
-   * @param loggerLevel {@link #loggerLevel}
-   * @param message {@link #message}
-   */
-  PathStoreLoggerMessage(
-      final int count,
-      final LoggerLevel loggerLevel,
-      final String message,
-      final String loggerName) {
-    this.count = count;
-    this.loggerLevel = loggerLevel;
-    this.message = message;
-    this.loggerName = loggerName;
-    this.formattedMessage = this.formatMessage();
-  }
+  private final String formattedMessage = this.formatMessage();
 
   /**
    * Formats a message to [type][type][loggername] message

@@ -1,6 +1,7 @@
 package pathstore.authentication.grpc;
 
 import io.grpc.*;
+import lombok.RequiredArgsConstructor;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
@@ -12,6 +13,7 @@ import pathstore.system.logging.PathStoreLoggerFactory;
  * @see AuthManager for the logic behind the construction of who is capable of accessing which
  *     endpoints
  */
+@RequiredArgsConstructor
 public class AuthServerInterceptor implements ServerInterceptor {
   /** Logger to log each message incoming and out going at finest */
   private static final PathStoreLogger logger =
@@ -19,11 +21,6 @@ public class AuthServerInterceptor implements ServerInterceptor {
 
   /** Auth manager instance */
   private final AuthManager authManager;
-
-  /** @param authManager {@link #authManager} */
-  public AuthServerInterceptor(final AuthManager authManager) {
-    this.authManager = authManager;
-  }
 
   /**
    * This function is called every time a message is coming into the grpc server.

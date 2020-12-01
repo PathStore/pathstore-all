@@ -1,5 +1,6 @@
 package pathstore.system.deployment.commands;
 
+import lombok.RequiredArgsConstructor;
 import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.system.PathStorePrivilegedCluster;
@@ -9,6 +10,7 @@ import pathstore.system.PathStorePrivilegedCluster;
  *
  * @apiNote the role name must exist and the keyspace must already exist as no validity check occurs
  */
+@RequiredArgsConstructor
 public class GrantReadAndWriteAccess implements ICommand {
 
   /** Cassandra credentials to connect with */
@@ -19,20 +21,6 @@ public class GrantReadAndWriteAccess implements ICommand {
 
   /** Keyspace to grant read and write permissions on */
   private final String keyspace;
-
-  /**
-   * @param cassandraCredentials {@link #cassandraCredentials}
-   * @param roleName {@link #roleName}
-   * @param keyspace {@link #keyspace}
-   */
-  public GrantReadAndWriteAccess(
-      final DeploymentCredential cassandraCredentials,
-      final String roleName,
-      final String keyspace) {
-    this.cassandraCredentials = cassandraCredentials;
-    this.roleName = roleName;
-    this.keyspace = keyspace;
-  }
 
   /** Connects to child node, grants permissions then closes the connection */
   @Override

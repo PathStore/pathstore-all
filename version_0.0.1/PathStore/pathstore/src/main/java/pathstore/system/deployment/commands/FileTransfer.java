@@ -2,6 +2,7 @@ package pathstore.system.deployment.commands;
 
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
+import lombok.RequiredArgsConstructor;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstore.system.deployment.utilities.StartupUTIL;
 
@@ -9,6 +10,7 @@ import pathstore.system.deployment.utilities.StartupUTIL;
  * This class is used to denote a step in the installation process that transfers a local file to
  * the remote host
  */
+@RequiredArgsConstructor
 public class FileTransfer implements ICommand {
 
   /** Used to transfer {@link #relativeLocalPath} to {@link #relativeRemotePath} */
@@ -19,17 +21,6 @@ public class FileTransfer implements ICommand {
 
   /** Relative remote path with respect to the logged in user's home directory */
   private final String relativeRemotePath;
-
-  /**
-   * @param relativeLocalPath {@link #relativeLocalPath}
-   * @param relativeRemotePath {@link #relativeRemotePath}
-   */
-  public FileTransfer(
-      final SSHUtil sshUtil, final String relativeLocalPath, final String relativeRemotePath) {
-    this.sshUtil = sshUtil;
-    this.relativeLocalPath = relativeLocalPath;
-    this.relativeRemotePath = relativeRemotePath;
-  }
 
   /**
    * Sends the localfile to the remote destination

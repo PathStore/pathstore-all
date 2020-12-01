@@ -1,6 +1,7 @@
 package pathstore.system.deployment.utilities;
 
 import com.datastax.driver.core.Session;
+import lombok.RequiredArgsConstructor;
 import pathstore.authentication.credentials.AuxiliaryCredential;
 import pathstore.authentication.credentials.Credential;
 import pathstore.authentication.credentials.DeploymentCredential;
@@ -17,6 +18,7 @@ import java.util.function.Consumer;
 /**
  * This class is used to create a sequence of commands to perform some operation on a remote host
  */
+@RequiredArgsConstructor
 public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
 
   /** List of commands */
@@ -24,10 +26,6 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
 
   /** remote host where you are executing these commands */
   protected final SSHUtil remoteHostConnect;
-
-  public DeploymentBuilder(final SSHUtil remoteHostConnect) {
-    this.remoteHostConnect = remoteHostConnect;
-  }
 
   /**
    * This function will remove pathstore, optionally force push, then remove cassandra. Then it will

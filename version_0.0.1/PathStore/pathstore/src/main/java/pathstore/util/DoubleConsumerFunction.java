@@ -13,5 +13,5 @@ public interface DoubleConsumerFunction<T1, T2, R> {
    * @param input2 input 2
    * @return return value
    */
-  R apply(T1 input1, T2 input2);
+  R apply(final T1 input1, final T2 input2);
 }
