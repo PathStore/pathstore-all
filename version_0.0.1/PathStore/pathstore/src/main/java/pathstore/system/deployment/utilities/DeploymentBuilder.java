@@ -169,6 +169,7 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    * @param username username to local cassandra node
    * @param password password to local cassandra node
    * @param registryIP registry ip to pull containers from
+   * @param pathstoreVersion version to install from registry
    * @return this
    */
   public T generatePropertiesFiles(
@@ -188,7 +189,8 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
       final String remoteProperties,
       final String username,
       final String password,
-      final String registryIP) {
+      final String registryIP,
+      final String pathstoreVersion) {
 
     this.commands.add(
         new GeneratePropertiesFile(
@@ -207,7 +209,8 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
             localProperties,
             username,
             password,
-            registryIP));
+            registryIP,
+            pathstoreVersion));
 
     this.commands.add(new FileTransfer(this.remoteHostConnect, localProperties, remoteProperties));
 

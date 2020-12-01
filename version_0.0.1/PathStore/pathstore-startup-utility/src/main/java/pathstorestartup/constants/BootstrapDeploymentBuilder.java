@@ -145,8 +145,7 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
         new Exec(
             this.remoteHostConnect,
             String.format(
-                "mv ~/%s.pem ~/pathstore-install/pathstore/pathstore-registry.crt",
-                registryIP),
+                "mv ~/%s.pem ~/pathstore-install/pathstore/pathstore-registry.crt", registryIP),
             0));
 
     // move key to proper name
@@ -154,8 +153,7 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
         new Exec(
             this.remoteHostConnect,
             String.format(
-                "mv ~/%s-key.pem ~/pathstore-install/pathstore/pathstore-registry.key",
-                registryIP),
+                "mv ~/%s-key.pem ~/pathstore-install/pathstore/pathstore-registry.key", registryIP),
             0));
 
     // start the registry
@@ -189,16 +187,20 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
     return this;
   }
 
-  public BootstrapDeploymentBuilder pushToRegistry(final String imageName, final String registryIP) {
+  public BootstrapDeploymentBuilder pushToRegistry(
+      final String imageName, final String registryIP, final String version) {
 
     this.commands.add(
         new Exec(
             this.remoteHostConnect,
-            String.format("docker tag %s %s/%s", imageName, registryIP, imageName),
+            String.format("docker tag %s %s/%s:%s", imageName, registryIP, imageName, version),
             0));
 
     this.commands.add(
-        new Exec(this.remoteHostConnect, String.format("docker push %s/%s", registryIP, imageName), 0));
+        new Exec(
+            this.remoteHostConnect,
+            String.format("docker push %s/%s:%s", registryIP, imageName, version),
+            0));
 
     return this;
   }

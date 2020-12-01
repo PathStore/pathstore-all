@@ -110,7 +110,8 @@ public class StartupUTIL {
             DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
             childSuperUserCredential.getUsername(),
             childSuperUserCredential.getPassword(),
-            registryIP)
+            registryIP,
+            PathStoreProperties.getInstance().pathstoreVersion)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN(registryIP),
             new WaitForCassandra(defaultLogin))
@@ -144,7 +145,8 @@ public class StartupUTIL {
                 .getCredential(Constants.AUXILIARY_ACCOUNTS.NETWORK_WIDE_GRPC_CREDENTIAL),
             childSuperUserCredential)
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN(registryIP),
+            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN(
+                registryIP, PathStoreProperties.getInstance().pathstoreVersion),
             new WaitForPathStore(childSuperUserCredential))
         .build();
   }

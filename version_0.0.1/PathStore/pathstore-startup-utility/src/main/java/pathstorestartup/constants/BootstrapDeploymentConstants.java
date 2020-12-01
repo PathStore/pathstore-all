@@ -31,6 +31,7 @@ public class BootstrapDeploymentConstants {
   public static final String GRPC_PROMPT_PORT = "GRPC port (if unsure enter 1099): ";
   public static final String NETWORK_ADMIN_USERNAME_PROMPT = "Network Admin Username: ";
   public static final String NETWORK_ADMIN_PASSWORD_PROMPT = "Network Admin Password: ";
+  public static final String PATHSTORE_VERSION = "PathStore Version: ";
   public static final String COULD_NOT_CONNECT =
       "Could not connect to the server with the provided credentials please try again or quit with ctrl-c";
 
@@ -131,7 +132,7 @@ public class BootstrapDeploymentConstants {
     // how to store the admin panel
     public static String PATHSTORE_ADMIN_PANEL_RUN(final String rootIP) {
       return String.format(
-          "docker run --network=host -dit --restart always -v ~/%s:/etc/pathstore --name %s %s/%s",
+          "docker run --network=host -dit --restart always -v ~/%s:/etc/pathstore --name %s %s/%s:latest",
           REMOTE_DIRECTORIES_AND_FILES.REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR,
           PATHSTORE_ADMIN_PANEL,
           rootIP,

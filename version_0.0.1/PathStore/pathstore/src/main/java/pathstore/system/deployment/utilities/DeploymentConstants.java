@@ -90,7 +90,7 @@ public class DeploymentConstants {
      */
     public static String CASSANDRA_RUN(final String rootIP) {
       return String.format(
-          "docker run --network=host -dit --restart always --name %s %s/%s",
+          "docker run --network=host -dit --restart always --name %s %s/%s:latest",
           CASSANDRA, rootIP, CASSANDRA);
     }
 
@@ -98,10 +98,14 @@ public class DeploymentConstants {
      * @param rootIP root ip, (where the registry is)
      * @return run command for the pathstore container
      */
-    public static String PATHSTORE_RUN(final String rootIP) {
+    public static String PATHSTORE_RUN(final String rootIP, final String version) {
       return String.format(
-          "docker run --network=host -dit --restart always -v ~/%s:/etc/pathstore --user $(id -u):$(id -g) --name %s %s/%s",
-          String.format("%s/%s", "pathstore-install", "pathstore"), PATHSTORE, rootIP, PATHSTORE);
+          "docker run --network=host -dit --restart always -v ~/%s:/etc/pathstore --user $(id -u):$(id -g) --name %s %s/%s:%s",
+          String.format("%s/%s", "pathstore-install", "pathstore"),
+          PATHSTORE,
+          rootIP,
+          PATHSTORE,
+          version);
     }
   }
 }

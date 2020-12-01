@@ -58,7 +58,7 @@ public class FinalizeRootInstallation implements ICommand {
    * @param cassandraCredentials {@link #cassandraCredential}
    * @param username {@link #username}
    * @param password {@link #password}
-   * @param masterPassword
+   * @param masterPassword {@link #masterPassword}
    * @param sshPort {@link #sshPort}
    * @param grpcPort {@link #grpcPort}
    */

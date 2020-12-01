@@ -174,6 +174,10 @@ public class DevelopmentDeployment {
         Utils.askQuestionWithInvalidResponse(
             this.scanner, BootstrapDeploymentConstants.NETWORK_ADMIN_PASSWORD_PROMPT, null);
 
+    String pathstoreVersion =
+        Utils.askQuestionWithInvalidResponse(
+            this.scanner, BootstrapDeploymentConstants.PATHSTORE_VERSION, null);
+
     AuxiliaryCredential networkAdministratorAccount =
         new AuxiliaryCredential(
             Constants.AUXILIARY_ACCOUNTS.NETWORK_ADMINISTRATOR,
@@ -218,6 +222,7 @@ public class DevelopmentDeployment {
                 childSuperUserCredential,
                 networkAdministratorAccount,
                 masterPassword,
+                pathstoreVersion,
                 new FinalizeRootInstallation(
                     childSuperUserCredential,
                     username,
@@ -254,6 +259,7 @@ public class DevelopmentDeployment {
    * @param childSuperUserCredentials super user credentials for the root node
    * @param networkAdministratorCredential network administrator account
    * @param masterPassword master password for the pathstore_applications table
+   * @param pathstoreVersion version of pathstore
    * @param finalizeRootInstallation finalization object to occur at the end of deployment
    * @return list of deployment commands to execute
    */
@@ -263,6 +269,7 @@ public class DevelopmentDeployment {
       final DeploymentCredential childSuperUserCredentials,
       final AuxiliaryCredential networkAdministratorCredential,
       final String masterPassword,
+      final String pathstoreVersion,
       final FinalizeRootInstallation finalizeRootInstallation) {
 
     DeploymentCredential defaultLogin =
@@ -294,10 +301,13 @@ public class DevelopmentDeployment {
                 .REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR)
         .copyRegistryCertsTo(childSuperUserCredentials.getIp())
         .createDockerRegistry(childSuperUserCredentials.getIp())
-        .pushToRegistry(DeploymentConstants.CASSANDRA, childSuperUserCredentials.getIp())
-        .pushToRegistry(DeploymentConstants.PATHSTORE, childSuperUserCredentials.getIp())
+        .pushToRegistry(DeploymentConstants.CASSANDRA, childSuperUserCredentials.getIp(), "latest")
         .pushToRegistry(
-            BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL, childSuperUserCredentials.getIp())
+            DeploymentConstants.PATHSTORE, childSuperUserCredentials.getIp(), pathstoreVersion)
+        .pushToRegistry(
+            BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL,
+            childSuperUserCredentials.getIp(),
+            "latest")
         .generatePropertiesFiles(
             1,
             childSuperUserCredentials.getIp(),
@@ -315,7 +325,8 @@ public class DevelopmentDeployment {
             DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
             childSuperUserCredentials.getUsername(),
             childSuperUserCredentials.getPassword(),
-            childSuperUserCredentials.getIp())
+            childSuperUserCredentials.getIp(),
+            pathstoreVersion)
         .generateWebsiteProperties("127.0.0.1", cassandraPort, grpcPort, masterPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN(childSuperUserCredentials.getIp()),
@@ -339,7 +350,8 @@ public class DevelopmentDeployment {
         .writeAuxiliaryCredentialToChildNode( // write network wide grpc account to root
             networkWideGrpcCredential, childSuperUserCredentials)
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN(childSuperUserCredentials.getIp()),
+            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN(
+                childSuperUserCredentials.getIp(), pathstoreVersion),
             new WaitForPathStore(childSuperUserCredentials))
         .custom(finalizeRootInstallation)
         .startImageAndWait(
