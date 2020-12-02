@@ -44,9 +44,6 @@ public class DevelopmentDeployment {
   /** Represents how to receive information from the user */
   private final Scanner scanner;
 
-  /** local absolute paths to each tar that was generated */
-  private String cassandraTar, pathstoreTar, pathstoreAdminPanelTar;
-
   /** @param scanner {@link #scanner} */
   public DevelopmentDeployment(final Scanner scanner) {
     this.scanner = scanner;
@@ -67,18 +64,6 @@ public class DevelopmentDeployment {
     String pathstorePath = String.format("%s/%s", dir, DeploymentConstants.PATHSTORE);
     String pathstoreAdminPanelPath =
         String.format("%s/%s", dir, BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL);
-
-    // set all tar locations
-    this.cassandraTar =
-        String.format(
-            BootstrapDeploymentConstants.DEVELOPMENT_TAR_LOCATIONS.LOCAL_CASSANDRA_TAR, dir);
-    this.pathstoreTar =
-        String.format(
-            BootstrapDeploymentConstants.DEVELOPMENT_TAR_LOCATIONS.LOCAL_PATHSTORE_TAR, dir);
-    this.pathstoreAdminPanelTar =
-        String.format(
-            BootstrapDeploymentConstants.DEVELOPMENT_TAR_LOCATIONS.LOCAL_PATHSTORE_ADMIN_PANEL_TAR,
-            dir);
 
     // add shutdown hook
     Runtime.getRuntime().addShutdownHook(new Thread(this::cleanUp));
@@ -124,7 +109,7 @@ public class DevelopmentDeployment {
    * This function will prompt the user for the connection information to a server and ask for the
    * grpc port to start the root server with
    *
-   * @see #initList(SSHUtil, int, DeploymentCredential, AuxiliaryCredential, String,
+   * @see #initList(SSHUtil, int, DeploymentCredential, AuxiliaryCredential, String, String,
    *     FinalizeRootInstallation)
    * @see FinalizeRootInstallation
    */

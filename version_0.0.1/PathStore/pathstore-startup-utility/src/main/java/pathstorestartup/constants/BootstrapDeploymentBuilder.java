@@ -60,6 +60,8 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
    * @return this
    */
   public BootstrapDeploymentBuilder mkcertSetup(final String registryIP) {
+
+    // clone mkcert
     this.commands.add(
         new LocalCommand(
             Arrays.asList(
@@ -70,6 +72,7 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
             "Error download mkcert-v1.4.3-linux-amd64",
             0));
 
+    // allow for execution
     this.commands.add(
         new LocalCommand(
             Arrays.asList("chmod", "u+rtx", "mkcert-v1.4.3-linux-amd64"),
@@ -78,6 +81,7 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
             "Error updating permissions for mkcert-v1.4.3-linux-amd64",
             0));
 
+    // generate certs for pathstore registry
     this.commands.add(
         new LocalCommand(
             Arrays.asList("./mkcert-v1.4.3-linux-amd64", registryIP),
@@ -86,8 +90,13 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
             "Error creating pathstore-registry self signed certificates",
             0));
 
+    // remove mkcert from local fs
+    this.removeLocalFile("mkcert-v1.4.3-linux-amd64");
+
+    // dir for pathstore registry
     String dir = String.format("/etc/docker/certs.d/%s", registryIP);
 
+    // create pathstore registry cert dir on local machine
     this.commands.add(
         new LocalCommand(
             Arrays.asList("mkdir", "-p", dir),
@@ -96,8 +105,10 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
             String.format("Error creating %s", dir),
             0));
 
+    // cert directory
     String localcert = String.format("%s/ca.crt", dir);
 
+    // move cert from generation dir to docker certs dir
     this.commands.add(
         new LocalCommand(
             Arrays.asList("cp", String.format("%s.pem", registryIP), localcert),
@@ -106,6 +117,7 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
             String.format("Error setting up local registry cert at %s", localcert),
             0));
 
+    // set the docker group as the group for the docker certs dir
     this.commands.add(
         new LocalCommand(
             Arrays.asList("chgrp", "docker", "-R", dir),
@@ -114,6 +126,8 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
             "Error setting dir ownership",
             0));
 
+    // set the permissions to 775 from 755. We need group permissions to modify the dir in the
+    // future.
     this.commands.add(
         new LocalCommand(
             Arrays.asList("chmod", "775", "-R", dir),
@@ -129,13 +143,34 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
 
     String cert = String.format("%s.pem", registryIP);
 
+    // transfer cert over
     this.commands.add(new FileTransfer(this.remoteHostConnect, cert, cert));
+
+    this.removeLocalFile(cert);
 
     String key = String.format("%s-key.pem", registryIP);
 
+    // transfer key over
     this.commands.add(new FileTransfer(this.remoteHostConnect, key, key));
 
+    this.removeLocalFile(key);
+
     return this;
+  }
+
+  /**
+   * This function will remove some file from the local machine
+   *
+   * @param fileToRemove file to remove
+   */
+  private void removeLocalFile(final String fileToRemove) {
+    this.commands.add(
+        new LocalCommand(
+            Arrays.asList("rm", fileToRemove),
+            String.format("Removing %s", fileToRemove),
+            String.format("Removed %s", fileToRemove),
+            String.format("Error removing %s", fileToRemove),
+            0));
   }
 
   public BootstrapDeploymentBuilder createDockerRegistry(final String registryIP) {
