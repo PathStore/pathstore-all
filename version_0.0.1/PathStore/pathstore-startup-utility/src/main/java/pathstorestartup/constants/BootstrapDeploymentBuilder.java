@@ -144,14 +144,18 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
     String cert = String.format("%s.pem", registryIP);
 
     // transfer cert over
-    this.commands.add(new FileTransfer(this.remoteHostConnect, cert, cert));
+    this.commands.add(
+        new FileTransfer(
+            this.remoteHostConnect, cert, "pathstore-install/pathstore/pathstore-registry.crt"));
 
     this.removeLocalFile(cert);
 
     String key = String.format("%s-key.pem", registryIP);
 
     // transfer key over
-    this.commands.add(new FileTransfer(this.remoteHostConnect, key, key));
+    this.commands.add(
+        new FileTransfer(
+            this.remoteHostConnect, key, "pathstore-install/pathstore/pathstore-registry.key"));
 
     this.removeLocalFile(key);
 
@@ -174,22 +178,6 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
   }
 
   public BootstrapDeploymentBuilder createDockerRegistry(final String registryIP) {
-
-    // move certificate to proper name
-    this.commands.add(
-        new Exec(
-            this.remoteHostConnect,
-            String.format(
-                "mv ~/%s.pem ~/pathstore-install/pathstore/pathstore-registry.crt", registryIP),
-            0));
-
-    // move key to proper name
-    this.commands.add(
-        new Exec(
-            this.remoteHostConnect,
-            String.format(
-                "mv ~/%s-key.pem ~/pathstore-install/pathstore/pathstore-registry.key", registryIP),
-            0));
 
     // start the registry
     this.commands.add(
