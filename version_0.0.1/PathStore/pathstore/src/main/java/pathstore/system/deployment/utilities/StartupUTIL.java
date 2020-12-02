@@ -89,7 +89,7 @@ public class StartupUTIL {
     String registryIP = PathStoreProperties.getInstance().registryIP;
 
     return new DeploymentBuilder<>(sshUtil)
-        .init()
+        .init(registryIP)
         .createRemoteDirectory(DeploymentConstants.REMOTE_PATHSTORE_LOGS_SUB_DIR)
         .copyRegistryCertificate(registryIP)
         .loadRegistryCertificateOnChild(registryIP)
@@ -161,7 +161,9 @@ public class StartupUTIL {
       final SSHUtil sshUtil, final DeploymentEntry deploymentEntry, final ServerEntry serverEntry) {
     return new DeploymentBuilder<>(sshUtil)
         .removeLocalCredential(deploymentEntry.newNodeId)
-        .remove(new ForcePush(deploymentEntry.newNodeId, serverEntry.ip, serverEntry.cassandraPort))
+        .remove(
+            new ForcePush(deploymentEntry.newNodeId, serverEntry.ip, serverEntry.cassandraPort),
+            PathStoreProperties.getInstance().registryIP)
         .deleteNodeHistory(deploymentEntry.newNodeId, deploymentEntry.parentNodeId)
         .build();
   }

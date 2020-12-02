@@ -65,9 +65,6 @@ public class DevelopmentDeployment {
     String pathstoreAdminPanelPath =
         String.format("%s/%s", dir, BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL);
 
-    // add shutdown hook
-    Runtime.getRuntime().addShutdownHook(new Thread(this::cleanUp));
-
     // build cassandra
     new DevelopmentBuilder()
         .execute(
@@ -97,9 +94,6 @@ public class DevelopmentDeployment {
                 BootstrapDeploymentConstants.PATHSTORE_ADMIN_PANEL, pathstoreAdminPanelPath),
             0)
         .build();
-
-    // remove all certs before hand
-    this.cleanUp();
 
     // deploy the built images to a server
     this.deploy();
@@ -198,6 +192,12 @@ public class DevelopmentDeployment {
 
       String masterPassword = CassandraAuthenticationUtil.generateAlphaNumericPassword();
 
+      // remove all certs before hand
+      this.cleanUp(ip);
+
+      // add shutdown hook to clean up registry certs.d
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> this.cleanUp(ip)));
+
       try {
         // Execute all commands in the given list
         for (ICommand command :
@@ -278,7 +278,7 @@ public class DevelopmentDeployment {
 
     return new BootstrapDeploymentBuilder(sshUtil)
         .mkcertSetup(childSuperUserCredentials.getIp())
-        .init()
+        .init(childSuperUserCredentials.getIp())
         .bootstrapInit()
         .createRemoteDirectory(DeploymentConstants.REMOTE_PATHSTORE_LOGS_SUB_DIR)
         .createRemoteDirectory(
@@ -349,16 +349,13 @@ public class DevelopmentDeployment {
   /**
    * This function is used at the start and end to remove any dangling certificates from the system.
    *
-   * @implNote Please see issue 27 on github for the reason why we need to run the command in bash.
-   *     It has to do with the wildcard not being resolved properly
+   * @param registryIP registry ip to remove dir for
    */
-  private void cleanUp() {
+  private void cleanUp(final String registryIP) {
+    String dir = String.format("/etc/docker/certs.d/%s", registryIP);
+
     new DevelopmentBuilder()
-        .execute(
-            "Remove certs",
-            "/etc/docker/certs.d/*",
-            Arrays.asList("bash", "-c", "rm -rf /etc/docker/certs.d/*"),
-            0)
+        .execute("Remove certs", dir, Arrays.asList("rm", "-rf", dir), 0)
         .build();
   }
 }

@@ -93,26 +93,6 @@ public class BootstrapDeploymentConstants {
   }
 
   /**
-   * This class stores formatable strings to determine the local locations of tar files
-   *
-   * @see DevelopmentDeployment#init()
-   */
-  public static final class DEVELOPMENT_TAR_LOCATIONS {
-    public static final String LOCAL_CASSANDRA_TAR =
-        "%s/"
-            + String.format(
-                "%s/%s.tar", DeploymentConstants.CASSANDRA, DeploymentConstants.CASSANDRA);
-
-    public static final String LOCAL_PATHSTORE_TAR =
-        "%s/"
-            + String.format(
-                "%s/%s.tar", DeploymentConstants.PATHSTORE, DeploymentConstants.PATHSTORE);
-
-    public static final String LOCAL_PATHSTORE_ADMIN_PANEL_TAR =
-        "%s/" + String.format("%s/%s.tar", PATHSTORE_ADMIN_PANEL, PATHSTORE_ADMIN_PANEL);
-  }
-
-  /**
    * This class stores constants related to deploying the website. This is not included in pathstore
    * as this only occurs on the deployment of the root node
    */

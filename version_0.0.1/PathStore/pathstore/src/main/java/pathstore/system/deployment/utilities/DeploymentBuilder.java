@@ -32,9 +32,10 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    * clean up any left over directories
    *
    * @param forcePush if you wish to force push data you need to provide an instance of that class
+   * @param registryIP registry IP
    * @return this
    */
-  public T remove(final ForcePush forcePush) {
+  public T remove(final ForcePush forcePush, final String registryIP) {
 
     this.commands.add(
         new Exec(this.remoteHostConnect, DeploymentConstants.REMOVAL_COMMANDS.KILL_PATHSTORE, -1));
@@ -60,7 +61,9 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
 
     this.commands.add(
         new Exec(
-            this.remoteHostConnect, DeploymentConstants.REMOVAL_COMMANDS.REMOVE_DOCKER_CERTS, -1));
+            this.remoteHostConnect,
+            DeploymentConstants.REMOVAL_COMMANDS.REMOVE_DOCKER_CERTS(registryIP),
+            -1));
 
     return (T) this;
   }
@@ -70,11 +73,11 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    *
    * @return this
    */
-  public T init() {
+  public T init(final String registryIP) {
     this.commands.add(
         new Exec(this.remoteHostConnect, DeploymentConstants.INIT_COMMANDS.DOCKER_CHECK, 0));
 
-    this.remove(null);
+    this.remove(null, registryIP);
 
     this.commands.add(
         new Exec(

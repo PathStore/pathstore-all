@@ -31,7 +31,7 @@ public class DeploymentConstants {
   /**
    * Constants for the remove function
    *
-   * @see DeploymentBuilder#remove(ForcePush)
+   * @see DeploymentBuilder#remove(ForcePush, String)
    */
   public static final class REMOVAL_COMMANDS {
     public static final String KILL_CASSANDRA = String.format("docker kill %s", CASSANDRA);
@@ -43,7 +43,13 @@ public class DeploymentConstants {
     public static final String REMOVE_BASE_DIRECTORY =
         String.format("rm -rf %s", REMOTE_BASE_DIRECTORY);
 
-    public static final String REMOVE_DOCKER_CERTS = "rm -rf /etc/docker/certs.d/*";
+    /**
+     * @param registryIP pathstore registry ip
+     * @return removal command to remove registry certs directory
+     */
+    public static String REMOVE_DOCKER_CERTS(final String registryIP) {
+      return String.format("rm -rf /etc/docker/certs.d/%s", registryIP);
+    }
   }
 
   /**
@@ -71,7 +77,7 @@ public class DeploymentConstants {
    * Constants for generate properties command
    *
    * @see DeploymentBuilder#generatePropertiesFiles(int, String, int, Role, String, int, String,
-   *     int, String, int, String, int, String, String, String, String, String)
+   *     int, String, int, String, int, String, String, String, String, String, String)
    */
   public static final class GENERATE_PROPERTIES {
     public static final String LOCAL_TEMP_PROPERTIES_FILE =
