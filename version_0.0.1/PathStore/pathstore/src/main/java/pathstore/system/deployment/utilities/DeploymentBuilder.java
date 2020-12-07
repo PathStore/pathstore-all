@@ -107,15 +107,14 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    * This function is used to copy the pathstore-registry certificates from the current node to the
    * new child
    *
-   * @param registryIP registry ip
    * @return this
    */
-  public T copyRegistryCertificate(final String registryIP) {
+  public T copyRegistryCertificate() {
     this.commands.add(
         new FileTransfer(
             this.remoteHostConnect,
-            "/etc/pathstore/pathstore-registry.crt",
-            "pathstore-install/pathstore/pathstore-registry.crt"));
+            DeploymentConstants.LOCAL_DOCKER_REGISTRY_CERT_LOCATION,
+            DeploymentConstants.REMOTE_DOCKER_REGISTRY_CERT_LOCATION));
 
     return (T) this;
   }
@@ -127,26 +126,34 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    * @return this
    */
   public T loadRegistryCertificateOnChild(final String registryIP) {
-    String dir = String.format("/etc/docker/certs.d/%s", registryIP);
 
     // create certs directory
-    this.commands.add(new Exec(this.remoteHostConnect, String.format("mkdir -p %s", dir), 0));
+    this.commands.add(
+        new Exec(
+            this.remoteHostConnect,
+            DeploymentConstants.CREATE_LOCAL_DOCKER_REGISTRY_CERT_DIR(registryIP),
+            0));
 
     // copy cert into directory
     this.commands.add(
         new Exec(
             this.remoteHostConnect,
-            String.format(
-                "cp ~/pathstore-install/pathstore/pathstore-registry.crt /etc/docker/certs.d/%s/ca.crt",
-                registryIP),
+            DeploymentConstants.COPY_FROM_REMOTE_TO_LOCAL_DOCKER_REGISTRY_CERT(registryIP),
             0));
 
     // set dir group
     this.commands.add(
-        new Exec(this.remoteHostConnect, String.format("chgrp docker -R %s", dir), 0));
+        new Exec(
+            this.remoteHostConnect,
+            DeploymentConstants.CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIRECTORY(registryIP),
+            0));
 
     // set dir permissions
-    this.commands.add(new Exec(this.remoteHostConnect, String.format("chmod 775 -R %s", dir), 0));
+    this.commands.add(
+        new Exec(
+            this.remoteHostConnect,
+            DeploymentConstants.CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIRECTORY(registryIP),
+            0));
 
     return (T) this;
   }

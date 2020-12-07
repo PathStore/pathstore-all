@@ -28,6 +28,74 @@ public class DeploymentConstants {
   // pathstore registry directories
   public static final String PATHSTORE_REGISTRY = "pathstore-registry";
 
+  // local docker certs dir
+  public static final String LOCAL_DOCKER_CERTS_DIR = "/etc/docker/certs.d";
+
+  /**
+   * @param registryIP registry ip
+   * @return /etc/docker/certs.d/registry_ip/
+   */
+  public static String LOCAL_DOCKER_REGISTRY_CERT_DIR(final String registryIP) {
+    return String.format("%s/%s", LOCAL_DOCKER_CERTS_DIR, registryIP);
+  }
+
+  /**
+   * @param registryIP registry ip
+   * @return mkdir to create local docker registry cert dir
+   */
+  public static String CREATE_LOCAL_DOCKER_REGISTRY_CERT_DIR(final String registryIP) {
+    return String.format("mkdir -p %s", LOCAL_DOCKER_REGISTRY_CERT_DIR(registryIP));
+  }
+
+  /**
+   * @param registryIP registry ip
+   * @return where the cert should be present on a child machine in order to pull from the pathstore
+   *     registry
+   */
+  public static String LOCAL_DOCKER_REGISTRY_CERT(final String registryIP) {
+    return String.format("%s/ca.crt", LOCAL_DOCKER_REGISTRY_CERT_DIR(registryIP));
+  }
+
+  // docker registry cert name
+  public static final String DOCKER_REGISTRY_CERT_NAME = "pathstore-registry.crt";
+
+  // docker registry cert location
+  public static final String REMOTE_DOCKER_REGISTRY_CERT_LOCATION =
+      String.format("%s/%s", REMOTE_PATHSTORE_SUB_DIR, DOCKER_REGISTRY_CERT_NAME);
+
+  /**
+   * @param registryIP registry ip
+   * @return command to copy from the remote docker registry location to local location
+   *     (pathstore-install -> /etc/docker)
+   */
+  public static String COPY_FROM_REMOTE_TO_LOCAL_DOCKER_REGISTRY_CERT(final String registryIP) {
+    return String.format(
+        "cp ~/%s %s",
+        DeploymentConstants.REMOTE_DOCKER_REGISTRY_CERT_LOCATION,
+        DeploymentConstants.LOCAL_DOCKER_REGISTRY_CERT(registryIP));
+  }
+
+  /**
+   * @param registryIP registry ip
+   * @return chgrp command to set the local docker registry cert dir to docker
+   */
+  public static String CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIRECTORY(final String registryIP) {
+    return String.format("chgrp docker -R %s", LOCAL_DOCKER_REGISTRY_CERT_DIR(registryIP));
+  }
+
+  /**
+   * @param registryIP registry ip
+   * @return chmod command to set the local docker registry cert dir permissions to 775
+   */
+  public static String CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIRECTORY(
+      final String registryIP) {
+    return String.format("chmod 775 -R %s", LOCAL_DOCKER_REGISTRY_CERT_DIR(registryIP));
+  }
+
+  // where the cert is locally accessible
+  public static final String LOCAL_DOCKER_REGISTRY_CERT_LOCATION =
+      String.format("/etc/pathstore/%s", DOCKER_REGISTRY_CERT_NAME);
+
   /**
    * Constants for the remove function
    *
