@@ -148,8 +148,9 @@ public class DeploymentConstants {
    *     int, String, int, String, int, String, String, String, String, String, String)
    */
   public static final class GENERATE_PROPERTIES {
-    public static final String LOCAL_TEMP_PROPERTIES_FILE =
-        "/etc/pathstore/temp-properties-file.properties";
+    public static String LOCAL_TEMP_PROPERTIES_FILE(final int nodeId) {
+      return String.format("/etc/pathstore/temp-properties-file-%d.properties", nodeId);
+    }
 
     public static final String REMOTE_PATHSTORE_PROPERTIES_FILE =
         String.format("%s/pathstore.properties", REMOTE_PATHSTORE_SUB_DIR);

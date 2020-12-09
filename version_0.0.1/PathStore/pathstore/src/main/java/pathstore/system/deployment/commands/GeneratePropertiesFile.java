@@ -1,31 +1,15 @@
 package pathstore.system.deployment.commands;
 
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.CASSANDRA_IP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.CASSANDRA_PARENT_IP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.CASSANDRA_PARENT_PORT;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.CASSANDRA_PORT;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.EXTERNAL_ADDRESS;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.GRPC_IP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.GRPC_PARENT_IP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.GRPC_PARENT_PORT;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.GRPC_PORT;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.NODE_ID;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PARENT_ID;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PASSWORD;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PATHSTORE_VERSION;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PULL_SLEEP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PUSH_SLEEP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.REGISTRY_IP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.ROLE;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.USERNAME;
+import lombok.RequiredArgsConstructor;
+import pathstore.common.Role;
+import pathstore.system.deployment.utilities.StartupUTIL;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Properties;
-import lombok.RequiredArgsConstructor;
-import pathstore.common.Role;
-import pathstore.system.deployment.utilities.StartupUTIL;
+
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
 
 /**
  * This command is used to generate a pathstore properties file and have it available to be able to
@@ -70,9 +54,6 @@ public class GeneratePropertiesFile implements ICommand {
   /** Cassandra port of new nodes' parent */
   private final int cassandraParentPort;
 
-  /** Where to store the generate pathstore file */
-  private final String destinationToStore;
-
   /** Super user account for cassandra */
   private final String username;
 
@@ -84,6 +65,9 @@ public class GeneratePropertiesFile implements ICommand {
 
   /** PathStore version */
   private final String pathstoreVersion;
+
+  /** Where to store the generate pathstore file */
+  private final String destinationToStore;
 
   /**
    * This command will generate a properties file for a new node to be loaded into the docker

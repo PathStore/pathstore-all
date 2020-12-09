@@ -106,12 +106,12 @@ public class StartupUTIL {
             cassandraPort,
             cassandraParentIP,
             cassandraParentPort,
-            DeploymentConstants.GENERATE_PROPERTIES.LOCAL_TEMP_PROPERTIES_FILE,
-            DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
             childSuperUserCredential.getUsername(),
             childSuperUserCredential.getPassword(),
             registryIP,
-            PathStoreProperties.getInstance().pathstoreVersion)
+            PathStoreProperties.getInstance().pathstoreVersion,
+            DeploymentConstants.GENERATE_PROPERTIES.LOCAL_TEMP_PROPERTIES_FILE(nodeID),
+            DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN(registryIP),
             new WaitForCassandra(defaultLogin))

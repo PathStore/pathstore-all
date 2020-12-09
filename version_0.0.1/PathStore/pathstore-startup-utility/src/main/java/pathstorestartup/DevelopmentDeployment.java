@@ -306,12 +306,12 @@ public class DevelopmentDeployment {
             cassandraPort,
             "127.0.0.1",
             cassandraPort,
-            BootstrapDeploymentConstants.LOCAL_TEMP_PROPERTIES_FILE,
-            DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
             childSuperUserCredentials.getUsername(),
             childSuperUserCredentials.getPassword(),
             childSuperUserCredentials.getIp(),
-            pathstoreVersion)
+            pathstoreVersion,
+            BootstrapDeploymentConstants.LOCAL_TEMP_PROPERTIES_FILE,
+            DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE)
         .generateWebsiteProperties("127.0.0.1", cassandraPort, grpcPort, masterPassword)
         .startImageAndWait(
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN(childSuperUserCredentials.getIp()),
