@@ -4,10 +4,9 @@ import pathstore.system.deployment.commands.Exec;
 import pathstore.system.deployment.commands.FileTransfer;
 import pathstore.system.deployment.commands.RemoveGeneratedPropertiesFile;
 import pathstore.system.deployment.utilities.DeploymentBuilder;
+import pathstore.system.deployment.utilities.DeploymentConstants;
 import pathstore.system.deployment.utilities.SSHUtil;
 import pathstorestartup.commands.CreateWebsitePropertiesFile;
-
-import java.util.Arrays;
 
 /**
  * Deployment functions specific to the startup utility
@@ -23,7 +22,7 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
 
   /**
    * This function is used to remove all remote references to the admin panel. This should be used
-   * ontop of {@link DeploymentBuilder#init()}
+   * ontop of {@link DeploymentBuilder#init(String)}
    */
   public BootstrapDeploymentBuilder bootstrapInit() {
     this.commands.add(
@@ -54,7 +53,9 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
   }
 
   /**
-   * This function is used to download the mkcert program and generate the certs for the docker
+   * TODO: Remove downloading from github. Either integrate into the codebase or re-write
+   *
+   * <p>This function is used to download the mkcert program and generate the certs for the docker
    * registry
    *
    * @return this
@@ -64,100 +65,121 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
     // clone mkcert
     this.commands.add(
         new LocalCommand(
-            Arrays.asList(
-                "wget",
-                "https://github.com/FiloSottile/mkcert/releases/download/v1.4.3/mkcert-v1.4.3-linux-amd64"),
-            "Downloading mkcert-v1.4.3-linux-amd64",
-            "Finished downloading mkcert-v1.4.3-linux-amd64",
-            "Error download mkcert-v1.4.3-linux-amd64",
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.DOWNLOAD_MKCERT,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.ENTRY_DOWNLOAD_MKCERT,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.EXIT_DOWNLOAD_MKCERT,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.ERROR_DOWNLOAD_MKCERT,
             0));
 
     // allow for execution
     this.commands.add(
         new LocalCommand(
-            Arrays.asList("chmod", "u+rtx", "mkcert-v1.4.3-linux-amd64"),
-            "Granting executable permissions for mkcert-v1.4.3-linux-amd64",
-            "Finished updating permissions for mkcert-v1.4.3-linux-amd64",
-            "Error updating permissions for mkcert-v1.4.3-linux-amd64",
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.CHANGE_MKCERT_ACCESS,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.ENTRY_CHANGE_MKCERT_ACCESS,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.EXIT_CHANGE_MKCERT_ACCESS,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.ERROR_CHANGE_MKCERT_ACCESS,
             0));
 
     // generate certs for pathstore registry
     this.commands.add(
         new LocalCommand(
-            Arrays.asList("./mkcert-v1.4.3-linux-amd64", registryIP),
-            "Creating pathstore-registry self signed certificates",
-            "Finished creating pathstore-registry self signed certificates",
-            "Error creating pathstore-registry self signed certificates",
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.GENERATE_REGISTRY_CERTIFICATES(
+                registryIP),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .ENTRY_GENERATE_REGISTRY_CERTIFICATES,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .EXIT_GENERATE_REGISTRY_CERTIFICATES,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .ERROR_GENERATE_REGISTRY_CERTIFICATES,
             0));
 
     // remove mkcert from local fs
-    this.removeLocalFile("mkcert-v1.4.3-linux-amd64");
-
-    // dir for pathstore registry
-    String dir = String.format("/etc/docker/certs.d/%s", registryIP);
+    this.removeLocalFile(BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.MKCERT_NAME);
 
     // create pathstore registry cert dir on local machine
     this.commands.add(
         new LocalCommand(
-            Arrays.asList("mkdir", "-p", dir),
-            String.format("Creating %s dir", dir),
-            String.format("Created %s dir", dir),
-            String.format("Error creating %s", dir),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .CREATE_DOCKER_REGISTRY_CERT_DIR(registryIP),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .ENTRY_CREATE_DOCKER_REGISTRY_CERT_DIR(registryIP),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .EXIT_CREATE_DOCKER_REGISTRY_CERT_DIR(registryIP),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .ERROR_CREATE_DOCKER_REGISTRY_CERT_DIR(registryIP),
             0));
-
-    // cert directory
-    String localcert = String.format("%s/ca.crt", dir);
 
     // move cert from generation dir to docker certs dir
     this.commands.add(
         new LocalCommand(
-            Arrays.asList("cp", String.format("%s.pem", registryIP), localcert),
-            String.format("Setting up local registry cert at %s", localcert),
-            String.format("Set up local registry cert at %s", localcert),
-            String.format("Error setting up local registry cert at %s", localcert),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .COPY_DOCKER_REGISTRY_CERT_TO_DIR(registryIP),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .ENTRY_COPY_DOCKER_REGISTRY_CERT_TO_DIR(registryIP),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .EXIT_COPY_DOCKER_REGISTRY_CERT_TO_DIR(registryIP),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .ERROR_COPY_DOCKER_REGISTRY_CERT_TO_DIR(registryIP),
             0));
 
     // set the docker group as the group for the docker certs dir
     this.commands.add(
         new LocalCommand(
-            Arrays.asList("chgrp", "docker", "-R", dir),
-            "Setting dir ownership",
-            "Set dir ownership",
-            "Error setting dir ownership",
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIR(registryIP),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .ENTRY_CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIR,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .EXIT_CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIR,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .ERROR_CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIR,
             0));
 
     // set the permissions to 775 from 755. We need group permissions to modify the dir in the
     // future.
     this.commands.add(
         new LocalCommand(
-            Arrays.asList("chmod", "775", "-R", dir),
-            "Setting dir permissions",
-            "Set dir permission",
-            "Error setting dir permission",
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIR(registryIP),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .ENTRY_CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIR,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .EXIT_CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIR,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .ERROR_CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIR,
             0));
 
     return this;
   }
 
+  /**
+   * This function is used to move the locally generated certificate onto the root node
+   *
+   * @param registryIP registry ip
+   * @return this
+   */
   public BootstrapDeploymentBuilder copyRegistryCertsTo(final String registryIP) {
-
-    String cert = String.format("%s.pem", registryIP);
 
     // transfer cert over
     this.commands.add(
         new FileTransfer(
-            this.remoteHostConnect, cert, "pathstore-install/pathstore/pathstore-registry.crt"));
+            this.remoteHostConnect,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.LOCAL_CERT_NAME(registryIP),
+            DeploymentConstants.REMOTE_DOCKER_REGISTRY_CERT_LOCATION));
 
-    this.removeLocalFile(cert);
-
-    String key = String.format("%s-key.pem", registryIP);
+    this.removeLocalFile(
+        BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.LOCAL_CERT_NAME(registryIP));
 
     // transfer key over
     this.commands.add(
         new FileTransfer(
-            this.remoteHostConnect, key, "pathstore-install/pathstore/pathstore-registry.key"));
+            this.remoteHostConnect,
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.LOCAL_KEY_NAME(registryIP),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE
+                .REMOTE_DOCKER_REGISTRY_KEY_LOCATION));
 
-    this.removeLocalFile(key);
+    this.removeLocalFile(
+        BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.LOCAL_KEY_NAME(registryIP));
 
     return this;
   }
@@ -170,59 +192,89 @@ public class BootstrapDeploymentBuilder extends DeploymentBuilder<BootstrapDeplo
   private void removeLocalFile(final String fileToRemove) {
     this.commands.add(
         new LocalCommand(
-            Arrays.asList("rm", fileToRemove),
-            String.format("Removing %s", fileToRemove),
-            String.format("Removed %s", fileToRemove),
-            String.format("Error removing %s", fileToRemove),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.REMOVE_LOCAL_FILE(
+                fileToRemove),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.ENTRY_REMOVE_LOCAL_FILE(
+                fileToRemove),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.EXIT_REMOVE_LOCAL_FILE(
+                fileToRemove),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.ERROR_REMOVE_LOCAL_FILE(
+                fileToRemove),
             0));
   }
 
+  /**
+   * This function is used to create a docker registry on the root node.
+   *
+   * <p>It will start the registry and create the needed directories on the root node to allow for
+   * the root node to push and pull docker images from the registry
+   *
+   * @param registryIP registry ip
+   * @return this
+   */
   public BootstrapDeploymentBuilder createDockerRegistry(final String registryIP) {
 
     // start the registry
     this.commands.add(
         new Exec(
             this.remoteHostConnect,
-            "docker run -d --restart=always --name pathstore-registry -v \"$(pwd)\"/pathstore-install/pathstore:/certs -e REGISTRY_HTTP_ADDR=0.0.0.0:443 -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/pathstore-registry.crt -e REGISTRY_HTTP_TLS_KEY=/certs/pathstore-registry.key -p 443:443 registry:2",
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.DOCKER_REGISTRY_START,
             0));
 
-    String dir = String.format("/etc/docker/certs.d/%s", registryIP);
-
     // create certs directory
-    this.commands.add(new Exec(this.remoteHostConnect, String.format("mkdir -p %s", dir), 0));
+    this.commands.add(
+        new Exec(
+            this.remoteHostConnect,
+            DeploymentConstants.CREATE_LOCAL_DOCKER_REGISTRY_CERT_DIR(registryIP),
+            0));
 
     // copy cert into directory
     this.commands.add(
         new Exec(
             this.remoteHostConnect,
-            String.format(
-                "cp ~/pathstore-install/pathstore/pathstore-registry.crt /etc/docker/certs.d/%s/ca.crt",
-                registryIP),
+            DeploymentConstants.COPY_FROM_REMOTE_TO_LOCAL_DOCKER_REGISTRY_CERT(registryIP),
             0));
 
     // set dir group
     this.commands.add(
-        new Exec(this.remoteHostConnect, String.format("chgrp docker -R %s", dir), 0));
+        new Exec(
+            this.remoteHostConnect,
+            DeploymentConstants.CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIRECTORY(registryIP),
+            0));
 
     // set dir permissions
-    this.commands.add(new Exec(this.remoteHostConnect, String.format("chmod 775 -R %s", dir), 0));
+    this.commands.add(
+        new Exec(
+            this.remoteHostConnect,
+            DeploymentConstants.CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIRECTORY(registryIP),
+            0));
 
     return this;
   }
 
+  /**
+   * This function is used to tag and push a docker image to the newly created private registry
+   *
+   * @param imageName image name to push
+   * @param registryIP registry ip
+   * @param version version of the image
+   * @return this
+   */
   public BootstrapDeploymentBuilder pushToRegistry(
       final String imageName, final String registryIP, final String version) {
 
     this.commands.add(
         new Exec(
             this.remoteHostConnect,
-            String.format("docker tag %s %s/%s:%s", imageName, registryIP, imageName, version),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.DOCKER_TAG(
+                imageName, registryIP, version),
             0));
 
     this.commands.add(
         new Exec(
             this.remoteHostConnect,
-            String.format("docker push %s/%s:%s", registryIP, imageName, version),
+            BootstrapDeploymentConstants.DOCKER_REGISTRY_CERTIFICATE.DOCKER_PUSH(
+                imageName, registryIP, version),
             0));
 
     return this;

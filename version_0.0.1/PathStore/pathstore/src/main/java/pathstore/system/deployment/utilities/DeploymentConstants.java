@@ -18,7 +18,7 @@ public class DeploymentConstants {
   public static final String LOGS_DIRECTORY_NAME = "logs";
 
   // pathstore dir
-  private static final String REMOTE_PATHSTORE_SUB_DIR =
+  public static final String REMOTE_PATHSTORE_SUB_DIR =
       String.format("%s/%s", REMOTE_BASE_DIRECTORY, PATHSTORE);
 
   // logs dir
