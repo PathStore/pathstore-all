@@ -123,7 +123,7 @@ public class DeploymentConstants {
   /**
    * Constants for the init function
    *
-   * @see DeploymentBuilder#init()
+   * @see DeploymentBuilder#init(String)
    */
   public static final class INIT_COMMANDS {
     public static final String DOCKER_CHECK = "docker ps";
@@ -160,25 +160,42 @@ public class DeploymentConstants {
   public static final class RUN_COMMANDS {
 
     /**
-     * @param rootIP root ip, (where the registry is)
-     * @return run command for cassandra
+     * @param registryIP docker registry ip
+     * @return docker rmi command
      */
-    public static String CASSANDRA_RUN(final String rootIP) {
-      return String.format(
-          "docker run --network=host -dit --restart always --name %s %s/%s:latest",
-          CASSANDRA, rootIP, CASSANDRA);
+    public static String CASSANDRA_REMOVE_TAG(final String registryIP) {
+      return String.format("docker rmi %s/%s:latest", registryIP, CASSANDRA);
     }
 
     /**
-     * @param rootIP root ip, (where the registry is)
+     * @param registryIP root ip, (where the registry is)
+     * @return run command for cassandra
+     */
+    public static String CASSANDRA_RUN(final String registryIP) {
+      return String.format(
+          "docker run --network=host -dit --restart always --name %s %s/%s:latest",
+          CASSANDRA, registryIP, CASSANDRA);
+    }
+
+    /**
+     * @param registryIP docker registry ip
+     * @param version pathstore version
+     * @return docker rmi command
+     */
+    public static String PATHSTORE_REMOVE_TAG(final String registryIP, final String version) {
+      return String.format("docker rmi %s/%s:%s", registryIP, PATHSTORE, version);
+    }
+
+    /**
+     * @param registryIP root ip, (where the registry is)
      * @return run command for the pathstore container
      */
-    public static String PATHSTORE_RUN(final String rootIP, final String version) {
+    public static String PATHSTORE_RUN(final String registryIP, final String version) {
       return String.format(
           "docker run --network=host -dit --restart always -v ~/%s:/etc/pathstore --user $(id -u):$(id -g) --name %s %s/%s:%s",
           String.format("%s/%s", "pathstore-install", "pathstore"),
           PATHSTORE,
-          rootIP,
+          registryIP,
           PATHSTORE,
           version);
     }

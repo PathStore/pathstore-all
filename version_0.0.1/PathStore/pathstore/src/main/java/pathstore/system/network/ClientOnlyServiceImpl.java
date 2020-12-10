@@ -1,7 +1,9 @@
 package pathstore.system.network;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
+import pathstore.client.LocalNodeInfo;
 import pathstore.grpc.ClientOnlyServiceGrpc;
 import pathstore.grpc.pathStoreProto;
 import pathstore.sessions.SessionToken;
@@ -39,16 +41,20 @@ public class ClientOnlyServiceImpl extends ClientOnlyServiceGrpc.ClientOnlyServi
    *
    * @param request request send
    * @param responseObserver way to response
-   * @see NetworkImpl#getLocalNodeId()
+   * @see NetworkImpl#getLocalNodeInfo()
    */
   @Override
-  public void getLocalNodeId(
+  public void getLocalNodeInfo(
       final Empty request,
       final StreamObserver<pathStoreProto.GetLocalNodeResponse> responseObserver) {
-    int nodeId = this.network.getLocalNodeId();
+    LocalNodeInfo localNodeInfo = this.network.getLocalNodeInfo();
 
     responseObserver.onNext(
-        pathStoreProto.GetLocalNodeResponse.newBuilder().setNode(nodeId).build());
+        pathStoreProto
+            .GetLocalNodeResponse
+            .newBuilder()
+            .setInfoPayload(ByteString.copyFrom(localNodeInfo.serialize()))
+            .build());
     responseObserver.onCompleted();
   }
 }

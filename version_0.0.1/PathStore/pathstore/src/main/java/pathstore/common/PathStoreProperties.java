@@ -17,33 +17,14 @@
  */
 package pathstore.common;
 
-import static pathstore.common.Constants.PROPERTIESFILE;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.APPLICATION_MASTER_PASSWORD;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.APPLICATION_NAME;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.CASSANDRA_IP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.CASSANDRA_PARENT_IP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.CASSANDRA_PARENT_PORT;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.CASSANDRA_PORT;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.EXTERNAL_ADDRESS;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.GRPC_IP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.GRPC_PARENT_IP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.GRPC_PARENT_PORT;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.GRPC_PORT;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.NODE_ID;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PARENT_ID;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PASSWORD;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PATHSTORE_VERSION;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PULL_SLEEP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PUSH_SLEEP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.REGISTRY_IP;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.ROLE;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.SESSION_FILE;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.USERNAME;
+import lombok.ToString;
+import pathstore.authentication.credentials.NodeCredential;
 
 import java.io.FileInputStream;
 import java.util.Properties;
-import lombok.ToString;
-import pathstore.authentication.credentials.NodeCredential;
+
+import static pathstore.common.Constants.PROPERTIESFILE;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
 
 /**
  * This class is used to load runtime properties from a properties file located in {@link
@@ -242,20 +223,17 @@ public class PathStoreProperties {
                   this.getProperty(props, PASSWORD));
           this.registryIP = this.getProperty(props, REGISTRY_IP);
           this.pathstoreVersion = this.getProperty(props, PATHSTORE_VERSION);
+          this.CassandraIP = this.getProperty(props, CASSANDRA_IP);
+          this.CassandraPort = Integer.parseInt(this.getProperty(props, CASSANDRA_PORT));
         case CLIENT:
           this.GRPCIP = this.getProperty(props, GRPC_IP);
           this.GRPCPort = Integer.parseInt(this.getProperty(props, GRPC_PORT));
-          this.CassandraIP = this.getProperty(props, CASSANDRA_IP);
-          this.CassandraPort = Integer.parseInt(this.getProperty(props, CASSANDRA_PORT));
+          this.sessionFile = this.getProperty(props, SESSION_FILE);
+          this.applicationName = this.getProperty(props, APPLICATION_NAME);
+          this.applicationMasterPassword = this.getProperty(props, APPLICATION_MASTER_PASSWORD);
           break;
         default:
           throw new Exception();
-      }
-
-      if (this.role == Role.CLIENT) {
-        this.sessionFile = this.getProperty(props, SESSION_FILE);
-        this.applicationName = this.getProperty(props, APPLICATION_NAME);
-        this.applicationMasterPassword = this.getProperty(props, APPLICATION_MASTER_PASSWORD);
       }
 
       in.close();

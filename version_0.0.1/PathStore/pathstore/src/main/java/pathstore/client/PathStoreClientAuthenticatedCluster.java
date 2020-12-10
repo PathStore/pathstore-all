@@ -56,13 +56,9 @@ public class PathStoreClientAuthenticatedCluster {
   private static PathStoreClientAuthenticatedCluster initInstance(
       @NonNull final String applicationName, @NonNull final String masterPassword) {
 
-    System.out.println("Calling");
-
     Pair<Optional<String>, Optional<SchemaInfo>> response =
         PathStoreServerClient.getInstance()
             .registerApplicationClient(applicationName, masterPassword);
-
-    System.out.println("called");
 
     Optional<String> credentialsOptional = response.t1;
     Optional<SchemaInfo> schemaInfoOptional = response.t2;
@@ -114,6 +110,19 @@ public class PathStoreClientAuthenticatedCluster {
    */
   private PathStoreClientAuthenticatedCluster(final ClientCredential clientCredential) {
     this.credential = clientCredential;
+
+    // As of now the client is considered connected and properly ready to communicate with the local
+    // node
+    PathStoreClientInterceptor.getInstance().setCredential(clientCredential);
+
+    // All operations to perform after connection is complete
+    LocalNodeInfo localNodeInfoFromServer = PathStoreServerClient.getInstance().getLocalNodeId();
+
+    // setup all the values for ps properties
+    PathStoreProperties.getInstance().NodeID = localNodeInfoFromServer.getNodeId();
+    PathStoreProperties.getInstance().CassandraIP = localNodeInfoFromServer.getCassandraIP();
+    PathStoreProperties.getInstance().CassandraPort = localNodeInfoFromServer.getCassandraPort();
+
     this.cluster =
         ClusterCache.createCluster(
             new DeploymentCredential(
@@ -125,13 +134,6 @@ public class PathStoreClientAuthenticatedCluster {
     this.rawSession = this.cluster.connect();
 
     this.psSession = new PathStoreSession(this.rawSession);
-
-    // As of now the client is considered connected and properly ready to communicate with the local
-    // node
-    PathStoreClientInterceptor.getInstance().setCredential(clientCredential);
-
-    // All operations to perform after connection is complete
-    PathStoreProperties.getInstance().NodeID = PathStoreServerClient.getInstance().getLocalNodeId();
 
     if (this.credential.isSuperUser()) SchemaInfo.getInstance().setSession(this.rawSession);
   }

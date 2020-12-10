@@ -38,6 +38,7 @@ import pathstore.grpc.pathStoreProto.*;
 import pathstore.sessions.SessionToken;
 import pathstore.system.network.NetworkImpl;
 import pathstore.system.network.NetworkUtil;
+import pathstore.util.BlobObject;
 import pathstore.util.Pair;
 import pathstore.util.SchemaInfo;
 
@@ -79,8 +80,7 @@ public class PathStoreServerClient {
   /**
    * Channel for connection. Used to shutdown
    *
-   * <p>TODO: Call shutdown in {@link PathStoreCluster} and {@link
-   * PathStoreClientAuthenticatedCluster}
+   * <p>TODO: Call shutdown in {@link PathStoreClientAuthenticatedCluster}
    *
    * @see #shutdown()
    */
@@ -334,10 +334,15 @@ public class PathStoreServerClient {
    * As we cannot trust the node_id provided by the client at startup as this is used to make
    * decisions related to session consistency.
    *
-   * @return local node id
-   * @see NetworkImpl#getLocalNodeId()
+   * @return local node info
+   * @see NetworkImpl#getLocalNodeInfo()
    */
-  public int getLocalNodeId() {
-    return this.clientOnlyServiceBlockingStub.getLocalNodeId(Empty.newBuilder().build()).getNode();
+  public LocalNodeInfo getLocalNodeId() {
+    return (LocalNodeInfo)
+        BlobObject.deserialize(
+            this.clientOnlyServiceBlockingStub
+                .getLocalNodeInfo(Empty.newBuilder().build())
+                .getInfoPayload()
+                .asReadOnlyByteBuffer());
   }
 }

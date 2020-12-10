@@ -11,6 +11,7 @@ import pathstore.authentication.CassandraAuthenticationUtil;
 import pathstore.authentication.ClientAuthenticationUtil;
 import pathstore.authentication.credentials.ClientCredential;
 import pathstore.authentication.CredentialCache;
+import pathstore.client.LocalNodeInfo;
 import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.client.PathStoreServerClient;
 import pathstore.common.Constants;
@@ -457,9 +458,10 @@ public class NetworkImpl {
    * This function is used to gather the node of the local node for node_source in a session token.
    * Only called once by {@link PathStoreProperties#getInstance()}
    *
-   * @return local node id
+   * @return local node info
+   * @see LocalNodeInfo
    */
-  public int getLocalNodeId() {
-    return PathStoreProperties.getInstance().NodeID;
+  public LocalNodeInfo getLocalNodeInfo() {
+    return LocalNodeInfo.getInstance();
   }
 }
