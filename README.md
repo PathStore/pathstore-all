@@ -46,7 +46,7 @@ sudo usermod -aG docker pathstore-installer
 # Creates the certs directory for the networks private registry
 sudo mkdir -p /etc/docker/certs.d
 sudo chown root:docker /etc/docker/certs.d
-sudo chmod 775 /etc/docker/certs.
+sudo chmod 775 /etc/docker/certs.d
 ```
 
 **Maven** (*Version*: Apache Maven 3.6.0)
