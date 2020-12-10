@@ -36,6 +36,9 @@ import java.util.UUID;
  *     could potentially fetch a duplicate of the initial dataset.
  */
 public class QueryCacheEntry implements Serializable {
+  /** Lock for qc entry */
+  private final Object lock = new Object();
+
   /** Keyspace for the select statement */
   public final String keyspace;
 
@@ -101,9 +104,9 @@ public class QueryCacheEntry implements Serializable {
    * <p>TODO: Myles: I'm pretty sure {@link #waitUntilReady()} is un-needed. thus the notifyAll call
    * is un-needed
    */
-  public synchronized void setReady() {
+  public void setReady() {
     this.ready = true;
-    this.notifyAll();
+    this.lock.notifyAll();
   }
 
   /**
@@ -115,10 +118,10 @@ public class QueryCacheEntry implements Serializable {
    */
   public void waitUntilReady() {
     if (this.ready) return;
-    synchronized (this) {
+    synchronized (this.lock) {
       while (!this.ready)
         try {
-          this.wait();
+          this.lock.wait();
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
