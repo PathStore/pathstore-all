@@ -7,8 +7,6 @@ import lombok.NonNull;
 /**
  * This credential is used specifically for the client credentials. This will be used to denote a
  * credential that is solely used for pathstore client.
- *
- * <p>TODO: Add super user functionality
  */
 @EqualsAndHashCode(callSuper = true)
 public class ClientCredential extends Credential<String> {
