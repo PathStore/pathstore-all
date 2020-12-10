@@ -1,6 +1,8 @@
 package pathstore.client;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import pathstore.common.PathStoreProperties;
 import pathstore.util.BlobObject;
 
@@ -16,6 +18,7 @@ import pathstore.util.BlobObject;
  *   <li>Cassandra Port
  * </ul>
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class LocalNodeInfo implements BlobObject {
 
   /** instance of class */
