@@ -1,6 +1,7 @@
 package pathstore.system.deployment.commands;
 
 import com.jcraft.jsch.JSchException;
+import lombok.RequiredArgsConstructor;
 import pathstore.util.Pair;
 import pathstore.system.deployment.utilities.SSHUtil;
 
@@ -10,6 +11,7 @@ import java.io.IOException;
  * This class is used to denote a step in the installation process where you want to execute a
  * single command on the remote host and you except a certain exit code
  */
+@RequiredArgsConstructor
 public class Exec implements ICommand {
 
   /** Used to remotely execute {@link #command} */
@@ -20,16 +22,6 @@ public class Exec implements ICommand {
 
   /** Exit code you want */
   private final int wantedResponse;
-
-  /**
-   * @param command {@link #command}
-   * @param wantedResponse {@link #wantedResponse}
-   */
-  public Exec(final SSHUtil sshUtil, final String command, final int wantedResponse) {
-    this.sshUtil = sshUtil;
-    this.command = command;
-    this.wantedResponse = wantedResponse;
-  }
 
   /**
    * Execute command on remote host

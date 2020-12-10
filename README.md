@@ -25,3 +25,40 @@ The first prompt will ask you for the directory that PathStore is in. Provide th
 Follow the instructions on the screen and you will have deployed the first node in your network.
 
 After this is complete you can naviagte to the ip address of the machine you provided during start up on port 8080 in your web browser of choice to make changes to your network (scale, application creation / deployment, health monitoring, etc)
+
+# Server Assumptions
+
+Every machine that runs **any** pathstore code should have the following:
+
+**Docker CE** (*Version*: Docker version 19.03.13, build 4484c46d9d)
+
+```console
+sudo apt-get install docker.io
+```
+
+**User account with docker group**
+
+```console
+# Create user with docker admin privileges
+sudo adduser pathstore-installer
+sudo usermod -aG docker pathstore-installer
+
+# Creates the certs directory for the networks private registry
+sudo mkdir -p /etc/docker/certs.d
+sudo chown root:docker /etc/docker/certs.d
+sudo chmod 775 /etc/docker/certs.
+```
+
+**Maven** (*Version*: Apache Maven 3.6.0)
+
+```console
+sudo apt-get install maven
+```
+
+**Java** (*Version*: OpenJDK 11.0.6)
+
+```console
+sudo apt-get install openjdk-11-jdk
+```
+
+

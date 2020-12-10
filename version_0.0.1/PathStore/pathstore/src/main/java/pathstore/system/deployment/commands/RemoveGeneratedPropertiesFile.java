@@ -1,5 +1,6 @@
 package pathstore.system.deployment.commands;
 
+import lombok.RequiredArgsConstructor;
 import pathstore.system.deployment.utilities.StartupUTIL;
 
 import java.io.File;
@@ -8,15 +9,11 @@ import java.io.File;
  * This command is used to delete the generated properties file for the new node after transferring
  * the file.
  */
+@RequiredArgsConstructor
 public class RemoveGeneratedPropertiesFile implements ICommand {
 
   /** Where the generate properties file is stored */
   private final String pathToFile;
-
-  /** @param pathToFile {@link #pathToFile} */
-  public RemoveGeneratedPropertiesFile(final String pathToFile) {
-    this.pathToFile = pathToFile;
-  }
 
   /**
    * Load file from path into memory and delete it.

@@ -25,7 +25,7 @@ public class ClientCredential extends Credential<String> {
       final @NonNull String searchable,
       final @NonNull String username,
       final @NonNull String password,
-      final @NonNull boolean isSuperUser) {
+      final boolean isSuperUser) {
     super(searchable, username, password);
     this.isSuperUser = isSuperUser;
   }

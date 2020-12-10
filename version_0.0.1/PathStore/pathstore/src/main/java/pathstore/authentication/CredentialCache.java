@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentMap;
  * <p>All writes to that table should be done through this class if they're related to this node
  * specifically.
  *
- * @see pathstore.client.PathStoreCluster
  * @see PathStorePrivilegedCluster
  */
 public final class CredentialCache<SearchableT, CredentialT extends Credential<SearchableT>> {

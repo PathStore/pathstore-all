@@ -1,5 +1,6 @@
 package pathstore.util;
 
+import lombok.RequiredArgsConstructor;
 import pathstore.system.deployment.utilities.SSHUtil;
 
 /**
@@ -8,6 +9,7 @@ import pathstore.system.deployment.utilities.SSHUtil;
  * @param <T1> type 1
  * @param <T2> type 2
  */
+@RequiredArgsConstructor
 public class Pair<T1, T2> {
 
   /** Value in first slot */
@@ -15,15 +17,4 @@ public class Pair<T1, T2> {
 
   /** Value in second slot */
   public final T2 t2;
-
-  /**
-   * Store values
-   *
-   * @param t1 {@link #t1}
-   * @param t2 {@link #t2}
-   */
-  public Pair(final T1 t1, final T2 t2) {
-    this.t1 = t1;
-    this.t2 = t2;
-  }
 }

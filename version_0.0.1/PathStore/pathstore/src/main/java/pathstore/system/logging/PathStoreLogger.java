@@ -5,6 +5,7 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.RequiredArgsConstructor;
 
 /**
  * TODO: Change log levels to a generic setting
@@ -15,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <p>FINEST, DEBUG, INFO, ERROR
  */
+@RequiredArgsConstructor
 public class PathStoreLogger {
 
   /** Denotes the counter */
@@ -24,21 +26,13 @@ public class PathStoreLogger {
   private final String name;
 
   /** Map of messages used to allow for merging of multiple loggers concurrently */
-  private final Map<Integer, PathStoreLoggerMessage> messages;
+  private final Map<Integer, PathStoreLoggerMessage> messages  = new ConcurrentHashMap<>();
 
   /** Used to denote what level of messages are displayed */
-  private LoggerLevel displayLevel;
+  private final LoggerLevel displayLevel = LoggerLevel.INFO;
 
   /** Is there new data available to read from */
-  private boolean hasNew;
-
-  /** @param name name of logger */
-  protected PathStoreLogger(final String name) {
-    this.name = name;
-    this.messages = new ConcurrentHashMap<>();
-    this.displayLevel = LoggerLevel.INFO;
-    this.hasNew = false;
-  }
+  private boolean hasNew = false;
 
   /**
    * Send an information message

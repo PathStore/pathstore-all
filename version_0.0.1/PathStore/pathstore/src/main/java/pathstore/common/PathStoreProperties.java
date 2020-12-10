@@ -17,14 +17,33 @@
  */
 package pathstore.common;
 
-import lombok.ToString;
-import pathstore.authentication.credentials.NodeCredential;
+import static pathstore.common.Constants.PROPERTIESFILE;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.APPLICATION_MASTER_PASSWORD;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.APPLICATION_NAME;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.CASSANDRA_IP;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.CASSANDRA_PARENT_IP;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.CASSANDRA_PARENT_PORT;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.CASSANDRA_PORT;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.EXTERNAL_ADDRESS;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.GRPC_IP;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.GRPC_PARENT_IP;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.GRPC_PARENT_PORT;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.GRPC_PORT;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.NODE_ID;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PARENT_ID;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PASSWORD;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PATHSTORE_VERSION;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PULL_SLEEP;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PUSH_SLEEP;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.REGISTRY_IP;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.ROLE;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.SESSION_FILE;
+import static pathstore.common.Constants.PROPERTIES_CONSTANTS.USERNAME;
 
 import java.io.FileInputStream;
 import java.util.Properties;
-
-import static pathstore.common.Constants.PROPERTIESFILE;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
+import lombok.ToString;
+import pathstore.authentication.credentials.NodeCredential;
 
 /**
  * This class is used to load runtime properties from a properties file located in {@link
@@ -183,6 +202,15 @@ public class PathStoreProperties {
   public String applicationMasterPassword = null;
 
   /**
+   * This is the ip address of the internal registry used to pull containers. We need to provide
+   * this to any child deployed by this node
+   */
+  public String registryIP = null;
+
+  /** This string is to denote the pathstore version used */
+  public String pathstoreVersion = null;
+
+  /**
    * Parses the data in accordance to what is needed per role. See class Java doc for description on
    * what is parsed
    */
@@ -212,6 +240,8 @@ public class PathStoreProperties {
                   this.NodeID,
                   this.getProperty(props, USERNAME),
                   this.getProperty(props, PASSWORD));
+          this.registryIP = this.getProperty(props, REGISTRY_IP);
+          this.pathstoreVersion = this.getProperty(props, PATHSTORE_VERSION);
         case CLIENT:
           this.GRPCIP = this.getProperty(props, GRPC_IP);
           this.GRPCPort = Integer.parseInt(this.getProperty(props, GRPC_PORT));

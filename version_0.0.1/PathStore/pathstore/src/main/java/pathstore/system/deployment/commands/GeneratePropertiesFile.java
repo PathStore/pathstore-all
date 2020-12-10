@@ -1,5 +1,6 @@
 package pathstore.system.deployment.commands;
 
+import lombok.RequiredArgsConstructor;
 import pathstore.common.Role;
 import pathstore.system.deployment.utilities.StartupUTIL;
 
@@ -9,12 +10,12 @@ import java.io.OutputStream;
 import java.util.Properties;
 
 import static pathstore.common.Constants.PROPERTIES_CONSTANTS.*;
-import static pathstore.common.Constants.PROPERTIES_CONSTANTS.PULL_SLEEP;
 
 /**
  * This command is used to generate a pathstore properties file and have it available to be able to
  * load it into the docker container
  */
+@RequiredArgsConstructor
 public class GeneratePropertiesFile implements ICommand {
 
   /** Node id of new node */
@@ -53,64 +54,20 @@ public class GeneratePropertiesFile implements ICommand {
   /** Cassandra port of new nodes' parent */
   private final int cassandraParentPort;
 
-  /** Where to store the generate pathstore file */
-  private final String destinationToStore;
-
   /** Super user account for cassandra */
   private final String username;
 
   /** Super user account for cassandra */
   private final String password;
 
-  /**
-   * @param nodeID {@link #nodeID}
-   * @param ip {@link #ip}
-   * @param parentNodeId {@link #parentNodeId}
-   * @param role {@link #role}
-   * @param grpcIP {@link #grpcIP}
-   * @param grpcPort {@link #grpcPort}
-   * @param grpcParentIP {@link #grpcParentIP}
-   * @param grpcParentPort {@link #grpcParentIP}
-   * @param cassandraIP {@link #cassandraIP}
-   * @param cassandraPort {@link #cassandraPort}
-   * @param cassandraParentIP {@link #cassandraParentIP}
-   * @param cassandraParentPort {@link #cassandraParentPort}
-   * @param destinationToStore {@link #destinationToStore}
-   * @param username {@link #username}
-   * @param password {@link #password}
-   */
-  public GeneratePropertiesFile(
-      final int nodeID,
-      final String ip,
-      final int parentNodeId,
-      final Role role,
-      final String grpcIP,
-      final int grpcPort,
-      final String grpcParentIP,
-      final int grpcParentPort,
-      final String cassandraIP,
-      final int cassandraPort,
-      final String cassandraParentIP,
-      final int cassandraParentPort,
-      final String destinationToStore,
-      final String username,
-      final String password) {
-    this.nodeID = nodeID;
-    this.ip = ip;
-    this.parentNodeId = parentNodeId;
-    this.role = role;
-    this.grpcIP = grpcIP;
-    this.grpcPort = grpcPort;
-    this.grpcParentIP = grpcParentIP;
-    this.grpcParentPort = grpcParentPort;
-    this.cassandraIP = cassandraIP;
-    this.cassandraPort = cassandraPort;
-    this.cassandraParentIP = cassandraParentIP;
-    this.cassandraParentPort = cassandraParentPort;
-    this.destinationToStore = destinationToStore;
-    this.username = username;
-    this.password = password;
-  }
+  /** Registry ip to pull containers from */
+  private final String registryIP;
+
+  /** PathStore version */
+  private final String pathstoreVersion;
+
+  /** Where to store the generate pathstore file */
+  private final String destinationToStore;
 
   /**
    * This command will generate a properties file for a new node to be loaded into the docker
@@ -138,6 +95,8 @@ public class GeneratePropertiesFile implements ICommand {
     properties.put(PULL_SLEEP, String.valueOf(1000));
     properties.put(USERNAME, this.username);
     properties.put(PASSWORD, this.password);
+    properties.put(REGISTRY_IP, this.registryIP);
+    properties.put(PATHSTORE_VERSION, this.pathstoreVersion);
 
     try {
       OutputStream outputStream =

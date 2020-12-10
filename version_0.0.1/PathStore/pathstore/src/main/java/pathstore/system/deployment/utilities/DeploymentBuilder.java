@@ -1,6 +1,7 @@
 package pathstore.system.deployment.utilities;
 
 import com.datastax.driver.core.Session;
+import lombok.RequiredArgsConstructor;
 import pathstore.authentication.credentials.AuxiliaryCredential;
 import pathstore.authentication.credentials.Credential;
 import pathstore.authentication.credentials.DeploymentCredential;
@@ -17,6 +18,7 @@ import java.util.function.Consumer;
 /**
  * This class is used to create a sequence of commands to perform some operation on a remote host
  */
+@RequiredArgsConstructor
 public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
 
   /** List of commands */
@@ -25,47 +27,42 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   /** remote host where you are executing these commands */
   protected final SSHUtil remoteHostConnect;
 
-  public DeploymentBuilder(final SSHUtil remoteHostConnect) {
-    this.remoteHostConnect = remoteHostConnect;
-  }
-
   /**
-   * This function will kill pathstore and remove its image, then optional force push data then kill
-   * cassandra and remove its image, then remove the installation directory
+   * This function will remove pathstore, optionally force push, then remove cassandra. Then it will
+   * clean up any left over directories
    *
    * @param forcePush if you wish to force push data you need to provide an instance of that class
+   * @param registryIP registry IP
    * @return this
    */
-  public T remove(final ForcePush forcePush) {
+  public T remove(final ForcePush forcePush, final String registryIP) {
 
     this.commands.add(
         new Exec(this.remoteHostConnect, DeploymentConstants.REMOVAL_COMMANDS.KILL_PATHSTORE, -1));
+
     this.commands.add(
         new Exec(
             this.remoteHostConnect, DeploymentConstants.REMOVAL_COMMANDS.REMOVE_PATHSTORE, -1));
-    this.commands.add(
-        new Exec(
-            this.remoteHostConnect,
-            DeploymentConstants.REMOVAL_COMMANDS.REMOVE_PATHSTORE_IMAGE,
-            -1));
 
     if (forcePush != null) this.commands.add(forcePush);
 
     this.commands.add(
         new Exec(this.remoteHostConnect, DeploymentConstants.REMOVAL_COMMANDS.KILL_CASSANDRA, -1));
+
     this.commands.add(
         new Exec(
             this.remoteHostConnect, DeploymentConstants.REMOVAL_COMMANDS.REMOVE_CASSANDRA, -1));
-    this.commands.add(
-        new Exec(
-            this.remoteHostConnect,
-            DeploymentConstants.REMOVAL_COMMANDS.REMOVE_CASSANDRA_IMAGE,
-            -1));
 
     this.commands.add(
         new Exec(
             this.remoteHostConnect,
             DeploymentConstants.REMOVAL_COMMANDS.REMOVE_BASE_DIRECTORY,
+            -1));
+
+    this.commands.add(
+        new Exec(
+            this.remoteHostConnect,
+            DeploymentConstants.REMOVAL_COMMANDS.REMOVE_DOCKER_CERTS(registryIP),
             -1));
 
     return (T) this;
@@ -76,11 +73,11 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    *
    * @return this
    */
-  public T init() {
+  public T init(final String registryIP) {
     this.commands.add(
         new Exec(this.remoteHostConnect, DeploymentConstants.INIT_COMMANDS.DOCKER_CHECK, 0));
 
-    this.remove(null);
+    this.remove(null, registryIP);
 
     this.commands.add(
         new Exec(
@@ -107,19 +104,55 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   }
 
   /**
-   * This function will copy a local tar to the remote host and load that tar into the docker
-   * registry
+   * This function is used to copy the pathstore-registry certificates from the current node to the
+   * new child
    *
-   * @param localTar local tar to copy
-   * @param remoteTar where to copy this local tar on the remote host
    * @return this
    */
-  public T copyAndLoad(final String localTar, final String remoteTar) {
-    this.commands.add(new FileTransfer(this.remoteHostConnect, localTar, remoteTar));
+  public T copyRegistryCertificate() {
+    this.commands.add(
+        new FileTransfer(
+            this.remoteHostConnect,
+            DeploymentConstants.LOCAL_DOCKER_REGISTRY_CERT_LOCATION,
+            DeploymentConstants.REMOTE_DOCKER_REGISTRY_CERT_LOCATION));
+
+    return (T) this;
+  }
+
+  /**
+   * This function is used to load the registry certificaates on the child node
+   *
+   * @param registryIP registry ip
+   * @return this
+   */
+  public T loadRegistryCertificateOnChild(final String registryIP) {
+
+    // create certs directory
     this.commands.add(
         new Exec(
             this.remoteHostConnect,
-            String.format(DeploymentConstants.COPY_AND_LOAD.LOAD_DOCKER_IMAGE, remoteTar),
+            DeploymentConstants.CREATE_LOCAL_DOCKER_REGISTRY_CERT_DIR(registryIP),
+            0));
+
+    // copy cert into directory
+    this.commands.add(
+        new Exec(
+            this.remoteHostConnect,
+            DeploymentConstants.COPY_FROM_REMOTE_TO_LOCAL_DOCKER_REGISTRY_CERT(registryIP),
+            0));
+
+    // set dir group
+    this.commands.add(
+        new Exec(
+            this.remoteHostConnect,
+            DeploymentConstants.CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIRECTORY(registryIP),
+            0));
+
+    // set dir permissions
+    this.commands.add(
+        new Exec(
+            this.remoteHostConnect,
+            DeploymentConstants.CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIRECTORY(registryIP),
             0));
 
     return (T) this;
@@ -141,10 +174,12 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    * @param cassandraPort cassandra port
    * @param cassandraParentIP cassandra parent ip
    * @param cassandraParentPort cassandra parent port
-   * @param localProperties where to store the local copy
-   * @param remoteProperties where to transfer to
    * @param username username to local cassandra node
    * @param password password to local cassandra node
+   * @param registryIP registry ip to pull containers from
+   * @param pathstoreVersion version to install from registry
+   * @param localProperties where to store the local copy
+   * @param remoteProperties where to transfer to
    * @return this
    */
   public T generatePropertiesFiles(
@@ -160,10 +195,12 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
       final int cassandraPort,
       final String cassandraParentIP,
       final int cassandraParentPort,
-      final String localProperties,
-      final String remoteProperties,
       final String username,
-      final String password) {
+      final String password,
+      final String registryIP,
+      final String pathstoreVersion,
+      final String localProperties,
+      final String remoteProperties) {
 
     this.commands.add(
         new GeneratePropertiesFile(
@@ -179,9 +216,11 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
             cassandraPort,
             cassandraParentIP,
             cassandraParentPort,
-            localProperties,
             username,
-            password));
+            password,
+            registryIP,
+            pathstoreVersion,
+            localProperties));
 
     this.commands.add(new FileTransfer(this.remoteHostConnect, localProperties, remoteProperties));
 
@@ -213,8 +252,7 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    * @param roleName role to drop
    * @return this
    */
-  public T dropRole(
-          final DeploymentCredential cassandraCredentials, final String roleName) {
+  public T dropRole(final DeploymentCredential cassandraCredentials, final String roleName) {
     this.commands.add(new DropRole(cassandraCredentials, roleName));
     return (T) this;
   }
@@ -259,8 +297,7 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
    * @return this
    */
   public T writeAuxiliaryCredentialToChildNode(
-      final AuxiliaryCredential credential,
-      final DeploymentCredential cassandraCredentials) {
+      final AuxiliaryCredential credential, final DeploymentCredential cassandraCredentials) {
     this.commands.add(
         new WriteCredentialToChildNode<>(
             AuxiliaryDataLayer.getInstance(), credential, cassandraCredentials));

@@ -3,6 +3,7 @@ package pathstore.util;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.SocketOptions;
+import lombok.RequiredArgsConstructor;
 import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.system.PathStorePrivilegedCluster;
 
@@ -16,17 +17,13 @@ import java.util.concurrent.ConcurrentMap;
  * @param <CredentialT> Credential type to be used to store auth information for a cluster
  * @param <ClusterT> cluster type to store
  */
+@RequiredArgsConstructor
 public class ClusterCache<CredentialT extends DeploymentCredential, ClusterT> {
   /** Where clusters are cached */
   private final ConcurrentMap<CredentialT, ClusterT> cache = new ConcurrentHashMap<>();
 
   /** How to build a cluster not present in the cache */
   private final DoubleConsumerFunction<CredentialT, Cluster, ClusterT> buildFunction;
-
-  /** @param buildFunction {@link #buildFunction} */
-  public ClusterCache(final DoubleConsumerFunction<CredentialT, Cluster, ClusterT> buildFunction) {
-    this.buildFunction = buildFunction;
-  }
 
   /**
    * This function is used to gather a cluster from the cache, if not already present it will create

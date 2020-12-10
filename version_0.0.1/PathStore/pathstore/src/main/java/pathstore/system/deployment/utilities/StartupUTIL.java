@@ -5,6 +5,7 @@ import pathstore.authentication.CredentialCache;
 import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.authentication.credentials.NodeCredential;
 import pathstore.common.Constants;
+import pathstore.common.PathStoreProperties;
 import pathstore.common.Role;
 import pathstore.common.tables.DeploymentEntry;
 import pathstore.common.tables.ServerEntry;
@@ -85,15 +86,13 @@ public class StartupUTIL {
             Constants.PATHSTORE_DAEMON_USERNAME,
             CassandraAuthenticationUtil.generateAlphaNumericPassword());
 
+    String registryIP = PathStoreProperties.getInstance().registryIP;
+
     return new DeploymentBuilder<>(sshUtil)
-        .init()
+        .init(registryIP)
         .createRemoteDirectory(DeploymentConstants.REMOTE_PATHSTORE_LOGS_SUB_DIR)
-        .copyAndLoad(
-            DeploymentConstants.COPY_AND_LOAD.LOCAL_CASSANDRA_TAR,
-            DeploymentConstants.COPY_AND_LOAD.REMOTE_CASSANDRA_TAR)
-        .copyAndLoad(
-            DeploymentConstants.COPY_AND_LOAD.LOCAL_PATHSTORE_TAR,
-            DeploymentConstants.COPY_AND_LOAD.REMOTE_PATHSTORE_TAR)
+        .copyRegistryCertificate()
+        .loadRegistryCertificateOnChild(registryIP)
         .generatePropertiesFiles(
             nodeID,
             ip,
@@ -107,12 +106,15 @@ public class StartupUTIL {
             cassandraPort,
             cassandraParentIP,
             cassandraParentPort,
-            DeploymentConstants.GENERATE_PROPERTIES.LOCAL_TEMP_PROPERTIES_FILE,
-            DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE,
             childSuperUserCredential.getUsername(),
-            childSuperUserCredential.getPassword())
+            childSuperUserCredential.getPassword(),
+            registryIP,
+            PathStoreProperties.getInstance().pathstoreVersion,
+            DeploymentConstants.GENERATE_PROPERTIES.LOCAL_TEMP_PROPERTIES_FILE(nodeID),
+            DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE)
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN, new WaitForCassandra(defaultLogin))
+            DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN(registryIP),
+            new WaitForCassandra(defaultLogin))
         .createRole(defaultLogin, childSuperUserCredential, true)
         .dropRole(childSuperUserCredential, Constants.DEFAULT_CASSANDRA_USERNAME)
         .loadKeyspace(
@@ -143,7 +145,8 @@ public class StartupUTIL {
                 .getCredential(Constants.AUXILIARY_ACCOUNTS.NETWORK_WIDE_GRPC_CREDENTIAL),
             childSuperUserCredential)
         .startImageAndWait(
-            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN,
+            DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN(
+                registryIP, PathStoreProperties.getInstance().pathstoreVersion),
             new WaitForPathStore(childSuperUserCredential))
         .build();
   }
@@ -158,7 +161,9 @@ public class StartupUTIL {
       final SSHUtil sshUtil, final DeploymentEntry deploymentEntry, final ServerEntry serverEntry) {
     return new DeploymentBuilder<>(sshUtil)
         .removeLocalCredential(deploymentEntry.newNodeId)
-        .remove(new ForcePush(deploymentEntry.newNodeId, serverEntry.ip, serverEntry.cassandraPort))
+        .remove(
+            new ForcePush(deploymentEntry.newNodeId, serverEntry.ip, serverEntry.cassandraPort),
+            PathStoreProperties.getInstance().registryIP)
         .deleteNodeHistory(deploymentEntry.newNodeId, deploymentEntry.parentNodeId)
         .build();
   }

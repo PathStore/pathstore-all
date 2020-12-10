@@ -1,7 +1,6 @@
 package pathstorestartup.constants;
 
 import pathstore.system.deployment.utilities.DeploymentConstants;
-import pathstore.system.deployment.utilities.SSHUtil;
 import pathstorestartup.DevelopmentDeployment;
 
 import java.util.Arrays;
@@ -32,6 +31,7 @@ public class BootstrapDeploymentConstants {
   public static final String GRPC_PROMPT_PORT = "GRPC port (if unsure enter 1099): ";
   public static final String NETWORK_ADMIN_USERNAME_PROMPT = "Network Admin Username: ";
   public static final String NETWORK_ADMIN_PASSWORD_PROMPT = "Network Admin Password: ";
+  public static final String PATHSTORE_VERSION = "PathStore Version: ";
   public static final String COULD_NOT_CONNECT =
       "Could not connect to the server with the provided credentials please try again or quit with ctrl-c";
 
@@ -45,19 +45,6 @@ public class BootstrapDeploymentConstants {
    * pathstorestartup.DevelopmentBuilder}
    */
   public static final class DEVELOPMENT_BUILDER {
-    // Operation to print out whilst deleting a local tar if applicable
-    public static final String DELETE_TAR_TAG = "Deleting";
-
-    /**
-     * This function is used to generate the command to delete a tar file
-     *
-     * @param tarLocation absolute location of tar file
-     * @return command to execute
-     */
-    public static List<String> DELETE_TAR(final String tarLocation) {
-      return Arrays.asList("rm", "-f", tarLocation);
-    }
-
     // Operation to print whilst packing the program locally
     public static final String MVN_PACKAGE_TAG = "Building";
 
@@ -84,23 +71,270 @@ public class BootstrapDeploymentConstants {
     public static List<String> BUILD_IMAGE(final String name, final String path) {
       return Arrays.asList("docker", "build", "-t", name, path);
     }
+  }
 
-    // Operation to print tag whilst saving a docker image
-    public static final String SAVING_IMAGE_TAG = "Saving image";
+  /** This class stores constants for {@link BootstrapDeploymentBuilder#mkcertSetup(String)} */
+  public static final class DOCKER_REGISTRY_CERTIFICATE {
 
     /**
-     * This function generates a docker save command to a specific output tar directory
-     *
-     * @param outputTar where to save the docker tar
-     * @param imageName what image to save
-     * @return docker save command
+     * @param registryIP registry ip
+     * @return cert file name
      */
-    public static List<String> SAVING_IMAGE(final String outputTar, final String imageName) {
-      return Arrays.asList("docker", "save", "-o", outputTar, imageName);
+    public static String LOCAL_CERT_NAME(final String registryIP) {
+      return String.format("%s.pem", registryIP);
+    }
+
+    /**
+     * @param registryIP registry ip
+     * @return key file name
+     */
+    public static String LOCAL_KEY_NAME(final String registryIP) {
+      return String.format("%s-key.pem", registryIP);
+    }
+
+    // docker registry key location
+    public static final String REMOTE_DOCKER_REGISTRY_KEY_LOCATION =
+        String.format(
+            "%s/%s", DeploymentConstants.REMOTE_PATHSTORE_SUB_DIR, "pathstore-registry.key");
+
+    // mkcert program name
+    public static final String MKCERT_NAME = "mkcert-v1.4.3-linux-amd64";
+
+    // command to download program from github
+    public static final List<String> DOWNLOAD_MKCERT =
+        Arrays.asList(
+            "wget",
+            "https://github.com/FiloSottile/mkcert/releases/download/v1.4.3/mkcert-v1.4.3-linux-amd64");
+
+    // entry message
+    public static final String ENTRY_DOWNLOAD_MKCERT = "Downloading mkcert-v1.4.3-linux-amd64";
+
+    // exit message
+    public static final String EXIT_DOWNLOAD_MKCERT =
+        "Finished downloading mkcert-v1.4.3-linux-amd64";
+
+    // error message
+    public static final String ERROR_DOWNLOAD_MKCERT = "Error download mkcert-v1.4.3-linux-amd64";
+
+    // command to change mkcert access to be executable
+    public static final List<String> CHANGE_MKCERT_ACCESS =
+        Arrays.asList("chmod", "u+rtx", "mkcert-v1.4.3-linux-amd64");
+
+    // entry message
+    public static final String ENTRY_CHANGE_MKCERT_ACCESS =
+        "Granting executable permissions for mkcert-v1.4.3-linux-amd64";
+
+    // exit message
+    public static final String EXIT_CHANGE_MKCERT_ACCESS =
+        "Finished updating permissions for mkcert-v1.4.3-linux-amd64";
+
+    // error message
+    public static final String ERROR_CHANGE_MKCERT_ACCESS =
+        "Error updating permissions for mkcert-v1.4.3-linux-amd64";
+
+    /**
+     * @param registryIP registry ip
+     * @return command to generate certificates for registry
+     */
+    public static List<String> GENERATE_REGISTRY_CERTIFICATES(final String registryIP) {
+      return Arrays.asList("./mkcert-v1.4.3-linux-amd64", registryIP);
+    }
+
+    // entry message
+    public static final String ENTRY_GENERATE_REGISTRY_CERTIFICATES =
+        "Creating pathstore-registry self signed certificates";
+
+    // exit message
+    public static final String EXIT_GENERATE_REGISTRY_CERTIFICATES =
+        "Finished creating pathstore-registry self signed certificates";
+
+    // error message
+    public static final String ERROR_GENERATE_REGISTRY_CERTIFICATES =
+        "Error creating pathstore-registry self signed certificates";
+
+    /**
+     * @param registryIP registry ip
+     * @return command to create docker registry cert dir
+     */
+    public static List<String> CREATE_DOCKER_REGISTRY_CERT_DIR(final String registryIP) {
+      return Arrays.asList(
+          "mkdir", "-p", DeploymentConstants.LOCAL_DOCKER_REGISTRY_CERT_DIR(registryIP));
+    }
+
+    /**
+     * @param registryIP registry ip
+     * @return entry message
+     */
+    public static String ENTRY_CREATE_DOCKER_REGISTRY_CERT_DIR(final String registryIP) {
+      return String.format(
+          "Creating %s dir", DeploymentConstants.LOCAL_DOCKER_REGISTRY_CERT_DIR(registryIP));
+    }
+
+    /**
+     * @param registryIP registry ip
+     * @return exit message
+     */
+    public static String EXIT_CREATE_DOCKER_REGISTRY_CERT_DIR(final String registryIP) {
+      return String.format(
+          "Created %s dir", DeploymentConstants.LOCAL_DOCKER_REGISTRY_CERT_DIR(registryIP));
+    }
+
+    /**
+     * @param registryIP registry ip
+     * @return error message
+     */
+    public static String ERROR_CREATE_DOCKER_REGISTRY_CERT_DIR(final String registryIP) {
+      return String.format(
+          "Error creating %s", DeploymentConstants.LOCAL_DOCKER_REGISTRY_CERT_DIR(registryIP));
+    }
+
+    /**
+     * @param registryIP registry ip
+     * @return command to create docker registry cert dir
+     */
+    public static List<String> COPY_DOCKER_REGISTRY_CERT_TO_DIR(final String registryIP) {
+      return Arrays.asList(
+          "cp",
+          LOCAL_CERT_NAME(registryIP),
+          DeploymentConstants.LOCAL_DOCKER_REGISTRY_CERT(registryIP));
+    }
+
+    /**
+     * @param registryIP registry ip
+     * @return entry message
+     */
+    public static String ENTRY_COPY_DOCKER_REGISTRY_CERT_TO_DIR(final String registryIP) {
+      return String.format(
+          "Setting up local registry cert at %s",
+          DeploymentConstants.LOCAL_DOCKER_REGISTRY_CERT(registryIP));
+    }
+
+    /**
+     * @param registryIP registry ip
+     * @return exit message
+     */
+    public static String EXIT_COPY_DOCKER_REGISTRY_CERT_TO_DIR(final String registryIP) {
+      return String.format(
+          "Set up local registry cert at %s",
+          DeploymentConstants.LOCAL_DOCKER_REGISTRY_CERT(registryIP));
+    }
+
+    /**
+     * @param registryIP registry ip
+     * @return error message
+     */
+    public static String ERROR_COPY_DOCKER_REGISTRY_CERT_TO_DIR(final String registryIP) {
+      return String.format(
+          "Error setting up local registry cert at %s",
+          DeploymentConstants.LOCAL_DOCKER_REGISTRY_CERT(registryIP));
+    }
+
+    /**
+     * @param registryIP registry ip
+     * @return command to change group of local docker registry dir to docker
+     */
+    public static List<String> CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIR(final String registryIP) {
+      return Arrays.asList(
+          DeploymentConstants.CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIRECTORY(registryIP)
+              .split(" "));
+    }
+
+    // entry message
+    public static final String ENTRY_CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIR =
+        "Setting dir ownership";
+
+    // exit message
+    public static final String EXIT_CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIR = "Set dir ownership";
+
+    // error message
+    public static final String ERROR_CHANGE_GROUP_OF_LOCAL_DOCKER_REGISTRY_DIR =
+        "Error setting dir ownership";
+
+    /**
+     * @param registryIP registry ip
+     * @return command to update permission of local docker dir from 755 to 775
+     */
+    public static List<String> CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIR(
+        final String registryIP) {
+      return Arrays.asList(
+          DeploymentConstants.CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIRECTORY(registryIP)
+              .split(" "));
+    }
+
+    // entry message
+    public static final String ENTRY_CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIR =
+        "Setting dir permissions";
+
+    // exit message
+    public static final String EXIT_CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIR =
+        "Set dir permission";
+
+    // error message
+    public static final String ERROR_CHANGE_PERMISSIONS_OF_LOCAL_DOCKER_REGISTRY_DIR =
+        "Error setting dir permission";
+
+    /**
+     * @param fileToRemove file to remove
+     * @return command to remove file
+     */
+    public static List<String> REMOVE_LOCAL_FILE(final String fileToRemove) {
+      return Arrays.asList("rm", fileToRemove);
+    }
+
+    /**
+     * @param fileToRemove file to remove
+     * @return entry message
+     */
+    public static String ENTRY_REMOVE_LOCAL_FILE(final String fileToRemove) {
+      return String.format("Removing %s", fileToRemove);
+    }
+
+    /**
+     * @param fileToRemove file to remove
+     * @return exit message
+     */
+    public static String EXIT_REMOVE_LOCAL_FILE(final String fileToRemove) {
+      return String.format("Removed %s", fileToRemove);
+    }
+
+    /**
+     * @param fileToRemove file to remove
+     * @return error message
+     */
+    public static String ERROR_REMOVE_LOCAL_FILE(final String fileToRemove) {
+      return String.format("Error removing %s", fileToRemove);
+    }
+
+    // docker registry run command
+    public static final String DOCKER_REGISTRY_START =
+        String.format(
+            "docker run -d --restart=always --name pathstore-registry -v \"$(pwd)\"/%s:/certs -e REGISTRY_HTTP_ADDR=0.0.0.0:443 -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/pathstore-registry.crt -e REGISTRY_HTTP_TLS_KEY=/certs/pathstore-registry.key -p 443:443 registry:2",
+            DeploymentConstants.REMOTE_PATHSTORE_SUB_DIR);
+
+    /**
+     * @param imageName docker image name in local registry
+     * @param registryIP registry ip
+     * @param version version of image
+     * @return command to tag local image with registry ip and version
+     */
+    public static String DOCKER_TAG(
+        final String imageName, final String registryIP, final String version) {
+      return String.format("docker tag %s %s/%s:%s", imageName, registryIP, imageName, version);
+    }
+
+    /**
+     * @param imageName docker image name in local registry
+     * @param registryIP registry ip
+     * @param version version of image
+     * @return command to push tagged image to registry
+     */
+    public static String DOCKER_PUSH(
+        final String imageName, final String registryIP, final String version) {
+      return String.format("docker push %s/%s:%s", registryIP, imageName, version);
     }
   }
 
-  /** This class stores constants for {@link BootstrapDeploymentBuilder#initBootstrap()} */
+  /** This class stores constants for {@link BootstrapDeploymentBuilder#bootstrapInit()} */
   public static final class INIT_BOOTSTRAP_COMMANDS {
     // command to kill the pathstore admin panel container
     public static final String KILL_PATHSTORE_ADMIN_PANEL =
@@ -110,29 +344,13 @@ public class BootstrapDeploymentConstants {
     public static final String REMOVE_PATHSTORE_ADMIN_PANEL =
         String.format("docker rm %s", PATHSTORE_ADMIN_PANEL);
 
-    // command to remove the old pathstore admin panel image
-    public static final String REMOVE_PATHSTORE_ADMIN_PANEL_IMAGE =
-        String.format("docker image rm %s", PATHSTORE_ADMIN_PANEL);
-  }
+    /** command to kill the pathstore registry container */
+    public static final String KILL_PATHSTORE_REGISTRY =
+        String.format("docker kill %s", DeploymentConstants.PATHSTORE_REGISTRY);
 
-  /**
-   * This class stores formatable strings to determine the local locations of tar files
-   *
-   * @see DevelopmentDeployment#init()
-   */
-  public static final class DEVELOPMENT_TAR_LOCATIONS {
-    public static final String LOCAL_CASSANDRA_TAR =
-        "%s/"
-            + String.format(
-                "%s/%s.tar", DeploymentConstants.CASSANDRA, DeploymentConstants.CASSANDRA);
-
-    public static final String LOCAL_PATHSTORE_TAR =
-        "%s/"
-            + String.format(
-                "%s/%s.tar", DeploymentConstants.PATHSTORE, DeploymentConstants.PATHSTORE);
-
-    public static final String LOCAL_PATHSTORE_ADMIN_PANEL_TAR =
-        "%s/" + String.format("%s/%s.tar", PATHSTORE_ADMIN_PANEL, PATHSTORE_ADMIN_PANEL);
+    // command to remove the pathstore registry container
+    public static final String REMOVE_PATHSTORE_REGISTRY =
+        String.format("docker rm %s", DeploymentConstants.PATHSTORE_REGISTRY);
   }
 
   /**
@@ -144,10 +362,6 @@ public class BootstrapDeploymentConstants {
     public static final String REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR =
         String.format("%s/%s", DeploymentConstants.REMOTE_BASE_DIRECTORY, PATHSTORE_ADMIN_PANEL);
 
-    // where to store the tar on the remote host
-    public static final String REMOTE_PATHSTORE_ADMIN_PANEL_TAR =
-        String.format("%s/%s.tar", REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR, PATHSTORE_ADMIN_PANEL);
-
     // where to store the website properties file on the remote host
     public static final String REMOTE_PATHSTORE_ADMIN_PANEL_PROPERTIES_FILE =
         String.format("%s/pathstore.properties", REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR);
@@ -157,11 +371,13 @@ public class BootstrapDeploymentConstants {
   public static final class RUN_COMMANDS {
 
     // how to store the admin panel
-    public static final String PATHSTORE_ADMIN_PANEL_RUN =
-        String.format(
-            "docker run --network=host -dit --restart always -v ~/%s:/etc/pathstore --name %s %s",
-            REMOTE_DIRECTORIES_AND_FILES.REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR,
-            PATHSTORE_ADMIN_PANEL,
-            PATHSTORE_ADMIN_PANEL);
+    public static String PATHSTORE_ADMIN_PANEL_RUN(final String rootIP) {
+      return String.format(
+          "docker run --network=host -dit --restart always -v ~/%s:/etc/pathstore --name %s %s/%s:latest",
+          REMOTE_DIRECTORIES_AND_FILES.REMOTE_PATHSTORE_ADMIN_PANEL_SUB_DIR,
+          PATHSTORE_ADMIN_PANEL,
+          rootIP,
+          PATHSTORE_ADMIN_PANEL);
+    }
   }
 }

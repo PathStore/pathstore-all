@@ -1,9 +1,13 @@
 package pathstore.system.deployment.commands;
 
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID;
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID;
+
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.Delete;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import lombok.RequiredArgsConstructor;
 import pathstore.client.PathStoreSession;
 import pathstore.common.Constants;
 import pathstore.common.tables.NodeSchemaEntry;
@@ -11,9 +15,6 @@ import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.logging.LoggerLevel;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
-
-import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID;
-import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID;
 
 /**
  * This class is used to delete the node history of a given node.
@@ -26,6 +27,7 @@ import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID;
  *     PathStoreCluster#getDaemonInstance()}. This function does not connect to the child node at
  *     any point.
  */
+@RequiredArgsConstructor
 public class DeleteNodeHistory implements ICommand {
   /** Logger to display what is occuring */
   private final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(DeleteNodeHistory.class);
@@ -35,15 +37,6 @@ public class DeleteNodeHistory implements ICommand {
 
   /** Node id if the parent node (the node running this application) */
   private final int parentNodeId;
-
-  /**
-   * @param newNodeId {@link #newNodeId}
-   * @param parentNodeId {@link #parentNodeId}
-   */
-  public DeleteNodeHistory(final int newNodeId, final int parentNodeId) {
-    this.newNodeId = newNodeId;
-    this.parentNodeId = parentNodeId;
-  }
 
   /**
    * Removes all records associated with {@link #newNodeId} from

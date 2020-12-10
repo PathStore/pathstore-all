@@ -60,6 +60,8 @@ public final class Constants {
     public static final String SESSION_FILE = "sessionFile";
     public static final String APPLICATION_NAME = "applicationName";
     public static final String APPLICATION_MASTER_PASSWORD = "applicationMasterPassword";
+    public static final String REGISTRY_IP = "registryIP";
+    public static final String PATHSTORE_VERSION = "pathstoreVersion";
   }
 
   public static final class PATHSTORE_META_COLUMNS {
