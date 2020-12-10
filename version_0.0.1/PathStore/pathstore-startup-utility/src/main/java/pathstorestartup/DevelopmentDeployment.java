@@ -314,6 +314,8 @@ public class DevelopmentDeployment {
             DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE)
         .generateWebsiteProperties("127.0.0.1", cassandraPort, grpcPort, masterPassword)
         .startImageAndWait(
+            DeploymentConstants.RUN_COMMANDS.CASSANDRA_REMOVE_TAG(
+                childSuperUserCredentials.getIp()),
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN(childSuperUserCredentials.getIp()),
             new WaitForCassandra(defaultLogin))
         .createRole(defaultLogin, childSuperUserCredentials, true)
@@ -335,11 +337,15 @@ public class DevelopmentDeployment {
         .writeAuxiliaryCredentialToChildNode( // write network wide grpc account to root
             networkWideGrpcCredential, childSuperUserCredentials)
         .startImageAndWait(
+            DeploymentConstants.RUN_COMMANDS.PATHSTORE_REMOVE_TAG(
+                childSuperUserCredentials.getIp(), pathstoreVersion),
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN(
                 childSuperUserCredentials.getIp(), pathstoreVersion),
             new WaitForPathStore(childSuperUserCredentials))
         .custom(finalizeRootInstallation)
         .startImageAndWait(
+            BootstrapDeploymentConstants.RUN_COMMANDS.PATHSTORE_ADMIN_PANEL_REMOVE_TAG(
+                childSuperUserCredentials.getIp()),
             BootstrapDeploymentConstants.RUN_COMMANDS.PATHSTORE_ADMIN_PANEL_RUN(
                 childSuperUserCredentials.getIp()),
             null)

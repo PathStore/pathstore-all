@@ -370,6 +370,14 @@ public class BootstrapDeploymentConstants {
   /** This class stores the run commands for {@link BootstrapDeploymentBuilder} */
   public static final class RUN_COMMANDS {
 
+    /**
+     * @param rootIP registry ip
+     * @return docker rmi to remove pathstore_admin_panel
+     */
+    public static String PATHSTORE_ADMIN_PANEL_REMOVE_TAG(final String rootIP) {
+      return String.format("docker rmi %s/%s:latest", rootIP, PATHSTORE_ADMIN_PANEL);
+    }
+
     // how to store the admin panel
     public static String PATHSTORE_ADMIN_PANEL_RUN(final String rootIP) {
       return String.format(

@@ -355,14 +355,25 @@ public class DeploymentBuilder<T extends DeploymentBuilder<T>> {
   }
 
   /**
-   * This function will run some command remotely to start a container and then pass a wait object
-   * to wait to determine if the process inside the container has successfully started up
+   * This function will first run a remove tag command (as docker does not support a force pull
+   * option during a run command) to remove a potential cached image with a different md5sum then
+   * the container that we expect to run. Then run some command remotely to start a container and
+   * then pass a wait object to wait to determine if the process inside the container has
+   * successfully started up
    *
+   * @param removeTagCommand command to remove tag from local docker registry (force pull from
+   *     registry)
    * @param runCommand command to start the container
    * @param waitObject wait object to wait for the container
    * @return this
+   * @apiNote We assume that the removeTagCommand and runCommand are referencing the same docker
+   *     container, however you could neglect this and do something different although it doesn't
+   *     make much sense to do so.
    */
-  public T startImageAndWait(final String runCommand, final ICommand waitObject) {
+  public T startImageAndWait(
+      final String removeTagCommand, final String runCommand, final ICommand waitObject) {
+    this.commands.add(new Exec(this.remoteHostConnect, removeTagCommand, -1));
+
     this.commands.add(new Exec(this.remoteHostConnect, runCommand, 0));
 
     if (waitObject != null) this.commands.add(waitObject);

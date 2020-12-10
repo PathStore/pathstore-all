@@ -113,6 +113,7 @@ public class StartupUTIL {
             DeploymentConstants.GENERATE_PROPERTIES.LOCAL_TEMP_PROPERTIES_FILE(nodeID),
             DeploymentConstants.GENERATE_PROPERTIES.REMOTE_PATHSTORE_PROPERTIES_FILE)
         .startImageAndWait(
+            DeploymentConstants.RUN_COMMANDS.CASSANDRA_REMOVE_TAG(registryIP),
             DeploymentConstants.RUN_COMMANDS.CASSANDRA_RUN(registryIP),
             new WaitForCassandra(defaultLogin))
         .createRole(defaultLogin, childSuperUserCredential, true)
@@ -145,6 +146,8 @@ public class StartupUTIL {
                 .getCredential(Constants.AUXILIARY_ACCOUNTS.NETWORK_WIDE_GRPC_CREDENTIAL),
             childSuperUserCredential)
         .startImageAndWait(
+            DeploymentConstants.RUN_COMMANDS.PATHSTORE_REMOVE_TAG(
+                registryIP, PathStoreProperties.getInstance().pathstoreVersion),
             DeploymentConstants.RUN_COMMANDS.PATHSTORE_RUN(
                 registryIP, PathStoreProperties.getInstance().pathstoreVersion),
             new WaitForPathStore(childSuperUserCredential))
