@@ -131,7 +131,12 @@ public class PathStoreClientAuthenticatedCluster {
     PathStoreClientInterceptor.getInstance().setCredential(clientCredential);
 
     // All operations to perform after connection is complete
-    PathStoreProperties.getInstance().NodeID = PathStoreServerClient.getInstance().getLocalNodeId();
+    LocalNodeInfo localNodeInfoFromServer = PathStoreServerClient.getInstance().getLocalNodeId();
+
+      // setup all the values for ps properties
+    PathStoreProperties.getInstance().NodeID = localNodeInfoFromServer.getNodeId();
+    PathStoreProperties.getInstance().CassandraIP = localNodeInfoFromServer.getCassandraIP();
+    PathStoreProperties.getInstance().CassandraPort = localNodeInfoFromServer.getCassandraPort();
 
     if (this.credential.isSuperUser()) SchemaInfo.getInstance().setSession(this.rawSession);
   }
