@@ -6,10 +6,11 @@
     <groupId>smartpath</groupId>
     <artifactId>pathstore-all</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <modules>
-	<module>pathstore</module>
-	<module>pathstore-startup-utility</module>
-	<module>pathstore-admin-panel</module>
-    </modules>
     <packaging>pom</packaging>
+
+    <modules>
+        <module>pathstore</module>
+        <module>pathstore-startup-utility</module>
+        <module>pathstore-admin-panel</module>
+    </modules>
 </project>
