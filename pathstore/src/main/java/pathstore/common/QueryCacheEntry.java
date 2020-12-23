@@ -106,7 +106,9 @@ public class QueryCacheEntry implements Serializable {
    */
   public void setReady() {
     this.ready = true;
-    this.lock.notifyAll();
+    synchronized (this.lock) {
+      this.lock.notifyAll();
+    }
   }
 
   /**
