@@ -15,12 +15,11 @@
 In order to startup a PathStore network you need to do the following:
 
 ```cmd
-cd version_0.0.1/PathStore/pathstore-startup-utility
 mvn package
-java -jar target/main.jar
+java -jar pathstore-startup-utility/target/main.jar
 ```
 
-The first prompt will ask you for the directory that PathStore is in. Provide the utility with the absolute path on your machine to version_0.0.1/PathStore in the repository code
+The first prompt will ask you for the directory that PathStore is in. Provide the utility with the absolute path on your machine to the repository code (i.e. `/home/myles/cloudpath`)
 
 Follow the instructions on the screen and you will have deployed the first node in your network.
 
