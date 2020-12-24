@@ -9,7 +9,8 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>pathstore</module>
+        <module>cassandra-driver-custom-core</module>
+	<module>pathstore</module>
         <module>pathstore-startup-utility</module>
         <module>pathstore-admin-panel</module>
     </modules>

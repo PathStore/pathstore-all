@@ -22,13 +22,6 @@
         <java.version>8</java.version>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>cassandra-lib</id>
-            <url>file://${project.basedir}/librepo</url>
-        </repository>
-    </repositories>
-
     <dependencies>
 
         <!-- To remove boiler plate code -->
@@ -69,9 +62,9 @@
 
         <!-- Custom cassandra driver code in ./librepo -->
         <dependency>
-            <groupId>com.datastax.cassandra</groupId>
-            <artifactId>cassandra-driver-core-custom</artifactId>
-            <version>3.2.1</version>
+            <groupId>smartpath</groupId>
+            <artifactId>cassandra-driver-custom-core</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <!-- Cassandra Driver Dependencies  -->
         <dependency>
