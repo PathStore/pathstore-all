@@ -78,6 +78,7 @@ public class AddApplication implements IService {
     try {
       this.loadSchemas(this.getUserPassSchema());
       this.writeMasterPassword();
+      this.writeLeaseTime();
     } catch (Exception e) {
       this.schemaInfo.removeKeyspace(this.addApplicationPayload.applicationName);
       e.printStackTrace();
@@ -100,6 +101,25 @@ public class AddApplication implements IService {
                 Constants.APPLICATION_CREDENTIALS_COLUMNS.PASSWORD,
                 this.addApplicationPayload.masterPassword)
             .value(Constants.APPLICATION_CREDENTIALS_COLUMNS.IS_SUPER_USER, false);
+
+    session.execute(insert);
+  }
+
+  /** This function is used to write the lease time to the application lease time table */
+  private void writeLeaseTime() {
+    Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
+
+    Insert insert =
+        QueryBuilder.insertInto(Constants.PATHSTORE_APPLICATIONS, Constants.APPLICATION_LEASE_TIME)
+            .value(
+                Constants.APPLICATION_LEASE_TIME_COLUMNS.KEYSPACE_NAME,
+                this.addApplicationPayload.applicationName)
+            .value(
+                Constants.APPLICATION_LEASE_TIME_COLUMNS.CLIENT_LEASE_TIME,
+                this.addApplicationPayload.clientLeaseTime)
+            .value(
+                Constants.APPLICATION_LEASE_TIME_COLUMNS.SERVER_ADDITIONAL_TIME,
+                this.addApplicationPayload.serverAdditionalTime);
 
     session.execute(insert);
   }

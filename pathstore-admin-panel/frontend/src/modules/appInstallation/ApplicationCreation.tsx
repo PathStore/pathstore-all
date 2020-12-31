@@ -49,10 +49,14 @@ export const ApplicationCreation: FunctionComponent = () => {
 
         const masterPasswordConfirmation = event.target.elements.password_confirmation.value.trim();
 
+        const clientLeaseTime = parseInt(event.target.elements.client_lease_time.value.trim());
+
+        const serverAdditionalTime = parseInt(event.target.elements.server_additional_time.value.trim());
+
         if (submissionErrorModal.show) {
 
-            if (applicationName === "" || file == null || masterPassword === "" || masterPasswordConfirmation === "") {
-                submissionErrorModal.show("You must submit an application, password, password confirmation, and upload a schema");
+            if (applicationName === "" || file == null || masterPassword === "" || masterPasswordConfirmation === "" || clientLeaseTime <= 0 || serverAdditionalTime <= 0) {
+                submissionErrorModal.show("You must submit an application, password, password confirmation, client lease time, additional server time, and upload a schema");
                 return;
             }
 
@@ -66,6 +70,8 @@ export const ApplicationCreation: FunctionComponent = () => {
             formData.append("application_name", applicationName);
             formData.append("applicationSchema", file);
             formData.append("master_password", masterPassword);
+            formData.append("client_lease_time", clientLeaseTime.toString());
+            formData.append("server_additional_time", serverAdditionalTime.toString());
 
             if (loadingModal.show && loadingModal.close && errorModal.show) {
                 loadingModal.show();
@@ -118,6 +124,25 @@ export const ApplicationCreation: FunctionComponent = () => {
                 <Form.Control type="password" placeholder="Re-enter master password here"/>
                 <Form.Text>
                     Re-type password as you did above
+                </Form.Text>
+            </Form.Group>
+            <Form.Group controlId="client_lease_time">
+                <Form.Label>Client Lease Time</Form.Label>
+                <Form.Control type="text" placeholder="10 seconds is on the low end, a minute is on the high end"/>
+                <Form.Text>
+                    This time entered here denotes how long a client side query is valid for. Once their lease is
+                    expired the client must communicate with their local node to issue a new lease. (Units in
+                    milliseconds)
+                </Form.Text>
+            </Form.Group>
+            <Form.Group controlId="server_additional_time">
+                <Form.Label>Server Additional Time</Form.Label>
+                <Form.Control type="text"
+                              placeholder="This should be a constance factor times by your entered client lease time"/>
+                <Form.Text>
+                    The server lease time is the entered client lease time plus this provided value. As in even if a
+                    client lease is expired that does not mean the server garbage collects that data. This must be a
+                    integer greater than zero. (Units in milliseconds)
                 </Form.Text>
             </Form.Group>
             <Form.Group>

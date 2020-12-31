@@ -197,6 +197,14 @@ public final class Constants {
     public static final String IS_SUPER_USER = "is_super_user";
   }
 
+  public static final String APPLICATION_LEASE_TIME = "application_lease_time";
+
+  public static final class APPLICATION_LEASE_TIME_COLUMNS {
+    public static final String KEYSPACE_NAME = "keyspace_name";
+    public static final String CLIENT_LEASE_TIME = "client_lease_time";
+    public static final String SERVER_ADDITIONAL_TIME = "server_additional_time";
+  }
+
   public static final String APPS = "apps";
 
   public static final class APPS_COLUMNS {
