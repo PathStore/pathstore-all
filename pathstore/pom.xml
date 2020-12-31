@@ -60,7 +60,7 @@
             <scope>provided</scope> <!-- not needed at runtime -->
         </dependency>
 
-        <!-- Custom cassandra driver code in ./librepo -->
+        <!-- Custom cassandra driver code -->
         <dependency>
             <groupId>smartpath</groupId>
             <artifactId>cassandra-driver-custom-core</artifactId>
