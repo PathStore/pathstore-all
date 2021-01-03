@@ -19,6 +19,9 @@ service ClientOnlyService{
 
   // called by client in ps properties to get local node id for validity
   rpc getLocalNodeInfo(google.protobuf.Empty) returns (GetLocalNodeResponse);
+
+  // called by client in ps properties to get application lease information
+  rpc getApplicationLeaseInformation(GetApplicationLeaseRequest) returns (GetApplicationLeaseResponse);
 }
 
 service ServerOnlyService{
@@ -108,4 +111,14 @@ message ForceSynchronizationRequest{
 message GetLocalNodeResponse{
   // LocalNodeInfo object
   bytes infoPayload = 1;
+}
+
+message GetApplicationLeaseRequest{
+  // Name of Application
+  string applicationName = 1;
+}
+
+message GetApplicationLeaseResponse{
+  // CLT
+  int32 clientLeaseTime = 1;
 }

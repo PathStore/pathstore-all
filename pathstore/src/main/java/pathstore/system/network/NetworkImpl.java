@@ -14,6 +14,7 @@ import pathstore.authentication.CredentialCache;
 import pathstore.client.LocalNodeInfo;
 import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.client.PathStoreServerClient;
+import pathstore.common.ApplicationLeaseCache;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
@@ -463,5 +464,19 @@ public class NetworkImpl {
    */
   public LocalNodeInfo getLocalNodeInfo() {
     return LocalNodeInfo.getInstance();
+  }
+
+  /**
+   * TODO: We need to validate that the caller has rights to this information.
+   *
+   * @param applicationName application name to retrieve clt for
+   * @return clt time or 0
+   */
+  public int getApplicationLease(final String applicationName) {
+    Optional<ApplicationLeaseCache.ApplicationLease> applicationLeaseOptional =
+        ApplicationLeaseCache.getInstance().getLease(applicationName);
+    return applicationLeaseOptional
+        .map(ApplicationLeaseCache.ApplicationLease::getClientLeaseTime)
+        .orElse(0);
   }
 }

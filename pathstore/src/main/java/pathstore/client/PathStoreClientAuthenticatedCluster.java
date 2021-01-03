@@ -8,6 +8,7 @@ import org.json.JSONObject;
 import pathstore.authentication.credentials.ClientCredential;
 import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.authentication.grpc.PathStoreClientInterceptor;
+import pathstore.common.ApplicationLeaseCache;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.system.logging.PathStoreLogger;
@@ -130,6 +131,15 @@ public class PathStoreClientAuthenticatedCluster {
                 clientCredential.getPassword(),
                 PathStoreProperties.getInstance().CassandraIP,
                 PathStoreProperties.getInstance().CassandraPort));
+
+    // setup application lease cache for the provided application name
+    ApplicationLeaseCache.getInstance()
+        .setLease(
+            clientCredential.getSearchable(),
+            new ApplicationLeaseCache.ApplicationLease(
+                0,
+                PathStoreServerClient.getInstance()
+                    .getApplicationLeaseTime(clientCredential.getSearchable())));
 
     this.rawSession = this.cluster.connect();
 

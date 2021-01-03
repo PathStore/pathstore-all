@@ -345,4 +345,15 @@ public class PathStoreServerClient {
                 .getInfoPayload()
                 .asReadOnlyByteBuffer());
   }
+
+    /**
+     * @param applicationName application name to retrieve application lease time for.
+     * @return clt for applicationName
+     */
+  public int getApplicationLeaseTime(final String applicationName) {
+    return this.clientOnlyServiceBlockingStub
+        .getApplicationLeaseInformation(
+            GetApplicationLeaseRequest.newBuilder().setApplicationName(applicationName).build())
+        .getClientLeaseTime();
+  }
 }
