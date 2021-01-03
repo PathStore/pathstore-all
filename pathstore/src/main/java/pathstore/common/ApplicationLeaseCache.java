@@ -32,10 +32,11 @@ public class ApplicationLeaseCache {
    * @param applicationName application name to set
    * @param applicationLease lease to set to
    * @apiNote This should only be called from {@link
-   *     pathstore.client.PathStoreClientAuthenticatedCluster}
+   *     pathstore.client.PathStoreClientAuthenticatedCluster} and only works if the key is not set.
    */
   public void setLease(final String applicationName, final ApplicationLease applicationLease) {
-    this.leaseCache.put(applicationName, applicationLease);
+    if (!this.leaseCache.containsKey(applicationName))
+      this.leaseCache.put(applicationName, applicationLease);
   }
 
   /**

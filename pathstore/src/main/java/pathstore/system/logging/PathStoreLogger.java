@@ -1,11 +1,12 @@
 package pathstore.system.logging;
 
+import lombok.RequiredArgsConstructor;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.RequiredArgsConstructor;
 
 /**
  * TODO: Change log levels to a generic setting
@@ -25,11 +26,11 @@ public class PathStoreLogger {
   /** Name of logger */
   private final String name;
 
-  /** Map of messages used to allow for merging of multiple loggers concurrently */
-  private final Map<Integer, PathStoreLoggerMessage> messages  = new ConcurrentHashMap<>();
-
   /** Used to denote what level of messages are displayed */
-  private final LoggerLevel displayLevel = LoggerLevel.INFO;
+  private final LoggerLevel displayLevel;
+
+  /** Map of messages used to allow for merging of multiple loggers concurrently */
+  private final Map<Integer, PathStoreLoggerMessage> messages = new ConcurrentHashMap<>();
 
   /** Is there new data available to read from */
   private boolean hasNew = false;

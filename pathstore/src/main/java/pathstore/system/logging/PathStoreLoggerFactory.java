@@ -1,5 +1,8 @@
 package pathstore.system.logging;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -11,6 +14,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class PathStoreLoggerFactory {
   /** Map of loggers from name -> literal logger */
   private static final Map<String, PathStoreLogger> loggers = new ConcurrentHashMap<>();
+
+  /** Global logger level for all loggers */
+  @Getter @Setter private static LoggerLevel globalLoggerLevel = LoggerLevel.INFO;
 
   /**
    * Denotes the start point to start the merge from.
@@ -39,7 +45,7 @@ public final class PathStoreLoggerFactory {
    * @apiNote {@link #loggers} is a concurrent map thus no locking within this function is required
    */
   public static PathStoreLogger getLogger(final String name) {
-    return loggers.computeIfAbsent(name, k -> new PathStoreLogger(name));
+    return loggers.computeIfAbsent(name, k -> new PathStoreLogger(name, globalLoggerLevel));
   }
 
   /**

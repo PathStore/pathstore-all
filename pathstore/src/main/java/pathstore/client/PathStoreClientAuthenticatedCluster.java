@@ -20,11 +20,8 @@ import pathstore.util.SchemaInfo;
 import java.util.Optional;
 
 /**
- * TODO: Client side needs to be aware if the account if a super user. If it is allow it to create a
- * privileged session
- *
- * <p>This class is the front facing class users will use to connect to their local pathstore node
- * with their application name and the associated master password.
+ * This class is the front facing class users will use to connect to their local pathstore node with
+ * their application name and the associated master password.
  */
 public class PathStoreClientAuthenticatedCluster {
 
