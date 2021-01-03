@@ -1,6 +1,7 @@
 package pathstore.common;
 
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Select;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import pathstore.client.PathStoreSession;
@@ -56,17 +57,17 @@ public class ApplicationLeaseCache {
       if (PathStoreProperties.getInstance().role != Role.CLIENT) {
         PathStoreSession session = PathStorePrivilegedCluster.getDaemonInstance().psConnect();
 
+        Select selectApplicationLeaseInformation =
+            QueryBuilder.select()
+                .all()
+                .from(Constants.PATHSTORE_APPLICATIONS, Constants.APPLICATION_LEASE_TIME);
+
+        selectApplicationLeaseInformation.where(
+            QueryBuilder.eq(
+                Constants.APPLICATION_LEASE_TIME_COLUMNS.KEYSPACE_NAME, applicationName));
+
         Optional<ApplicationLease> applicationLeaseOptional =
-            session
-                .execute(
-                    QueryBuilder.select()
-                        .all()
-                        .from(Constants.PATHSTORE_APPLICATIONS, Constants.APPLICATION_LEASE_TIME)
-                        .where(
-                            QueryBuilder.eq(
-                                Constants.APPLICATION_LEASE_TIME_COLUMNS.KEYSPACE_NAME,
-                                applicationName)))
-                .stream()
+            session.execute(selectApplicationLeaseInformation).stream()
                 .findFirst()
                 .map(
                     row ->
