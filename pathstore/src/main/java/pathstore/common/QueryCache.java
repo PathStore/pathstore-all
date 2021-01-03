@@ -261,7 +261,8 @@ public class QueryCache {
           // reset the lease on any getCache call on the server side.
           if (PathStoreProperties.getInstance().role != Role.CLIENT) {
             e.resetExpirationTime();
-            logger.debug(String.format("Updated %s", e));
+            if (!e.keyspace.equals(Constants.PATHSTORE_APPLICATIONS))
+              logger.debug(String.format("Updated %s", e));
           }
 
           return e;

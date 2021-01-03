@@ -5,6 +5,7 @@ import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.core.querybuilder.Update;
+import lombok.SneakyThrows;
 import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.client.PathStoreSession;
 import pathstore.common.ApplicationLeaseCache;
@@ -16,6 +17,7 @@ import java.util.Optional;
 
 /** This test is to ensure that clients properly detect expired qc entries. */
 public class ApplicationLeaseTest {
+  @SneakyThrows
   public static void main(String[] args) {
     PathStoreLoggerFactory.setGlobalLoggerLevel(LoggerLevel.FINEST);
 
@@ -64,6 +66,8 @@ public class ApplicationLeaseTest {
     } else {
       throw new RuntimeException("Lease should be present after successful registration of client");
     }
+
+    PathStoreClientAuthenticatedCluster.getInstance().close();
   }
 
   private static void read(final PathStoreSession session, final Select select) {
