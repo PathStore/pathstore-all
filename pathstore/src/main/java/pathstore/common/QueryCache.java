@@ -25,6 +25,9 @@ import lombok.Getter;
 import pathstore.client.PathStoreServerClient;
 import pathstore.sessions.SessionToken;
 import pathstore.system.PathStorePrivilegedCluster;
+import pathstore.system.garbagecollection.PathStoreGarbageCollection;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 
@@ -34,6 +37,8 @@ import java.io.ObjectInputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class has a two prong feature set. For Servers this is an in-memory high level
@@ -49,6 +54,9 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class QueryCache {
 
+  /** class logger */
+  private static final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(QueryCache.class);
+
   /** Local instance of query cache */
   @Getter(lazy = true)
   private static final QueryCache instance = new QueryCache();
@@ -57,9 +65,22 @@ public class QueryCache {
   private final ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> entries =
       new ConcurrentHashMap<>();
 
-  /** @return {@link #entries} */
-  public ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> getEntries() {
-    return entries;
+  /** @return {@link #entries} as stream */
+  public Stream<QueryCacheEntry> stream() {
+    return this.entries.values().stream()
+        .parallel()
+        .map(Map::values)
+        .flatMap(Collection::stream)
+        .flatMap(Collection::stream);
+  }
+
+  /**
+   * This function is used to get all entries from {@link #entries} as a list.
+   *
+   * @return list of all entries
+   */
+  public List<QueryCacheEntry> getAllEntriesAsList() {
+    return this.stream().collect(Collectors.toList());
   }
 
   /**
@@ -120,6 +141,31 @@ public class QueryCache {
   }
 
   /**
+   * This function is used to handle all expired entries in bulk on the server side.
+   *
+   * @param garbageCollectionStrategy strategy used for garbage collection
+   */
+  public void handleExpiredEntries(final PathStoreGarbageCollection garbageCollectionStrategy) {
+    long current = System.currentTimeMillis();
+    Date date = new Date(current);
+
+    logger.info(String.format("Garbage collecting data as of time %s", date));
+
+    List<QueryCacheEntry> allEntries = this.getAllEntriesAsList();
+
+    List<QueryCacheEntry> expired =
+        allEntries.stream().filter(entry -> entry.isExpired(current)).collect(Collectors.toList());
+
+    List<QueryCacheEntry> notExpired =
+        allEntries.stream().filter(entry -> !entry.isExpired(current)).collect(Collectors.toList());
+
+    if (garbageCollectionStrategy != null)
+      garbageCollectionStrategy.garbageCollect(expired, notExpired);
+
+    logger.info(String.format("Garbage collected data as of time %s", date));
+  }
+
+  /**
    * This function is used to update the cache from a child node.
    *
    * <p>The logic is, if an entry isn't present in the cache, add it to the cache. Then if it is
@@ -170,7 +216,16 @@ public class QueryCache {
       final String keyspace, final String table, final List<Clause> clauses, final int limit) {
     QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
-    if (entry == null) entry = addEntry(keyspace, table, clauses, null, limit);
+    if (entry == null || entry.isExpired()) {
+
+      // remove the entry from the cache if the entry is expired
+      if (entry != null) {
+        logger.debug(String.format("%s was expired, removing", entry));
+        this.entries.get(keyspace).get(table).remove(entry);
+      }
+
+      entry = addEntry(keyspace, table, clauses, null, limit);
+    }
 
     // Myles: Pretty sure this isn't needed
     entry.waitUntilReady();
@@ -186,6 +241,8 @@ public class QueryCache {
    * @param clauses clauses of entry
    * @param limit limit
    * @return entry if it already exists, else null
+   * @implNote We update the lease time here if the role is not the client because this function is
+   *     only ever called by an update cache call
    */
   public QueryCacheEntry getEntry(
       final String keyspace, final String table, final List<Clause> clauses, final int limit) {
@@ -200,7 +257,15 @@ public class QueryCache {
       if (e.isSame(clauses))
         if (e.limit == -1
             || e.limit > limit) // we already have a bigger query so don't add this one
-        return e;
+        {
+          // reset the lease on any getCache call on the server side.
+          if (PathStoreProperties.getInstance().role != Role.CLIENT) {
+            e.resetExpirationTime();
+            logger.debug(String.format("Updated %s", e));
+          }
+
+          return e;
+        }
 
     return null;
   }

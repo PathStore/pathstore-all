@@ -72,6 +72,9 @@ public class QueryCacheEntry implements Serializable {
   /** Limit on rows */
   public final transient int limit;
 
+  /** When this entry expires */
+  private long expirationTime = -1;
+
   public QueryCacheEntry(
       final String keyspace, final String table, final List<Clause> clauses, final int limit) {
     this.keyspace = keyspace;
@@ -79,6 +82,49 @@ public class QueryCacheEntry implements Serializable {
     this.clauses = clauses;
     covers = new ArrayList<>();
     this.limit = limit;
+
+    // set the expiration time for this entry to the current time plus the CLT / SLT (role
+    // dependent)
+    this.resetExpirationTime();
+  }
+
+  /**
+   * This function is used to set the expiration time according to the keyspace. If the keyspace is
+   * pathstore_applications we set it to -1.
+   */
+  public void resetExpirationTime() {
+    if (!this.keyspace.equals(Constants.PATHSTORE_APPLICATIONS))
+      ApplicationLeaseCache.getInstance()
+          .getLease(this.keyspace)
+          .ifPresent(
+              applicationLease ->
+                  this.expirationTime =
+                      System.currentTimeMillis()
+                          + (PathStoreProperties.getInstance().role == Role.CLIENT
+                              ? applicationLease.getClientLeaseTime()
+                              : applicationLease.getServerLeaseTime()));
+    else this.expirationTime = -1;
+  }
+
+  /**
+   * This function is used to check to see if this entry is expired respective to the current time.
+   *
+   * @return true if expired, else false
+   * @see #isExpired(long)
+   */
+  public boolean isExpired() {
+    return this.isExpired(System.currentTimeMillis());
+  }
+
+  /**
+   * This function is used to get whether or not the current entry is expired.
+   *
+   * @param time time to compare against
+   * @return true if time is later than the expiration time, otherwise false. If Keyspace is
+   *     PathStore_Applications return false.
+   */
+  protected boolean isExpired(final long time) {
+    return !this.keyspace.equals(Constants.PATHSTORE_APPLICATIONS) && time > this.expirationTime;
   }
 
   /**
@@ -218,5 +264,27 @@ public class QueryCacheEntry implements Serializable {
   /** @param clausesSerialized set {@link #clausesSerialized} to passed value */
   public void setClausesSerialized(final byte[] clausesSerialized) {
     this.clausesSerialized = clausesSerialized;
+  }
+
+  @Override
+  public String toString() {
+    return "QueryCacheEntry{"
+        + "keyspace='"
+        + keyspace
+        + '\''
+        + ", table='"
+        + table
+        + '\''
+        + ", clauses="
+        + clauses
+        + ", ready="
+        + ready
+        + ", parentTimeStamp="
+        + parentTimeStamp
+        + ", limit="
+        + limit
+        + ", expirationTime="
+        + expirationTime
+        + '}';
   }
 }

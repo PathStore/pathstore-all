@@ -16,13 +16,11 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.UUID;
 
-import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
-import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.WAIT_FOR;
-import static pathstore.common.Constants.PATHSTORE_META_COLUMNS.*;
-import static pathstore.common.Constants.SERVERS_COLUMNS.*;
-import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
-import static pathstore.common.Constants.APPLICATION_CREDENTIALS_COLUMNS.*;
 import static pathstore.common.Constants.APPLICATION_CREDENTIALS_COLUMNS.PASSWORD;
+import static pathstore.common.Constants.APPLICATION_CREDENTIALS_COLUMNS.*;
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.*;
+import static pathstore.common.Constants.SERVERS_COLUMNS.SERVER_UUID;
+import static pathstore.common.Constants.SERVERS_COLUMNS.*;
 
 /**
  * This command will write the server record for the root node and the deployment record for the
