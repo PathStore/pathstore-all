@@ -19,9 +19,12 @@ package pathstore.system;
 
 import com.datastax.driver.core.Statement;
 import pathstore.common.PathStoreProperties;
+import pathstore.common.PathStoreThreadManager;
 import pathstore.common.QueryCache;
 import pathstore.common.QueryCacheEntry;
 import pathstore.sessions.SessionToken;
+import pathstore.system.garbagecollection.PathStoreGarbageCollection;
+import pathstore.system.garbagecollection.SimpleGarbageCollector;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
@@ -42,8 +45,18 @@ public class PathStorePullServer implements Runnable {
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStorePullServer.class);
 
+  /** Garbage collection service impl */
+  private final PathStoreGarbageCollection garbageCollectionService = new SimpleGarbageCollector();
+
+  /** Garbage collection executor service */
+  private final PathStoreGarbageCollection.Executor garbageCollectionExecutorService =
+      new PathStoreGarbageCollection.Executor(this.garbageCollectionService);
+
   /**
-   * For all entries in the qc that are ready, aren't covered, and aren't expired fetch their delta.
+   * First we try to spawn an garbage collection executor service
+   *
+   * <p>For all entries in the qc that are ready, aren't covered, and aren't expired fetch their
+   * delta.
    *
    * <p>Entries are added to the qc by {@link pathstore.client.PathStoreSession#execute(Statement)}
    * and {@link pathstore.client.PathStoreSession#execute(Statement, SessionToken)}
@@ -52,6 +65,9 @@ public class PathStorePullServer implements Runnable {
    * @see QueryCache#createDelta(String, String, byte[], UUID, int, int)
    */
   private void pull() {
+
+    PathStoreThreadManager.subProcessInstance().spawn(this.garbageCollectionExecutorService);
+
     QueryCache queryCache = QueryCache.getInstance();
 
     queryCache.stream()

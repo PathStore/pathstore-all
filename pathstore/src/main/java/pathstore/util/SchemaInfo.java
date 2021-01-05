@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
@@ -409,6 +410,33 @@ public class SchemaInfo implements Serializable {
   public Collection<String> getClusterColumnNames(final Table table) {
     return Optional.of(this.clusterColumnNames.get(table.keyspace_name).get(table))
         .orElse(Collections.emptySet());
+  }
+
+  /**
+   * This function is used to retrieve a set of primary key column names from a keyspace and table.
+   * The primary key columns are the union of the partition and clustering (sorting) columns
+   *
+   * @param keyspace keyspace name
+   * @param tableName table name
+   * @return set of primary column names
+   * @see #getPrimaryColumnNames(Table)
+   */
+  public Collection<String> getPrimaryColumnNames(final String keyspace, final String tableName) {
+    return this.getPrimaryColumnNames(this.tableMap.get(keyspace).get(tableName));
+  }
+
+  /**
+   * This function is used to retrieve a set of primary column names from a table object. The
+   * primary key columns are the union of the partition and clustering (sorting) columns
+   *
+   * @param table table object
+   * @return set of primary column names
+   */
+  public Collection<String> getPrimaryColumnNames(final Table table) {
+    return Stream.concat(
+            this.getPartitionColumnNames(table).stream(),
+            this.getClusterColumnNames(table).stream())
+        .collect(Collectors.toSet());
   }
 
   /**

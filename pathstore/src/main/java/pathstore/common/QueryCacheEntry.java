@@ -18,6 +18,8 @@
 package pathstore.common;
 
 import com.datastax.driver.core.querybuilder.Clause;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Select;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -36,8 +38,19 @@ import java.util.UUID;
  *     could potentially fetch a duplicate of the initial dataset.
  */
 public class QueryCacheEntry implements Serializable {
-  /** Lock for qc entry */
-  private final Object lock = new Object();
+  /** Status definition for qc entry */
+  public enum Status {
+    INITIALIZING,
+    READY,
+    REMOVING,
+    REMOVED
+  }
+
+  /** Lock for qc entry (waiting for ready) */
+  private final Object readyLock = new Object();
+
+  /** Lock for qc entry (waiting for removed) */
+  private final Object removedLock = new Object();
 
   /** Keyspace for the select statement */
   public final String keyspace;
@@ -57,11 +70,8 @@ public class QueryCacheEntry implements Serializable {
   /** List of entry who covers this quer */
   private transient List<QueryCacheEntry> covers;
 
-  /**
-   * Whether the qc entry is ready to be used by the pull server yet (only after the initial fetch
-   * is complete)
-   */
-  private transient boolean ready = false;
+  /** Status of entry */
+  private transient Status status = Status.INITIALIZING;
 
   /**
    * Current time stamp of the parent node, written at time of first fetch. This is always the
@@ -86,6 +96,17 @@ public class QueryCacheEntry implements Serializable {
     // set the expiration time for this entry to the current time plus the CLT / SLT (role
     // dependent)
     this.resetExpirationTime();
+  }
+
+  /** @return select statement from entry */
+  public Select select() {
+    Select select = QueryBuilder.select().all().from(this.keyspace, this.table);
+
+    for (Clause clause : this.clauses) select.where(clause);
+
+    if (this.limit != -1) select.limit(this.limit);
+
+    return select;
   }
 
   /**
@@ -145,44 +166,68 @@ public class QueryCacheEntry implements Serializable {
   }
 
   /**
-   * Notify all waiting for this to complete
+   * Used to denote if this entry is finished being built
    *
-   * <p>TODO: Myles: I'm pretty sure {@link #waitUntilReady()} is un-needed. thus the notifyAll call
-   * is un-needed
+   * @return {@link #status}
    */
+  public boolean isReady() {
+    return this.status == Status.READY;
+  }
+
+  /** Notify all waiting for this to complete */
   public void setReady() {
-    this.ready = true;
-    synchronized (this.lock) {
-      this.lock.notifyAll();
+    this.status = Status.READY;
+    synchronized (this.readyLock) {
+      this.readyLock.notifyAll();
     }
   }
 
-  /**
-   * Halt current thread until this entry is ready.
-   *
-   * <p>TODO: Myles: pretty sure this is not needed as this is only used during the update cache
-   * call. As in this is only called on the same thready that calls setReady thus there should be no
-   * reason to wait.
-   */
+  /** Halt current thread until this entry is ready. */
   public void waitUntilReady() {
-    if (this.ready) return;
-    synchronized (this.lock) {
-      while (!this.ready)
+    if (this.status == Status.READY) return;
+    if (this.status == Status.REMOVING)
+      throw new RuntimeException("Entry will not be set to ready as status is removing");
+    synchronized (this.readyLock) {
+      while (this.status != Status.READY)
         try {
-          this.lock.wait();
+          this.readyLock.wait();
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
     }
   }
 
-  /**
-   * Used to denote if this entry is finished being built
-   *
-   * @return {@link #ready}
-   */
-  public boolean isReady() {
-    return this.ready;
+  /** @return is the status removing */
+  public boolean isRemoving() {
+    return this.status == Status.REMOVING;
+  }
+
+  /** This is used to set the ready status to false */
+  public void setRemoving() {
+    this.status = Status.REMOVING;
+  }
+
+  /** Set the status to removed and notify all threads waiting for status to be set to removed */
+  public void setRemoved() {
+    this.status = Status.REMOVED;
+    synchronized (this.removedLock) {
+      this.removedLock.notifyAll();
+    }
+  }
+
+  /** This function is used to wait for the entry to be set to removed */
+  public void waitUntilRemoved() {
+    if (this.status != Status.REMOVING) return;
+
+    synchronized (this.removedLock) {
+      while (this.status != Status.REMOVED) {
+        try {
+          this.removedLock.wait();
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    }
   }
 
   /**
@@ -278,7 +323,7 @@ public class QueryCacheEntry implements Serializable {
         + ", clauses="
         + clauses
         + ", ready="
-        + ready
+        + status
         + ", parentTimeStamp="
         + parentTimeStamp
         + ", limit="
