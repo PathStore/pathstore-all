@@ -184,7 +184,7 @@ public class SchemaInfo implements Serializable {
    * @param typeInfo type info for the keyspace
    * @see #getSchemaPartition(String)
    */
-  public SchemaInfo(
+  private SchemaInfo(
       final Set<String> keyspacesLoaded,
       final ConcurrentMap<String, ConcurrentMap<String, Table>> tableMap,
       final ConcurrentMap<String, ConcurrentMap<Table, Collection<Column>>> columnInfo,
@@ -285,7 +285,6 @@ public class SchemaInfo implements Serializable {
 
   /** @return converts {@link #tableMap} to grpc compatible object */
   private Map<String, RegisterApplicationResponse.TableNameToTable> toGRPCTableMapObject() {
-    System.out.println("Calling GRPCTableMapObject");
     return this.tableMap.entrySet().stream()
         .collect(
             Collectors.toMap(
@@ -333,7 +332,6 @@ public class SchemaInfo implements Serializable {
    *     side we have to do look ups from tableMap to replace table_name with the table object
    */
   private Map<String, RegisterApplicationResponse.TableNameToColumns> toGRPCColumnInfoObject() {
-    System.out.println("Calling GRPCColumnInfoObject");
     return this.columnInfo.entrySet().stream()
         .collect(
             Collectors.toMap(
@@ -390,7 +388,6 @@ public class SchemaInfo implements Serializable {
    */
   private Map<String, RegisterApplicationResponse.TableNameToPartitionColumnNames>
       toGRPCPartitionColumnNamesObject() {
-    System.out.println("Calling GRPCPartitionColumnNamesObject");
     return this.partitionColumnNames.entrySet().stream()
         .collect(
             Collectors.toMap(
@@ -444,7 +441,6 @@ public class SchemaInfo implements Serializable {
    */
   private Map<String, RegisterApplicationResponse.TableNameToClusterColumnNames>
       toGRPCClusterColumnNamesObject() {
-    System.out.println("Calling GRPCClusterColumnNamesObject");
     return this.clusterColumnNames.entrySet().stream()
         .collect(
             Collectors.toMap(
@@ -496,7 +492,6 @@ public class SchemaInfo implements Serializable {
    *     have to do look ups from tableMap to replace table_name with the table object
    */
   public Map<String, RegisterApplicationResponse.TableNameToIndexes> toGRPCIndexInfoObject() {
-    System.out.println("Calling GRPCIndexInfoObject");
     return this.indexInfo.entrySet().stream()
         .collect(
             Collectors.toMap(
@@ -538,7 +533,6 @@ public class SchemaInfo implements Serializable {
 
   /** @return converts {@link #typeInfo} to grpc compatible object. */
   public Map<String, RegisterApplicationResponse.Types> toGRPCTypesInfoObject() {
-    System.out.println("Calling GRPCTypesInfoObject");
     return this.typeInfo.entrySet().stream()
         .collect(
             Collectors.toMap(
