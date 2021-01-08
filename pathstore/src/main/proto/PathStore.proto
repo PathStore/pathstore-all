@@ -39,7 +39,7 @@ service NetworkWideService{
 
 service UnAuthenticatedService{
   // called on client to local node on initial connection to register connection
-  rpc registerApplicationClient(RegisterApplicationRequest) returns (stream RegisterApplicationResponse);
+  rpc registerApplicationClient(RegisterApplicationRequest) returns (RegisterApplicationResponse);
 }
 
 message QueryEntry{
@@ -75,11 +75,103 @@ message RegisterApplicationRequest{
 
 message RegisterApplicationResponse{
   // json string
-  bytes credentials = 1;
+  string credentials = 1;
   // SchemaInfo Object
-  bytes schemaInfo = 2;
-  // status of payloads
-  Status status = 3;
+  SchemaInfo schemaInfo = 2;
+
+  message SchemaInfo{
+    repeated string keyspacesLoaded = 1;
+    map<string, TableNameToTable> tableMap = 2;
+    map<string, TableNameToColumns> columnInfo = 3;
+    map<string, TableNameToPartitionColumnNames> partitionColumnNames = 4;
+    map<string, TableNameToClusterColumnNames> clusterColumnNames = 5;
+    map<string, TableNameToIndexes> indexInfo = 6;
+    map<string, Types> typeInfo = 7;
+  }
+
+  // all for table map
+
+  message TableNameToTable{
+    map<string, Table> tableNameToTable = 1;
+  }
+
+  // note that we don't include the rest of the data as it is not needed for the client
+  message Table{
+    string keyspaceName = 1;
+    string tableName = 2;
+  }
+
+  // all for column info
+
+  message TableNameToColumns{
+    map<string, Columns> tableToColumns = 1;
+  }
+
+  message Columns {
+    repeated Column columns = 1;
+  }
+
+  message Column{
+    string keyspaceName = 1;
+    string tableName = 2;
+    string columnName = 3;
+    string clusteringOrder = 4;
+    string kind = 5;
+    int32 position = 6;
+    string type = 7;
+  }
+
+  // all for partitionColumn Names
+
+  message TableNameToPartitionColumnNames{
+    map<string, PartitionColumnNames> tableNameToPartitionColumnNames = 1;
+  }
+
+  message PartitionColumnNames{
+    repeated string partitionColumnName = 1;
+  }
+
+  // all for clusterColumn Names
+
+  message TableNameToClusterColumnNames{
+    map<string, ClusterColumnNames> tableNameToClusterColumnNames = 1;
+  }
+
+  message ClusterColumnNames{
+    repeated string clusterColumnName = 1;
+  }
+
+
+  // all for index info
+
+  message TableNameToIndexes{
+    map<string, Indexes> tableNameToIndexes = 1;
+  }
+
+  message Indexes {
+    repeated Index index = 1;
+  }
+
+  message Index{
+    string keyspaceName = 1;
+    string tableName = 2;
+    string indexName = 3;
+    string kind = 4;
+    map<string, string> options = 5;
+  }
+
+  // all for type info
+
+  message Types{
+    repeated Type type = 1;
+  }
+
+  message Type{
+    string keyspaceName = 1;
+    string typeName = 2;
+    repeated string fieldNames = 3;
+    repeated string fileTypes = 4;
+  }
 }
 
 enum Status{

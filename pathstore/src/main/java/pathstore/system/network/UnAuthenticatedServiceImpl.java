@@ -1,14 +1,10 @@
 package pathstore.system.network;
 
-import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
 import pathstore.grpc.UnAuthenticatedServiceGrpc;
-import pathstore.grpc.pathStoreProto;
 import pathstore.grpc.pathStoreProto.RegisterApplicationRequest;
 import pathstore.grpc.pathStoreProto.RegisterApplicationResponse;
 import pathstore.util.SchemaInfo;
-
-import java.util.List;
 
 /**
  * This class is used to provide the service between a PathStore Client and a local node or a
@@ -42,30 +38,11 @@ public class UnAuthenticatedServiceImpl
     String credentials = this.network.registerApplicationClient(applicationName, password);
     SchemaInfo schemaInfo = this.network.getSchemaInfo(applicationName);
 
-    try {
-
-      List<List<ByteString>> objectInChunkWindows =
-          NetworkUtil.objectToByteChunksWindows(credentials, schemaInfo);
-
-      for (List<ByteString> objectInChunkWindow : objectInChunkWindows) {
-        RegisterApplicationResponse.Builder responseBuilder =
-            RegisterApplicationResponse.newBuilder();
-        if (objectInChunkWindow.get(0) != null)
-          responseBuilder.setCredentials(objectInChunkWindow.get(0));
-        if (objectInChunkWindow.get(1) != null)
-          responseBuilder.setSchemaInfo(objectInChunkWindow.get(1));
-        responseBuilder.setStatus(pathStoreProto.Status.PENDING);
-        responseObserver.onNext(responseBuilder.build());
-      }
-
-      // inform client that the call is finished
-      responseObserver.onNext(
-          RegisterApplicationResponse.newBuilder().setStatus(pathStoreProto.Status.DONE).build());
-
-      System.out.println("sent on completed");
-
-    } catch (Exception e) {
-      responseObserver.onError(e);
-    }
+    responseObserver.onNext(
+        RegisterApplicationResponse.newBuilder()
+            .setCredentials(credentials)
+            .setSchemaInfo(schemaInfo.toGRPCSchemaInfoObject())
+            .build());
+    responseObserver.onCompleted();
   }
 }

@@ -43,8 +43,6 @@ import pathstore.util.Pair;
 import pathstore.util.SchemaInfo;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -241,23 +239,14 @@ public class PathStoreServerClient {
 
     System.out.println("Calling registerApplicationClient");
 
-    Iterator<RegisterApplicationResponse> iteratorResponse =
+    RegisterApplicationResponse registerApplicationResponse =
         this.unAuthenticatedServiceBlockingStub.registerApplicationClient(
             registerApplicationRequest);
 
-    System.out.println("Done");
-
-    List<Object> results =
-        NetworkUtil.concatenate(
-            iteratorResponse,
-            RegisterApplicationResponse::getStatus,
-            (RegisterApplicationResponse response) -> response.getCredentials().toByteArray(),
-            (RegisterApplicationResponse response) -> response.getSchemaInfo().toByteArray());
-
-    if (results.size() != 2) return new Pair<>(Optional.empty(), Optional.empty());
-    else
-      return new Pair<>(
-          Optional.of((String) results.get(0)), Optional.ofNullable((SchemaInfo) results.get(1)));
+    return new Pair<>(
+        Optional.ofNullable(registerApplicationResponse.getCredentials()),
+        Optional.of(
+            SchemaInfo.fromGRPCObject(registerApplicationResponse.getSchemaInfo())));
   }
 
   /**
@@ -346,10 +335,10 @@ public class PathStoreServerClient {
                 .asReadOnlyByteBuffer());
   }
 
-    /**
-     * @param applicationName application name to retrieve application lease time for.
-     * @return clt for applicationName
-     */
+  /**
+   * @param applicationName application name to retrieve application lease time for.
+   * @return clt for applicationName
+   */
   public int getApplicationLeaseTime(final String applicationName) {
     return this.clientOnlyServiceBlockingStub
         .getApplicationLeaseInformation(

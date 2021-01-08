@@ -20,6 +20,8 @@ package pathstore.util;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.ProtocolStringList;
 import io.netty.util.internal.ConcurrentSet;
 import lombok.Setter;
 import pathstore.common.Constants;
@@ -33,9 +35,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static pathstore.grpc.pathStoreProto.RegisterApplicationResponse;
 
 /**
  * The purpose of this class is to represent the keyspace system_schema in memory for usage
@@ -195,6 +200,349 @@ public class SchemaInfo implements Serializable {
     this.clusterColumnNames = clusterColumnNames;
     this.indexInfo = indexInfo;
     this.typeInfo = typeInfo;
+  }
+
+  /**
+   * This function is used to convert a protocol string list to some collection
+   *
+   * @param protocolStringList from grpc
+   * @param collector how to collect
+   * @param <A> Collection Builder addition
+   * @param <R> Collection Response Type
+   * @return Type of R from protocolStringList
+   */
+  private static <A, R> R GRPCRepeatedToCollection(
+      final ProtocolStringList protocolStringList,
+      final Collector<? super String, A, R> collector) {
+    return protocolStringList.asByteStringList().stream()
+        .map(ByteString::toString)
+        .collect(collector);
+  }
+
+  /**
+   * @param grpcSchemaInfoObject from grpc response
+   * @return schema info object
+   */
+  public static SchemaInfo fromGRPCObject(
+      final RegisterApplicationResponse.SchemaInfo grpcSchemaInfoObject) {
+
+    ConcurrentMap<String, ConcurrentMap<String, Table>> tableMap =
+        fromGRPCTableMapObject(grpcSchemaInfoObject);
+
+    return new SchemaInfo(
+        fromGRPCKeyspaceLoadedObject(grpcSchemaInfoObject),
+        tableMap,
+        fromGRPCColumnInfoObject(grpcSchemaInfoObject, tableMap),
+        fromGRPCPartitionColumnNamesObject(grpcSchemaInfoObject, tableMap),
+        fromGRPCClusterColumnNamesObject(grpcSchemaInfoObject, tableMap),
+        fromGRPCIndexInfoObject(grpcSchemaInfoObject, tableMap),
+        fromGRPCTypeInfoObject(grpcSchemaInfoObject));
+  }
+
+  /** @return converts {@link #instance} to grpc compatible object */
+  public RegisterApplicationResponse.SchemaInfo toGRPCSchemaInfoObject() {
+    return RegisterApplicationResponse.SchemaInfo.newBuilder()
+        .addAllKeyspacesLoaded(this.keyspacesLoaded)
+        .putAllTableMap(this.toGRPCTableMapObject())
+        .putAllColumnInfo(this.toGRPCColumnInfoObject())
+        .putAllPartitionColumnNames(this.toGRPCPartitionColumnNamesObject())
+        .putAllClusterColumnNames(this.toGRPCClusterColumnNamesObject())
+        .putAllIndexInfo(this.toGRPCIndexInfoObject())
+        .putAllTypeInfo(this.toGRPCTypesInfoObject())
+        .build();
+  }
+
+  /**
+   * @param grpcSchemaInfoObject grpc schema info payload
+   * @return set of keyspaces loaded
+   */
+  private static Set<String> fromGRPCKeyspaceLoadedObject(
+      final RegisterApplicationResponse.SchemaInfo grpcSchemaInfoObject) {
+    return GRPCRepeatedToCollection(
+        grpcSchemaInfoObject.getKeyspacesLoadedList(), Collectors.toSet());
+  }
+
+  /**
+   * This function is used to extract the table map from the grpc schema info payload
+   *
+   * @param grpcSchemaInfoObject grpc shcema info payload
+   * @return table map object
+   */
+  private static ConcurrentMap<String, ConcurrentMap<String, Table>> fromGRPCTableMapObject(
+      final RegisterApplicationResponse.SchemaInfo grpcSchemaInfoObject) {
+    return grpcSchemaInfoObject.getTableMapMap().entrySet().stream()
+        .collect(
+            Collectors.toConcurrentMap(
+                Map.Entry::getKey,
+                entry ->
+                    entry.getValue().getTableNameToTableMap().entrySet().stream()
+                        .collect(
+                            Collectors.toConcurrentMap(
+                                Map.Entry::getKey,
+                                innerEntry -> Table.fromGRPCTableObject(innerEntry.getValue())))));
+  }
+
+  /** @return converts {@link #tableMap} to grpc compatible object */
+  private Map<String, RegisterApplicationResponse.TableNameToTable> toGRPCTableMapObject() {
+    return this.tableMap.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                entry ->
+                    RegisterApplicationResponse.TableNameToTable.newBuilder()
+                        .putAllTableNameToTable(
+                            entry.getValue().entrySet().stream()
+                                .collect(
+                                    Collectors.toMap(
+                                        Map.Entry::getKey,
+                                        innerEntry -> innerEntry.getValue().toGRPCTableObject())))
+                        .build()));
+  }
+
+  /**
+   * This function is used to extract the columnInfo map from the grpc schema info payload
+   *
+   * @param grpcSchemaInfoObject grpc info schema info payload
+   * @param tableMap table map to lookup table object for second key
+   * @return column info map
+   */
+  private static ConcurrentMap<String, ConcurrentMap<Table, Collection<Column>>>
+      fromGRPCColumnInfoObject(
+          final RegisterApplicationResponse.SchemaInfo grpcSchemaInfoObject,
+          final ConcurrentMap<String, ConcurrentMap<String, Table>> tableMap) {
+    return grpcSchemaInfoObject.getColumnInfoMap().entrySet().stream()
+        .collect(
+            Collectors.toConcurrentMap(
+                Map.Entry::getKey,
+                entry ->
+                    entry.getValue().getTableToColumnsMap().entrySet().stream()
+                        .collect(
+                            Collectors.toConcurrentMap(
+                                innerEntry -> tableMap.get(entry.getKey()).get(innerEntry.getKey()),
+                                innerEntry ->
+                                    innerEntry.getValue().getColumnsList().stream()
+                                        .map(Column::fromGRPCTableObject)
+                                        .collect(Collectors.toSet())))));
+  }
+
+  /**
+   * @return converts {@link #columnInfo} to grpc compatible object.
+   * @implNote Please note that its keyspace_name -> table_name -> column objects. On the client
+   *     side we have to do look ups from tableMap to replace table_name with the table object
+   */
+  private Map<String, RegisterApplicationResponse.TableNameToColumns> toGRPCColumnInfoObject() {
+    return this.columnInfo.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                entry ->
+                    RegisterApplicationResponse.TableNameToColumns.newBuilder()
+                        .putAllTableToColumns(
+                            entry.getValue().entrySet().stream()
+                                .collect(
+                                    Collectors.toMap(
+                                        innerEntry -> innerEntry.getKey().table_name,
+                                        innerEntry ->
+                                            RegisterApplicationResponse.Columns.newBuilder()
+                                                .addAllColumns(
+                                                    innerEntry.getValue().stream()
+                                                        .map(Column::toGRPCColumnObject)
+                                                        .collect(Collectors.toList()))
+                                                .build())))
+                        .build()));
+  }
+
+  /**
+   * This function is used to extract the partition column names map from the grpc schema info
+   * payload
+   *
+   * @param grpcSchemaInfoObject grpc info schema info payload
+   * @param tableMap table map to lookup table object for second key
+   * @return parition column names map
+   */
+  private static ConcurrentMap<String, ConcurrentMap<Table, Collection<String>>>
+      fromGRPCPartitionColumnNamesObject(
+          final RegisterApplicationResponse.SchemaInfo grpcSchemaInfoObject,
+          final ConcurrentMap<String, ConcurrentMap<String, Table>> tableMap) {
+    return grpcSchemaInfoObject.getPartitionColumnNamesMap().entrySet().stream()
+        .collect(
+            Collectors.toConcurrentMap(
+                Map.Entry::getKey,
+                entry ->
+                    entry.getValue().getTableNameToPartitionColumnNamesMap().entrySet().stream()
+                        .collect(
+                            Collectors.toConcurrentMap(
+                                innerEntry -> tableMap.get(entry.getKey()).get(innerEntry.getKey()),
+                                innerEntry ->
+                                    GRPCRepeatedToCollection(
+                                        innerEntry.getValue().getPartitionColumnNameList(),
+                                        Collectors.toList())))));
+  }
+
+  /**
+   * @return converts {@link #partitionColumnNames} to grpc compatible object.
+   * @implNote Please note that its keyspace_name -> table_name -> partition column names. On the
+   *     client side we have to do look ups from tableMap to replace table_name with the table
+   *     object
+   */
+  private Map<String, RegisterApplicationResponse.TableNameToPartitionColumnNames>
+      toGRPCPartitionColumnNamesObject() {
+    return this.partitionColumnNames.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                entry ->
+                    RegisterApplicationResponse.TableNameToPartitionColumnNames.newBuilder()
+                        .putAllTableNameToPartitionColumnNames(
+                            entry.getValue().entrySet().stream()
+                                .collect(
+                                    Collectors.toMap(
+                                        innerEntry -> innerEntry.getKey().table_name,
+                                        innerEntry ->
+                                            RegisterApplicationResponse.PartitionColumnNames
+                                                .newBuilder()
+                                                .addAllPartitionColumnName(innerEntry.getValue())
+                                                .build())))
+                        .build()));
+  }
+
+  /**
+   * This function is used to extract the cluster column names map from the grpc schema info payload
+   *
+   * @param grpcSchemaInfoObject grpc info schema info payload
+   * @param tableMap table map to lookup table object for second key
+   * @return clustercolumn names map
+   */
+  private static ConcurrentMap<String, ConcurrentMap<Table, Collection<String>>>
+      fromGRPCClusterColumnNamesObject(
+          final RegisterApplicationResponse.SchemaInfo grpcSchemaInfoObject,
+          final ConcurrentMap<String, ConcurrentMap<String, Table>> tableMap) {
+    return grpcSchemaInfoObject.getClusterColumnNamesMap().entrySet().stream()
+        .collect(
+            Collectors.toConcurrentMap(
+                Map.Entry::getKey,
+                entry ->
+                    entry.getValue().getTableNameToClusterColumnNamesMap().entrySet().stream()
+                        .collect(
+                            Collectors.toConcurrentMap(
+                                innerEntry -> tableMap.get(entry.getKey()).get(innerEntry.getKey()),
+                                innerEntry ->
+                                    GRPCRepeatedToCollection(
+                                        innerEntry.getValue().getClusterColumnNameList(),
+                                        Collectors.toList())))));
+  }
+
+  /**
+   * @return converts {@link #clusterColumnNames} to grpc compatible object.
+   * @implNote Please note that its keyspace_name -> table_name -> cluster column names. On the
+   *     client side we have to do look ups from tableMap to replace table_name with the table
+   *     object
+   */
+  private Map<String, RegisterApplicationResponse.TableNameToClusterColumnNames>
+      toGRPCClusterColumnNamesObject() {
+    return this.clusterColumnNames.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                entry ->
+                    RegisterApplicationResponse.TableNameToClusterColumnNames.newBuilder()
+                        .putAllTableNameToClusterColumnNames(
+                            entry.getValue().entrySet().stream()
+                                .collect(
+                                    Collectors.toMap(
+                                        innerEntry -> innerEntry.getKey().table_name,
+                                        innerEntry ->
+                                            RegisterApplicationResponse.ClusterColumnNames
+                                                .newBuilder()
+                                                .addAllClusterColumnName(innerEntry.getValue())
+                                                .build())))
+                        .build()));
+  }
+
+  /**
+   * This function is used to extract the index info map from the grpc schema info payload
+   *
+   * @param grpcSchemaInfoObject grpc info schema info payload
+   * @param tableMap table map to lookup table object for second key
+   * @return index info map
+   */
+  private static ConcurrentMap<String, ConcurrentMap<Table, Collection<Index>>>
+      fromGRPCIndexInfoObject(
+          final RegisterApplicationResponse.SchemaInfo grpcSchemaInfoObject,
+          final ConcurrentMap<String, ConcurrentMap<String, Table>> tableMap) {
+    return grpcSchemaInfoObject.getIndexInfoMap().entrySet().stream()
+        .collect(
+            Collectors.toConcurrentMap(
+                Map.Entry::getKey,
+                entry ->
+                    entry.getValue().getTableNameToIndexesMap().entrySet().stream()
+                        .collect(
+                            Collectors.toConcurrentMap(
+                                innerEntry -> tableMap.get(entry.getKey()).get(innerEntry.getKey()),
+                                innerEntry ->
+                                    innerEntry.getValue().getIndexList().stream()
+                                        .map(Index::fromGRPCIndexObject)
+                                        .collect(Collectors.toList())))));
+  }
+
+  /**
+   * @return converts {@link #instance} to grpc compatible object.
+   * @implNote Please note that its keyspace_name -> table_name -> indexes. On the client side we
+   *     have to do look ups from tableMap to replace table_name with the table object
+   */
+  public Map<String, RegisterApplicationResponse.TableNameToIndexes> toGRPCIndexInfoObject() {
+    return this.indexInfo.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                entry ->
+                    RegisterApplicationResponse.TableNameToIndexes.newBuilder()
+                        .putAllTableNameToIndexes(
+                            entry.getValue().entrySet().stream()
+                                .collect(
+                                    Collectors.toMap(
+                                        innerEntry -> innerEntry.getKey().table_name,
+                                        innerEntry ->
+                                            RegisterApplicationResponse.Indexes.newBuilder()
+                                                .addAllIndex(
+                                                    innerEntry.getValue().stream()
+                                                        .map(Index::toGRPCIndexObject)
+                                                        .collect(Collectors.toList()))
+                                                .build())))
+                        .build()));
+  }
+
+  /**
+   * This function is used to extract the type info map from the grpc schema info payload
+   *
+   * @param grpcSchemaInfoObject grpc info schema info payload
+   * @return type info map
+   */
+  private static ConcurrentMap<String, Collection<Type>> fromGRPCTypeInfoObject(
+      final RegisterApplicationResponse.SchemaInfo grpcSchemaInfoObject) {
+    return grpcSchemaInfoObject.getTypeInfoMap().entrySet().stream()
+        .collect(
+            Collectors.toConcurrentMap(
+                Map.Entry::getKey,
+                entry ->
+                    entry.getValue().getTypeList().stream()
+                        .map(Type::fromGRPCTableObject)
+                        .collect(Collectors.toList())));
+  }
+
+  /** @return converts {@link #typeInfo} to grpc compatible object. */
+  public Map<String, RegisterApplicationResponse.Types> toGRPCTypesInfoObject() {
+    return this.typeInfo.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                entry ->
+                    RegisterApplicationResponse.Types.newBuilder()
+                        .addAllType(
+                            entry.getValue().stream()
+                                .map(Type::toGRPCTypeObject)
+                                .collect(Collectors.toList()))
+                        .build()));
   }
 
   /**
@@ -640,6 +988,28 @@ public class SchemaInfo implements Serializable {
     }
 
     /**
+     * @param type grpc type
+     * @return schema info type
+     */
+    public static Type fromGRPCTableObject(final RegisterApplicationResponse.Type type) {
+      return new Type(
+          type.getKeyspaceName(),
+          type.getTypeName(),
+          GRPCRepeatedToCollection(type.getFieldNamesList(), Collectors.toList()),
+          GRPCRepeatedToCollection(type.getFileTypesList(), Collectors.toList()));
+    }
+
+    /** @return grpc type object from object data */
+    public RegisterApplicationResponse.Type toGRPCTypeObject() {
+      return RegisterApplicationResponse.Type.newBuilder()
+          .setKeyspaceName(this.keyspace_name)
+          .setTypeName(this.type_name)
+          .addAllFieldNames(this.field_names)
+          .addAllFileTypes(this.field_types)
+          .build();
+    }
+
+    /**
      * This function is used to build a collection of type objects from a keyspace name.
      *
      * @param session {@link SchemaInfo#session}
@@ -728,6 +1098,30 @@ public class SchemaInfo implements Serializable {
       this.index_name = index_name;
       this.kind = kind;
       this.options = options;
+    }
+
+    /**
+     * @param index grpc index object
+     * @return schema info index object
+     */
+    public static Index fromGRPCIndexObject(final RegisterApplicationResponse.Index index) {
+      return new Index(
+          index.getKeyspaceName(),
+          index.getTableName(),
+          index.getIndexName(),
+          index.getKind(),
+          index.getOptionsMap());
+    }
+
+    /** @return index grpc object */
+    public RegisterApplicationResponse.Index toGRPCIndexObject() {
+      return RegisterApplicationResponse.Index.newBuilder()
+          .setKeyspaceName(this.keyspace_name)
+          .setTableName(this.table_name)
+          .setIndexName(this.index_name)
+          .setKind(this.kind)
+          .putAllOptions(this.options)
+          .build();
     }
 
     /**
@@ -848,6 +1242,34 @@ public class SchemaInfo implements Serializable {
       this.kind = kind;
       this.position = position;
       this.type = type;
+    }
+
+    /**
+     * @param column column from grpc
+     * @return schema info column object
+     */
+    public static Column fromGRPCTableObject(final RegisterApplicationResponse.Column column) {
+      return new Column(
+          column.getKeyspaceName(),
+          column.getTableName(),
+          column.getColumnName(),
+          column.getClusteringOrder(),
+          column.getKind(),
+          column.getPosition(),
+          column.getTableName());
+    }
+
+    /** @return grpc column object from data */
+    public RegisterApplicationResponse.Column toGRPCColumnObject() {
+      return RegisterApplicationResponse.Column.newBuilder()
+          .setKeyspaceName(this.keyspace_name)
+          .setTableName(this.table_name)
+          .setColumnName(this.column_name)
+          .setClusteringOrder(this.clustering_order)
+          .setKind(this.kind)
+          .setPosition(this.position)
+          .setType(this.table_name)
+          .build();
     }
 
     /**
@@ -1001,6 +1423,42 @@ public class SchemaInfo implements Serializable {
       this.min_index_interval = min_index_interval;
       this.read_repair_chance = read_repair_chance;
       this.speculative_retry = speculative_retry;
+    }
+
+    /**
+     * @param table grpc table object
+     * @return schema info table object
+     */
+    public static Table fromGRPCTableObject(final RegisterApplicationResponse.Table table) {
+      return new Table(
+          table.getKeyspaceName(),
+          table.getTableName(),
+          0,
+          null,
+          false,
+          null,
+          null,
+          null,
+          0,
+          0,
+          0,
+          null,
+          null,
+          0,
+          null,
+          0,
+          0,
+          0,
+          0,
+          null);
+    }
+
+    /** @return grpc table object */
+    public RegisterApplicationResponse.Table toGRPCTableObject() {
+      return RegisterApplicationResponse.Table.newBuilder()
+          .setKeyspaceName(this.keyspace_name)
+          .setTableName(this.table_name)
+          .build();
     }
 
     /**
