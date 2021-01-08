@@ -38,11 +38,14 @@ public class UnAuthenticatedServiceImpl
     String credentials = this.network.registerApplicationClient(applicationName, password);
     SchemaInfo schemaInfo = this.network.getSchemaInfo(applicationName);
 
-    responseObserver.onNext(
-        RegisterApplicationResponse.newBuilder()
-            .setCredentials(credentials)
-            .setSchemaInfo(schemaInfo.toGRPCSchemaInfoObject())
-            .build());
+    RegisterApplicationResponse.Builder builder =
+        RegisterApplicationResponse.newBuilder().setCredentials(credentials);
+
+    if (schemaInfo != null) builder.setSchemaInfo(schemaInfo.toGRPCSchemaInfoObject());
+
+    RegisterApplicationResponse response = builder.build();
+
+    responseObserver.onNext(response);
     responseObserver.onCompleted();
   }
 }
