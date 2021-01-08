@@ -20,6 +20,9 @@ import static pathstore.util.SchemaInfo.Table;
  */
 public class SessionToken implements Serializable {
 
+  /** Serial version UID */
+  private static final long serialVersionUID = -2763727974755711499L;
+
   /** Random uuid for session */
   public final UUID sessionUUID;
 

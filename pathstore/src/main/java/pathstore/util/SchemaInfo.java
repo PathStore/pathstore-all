@@ -58,6 +58,9 @@ import java.util.stream.StreamSupport;
  *     described in the newer Cassandra version.
  */
 public class SchemaInfo implements Serializable {
+  /** Serial version UID */
+  private static final long serialVersionUID = 8332362555628026067L;
+
   /** Factory instance of this class */
   private static SchemaInfo instance = null;
 
@@ -604,6 +607,9 @@ public class SchemaInfo implements Serializable {
    * @see SchemaInfo#loadKeyspace(String)
    */
   public static class Type implements Serializable {
+    /** Serial version UID */
+    private static final long serialVersionUID = 3571653975017038379L;
+
     /** keyspace name the type is associated with */
     public final String keyspace_name;
 
@@ -683,6 +689,9 @@ public class SchemaInfo implements Serializable {
    * @see SchemaInfo#loadKeyspace(String)
    */
   public static class Index implements Serializable {
+    /** Serial version UID */
+    private static final long serialVersionUID = -2792103026293100421L;
+
     /** keyspace name where the index exists */
     public final String keyspace_name;
 
@@ -776,6 +785,9 @@ public class SchemaInfo implements Serializable {
    * @see SchemaInfo#loadKeyspace(String)
    */
   public static class Column implements Serializable {
+    /** Serial version UID */
+    private static final long serialVersionUID = 1297300312886917087L;
+
     /** Name of keyspace the column is associated with */
     public final String keyspace_name;
 
@@ -895,6 +907,9 @@ public class SchemaInfo implements Serializable {
    * @see SchemaInfo#loadKeyspace(String)
    */
   public static class Table implements Serializable {
+    /** Serial version UID */
+    private static final long serialVersionUID = 8521505421415934668L;
+
     /** Keyspace name where the table exists */
     public final String keyspace_name;
 

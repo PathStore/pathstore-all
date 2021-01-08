@@ -10,6 +10,9 @@ import java.nio.ByteBuffer;
 /** This interface should extend any class you wish to store in a blob object within cassandra. */
 public interface BlobObject extends Serializable {
 
+  /** Serial version UID */
+  long serialVersionUID = -700369464622170054L;
+
   /** Log errors during serialization and de-serialization */
   PathStoreLogger logger = PathStoreLoggerFactory.getLogger(BlobObject.class);
 

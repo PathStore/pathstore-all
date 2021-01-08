@@ -38,6 +38,9 @@ import java.util.UUID;
  *     could potentially fetch a duplicate of the initial dataset.
  */
 public class QueryCacheEntry implements Serializable {
+  /** Serial version uid */
+  private static final long serialVersionUID = -8555451138125895390L;
+
   /** Status definition for qc entry */
   public enum Status {
     INITIALIZING,
