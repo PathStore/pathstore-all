@@ -42,6 +42,7 @@ service UnAuthenticatedService{
   rpc registerApplicationClient(RegisterApplicationRequest) returns (RegisterApplicationResponse);
 }
 
+// TODO: Remove clauses as bytes
 message QueryEntry{
   string keyspace = 1;
   string table = 2;
@@ -54,6 +55,7 @@ message InfoFromServer{
   string info = 1;
 }
 
+// TODO: Remove clauses as bytes
 message QueryDeltaEntry{
   string keyspace = 1;
   string table = 2;
@@ -73,6 +75,9 @@ message RegisterApplicationRequest{
   string password = 2;
 }
 
+/**
+This message contains a credentials object and a schema info object. The schema info object is a json string, if valid authentication occurs then the schema info value is present
+ */
 message RegisterApplicationResponse{
   // json string
   string credentials = 1;
@@ -174,11 +179,7 @@ message RegisterApplicationResponse{
   }
 }
 
-enum Status{
-  PENDING = 0;
-  DONE = 1;
-}
-
+// TODO: Convert sessionToken to message
 message ValidateSessionRequest{
   // SessionToken Object
   bytes sessionToken = 1;
@@ -188,18 +189,21 @@ message ValidateSessionResponse{
   bool response = 1;
 }
 
+// TODO: Convert sessionToken to message
 message ForcePushRequest{
   // SessionToken Object
   bytes sessionToken = 1;
   int32 lca = 2;
 }
 
+// TODO: Convert sessionToken to message
 message ForceSynchronizationRequest{
   // SessionToken Object
   bytes sessionToken = 1;
   int32 lca = 2;
 }
 
+// TODO: Convert info Payload to message
 message GetLocalNodeResponse{
   // LocalNodeInfo object
   bytes infoPayload = 1;
