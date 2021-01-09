@@ -1,9 +1,12 @@
 package pathstore.sessions;
 
+import com.google.protobuf.ProtocolStringList;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import pathstore.common.Constants;
+import pathstore.grpc.pathStoreProto;
 import pathstore.system.PathStorePushServer;
+import pathstore.system.network.NetworkImpl;
 import pathstore.util.SchemaInfo;
 
 import java.io.Serializable;
@@ -68,6 +71,56 @@ public class SessionToken implements Serializable {
     this.sessionType = sessionType;
     this.data = new HashSet<>();
     this.hasBeenValidated = true;
+  }
+
+  /**
+   * This is only used to generate a session token from a grpc session token
+   *
+   * @param sessionUUID {@link #sessionUUID}
+   * @param sourceNode {@link #sourceNode}
+   * @param sessionName {@link #sessionName}
+   * @param sessionType {@link #sessionType}
+   * @param data {@link #data}
+   */
+  private SessionToken(
+      final String sessionUUID,
+      final int sourceNode,
+      final String sessionName,
+      final String sessionType,
+      final ProtocolStringList data) {
+    this.sessionUUID = UUID.fromString(sessionUUID);
+    this.sourceNode = sourceNode;
+    this.sessionName = sessionName;
+    this.sessionType = SessionType.valueOf(sessionType);
+    this.data = NetworkImpl.GRPCRepeatedToCollection(data, Collectors.toSet());
+    this.hasBeenValidated = true;
+  }
+
+  /**
+   * @param grpcSessionToken grpc session token
+   * @return session token from data
+   */
+  public static SessionToken fromGRPCSessionTokenObject(
+      final pathStoreProto.SessionToken grpcSessionToken) {
+    return new SessionToken(
+        grpcSessionToken.getSessionUUID(),
+        grpcSessionToken.getSourceNode(),
+        grpcSessionToken.getSessionName(),
+        grpcSessionToken.getSessionType(),
+        grpcSessionToken.getDataList());
+  }
+
+  /** @return grpc session token object from local data */
+  public pathStoreProto.SessionToken toGRPCSessionToken() {
+    return pathStoreProto
+        .SessionToken
+        .newBuilder()
+        .setSessionUUID(this.sessionUUID.toString())
+        .setSourceNode(this.sourceNode)
+        .setSessionName(this.sessionName)
+        .setSessionType(this.sessionType.toString())
+        .addAllData(this.data)
+        .build();
   }
 
   /**

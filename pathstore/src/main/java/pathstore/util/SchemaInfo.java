@@ -20,14 +20,13 @@ package pathstore.util;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.ProtocolStringList;
 import io.netty.util.internal.ConcurrentSet;
 import lombok.Setter;
 import pathstore.common.Constants;
 import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
+import pathstore.system.network.NetworkImpl;
 
 import java.io.Serializable;
 import java.util.*;
@@ -35,7 +34,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -203,23 +201,6 @@ public class SchemaInfo implements Serializable {
   }
 
   /**
-   * This function is used to convert a protocol string list to some collection
-   *
-   * @param protocolStringList from grpc
-   * @param collector how to collect
-   * @param <A> Collection Builder addition
-   * @param <R> Collection Response Type
-   * @return Type of R from protocolStringList
-   */
-  private static <A, R> R GRPCRepeatedToCollection(
-      final ProtocolStringList protocolStringList,
-      final Collector<? super String, A, R> collector) {
-    return protocolStringList.asByteStringList().stream()
-        .map(ByteString::toString)
-        .collect(collector);
-  }
-
-  /**
    * @param grpcSchemaInfoObject from grpc response
    * @return schema info object
    */
@@ -258,9 +239,8 @@ public class SchemaInfo implements Serializable {
    */
   private static Set<String> fromGRPCKeyspaceLoadedObject(
       final RegisterApplicationResponse.SchemaInfo grpcSchemaInfoObject) {
-    return grpcSchemaInfoObject.getKeyspacesLoadedList().asByteStringList().stream()
-        .map(ByteString::toStringUtf8)
-        .collect(Collectors.toSet());
+    return NetworkImpl.GRPCRepeatedToCollection(
+        grpcSchemaInfoObject.getKeyspacesLoadedList(), Collectors.toSet());
   }
 
   /**
@@ -375,7 +355,7 @@ public class SchemaInfo implements Serializable {
                             Collectors.toConcurrentMap(
                                 innerEntry -> tableMap.get(entry.getKey()).get(innerEntry.getKey()),
                                 innerEntry ->
-                                    GRPCRepeatedToCollection(
+                                    NetworkImpl.GRPCRepeatedToCollection(
                                         innerEntry.getValue().getPartitionColumnNameList(),
                                         Collectors.toList())))));
   }
@@ -428,7 +408,7 @@ public class SchemaInfo implements Serializable {
                             Collectors.toConcurrentMap(
                                 innerEntry -> tableMap.get(entry.getKey()).get(innerEntry.getKey()),
                                 innerEntry ->
-                                    GRPCRepeatedToCollection(
+                                    NetworkImpl.GRPCRepeatedToCollection(
                                         innerEntry.getValue().getClusterColumnNameList(),
                                         Collectors.toList())))));
   }
@@ -996,8 +976,8 @@ public class SchemaInfo implements Serializable {
       return new Type(
           type.getKeyspaceName(),
           type.getTypeName(),
-          GRPCRepeatedToCollection(type.getFieldNamesList(), Collectors.toList()),
-          GRPCRepeatedToCollection(type.getFileTypesList(), Collectors.toList()));
+          NetworkImpl.GRPCRepeatedToCollection(type.getFieldNamesList(), Collectors.toList()),
+          NetworkImpl.GRPCRepeatedToCollection(type.getFileTypesList(), Collectors.toList()));
     }
 
     /** @return grpc type object from object data */

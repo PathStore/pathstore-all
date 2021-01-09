@@ -27,7 +27,7 @@ public class ClientOnlyServiceImpl extends ClientOnlyServiceGrpc.ClientOnlyServi
       final pathStoreProto.ValidateSessionRequest request,
       final StreamObserver<pathStoreProto.ValidateSessionResponse> responseObserver) {
 
-    SessionToken sessionToken = (SessionToken) NetworkUtil.readObject(request.getSessionToken());
+    SessionToken sessionToken = SessionToken.fromGRPCSessionTokenObject(request.getSessionToken());
 
     boolean response = this.network.validateSession(sessionToken);
 

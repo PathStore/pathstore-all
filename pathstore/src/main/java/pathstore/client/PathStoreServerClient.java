@@ -37,7 +37,6 @@ import pathstore.grpc.*;
 import pathstore.grpc.pathStoreProto.*;
 import pathstore.sessions.SessionToken;
 import pathstore.system.network.NetworkImpl;
-import pathstore.system.network.NetworkUtil;
 import pathstore.util.BlobObject;
 import pathstore.util.Pair;
 import pathstore.util.SchemaInfo;
@@ -245,8 +244,7 @@ public class PathStoreServerClient {
 
     return new Pair<>(
         Optional.ofNullable(registerApplicationResponse.getCredentials()),
-        Optional.of(
-            SchemaInfo.fromGRPCObject(registerApplicationResponse.getSchemaInfo())));
+        Optional.of(SchemaInfo.fromGRPCObject(registerApplicationResponse.getSchemaInfo())));
   }
 
   /**
@@ -266,7 +264,7 @@ public class PathStoreServerClient {
   public boolean validateSession(final SessionToken sessionToken) {
     ValidateSessionRequest validateSessionRequest =
         ValidateSessionRequest.newBuilder()
-            .setSessionToken(NetworkUtil.writeObject(sessionToken))
+            .setSessionToken(sessionToken.toGRPCSessionToken())
             .build();
 
     return this.clientOnlyServiceBlockingStub.validateSession(validateSessionRequest).getResponse();
@@ -283,7 +281,7 @@ public class PathStoreServerClient {
   public void forcePush(final SessionToken sessionToken, final int lca) {
     ForcePushRequest forcePushRequest =
         ForcePushRequest.newBuilder()
-            .setSessionToken(NetworkUtil.writeObject(sessionToken))
+            .setSessionToken(sessionToken.toGRPCSessionToken())
             .setLca(lca)
             .build();
 
@@ -311,7 +309,7 @@ public class PathStoreServerClient {
   public void forceSynchronize(final SessionToken sessionToken, final int lca) {
     ForceSynchronizationRequest forceSynchronizationRequest =
         ForceSynchronizationRequest.newBuilder()
-            .setSessionToken(NetworkUtil.writeObject(sessionToken))
+            .setSessionToken(sessionToken.toGRPCSessionToken())
             .setLca(lca)
             .build();
 

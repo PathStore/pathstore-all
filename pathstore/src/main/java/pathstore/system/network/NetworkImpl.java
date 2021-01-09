@@ -3,6 +3,8 @@ package pathstore.system.network;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.ProtocolStringList;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.json.JSONObject;
@@ -30,6 +32,7 @@ import pathstore.util.SchemaInfo;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +40,23 @@ import java.util.stream.Collectors;
  * transportation wrapper
  */
 public class NetworkImpl {
+  /**
+   * This function is used to convert a protocol string list to some collection
+   *
+   * @param protocolStringList from grpc
+   * @param collector how to collect
+   * @param <A> Collection Builder addition
+   * @param <R> Collection Response Type
+   * @return Type of R from protocolStringList
+   */
+  public static <A, R> R GRPCRepeatedToCollection(
+      final ProtocolStringList protocolStringList,
+      final Collector<? super String, A, R> collector) {
+    return protocolStringList.asByteStringList().stream()
+        .map(ByteString::toStringUtf8)
+        .collect(collector);
+  }
+
   /** Instance of class */
   private static NetworkImpl instance = null;
 
