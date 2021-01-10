@@ -37,7 +37,6 @@ import pathstore.grpc.*;
 import pathstore.grpc.pathStoreProto.*;
 import pathstore.sessions.SessionToken;
 import pathstore.system.network.NetworkImpl;
-import pathstore.util.BlobObject;
 import pathstore.util.Pair;
 import pathstore.util.SchemaInfo;
 
@@ -325,12 +324,10 @@ public class PathStoreServerClient {
    * @see NetworkImpl#getLocalNodeInfo()
    */
   public LocalNodeInfo getLocalNodeId() {
-    return (LocalNodeInfo)
-        BlobObject.deserialize(
-            this.clientOnlyServiceBlockingStub
-                .getLocalNodeInfo(Empty.newBuilder().build())
-                .getInfoPayload()
-                .asReadOnlyByteBuffer());
+    return LocalNodeInfo.fromGRPCLocalNodeInfoObject(
+        this.clientOnlyServiceBlockingStub
+            .getLocalNodeInfo(Empty.newBuilder().build())
+            .getInfoPayload());
   }
 
   /**

@@ -1,6 +1,5 @@
 package pathstore.system.network;
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
 import pathstore.client.LocalNodeInfo;
@@ -53,7 +52,7 @@ public class ClientOnlyServiceImpl extends ClientOnlyServiceGrpc.ClientOnlyServi
         pathStoreProto
             .GetLocalNodeResponse
             .newBuilder()
-            .setInfoPayload(ByteString.copyFrom(localNodeInfo.serialize()))
+            .setInfoPayload(localNodeInfo.toGRPCLocalNodeInfoObject())
             .build());
     responseObserver.onCompleted();
   }

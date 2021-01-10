@@ -200,10 +200,9 @@ message ForceSynchronizationRequest{
   int32 lca = 2;
 }
 
-// TODO: Convert info Payload to message
 message GetLocalNodeResponse{
   // LocalNodeInfo object
-  bytes infoPayload = 1;
+  LocalNodeInfo infoPayload = 1;
 }
 
 message GetApplicationLeaseRequest{
@@ -223,4 +222,11 @@ message SessionToken{
   string sessionName = 3;
   string sessionType = 4;
   repeated string data = 5;
+}
+
+// represents a local node info object
+message LocalNodeInfo{
+  int32 nodeId = 1;
+  string cassandraIP = 2;
+  int32 cassandraPort = 3;
 }
