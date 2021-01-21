@@ -4,9 +4,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import pathstore.grpc.UnAuthenticatedServiceGrpc;
 import pathstore.grpc.pathStoreProto;
-import pathstore.system.network.NetworkUtil;
-
-import java.util.List;
+import pathstore.util.SchemaInfo;
 
 public class Client {
   public static void main(String[] args) {
@@ -30,23 +28,17 @@ public class Client {
     //    System.out.println(response.hasNext());
     //    System.out.println(NetworkUtil.readObject(response.next().getSchemaInfo()));
 
-    List<Object> objects =
-        NetworkUtil.concatenate(
-            stub.registerApplicationClient(
-                pathStoreProto
-                    .RegisterApplicationRequest
-                    .newBuilder()
-                    .setApplicationName("asd")
-                    .setPassword("asd")
-                    .build()),
-            pathStoreProto.RegisterApplicationResponse::getStatus,
-            (pathStoreProto.RegisterApplicationResponse r) -> r.getCredentials().toByteArray(),
-            (pathStoreProto.RegisterApplicationResponse r) -> r.getSchemaInfo().toByteArray());
+    pathStoreProto.RegisterApplicationResponse response =
+        stub.registerApplicationClient(
+            pathStoreProto
+                .RegisterApplicationRequest
+                .newBuilder()
+                .setApplicationName("asd")
+                .setPassword("zasd")
+                .build());
 
-    System.out.println("Concatenated");
-
-    System.out.println(objects.get(0));
-    System.out.println(((List<String>) objects.get(1)).size());
+    System.out.println(response.getCredentials());
+    System.out.println(SchemaInfo.fromGRPCObject(response.getSchemaInfo()).getLoadedKeyspaces());
 
     System.out.println("Done");
   }

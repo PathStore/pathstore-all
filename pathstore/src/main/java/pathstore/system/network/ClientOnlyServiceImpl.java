@@ -1,6 +1,5 @@
 package pathstore.system.network;
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
 import pathstore.client.LocalNodeInfo;
@@ -18,8 +17,8 @@ public class ClientOnlyServiceImpl extends ClientOnlyServiceGrpc.ClientOnlyServi
   /**
    * Validate session from client to local node
    *
-   * @param request request send
-   * @param responseObserver way to response
+   * @param request request sent
+   * @param responseObserver way to respond
    * @see NetworkImpl#validateSession(SessionToken)
    */
   @Override
@@ -27,7 +26,7 @@ public class ClientOnlyServiceImpl extends ClientOnlyServiceGrpc.ClientOnlyServi
       final pathStoreProto.ValidateSessionRequest request,
       final StreamObserver<pathStoreProto.ValidateSessionResponse> responseObserver) {
 
-    SessionToken sessionToken = (SessionToken) NetworkUtil.readObject(request.getSessionToken());
+    SessionToken sessionToken = SessionToken.fromGRPCSessionTokenObject(request.getSessionToken());
 
     boolean response = this.network.validateSession(sessionToken);
 
@@ -39,8 +38,8 @@ public class ClientOnlyServiceImpl extends ClientOnlyServiceGrpc.ClientOnlyServi
   /**
    * Get local node id for client side
    *
-   * @param request request send
-   * @param responseObserver way to response
+   * @param request request sent
+   * @param responseObserver way to respond
    * @see NetworkImpl#getLocalNodeInfo()
    */
   @Override
@@ -53,8 +52,26 @@ public class ClientOnlyServiceImpl extends ClientOnlyServiceGrpc.ClientOnlyServi
         pathStoreProto
             .GetLocalNodeResponse
             .newBuilder()
-            .setInfoPayload(ByteString.copyFrom(localNodeInfo.serialize()))
+            .setInfoPayload(localNodeInfo.toGRPCLocalNodeInfoObject())
             .build());
+    responseObserver.onCompleted();
+  }
+
+  /**
+   * Get application lease information
+   *
+   * @param request request sent
+   * @param responseObserver way to respond
+   * @see NetworkImpl#getApplicationLease(String)
+   */
+  @Override
+  public void getApplicationLeaseInformation(
+      pathStoreProto.GetApplicationLeaseRequest request,
+      StreamObserver<pathStoreProto.GetApplicationLeaseResponse> responseObserver) {
+    int clt = this.network.getApplicationLease(request.getApplicationName());
+
+    responseObserver.onNext(
+        pathStoreProto.GetApplicationLeaseResponse.newBuilder().setClientLeaseTime(clt).build());
     responseObserver.onCompleted();
   }
 }

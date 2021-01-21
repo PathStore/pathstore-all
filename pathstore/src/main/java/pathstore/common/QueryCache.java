@@ -22,9 +22,13 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.*;
 import lombok.Getter;
+import lombok.NonNull;
 import pathstore.client.PathStoreServerClient;
 import pathstore.sessions.SessionToken;
 import pathstore.system.PathStorePrivilegedCluster;
+import pathstore.system.garbagecollection.PathStoreGarbageCollection;
+import pathstore.system.logging.PathStoreLogger;
+import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
 import pathstore.util.SchemaInfo.Column;
 
@@ -34,6 +38,9 @@ import java.io.ObjectInputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class has a two prong feature set. For Servers this is an in-memory high level
@@ -49,6 +56,9 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class QueryCache {
 
+  /** class logger */
+  private static final PathStoreLogger logger = PathStoreLoggerFactory.getLogger(QueryCache.class);
+
   /** Local instance of query cache */
   @Getter(lazy = true)
   private static final QueryCache instance = new QueryCache();
@@ -57,9 +67,49 @@ public class QueryCache {
   private final ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> entries =
       new ConcurrentHashMap<>();
 
-  /** @return {@link #entries} */
-  public ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> getEntries() {
-    return entries;
+  /**
+   * @param entries entries to flat map
+   * @return stream of qc entries from map
+   */
+  public static Stream<QueryCacheEntry> queryCacheEntryMapToStream(
+      final ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> entries) {
+    return entries.values().stream()
+        .parallel()
+        .map(Map::values)
+        .flatMap(Collection::stream)
+        .flatMap(Collection::stream);
+  }
+
+  /**
+   * This function is used to filter the entry set by some parameter per entry
+   *
+   * @param filterFunction how to filter the individual entries out
+   * @return map from keyspace -> table -> list of qc entries
+   */
+  public ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> filterEntries(
+      final Predicate<QueryCacheEntry> filterFunction) {
+    return this.entries.entrySet().stream()
+        .collect(
+            Collectors.toConcurrentMap(
+                Map.Entry::getKey,
+                entry ->
+                    entry.getValue().entrySet().stream()
+                        .map(
+                            innerEntry ->
+                                new AbstractMap.SimpleEntry<>(
+                                    innerEntry.getKey(),
+                                    innerEntry.getValue().stream()
+                                        .filter(filterFunction)
+                                        .collect(Collectors.toList())))
+                        .collect(
+                            Collectors.toConcurrentMap(
+                                AbstractMap.SimpleEntry::getKey,
+                                AbstractMap.SimpleEntry::getValue))));
+  }
+
+  /** @return {@link #entries} as stream */
+  public Stream<QueryCacheEntry> stream() {
+    return queryCacheEntryMapToStream(this.entries);
   }
 
   /**
@@ -70,7 +120,7 @@ public class QueryCache {
    * @see pathstore.system.schemaFSM.PathStoreSlaveSchemaServer
    */
   public void remove(final String keyspace) {
-    entries.remove(keyspace);
+    this.entries.remove(keyspace);
   }
 
   /**
@@ -93,6 +143,28 @@ public class QueryCache {
     // Myles: This may cause issues. We very well might need to convert this to a concurrent set or
     // queue.
     this.entries.get(keyspace).putIfAbsent(table, Collections.synchronizedList(new ArrayList<>()));
+  }
+
+  /**
+   * This function is used to remove a queryCacheEntry from the entries list
+   *
+   * @param queryCacheEntry entry to remove
+   */
+  public void remove(final QueryCacheEntry queryCacheEntry) {
+    if (queryCacheEntry != null)
+      if (queryCacheEntry.keyspace != null && queryCacheEntry.table != null) {
+
+        // set the status to removed for the entry if the status is removing (it will only be
+        // removing on the server side and the server side will only be waiting, this never occurs
+        // on the client side)
+        if (queryCacheEntry.isRemoving()) queryCacheEntry.setRemoved();
+
+        // remove entry from cache
+        this.entries
+            .getOrDefault(queryCacheEntry.keyspace, new ConcurrentHashMap<>())
+            .getOrDefault(queryCacheEntry.table, new ArrayList<>())
+            .remove(queryCacheEntry);
+      }
   }
 
   /**
@@ -120,6 +192,32 @@ public class QueryCache {
   }
 
   /**
+   * This function is used to handle all expired entries in bulk on the server side.
+   *
+   * @param garbageCollectionStrategy strategy used for garbage collection
+   */
+  public void handleExpiredEntries(
+      @NonNull final PathStoreGarbageCollection garbageCollectionStrategy) {
+    long current = System.currentTimeMillis();
+    Date date = new Date(current);
+
+    logger.info(String.format("Garbage collecting data as of time %s", date));
+
+    ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> expired =
+        this.filterEntries(
+            entry -> entry.isExpired() && entry.isReady() && entry.getIsCovered() == null);
+
+    ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> notExpired =
+        this.filterEntries(
+            entry -> !entry.isExpired() && entry.isReady() && entry.getIsCovered() == null);
+
+    garbageCollectionStrategy.garbageCollect(
+        expired, notExpired, PathStorePrivilegedCluster.getDaemonInstance().rawConnect());
+
+    logger.info(String.format("Garbage collected data as of time %s", date));
+  }
+
+  /**
    * This function is used to update the cache from a child node.
    *
    * <p>The logic is, if an entry isn't present in the cache, add it to the cache. Then if it is
@@ -133,6 +231,9 @@ public class QueryCache {
    * @return entry created
    * @throws ClassNotFoundException for de-serialization failure
    * @throws IOException for de-serialization failure
+   * @implNote If we get an entry that is {@link QueryCacheEntry.Status#REMOVING} it is in the
+   *     process of being garbage collected. Since we cannot halt this process we must wait for it
+   *     to be complete and then re-add the entry.
    */
   public QueryCacheEntry updateCache(
       final String keyspace, final String table, final byte[] clausesSerialized, final int limit)
@@ -144,9 +245,14 @@ public class QueryCache {
 
     QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
-    if (entry == null) entry = addEntry(keyspace, table, clauses, clausesSerialized, limit);
+    if (entry == null || entry.isRemoving()) {
 
-    // Myles: Pretty sure this isn't needed
+      // if the entry is removing then wait until it is removed
+      if (entry != null) entry.waitUntilRemoved();
+
+      entry = addEntry(keyspace, table, clauses, clausesSerialized, limit);
+    }
+
     entry.waitUntilReady();
 
     return entry;
@@ -170,9 +276,17 @@ public class QueryCache {
       final String keyspace, final String table, final List<Clause> clauses, final int limit) {
     QueryCacheEntry entry = getEntry(keyspace, table, clauses, limit);
 
-    if (entry == null) entry = addEntry(keyspace, table, clauses, null, limit);
+    if (entry == null || entry.isExpired()) {
 
-    // Myles: Pretty sure this isn't needed
+      // remove the entry from the cache if the entry is expired
+      if (entry != null) {
+        logger.debug(String.format("%s was expired, removing", entry));
+        this.remove(entry);
+      }
+
+      entry = addEntry(keyspace, table, clauses, null, limit);
+    }
+
     entry.waitUntilReady();
 
     return entry;
@@ -186,6 +300,8 @@ public class QueryCache {
    * @param clauses clauses of entry
    * @param limit limit
    * @return entry if it already exists, else null
+   * @implNote We update the lease time here if the role is not the client because this function is
+   *     only ever called by an update cache call
    */
   public QueryCacheEntry getEntry(
       final String keyspace, final String table, final List<Clause> clauses, final int limit) {
@@ -200,7 +316,16 @@ public class QueryCache {
       if (e.isSame(clauses))
         if (e.limit == -1
             || e.limit > limit) // we already have a bigger query so don't add this one
-        return e;
+        {
+          // reset the lease on any getCache call on the server side.
+          if (PathStoreProperties.getInstance().role != Role.CLIENT) {
+            e.resetExpirationTime();
+            if (!e.keyspace.equals(Constants.PATHSTORE_APPLICATIONS))
+              logger.debug(String.format("Updated %s", e));
+          }
+
+          return e;
+        }
 
     return null;
   }

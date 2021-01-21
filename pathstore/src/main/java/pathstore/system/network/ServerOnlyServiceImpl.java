@@ -56,7 +56,7 @@ public class ServerOnlyServiceImpl extends ServerOnlyServiceGrpc.ServerOnlyServi
   public void forceSynchronize(
       final pathStoreProto.ForceSynchronizationRequest request,
       final StreamObserver<Empty> responseObserver) {
-    SessionToken sessionToken = (SessionToken) NetworkUtil.readObject(request.getSessionToken());
+    SessionToken sessionToken = SessionToken.fromGRPCSessionTokenObject(request.getSessionToken());
     int lca = request.getLca();
 
     this.network.forceSynchronize(sessionToken, lca);

@@ -37,14 +37,10 @@ import pathstore.grpc.*;
 import pathstore.grpc.pathStoreProto.*;
 import pathstore.sessions.SessionToken;
 import pathstore.system.network.NetworkImpl;
-import pathstore.system.network.NetworkUtil;
-import pathstore.util.BlobObject;
 import pathstore.util.Pair;
 import pathstore.util.SchemaInfo;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -241,23 +237,13 @@ public class PathStoreServerClient {
 
     System.out.println("Calling registerApplicationClient");
 
-    Iterator<RegisterApplicationResponse> iteratorResponse =
+    RegisterApplicationResponse registerApplicationResponse =
         this.unAuthenticatedServiceBlockingStub.registerApplicationClient(
             registerApplicationRequest);
 
-    System.out.println("Done");
-
-    List<Object> results =
-        NetworkUtil.concatenate(
-            iteratorResponse,
-            RegisterApplicationResponse::getStatus,
-            (RegisterApplicationResponse response) -> response.getCredentials().toByteArray(),
-            (RegisterApplicationResponse response) -> response.getSchemaInfo().toByteArray());
-
-    if (results.size() != 2) return new Pair<>(Optional.empty(), Optional.empty());
-    else
-      return new Pair<>(
-          Optional.of((String) results.get(0)), Optional.ofNullable((SchemaInfo) results.get(1)));
+    return new Pair<>(
+        Optional.ofNullable(registerApplicationResponse.getCredentials()),
+        Optional.of(SchemaInfo.fromGRPCObject(registerApplicationResponse.getSchemaInfo())));
   }
 
   /**
@@ -277,7 +263,7 @@ public class PathStoreServerClient {
   public boolean validateSession(final SessionToken sessionToken) {
     ValidateSessionRequest validateSessionRequest =
         ValidateSessionRequest.newBuilder()
-            .setSessionToken(NetworkUtil.writeObject(sessionToken))
+            .setSessionToken(sessionToken.toGRPCSessionToken())
             .build();
 
     return this.clientOnlyServiceBlockingStub.validateSession(validateSessionRequest).getResponse();
@@ -294,7 +280,7 @@ public class PathStoreServerClient {
   public void forcePush(final SessionToken sessionToken, final int lca) {
     ForcePushRequest forcePushRequest =
         ForcePushRequest.newBuilder()
-            .setSessionToken(NetworkUtil.writeObject(sessionToken))
+            .setSessionToken(sessionToken.toGRPCSessionToken())
             .setLca(lca)
             .build();
 
@@ -322,7 +308,7 @@ public class PathStoreServerClient {
   public void forceSynchronize(final SessionToken sessionToken, final int lca) {
     ForceSynchronizationRequest forceSynchronizationRequest =
         ForceSynchronizationRequest.newBuilder()
-            .setSessionToken(NetworkUtil.writeObject(sessionToken))
+            .setSessionToken(sessionToken.toGRPCSessionToken())
             .setLca(lca)
             .build();
 
@@ -338,11 +324,20 @@ public class PathStoreServerClient {
    * @see NetworkImpl#getLocalNodeInfo()
    */
   public LocalNodeInfo getLocalNodeId() {
-    return (LocalNodeInfo)
-        BlobObject.deserialize(
-            this.clientOnlyServiceBlockingStub
-                .getLocalNodeInfo(Empty.newBuilder().build())
-                .getInfoPayload()
-                .asReadOnlyByteBuffer());
+    return LocalNodeInfo.fromGRPCLocalNodeInfoObject(
+        this.clientOnlyServiceBlockingStub
+            .getLocalNodeInfo(Empty.newBuilder().build())
+            .getInfoPayload());
+  }
+
+  /**
+   * @param applicationName application name to retrieve application lease time for.
+   * @return clt for applicationName
+   */
+  public int getApplicationLeaseTime(final String applicationName) {
+    return this.clientOnlyServiceBlockingStub
+        .getApplicationLeaseInformation(
+            GetApplicationLeaseRequest.newBuilder().setApplicationName(applicationName).build())
+        .getClientLeaseTime();
   }
 }

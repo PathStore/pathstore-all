@@ -3,6 +3,8 @@ package pathstore.system.network;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.ProtocolStringList;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.json.JSONObject;
@@ -14,6 +16,7 @@ import pathstore.authentication.CredentialCache;
 import pathstore.client.LocalNodeInfo;
 import pathstore.client.PathStoreClientAuthenticatedCluster;
 import pathstore.client.PathStoreServerClient;
+import pathstore.common.ApplicationLeaseCache;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.common.QueryCache;
@@ -29,6 +32,7 @@ import pathstore.util.SchemaInfo;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +40,23 @@ import java.util.stream.Collectors;
  * transportation wrapper
  */
 public class NetworkImpl {
+  /**
+   * This function is used to convert a protocol string list to some collection
+   *
+   * @param protocolStringList from grpc
+   * @param collector how to collect
+   * @param <A> Collection Builder addition
+   * @param <R> Collection Response Type
+   * @return Type of R from protocolStringList
+   */
+  public static <A, R> R GRPCRepeatedToCollection(
+      final ProtocolStringList protocolStringList,
+      final Collector<? super String, A, R> collector) {
+    return protocolStringList.asByteStringList().stream()
+        .map(ByteString::toStringUtf8)
+        .collect(collector);
+  }
+
   /** Instance of class */
   private static NetworkImpl instance = null;
 
@@ -463,5 +484,19 @@ public class NetworkImpl {
    */
   public LocalNodeInfo getLocalNodeInfo() {
     return LocalNodeInfo.getInstance();
+  }
+
+  /**
+   * TODO: We need to validate that the caller has rights to this information.
+   *
+   * @param applicationName application name to retrieve clt for
+   * @return clt time or 0
+   */
+  public int getApplicationLease(final String applicationName) {
+    Optional<ApplicationLeaseCache.ApplicationLease> applicationLeaseOptional =
+        ApplicationLeaseCache.getInstance().getLease(applicationName);
+    return applicationLeaseOptional
+        .map(ApplicationLeaseCache.ApplicationLease::getClientLeaseTime)
+        .orElse(0);
   }
 }

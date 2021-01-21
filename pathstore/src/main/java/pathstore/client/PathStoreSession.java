@@ -28,6 +28,7 @@ import pathstore.exception.InvalidKeyspaceException;
 import pathstore.exception.InvalidStatementTypeException;
 import pathstore.sessions.PathStoreSessionManager;
 import pathstore.sessions.SessionToken;
+import pathstore.system.PathStorePrivilegedCluster;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
@@ -42,8 +43,8 @@ import java.util.stream.Collectors;
  * This class is a wrapper for a session object, this is used to manage selects for data locality,
  * it is also used to manage user defined sessions.
  *
- * @see PathStoreCluster
- * @see PathStoreClientAuthenticatedCluster
+ * @see PathStorePrivilegedCluster#psConnect()
+ * @see PathStoreClientAuthenticatedCluster#connect()
  */
 public class PathStoreSession implements Session {
 

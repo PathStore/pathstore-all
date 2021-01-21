@@ -19,15 +19,16 @@ package pathstore.system;
 
 import com.datastax.driver.core.Statement;
 import pathstore.common.PathStoreProperties;
+import pathstore.common.PathStoreThreadManager;
 import pathstore.common.QueryCache;
 import pathstore.common.QueryCacheEntry;
 import pathstore.sessions.SessionToken;
+import pathstore.system.garbagecollection.PathStoreGarbageCollection;
+import pathstore.system.garbagecollection.SimpleGarbageCollector;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * This class is used ran as a daemon on every server except for the root node.
@@ -44,8 +45,18 @@ public class PathStorePullServer implements Runnable {
   private final PathStoreLogger logger =
       PathStoreLoggerFactory.getLogger(PathStorePullServer.class);
 
+  /** Garbage collection service impl */
+  private final PathStoreGarbageCollection garbageCollectionService = new SimpleGarbageCollector();
+
+  /** Garbage collection executor service */
+  private final PathStoreGarbageCollection.Executor garbageCollectionExecutorService =
+      new PathStoreGarbageCollection.Executor(this.garbageCollectionService);
+
   /**
-   * For all entries in the qc that aren't covered fetch their delta.
+   * First we try to spawn an garbage collection executor service
+   *
+   * <p>For all entries in the qc that are ready, aren't covered, and aren't expired fetch their
+   * delta.
    *
    * <p>Entries are added to the qc by {@link pathstore.client.PathStoreSession#execute(Statement)}
    * and {@link pathstore.client.PathStoreSession#execute(Statement, SessionToken)}
@@ -54,26 +65,14 @@ public class PathStorePullServer implements Runnable {
    * @see QueryCache#createDelta(String, String, byte[], UUID, int, int)
    */
   private void pull() {
-    ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> entries =
-        QueryCache.getInstance().getEntries();
 
-    for (String keyspace : entries.keySet()) {
-      ConcurrentMap<String, List<QueryCacheEntry>> tables = entries.get(keyspace);
+    PathStoreThreadManager.subProcessInstance().spawn(this.garbageCollectionExecutorService);
 
-      for (String table : tables.keySet()) {
-        List<QueryCacheEntry> cache_entries = tables.get(table);
+    QueryCache queryCache = QueryCache.getInstance();
 
-        try {
-          for (QueryCacheEntry cache_entry : cache_entries) {
-            if (cache_entry.isReady() && cache_entry.getIsCovered() == null)
-              QueryCache.getInstance().fetchDelta(cache_entry);
-          }
-        } catch (Exception e) {
-          System.out.println("problem while looping over cache_entries");
-          this.logger.error(e);
-        }
-      }
-    }
+    queryCache.stream()
+        .filter(entry -> entry.isReady() && entry.getIsCovered() == null && !entry.isExpired())
+        .forEach(queryCache::fetchDelta);
   }
 
   /** Run the pull server ever delta T defined by PullSleep properties */

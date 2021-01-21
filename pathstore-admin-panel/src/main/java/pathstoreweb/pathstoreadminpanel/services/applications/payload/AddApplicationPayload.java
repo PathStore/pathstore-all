@@ -32,15 +32,30 @@ public final class AddApplicationPayload extends ValidatedPayload {
   /** Master password for application */
   public final String masterPassword;
 
+  /** CLT definition */
+  public final int clientLeaseTime;
+
+  /** SLT = CLT + serverAdditionalTime */
+  public final int serverAdditionalTime;
+
   /**
    * The multipart file is not in the constructor because spring requires a setter for it (Doesn't
    * make any sense)
    *
    * @param application_name {@link #applicationName}
+   * @param master_password {@link #masterPassword}
+   * @param client_lease_time {@link #clientLeaseTime}
+   * @param server_additional_time {@link #serverAdditionalTime}
    */
-  public AddApplicationPayload(final String application_name, final String master_password) {
+  public AddApplicationPayload(
+      final String application_name,
+      final String master_password,
+      final int client_lease_time,
+      final int server_additional_time) {
     this.applicationName = application_name;
     this.masterPassword = master_password;
+    this.clientLeaseTime = client_lease_time;
+    this.serverAdditionalTime = server_additional_time;
   }
 
   /** @param applicationSchema passed by the spring http request handler */
@@ -62,6 +77,10 @@ public final class AddApplicationPayload extends ValidatedPayload {
    *
    * <p>(3): Application name is not already used
    *
+   * <p>(4): CLT <= 0
+   *
+   * <p>(5): Additional Server Time <= 0
+   *
    * @return all null iff the validity test has passed
    */
   @Override
@@ -71,7 +90,7 @@ public final class AddApplicationPayload extends ValidatedPayload {
     if (this.bulkNullCheck(this.applicationName, this.applicationSchema, this.masterPassword))
       return new String[] {WRONG_SUBMISSION_FORMAT};
 
-    String[] errors = {IMPROPER_APPLICATION_NAME_FORM, null};
+    String[] errors = {IMPROPER_APPLICATION_NAME_FORM, null, null, null};
 
     Session session = PathStoreClientAuthenticatedCluster.getInstance().connect();
 
@@ -85,6 +104,10 @@ public final class AddApplicationPayload extends ValidatedPayload {
         QueryBuilder.eq(Constants.APPS_COLUMNS.KEYSPACE_NAME, this.applicationName));
 
     for (Row row : session.execute(selectApplicationName)) errors[1] = APPLICATION_NAME_NOT_UNIQUE;
+
+    if (this.clientLeaseTime <= 0) errors[2] = CLIENT_LEASE_TIME_OUT_OF_BOUNDS;
+
+    if (this.serverAdditionalTime <= 0) errors[3] = SERVER_ADDITIONAL_TIME_OUT_OF_BOUNDS;
 
     return errors;
   }

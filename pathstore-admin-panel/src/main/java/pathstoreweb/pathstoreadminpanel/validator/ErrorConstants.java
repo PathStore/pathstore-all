@@ -45,6 +45,10 @@ public final class ErrorConstants {
         "Your application name must start with pathstore_";
     public static final String APPLICATION_NAME_NOT_UNIQUE =
         "The application name you passed is already used";
+    public static final String CLIENT_LEASE_TIME_OUT_OF_BOUNDS =
+        "Client lease time must be greater than 0";
+    public static final String SERVER_ADDITIONAL_TIME_OUT_OF_BOUNDS =
+        "Server additional time must be greater than 0";
   }
 
   /**

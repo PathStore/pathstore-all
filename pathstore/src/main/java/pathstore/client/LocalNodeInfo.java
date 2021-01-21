@@ -1,9 +1,8 @@
 package pathstore.client;
 
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import pathstore.common.PathStoreProperties;
+import pathstore.grpc.pathStoreProto;
 import pathstore.util.BlobObject;
 
 /**
@@ -18,15 +17,20 @@ import pathstore.util.BlobObject;
  *   <li>Cassandra Port
  * </ul>
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class LocalNodeInfo implements BlobObject {
 
   /** instance of class */
   @Getter(lazy = true)
-  private static final LocalNodeInfo instance = new LocalNodeInfo();
+  private static final LocalNodeInfo instance =
+      new LocalNodeInfo(
+          PathStoreProperties.getInstance().NodeID,
+          PathStoreProperties.getInstance().CassandraIP.equals("127.0.0.1")
+              ? PathStoreProperties.getInstance().ExternalAddress
+              : PathStoreProperties.getInstance().CassandraIP,
+          PathStoreProperties.getInstance().CassandraPort);
 
   /** @see PathStoreProperties#NodeID */
-  @Getter private final int nodeId = PathStoreProperties.getInstance().NodeID;
+  @Getter private final int nodeId;
 
   /**
    * @see PathStoreProperties#CassandraIP
@@ -35,12 +39,42 @@ public class LocalNodeInfo implements BlobObject {
    *     provided address is 127.0.0.1 we can provide the external address of the machine for the
    *     client otherwise we will provide the cassandra ip directly
    */
-  @Getter
-  private final String cassandraIP =
-      PathStoreProperties.getInstance().CassandraIP.equals("127.0.0.1")
-          ? PathStoreProperties.getInstance().ExternalAddress
-          : PathStoreProperties.getInstance().CassandraIP;
+  @Getter private final String cassandraIP;
 
   /** @see PathStoreProperties#CassandraPort */
-  @Getter private final int cassandraPort = PathStoreProperties.getInstance().CassandraPort;
+  @Getter private final int cassandraPort;
+
+  /**
+   * @param nodeId {@link #nodeId}
+   * @param cassandraIP {@link #cassandraIP}
+   * @param cassandraPort {@link #cassandraPort}
+   */
+  private LocalNodeInfo(final int nodeId, final String cassandraIP, final int cassandraPort) {
+    this.nodeId = nodeId;
+    this.cassandraIP = cassandraIP;
+    this.cassandraPort = cassandraPort;
+  }
+
+  /**
+   * @param grpcLocalNodeInfoObject from grpc local node info
+   * @return local node info object from grpc equivalent
+   */
+  public static LocalNodeInfo fromGRPCLocalNodeInfoObject(
+      final pathStoreProto.LocalNodeInfo grpcLocalNodeInfoObject) {
+    return new LocalNodeInfo(
+        grpcLocalNodeInfoObject.getNodeId(),
+        grpcLocalNodeInfoObject.getCassandraIP(),
+        grpcLocalNodeInfoObject.getCassandraPort());
+  }
+
+  /** @return grpc local node info object from this object */
+  public pathStoreProto.LocalNodeInfo toGRPCLocalNodeInfoObject() {
+    return pathStoreProto
+        .LocalNodeInfo
+        .newBuilder()
+        .setNodeId(this.nodeId)
+        .setCassandraIP(this.cassandraIP)
+        .setCassandraPort(this.cassandraPort)
+        .build();
+  }
 }

@@ -8,6 +8,7 @@ import org.json.JSONObject;
 import pathstore.authentication.credentials.ClientCredential;
 import pathstore.authentication.credentials.DeploymentCredential;
 import pathstore.authentication.grpc.PathStoreClientInterceptor;
+import pathstore.common.ApplicationLeaseCache;
 import pathstore.common.Constants;
 import pathstore.common.PathStoreProperties;
 import pathstore.system.logging.PathStoreLogger;
@@ -19,11 +20,8 @@ import pathstore.util.SchemaInfo;
 import java.util.Optional;
 
 /**
- * TODO: Client side needs to be aware if the account if a super user. If it is allow it to create a
- * privileged session
- *
- * <p>This class is the front facing class users will use to connect to their local pathstore node
- * with their application name and the associated master password.
+ * This class is the front facing class users will use to connect to their local pathstore node with
+ * their application name and the associated master password.
  */
 public class PathStoreClientAuthenticatedCluster {
 
@@ -130,6 +128,15 @@ public class PathStoreClientAuthenticatedCluster {
                 clientCredential.getPassword(),
                 PathStoreProperties.getInstance().CassandraIP,
                 PathStoreProperties.getInstance().CassandraPort));
+
+    // setup application lease cache for the provided application name
+    ApplicationLeaseCache.getInstance()
+        .setLease(
+            clientCredential.getSearchable(),
+            new ApplicationLeaseCache.ApplicationLease(
+                0,
+                PathStoreServerClient.getInstance()
+                    .getApplicationLeaseTime(clientCredential.getSearchable())));
 
     this.rawSession = this.cluster.connect();
 

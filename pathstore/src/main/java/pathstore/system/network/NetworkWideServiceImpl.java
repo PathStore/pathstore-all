@@ -24,7 +24,7 @@ public class NetworkWideServiceImpl extends NetworkWideServiceGrpc.NetworkWideSe
   @Override
   public void forcePush(
       final pathStoreProto.ForcePushRequest request, final StreamObserver<Empty> responseObserver) {
-    SessionToken sessionToken = (SessionToken) NetworkUtil.readObject(request.getSessionToken());
+    SessionToken sessionToken = SessionToken.fromGRPCSessionTokenObject(request.getSessionToken());
     int lca = request.getLca();
 
     this.network.forcePush(sessionToken, lca);

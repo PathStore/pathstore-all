@@ -19,6 +19,9 @@ service ClientOnlyService{
 
   // called by client in ps properties to get local node id for validity
   rpc getLocalNodeInfo(google.protobuf.Empty) returns (GetLocalNodeResponse);
+
+  // called by client in ps properties to get application lease information
+  rpc getApplicationLeaseInformation(GetApplicationLeaseRequest) returns (GetApplicationLeaseResponse);
 }
 
 service ServerOnlyService{
@@ -36,9 +39,10 @@ service NetworkWideService{
 
 service UnAuthenticatedService{
   // called on client to local node on initial connection to register connection
-  rpc registerApplicationClient(RegisterApplicationRequest) returns (stream RegisterApplicationResponse);
+  rpc registerApplicationClient(RegisterApplicationRequest) returns (RegisterApplicationResponse);
 }
 
+// TODO: Remove clauses as bytes
 message QueryEntry{
   string keyspace = 1;
   string table = 2;
@@ -51,6 +55,7 @@ message InfoFromServer{
   string info = 1;
 }
 
+// TODO: Remove clauses as bytes
 message QueryDeltaEntry{
   string keyspace = 1;
   string table = 2;
@@ -70,23 +75,113 @@ message RegisterApplicationRequest{
   string password = 2;
 }
 
+/**
+This message contains a credentials object and a schema info object. The schema info object is a json string, if valid authentication occurs then the schema info value is present
+ */
 message RegisterApplicationResponse{
   // json string
-  bytes credentials = 1;
+  string credentials = 1;
   // SchemaInfo Object
-  bytes schemaInfo = 2;
-  // status of payloads
-  Status status = 3;
-}
+  SchemaInfo schemaInfo = 2;
 
-enum Status{
-  PENDING = 0;
-  DONE = 1;
+  message SchemaInfo{
+    repeated string keyspacesLoaded = 1;
+    map<string, TableNameToTable> tableMap = 2;
+    map<string, TableNameToColumns> columnInfo = 3;
+    map<string, TableNameToPartitionColumnNames> partitionColumnNames = 4;
+    map<string, TableNameToClusterColumnNames> clusterColumnNames = 5;
+    map<string, TableNameToIndexes> indexInfo = 6;
+    map<string, Types> typeInfo = 7;
+  }
+
+  // all for table map
+
+  message TableNameToTable{
+    map<string, Table> tableNameToTable = 1;
+  }
+
+  // note that we don't include the rest of the data as it is not needed for the client
+  message Table{
+    string keyspaceName = 1;
+    string tableName = 2;
+  }
+
+  // all for column info
+
+  message TableNameToColumns{
+    map<string, Columns> tableToColumns = 1;
+  }
+
+  message Columns {
+    repeated Column columns = 1;
+  }
+
+  message Column{
+    string keyspaceName = 1;
+    string tableName = 2;
+    string columnName = 3;
+    string clusteringOrder = 4;
+    string kind = 5;
+    int32 position = 6;
+    string type = 7;
+  }
+
+  // all for partitionColumn Names
+
+  message TableNameToPartitionColumnNames{
+    map<string, PartitionColumnNames> tableNameToPartitionColumnNames = 1;
+  }
+
+  message PartitionColumnNames{
+    repeated string partitionColumnName = 1;
+  }
+
+  // all for clusterColumn Names
+
+  message TableNameToClusterColumnNames{
+    map<string, ClusterColumnNames> tableNameToClusterColumnNames = 1;
+  }
+
+  message ClusterColumnNames{
+    repeated string clusterColumnName = 1;
+  }
+
+
+  // all for index info
+
+  message TableNameToIndexes{
+    map<string, Indexes> tableNameToIndexes = 1;
+  }
+
+  message Indexes {
+    repeated Index index = 1;
+  }
+
+  message Index{
+    string keyspaceName = 1;
+    string tableName = 2;
+    string indexName = 3;
+    string kind = 4;
+    map<string, string> options = 5;
+  }
+
+  // all for type info
+
+  message Types{
+    repeated Type type = 1;
+  }
+
+  message Type{
+    string keyspaceName = 1;
+    string typeName = 2;
+    repeated string fieldNames = 3;
+    repeated string fileTypes = 4;
+  }
 }
 
 message ValidateSessionRequest{
   // SessionToken Object
-  bytes sessionToken = 1;
+  SessionToken sessionToken = 1;
 }
 
 message ValidateSessionResponse{
@@ -95,17 +190,43 @@ message ValidateSessionResponse{
 
 message ForcePushRequest{
   // SessionToken Object
-  bytes sessionToken = 1;
+  SessionToken sessionToken = 1;
   int32 lca = 2;
 }
 
 message ForceSynchronizationRequest{
   // SessionToken Object
-  bytes sessionToken = 1;
+  SessionToken sessionToken = 1;
   int32 lca = 2;
 }
 
 message GetLocalNodeResponse{
   // LocalNodeInfo object
-  bytes infoPayload = 1;
+  LocalNodeInfo infoPayload = 1;
+}
+
+message GetApplicationLeaseRequest{
+  // Name of Application
+  string applicationName = 1;
+}
+
+message GetApplicationLeaseResponse{
+  // CLT
+  int32 clientLeaseTime = 1;
+}
+
+// represents a session token
+message SessionToken{
+  string sessionUUID = 1;
+  int32 sourceNode = 2;
+  string sessionName = 3;
+  string sessionType = 4;
+  repeated string data = 5;
+}
+
+// represents a local node info object
+message LocalNodeInfo{
+  int32 nodeId = 1;
+  string cassandraIP = 2;
+  int32 cassandraPort = 3;
 }
