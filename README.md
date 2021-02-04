@@ -19,7 +19,7 @@ mvn package
 java -jar pathstore-startup-utility/target/main.jar
 ```
 
-The first prompt will ask you for the directory that PathStore is in. Provide the utility with the absolute path on your machine to the repository code (i.e. `/home/myles/cloudpath`)
+The first prompt will ask you for the directory that PathStore is in. Provide the utility with the absolute path on your machine to the repository code (i.e. `/home/myles/pathstore-all`)
 
 Follow the instructions on the screen and you will have deployed the first node in your network.
 
@@ -58,6 +58,37 @@ sudo apt-get install maven
 
 ```console
 sudo apt-get install openjdk-11-jdk
+```
+
+# Client Driver
+
+In order to use PathStore you must have the client driver imported as a dependency in your maven project. First you must run the following commands in the root directory of the repository on your development machine
+
+```console
+mvn clean && mvn install package
+```
+
+Then in your maven project you can include the driver by
+```xml
+<dependency>
+    <groupId>smartpath</groupId>
+    <artifactId>pathstore</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+```
+
+For an example of api usage see `ReadWriteTest`
+
+# Client Properties File
+
+An example client properties file for a server at 10.70.20.95 on port 1099, with application name pathstore_demo and same master password. This file needs to be present on the machine running any client appication in `/etc/pathstore/pathstore.properties`
+
+```
+Role=CLIENT
+GRPCIP=10.70.20.95
+GRPCPort=1099
+applicationName=pathstore_demo
+applicationMasterPassword=pathstore_demo
 ```
 
 
