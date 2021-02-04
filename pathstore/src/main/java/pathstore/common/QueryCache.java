@@ -164,6 +164,8 @@ public class QueryCache {
             .getOrDefault(queryCacheEntry.keyspace, new ConcurrentHashMap<>())
             .getOrDefault(queryCacheEntry.table, new ArrayList<>())
             .remove(queryCacheEntry);
+
+        logger.debug(String.format("Removed %s from cache", queryCacheEntry));
       }
   }
 
@@ -198,11 +200,6 @@ public class QueryCache {
    */
   public void handleExpiredEntries(
       @NonNull final PathStoreGarbageCollection garbageCollectionStrategy) {
-    long current = System.currentTimeMillis();
-    Date date = new Date(current);
-
-    logger.info(String.format("Garbage collecting data as of time %s", date));
-
     ConcurrentMap<String, ConcurrentMap<String, List<QueryCacheEntry>>> expired =
         this.filterEntries(
             entry -> entry.isExpired() && entry.isReady() && entry.getIsCovered() == null);
@@ -211,10 +208,10 @@ public class QueryCache {
         this.filterEntries(
             entry -> !entry.isExpired() && entry.isReady() && entry.getIsCovered() == null);
 
+    if (expired.size() > 0) logger.finest(String.format("Expired entries are %s", expired));
+
     garbageCollectionStrategy.garbageCollect(
         expired, notExpired, PathStorePrivilegedCluster.getDaemonInstance().rawConnect());
-
-    logger.info(String.format("Garbage collected data as of time %s", date));
   }
 
   /**
@@ -395,8 +392,12 @@ public class QueryCache {
       entryList.add(newEntry);
     }
 
+    QueryCacheEntry processedEntry = this.processEntry(newEntry);
+
+    logger.debug(String.format("added entry %s to cache", processedEntry));
+
     // process the entry (determine if cache miss is applicable)
-    return this.processEntry(newEntry);
+    return processedEntry;
   }
 
   /**

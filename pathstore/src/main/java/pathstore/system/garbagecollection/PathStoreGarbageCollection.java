@@ -31,7 +31,7 @@ public interface PathStoreGarbageCollection {
   class Executor implements Runnable {
 
     /** Denotes what the current status of the garbage collection service */
-    private AtomicBoolean ready = new AtomicBoolean(true);
+    private final AtomicBoolean ready = new AtomicBoolean(true);
 
     /** Garbage collection service instance */
     private final PathStoreGarbageCollection garbageCollectionService;
