@@ -339,7 +339,8 @@ public class PathStoreSession implements Session {
 
     return select.where().getClauses().stream()
             .map(Clause::getName)
-            .allMatch(partitionKeys::contains)
+            .collect(Collectors.toList())
+            .containsAll(partitionKeys)
         ? clauses.stream()
             .filter(
                 clause ->
