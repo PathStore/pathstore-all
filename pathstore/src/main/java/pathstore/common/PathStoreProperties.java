@@ -21,6 +21,7 @@ import lombok.ToString;
 import pathstore.authentication.credentials.NodeCredential;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Properties;
 
 import static pathstore.common.Constants.PROPERTIESFILE;
@@ -188,6 +189,13 @@ public class PathStoreProperties {
    */
   public String registryIP = null;
 
+  /**
+   * Indicates whether logs should be printed or not. This is a client side only feature.
+   * Our client side driver will print logs related to grpc calls and other interactions that the client may
+   * wish to display via their properties file.
+   */
+  public boolean printLogs = true;
+
   /** This string is to denote the pathstore version used */
   public String pathstoreVersion = null;
 
@@ -231,16 +239,20 @@ public class PathStoreProperties {
           this.sessionFile = this.getProperty(props, SESSION_FILE);
           this.applicationName = this.getProperty(props, APPLICATION_NAME);
           this.applicationMasterPassword = this.getProperty(props, APPLICATION_MASTER_PASSWORD);
+          this.printLogs = Boolean.parseBoolean(this.getProperty(props, PRINT_LOGS, "true"));
           break;
         default:
           throw new Exception();
       }
 
       in.close();
-    } catch (Exception ex) {
-      System.err.println("Error parsing properties file with the stack trace:");
-      ex.printStackTrace();
-      System.exit(1);
+    } catch (IOException ex) {
+        System.err.println("Error parsing properties file with the stack trace:");
+        ex.printStackTrace();
+        System.exit(1);
+    }catch (Exception e){
+        System.err.println("You must provide a role out of (CLIENT, SERVER, ROOTSERVER)");
+        System.exit(1);
     }
   }
 
@@ -249,11 +261,22 @@ public class PathStoreProperties {
    *
    * @param properties {@link Constants#PROPERTIESFILE}
    * @param key key to get
+   * @param defaultValue the default value is the key does not exist
    * @return trimmed response
    */
-  private String getProperty(final Properties properties, final String key) {
+  private String getProperty(final Properties properties, final String key, String defaultValue) {
     String response = properties.getProperty(key);
     if (response != null) return response.trim();
-    else return "";
+    else return defaultValue;
   }
+
+  /**
+   * A shortcut for the getProperty function where the default value is a blank string
+   *
+   * @see #getProperty(Properties, String, String)
+   */
+  private String getProperty(final Properties properties, final String key) {
+    return this.getProperty(properties, key, "");
+  }
+
 }

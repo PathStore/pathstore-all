@@ -1,6 +1,8 @@
 package pathstore.system.logging;
 
 import lombok.RequiredArgsConstructor;
+import pathstore.common.PathStoreProperties;
+import pathstore.common.Role;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -90,15 +92,18 @@ public class PathStoreLogger {
    * @param message what message to print
    */
   public void log(final LoggerLevel loggerLevel, final String message) {
-
-    this.hasNew = true;
+    if (!PathStoreProperties.getInstance().printLogs) return;
 
     int count = counter.getAndIncrement();
 
     PathStoreLoggerMessage loggerMessage =
         new PathStoreLoggerMessage(count, loggerLevel, message, this.name);
 
-    this.messages.put(count, loggerMessage);
+    if (PathStoreProperties.getInstance().role != Role.CLIENT) {
+      this.hasNew = true;
+
+      this.messages.put(count, loggerMessage);
+    }
 
     if (loggerMessage.getLoggerLevel().ordinal() >= this.displayLevel.ordinal())
       System.out.println(loggerMessage.getFormattedMessage());
