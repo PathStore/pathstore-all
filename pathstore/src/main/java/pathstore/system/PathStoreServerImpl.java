@@ -170,7 +170,7 @@ public class PathStoreServerImpl {
           .spawn(new PathStoreMasterDeploymentServer())
           .spawn(new PathStoreMasterSchemaServer());
 
-    if (PathStoreProperties.getInstance().printLogs)
+    if (PathStoreProperties.getInstance().saveLogs)
       daemonManager.spawn(new PathStoreLoggerDaemon());
   }
 }

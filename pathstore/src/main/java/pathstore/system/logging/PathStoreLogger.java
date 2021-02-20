@@ -91,17 +91,16 @@ public class PathStoreLogger {
    * @param message what message to print
    */
   public void log(final LoggerLevel loggerLevel, final String message) {
-    if (!PathStoreProperties.getInstance().printLogs)
-      return;
-
-    this.hasNew = true;
-
     int count = counter.getAndIncrement();
 
     PathStoreLoggerMessage loggerMessage =
-        new PathStoreLoggerMessage(count, loggerLevel, message, this.name);
+            new PathStoreLoggerMessage(count, loggerLevel, message, this.name);
 
-    this.messages.put(count, loggerMessage);
+    if (PathStoreProperties.getInstance().saveLogs) {
+      this.hasNew = true;
+
+      this.messages.put(count, loggerMessage);
+    }
 
     if (loggerMessage.getLoggerLevel().ordinal() >= this.displayLevel.ordinal())
       System.out.println(loggerMessage.getFormattedMessage());
