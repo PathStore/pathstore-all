@@ -21,6 +21,7 @@ import lombok.ToString;
 import pathstore.authentication.credentials.NodeCredential;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Properties;
 
 import static pathstore.common.Constants.PROPERTIESFILE;
@@ -189,10 +190,11 @@ public class PathStoreProperties {
   public String registryIP = null;
 
   /**
-   * Indicates whether logs should be saved to the database. For example, you might need to disable it
-   * for experiments related to performance and bandwidth consumption
+   * Indicates whether logs should be printed or not. This is a client side only feature.
+   * Our client side driver will print logs related to grpc calls and other interactions that the client may
+   * wish to display via their properties file.
    */
-  public boolean saveLogs = true;
+  public boolean printLogs = true;
 
   /** This string is to denote the pathstore version used */
   public String pathstoreVersion = null;
@@ -237,17 +239,20 @@ public class PathStoreProperties {
           this.sessionFile = this.getProperty(props, SESSION_FILE);
           this.applicationName = this.getProperty(props, APPLICATION_NAME);
           this.applicationMasterPassword = this.getProperty(props, APPLICATION_MASTER_PASSWORD);
-          this.saveLogs = Boolean.parseBoolean(this.getProperty(props, SAVE_LOGS, "true"));
+          this.printLogs = Boolean.parseBoolean(this.getProperty(props, PRINT_LOGS, "true"));
           break;
         default:
           throw new Exception();
       }
 
       in.close();
-    } catch (Exception ex) {
-      System.err.println("Error parsing properties file with the stack trace:");
-      ex.printStackTrace();
-      System.exit(1);
+    } catch (IOException ex) {
+        System.err.println("Error parsing properties file with the stack trace:");
+        ex.printStackTrace();
+        System.exit(1);
+    }catch (Exception e){
+        System.err.println("You must provide a role out of (CLIENT, SERVER, ROOTSERVER)");
+        System.exit(1);
     }
   }
 

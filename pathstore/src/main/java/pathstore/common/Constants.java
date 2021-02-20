@@ -61,7 +61,7 @@ public final class Constants {
     public static final String APPLICATION_NAME = "applicationName";
     public static final String APPLICATION_MASTER_PASSWORD = "applicationMasterPassword";
     public static final String REGISTRY_IP = "registryIP";
-    public static final String SAVE_LOGS = "saveLogs";
+    public static final String PRINT_LOGS = "printLogs";
     public static final String PATHSTORE_VERSION = "pathstoreVersion";
   }
 

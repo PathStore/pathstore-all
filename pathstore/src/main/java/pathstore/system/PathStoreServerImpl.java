@@ -23,7 +23,10 @@ import io.grpc.ServerBuilder;
 import pathstore.authentication.CredentialCache;
 import pathstore.authentication.grpc.AuthManager;
 import pathstore.authentication.grpc.AuthServerInterceptor;
-import pathstore.common.*;
+import pathstore.common.Constants;
+import pathstore.common.PathStoreProperties;
+import pathstore.common.PathStoreThreadManager;
+import pathstore.common.Role;
 import pathstore.grpc.*;
 import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
 import pathstore.system.deployment.deploymentFSM.PathStoreMasterDeploymentServer;
@@ -161,7 +164,8 @@ public class PathStoreServerImpl {
     PathStoreThreadManager daemonManager = PathStoreThreadManager.getDaemonInstance();
     daemonManager
         .spawn(new PathStoreSlaveDeploymentServer())
-        .spawn(new PathStoreSlaveSchemaServer());
+        .spawn(new PathStoreSlaveSchemaServer())
+        .spawn(new PathStoreLoggerDaemon());
 
     if (PathStoreProperties.getInstance().role != Role.ROOTSERVER)
       daemonManager.spawn(new PathStorePushServer()).spawn(new PathStorePullServer());
@@ -169,8 +173,5 @@ public class PathStoreServerImpl {
       daemonManager
           .spawn(new PathStoreMasterDeploymentServer())
           .spawn(new PathStoreMasterSchemaServer());
-
-    if (PathStoreProperties.getInstance().saveLogs)
-      daemonManager.spawn(new PathStoreLoggerDaemon());
   }
 }
