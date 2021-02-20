@@ -160,7 +160,6 @@ public class PathStoreServerImpl {
   private static void spawnDaemons() {
     PathStoreThreadManager daemonManager = PathStoreThreadManager.getDaemonInstance();
     daemonManager
-        .spawn(new PathStoreLoggerDaemon())
         .spawn(new PathStoreSlaveDeploymentServer())
         .spawn(new PathStoreSlaveSchemaServer());
 
@@ -170,5 +169,8 @@ public class PathStoreServerImpl {
       daemonManager
           .spawn(new PathStoreMasterDeploymentServer())
           .spawn(new PathStoreMasterSchemaServer());
+
+    if (PathStoreProperties.getInstance().printLogs)
+      daemonManager.spawn(new PathStoreLoggerDaemon());
   }
 }

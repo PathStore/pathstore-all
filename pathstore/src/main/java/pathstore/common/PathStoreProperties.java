@@ -188,6 +188,12 @@ public class PathStoreProperties {
    */
   public String registryIP = null;
 
+  /**
+   * Indicates whether logs should be printed or not. For example, you might need to disable logging
+   * for experiments related to performance and bandwidth consumption
+   */
+  public boolean printLogs = true;
+
   /** This string is to denote the pathstore version used */
   public String pathstoreVersion = null;
 
@@ -212,6 +218,7 @@ public class PathStoreProperties {
               Integer.parseInt(this.getProperty(props, CASSANDRA_PARENT_PORT));
           this.PullSleep = Integer.parseInt(this.getProperty(props, PULL_SLEEP));
           this.PushSleep = Integer.parseInt(this.getProperty(props, PUSH_SLEEP));
+          this.printLogs = Boolean.parseBoolean(this.getProperty(props, PRINT_LOGS));
         case ROOTSERVER:
           this.ExternalAddress = this.getProperty(props, EXTERNAL_ADDRESS);
           this.NodeID = Integer.parseInt(this.getProperty(props, NODE_ID));
@@ -225,12 +232,14 @@ public class PathStoreProperties {
           this.pathstoreVersion = this.getProperty(props, PATHSTORE_VERSION);
           this.CassandraIP = this.getProperty(props, CASSANDRA_IP);
           this.CassandraPort = Integer.parseInt(this.getProperty(props, CASSANDRA_PORT));
+          this.printLogs = Boolean.parseBoolean(this.getProperty(props, PRINT_LOGS));
         case CLIENT:
           this.GRPCIP = this.getProperty(props, GRPC_IP);
           this.GRPCPort = Integer.parseInt(this.getProperty(props, GRPC_PORT));
           this.sessionFile = this.getProperty(props, SESSION_FILE);
           this.applicationName = this.getProperty(props, APPLICATION_NAME);
           this.applicationMasterPassword = this.getProperty(props, APPLICATION_MASTER_PASSWORD);
+          this.printLogs = Boolean.parseBoolean(this.getProperty(props, PRINT_LOGS, "true"));
           break;
         default:
           throw new Exception();
@@ -249,11 +258,22 @@ public class PathStoreProperties {
    *
    * @param properties {@link Constants#PROPERTIESFILE}
    * @param key key to get
+   * @param defaultValue the default value is the key does not exist
    * @return trimmed response
    */
-  private String getProperty(final Properties properties, final String key) {
+  private String getProperty(final Properties properties, final String key, String defaultValue) {
     String response = properties.getProperty(key);
     if (response != null) return response.trim();
-    else return "";
+    else return defaultValue;
   }
+
+  /**
+   * A shortcut for the getProperty function where the default value is a blank string
+   *
+   * @see #getProperty(Properties, String, String)
+   */
+  private String getProperty(final Properties properties, final String key) {
+    return this.getProperty(properties, key, "");
+  }
+
 }

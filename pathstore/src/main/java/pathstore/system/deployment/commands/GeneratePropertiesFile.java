@@ -96,6 +96,7 @@ public class GeneratePropertiesFile implements ICommand {
     properties.put(USERNAME, this.username);
     properties.put(PASSWORD, this.password);
     properties.put(REGISTRY_IP, this.registryIP);
+    properties.put(PRINT_LOGS, String.valueOf(true));
     properties.put(PATHSTORE_VERSION, this.pathstoreVersion);
 
     try {

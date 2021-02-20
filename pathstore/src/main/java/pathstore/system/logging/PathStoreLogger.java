@@ -1,6 +1,7 @@
 package pathstore.system.logging;
 
 import lombok.RequiredArgsConstructor;
+import pathstore.common.PathStoreProperties;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -90,6 +91,8 @@ public class PathStoreLogger {
    * @param message what message to print
    */
   public void log(final LoggerLevel loggerLevel, final String message) {
+    if (!PathStoreProperties.getInstance().printLogs)
+      return;
 
     this.hasNew = true;
 
