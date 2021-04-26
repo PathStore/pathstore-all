@@ -1,7 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package pathstore.system.deployment.commands;
-
-import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID;
-import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID;
 
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.Delete;
@@ -16,6 +31,9 @@ import pathstore.system.logging.LoggerLevel;
 import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.NEW_NODE_ID;
+import static pathstore.common.Constants.DEPLOYMENT_COLUMNS.PARENT_NODE_ID;
+
 /**
  * This class is used to delete the node history of a given node.
  *
@@ -24,8 +42,8 @@ import pathstore.system.logging.PathStoreLoggerFactory;
  * @see pathstore.system.schemaFSM.PathStoreSlaveSchemaServer
  * @see pathstore.system.schemaFSM.PathStoreMasterSchemaServer
  * @implNote This is only to be run on the server side as it uses {@link
- *     PathStoreCluster#getDaemonInstance()}. This function does not connect to the child node at
- *     any point.
+ *     PathStorePrivilegedCluster#getDaemonInstance()}. This function does not connect to the child
+ *     node at any point.
  */
 @RequiredArgsConstructor
 public class DeleteNodeHistory implements ICommand {
