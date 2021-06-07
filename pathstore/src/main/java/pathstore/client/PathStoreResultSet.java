@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -97,7 +98,7 @@ public class PathStoreResultSet implements ResultSet {
 
   // TODO: Myles: We need to implement this
   public List<Row> all() {
-    throw new UnsupportedOperationException();
+    return this.stream().collect(Collectors.toList());
   }
 
   /**
@@ -138,7 +139,7 @@ public class PathStoreResultSet implements ResultSet {
    */
   public Row one() {
     if (this.table.startsWith(Constants.LOCAL_PREFIX)) return resultSet.one();
-    throw new UnsupportedOperationException();
+    return this.stream().findFirst().orElse(null);
   }
 
   /**
