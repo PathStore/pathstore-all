@@ -33,11 +33,10 @@ import pathstore.system.logging.PathStoreLogger;
 import pathstore.system.logging.PathStoreLoggerFactory;
 import pathstore.util.SchemaInfo;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Field;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class is a wrapper for a session object, this is used to manage selects for data locality,
@@ -157,6 +156,7 @@ public class PathStoreSession implements Session {
       }
 
       Select select = (Select) statement;
+      this.augmentSelect(select);
 
       table = select.getTable();
 
@@ -347,6 +347,50 @@ public class PathStoreSession implements Session {
                         || clusteringKeys.contains(clause.getName()))
             .collect(Collectors.toList())
         : Collections.emptyList();
+  }
+
+  /**
+   *
+   * Augments the select statement with the table's primary key, as well as pathstore-specfic columns
+   * that should be fetched alongside the requested columns.
+   *
+   * @param select The select statement that is going to be executed
+   */
+  public void augmentSelect (Select select) {
+    try {
+      Field columnNamesField = Select.class.getDeclaredField("columnNames");
+      columnNamesField.setAccessible(true);
+
+      List<Object> columnNames = (List<Object>) columnNamesField.get(select);
+
+      // If the query is not of form 'select * from ...', then augments it with pathstore columns
+      if (columnNames != null) {
+        Collection<String> partitionKeys =
+                SchemaInfo.getInstance().getPartitionColumnNames(select.getKeyspace(), select.getTable());
+
+        Collection<String> clusteringKeys =
+                SchemaInfo.getInstance().getClusterColumnNames(select.getKeyspace(), select.getTable());
+
+        // Adds pathstore columns and primary keys to the list of currently requested columns
+        // To avoid duplicates, the final result is converted to a set
+        Set<Object> augmentedColumns = Stream.of(
+                partitionKeys.stream(),
+                clusteringKeys.stream(),
+                columnNames.stream(),
+                Stream.of(
+                        Constants.PATHSTORE_META_COLUMNS.PATHSTORE_PARENT_TIMESTAMP,
+                        Constants.PATHSTORE_META_COLUMNS.PATHSTORE_NODE,
+                        Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DELETED,
+                        Constants.PATHSTORE_META_COLUMNS.PATHSTORE_VERSION,
+                        Constants.PATHSTORE_META_COLUMNS.PATHSTORE_DIRTY)
+        ).reduce(Stream::concat).orElseGet(Stream::empty).collect(Collectors.toSet());
+
+        // Augments the select statement with the primary key and required pathstore columns
+        columnNamesField.set(select, new ArrayList<>(augmentedColumns));
+      }
+    } catch (NoSuchFieldException | IllegalAccessException e) {
+      throw new RuntimeException(e.getMessage());
+    }
   }
 
   public ResultSetFuture executeAsync(final String query) {
