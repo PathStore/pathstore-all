@@ -1,19 +1,20 @@
-/**
- * ********
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- * <p>Copyright 2019 Eyal de Lara, Seyed Hossein Mortazavi, Mohammad Salehe
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * <p>Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of the License at
- *
- * <p>http://www.apache.org/licenses/LICENSE-2.0
- *
- * <p>Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * <p>*********
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 package pathstore.system;
 
@@ -23,7 +24,10 @@ import io.grpc.ServerBuilder;
 import pathstore.authentication.CredentialCache;
 import pathstore.authentication.grpc.AuthManager;
 import pathstore.authentication.grpc.AuthServerInterceptor;
-import pathstore.common.*;
+import pathstore.common.Constants;
+import pathstore.common.PathStoreProperties;
+import pathstore.common.PathStoreThreadManager;
+import pathstore.common.Role;
 import pathstore.grpc.*;
 import pathstore.system.deployment.deploymentFSM.PathStoreDeploymentUtils;
 import pathstore.system.deployment.deploymentFSM.PathStoreMasterDeploymentServer;
@@ -160,9 +164,9 @@ public class PathStoreServerImpl {
   private static void spawnDaemons() {
     PathStoreThreadManager daemonManager = PathStoreThreadManager.getDaemonInstance();
     daemonManager
-        .spawn(new PathStoreLoggerDaemon())
         .spawn(new PathStoreSlaveDeploymentServer())
-        .spawn(new PathStoreSlaveSchemaServer());
+        .spawn(new PathStoreSlaveSchemaServer())
+        .spawn(new PathStoreLoggerDaemon());
 
     if (PathStoreProperties.getInstance().role != Role.ROOTSERVER)
       daemonManager.spawn(new PathStorePushServer()).spawn(new PathStorePullServer());

@@ -1,6 +1,26 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package pathstore.system.logging;
 
 import lombok.RequiredArgsConstructor;
+import pathstore.common.PathStoreProperties;
+import pathstore.common.Role;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -90,15 +110,18 @@ public class PathStoreLogger {
    * @param message what message to print
    */
   public void log(final LoggerLevel loggerLevel, final String message) {
-
-    this.hasNew = true;
+    if (!PathStoreProperties.getInstance().printLogs) return;
 
     int count = counter.getAndIncrement();
 
     PathStoreLoggerMessage loggerMessage =
         new PathStoreLoggerMessage(count, loggerLevel, message, this.name);
 
-    this.messages.put(count, loggerMessage);
+    if (PathStoreProperties.getInstance().role != Role.CLIENT) {
+      this.hasNew = true;
+
+      this.messages.put(count, loggerMessage);
+    }
 
     if (loggerMessage.getLoggerLevel().ordinal() >= this.displayLevel.ordinal())
       System.out.println(loggerMessage.getFormattedMessage());
