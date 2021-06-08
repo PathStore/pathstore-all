@@ -248,12 +248,12 @@ public class PathStoreProperties {
 
       in.close();
     } catch (IOException ex) {
-        System.err.println("Error parsing properties file with the stack trace:");
-        ex.printStackTrace();
-        System.exit(1);
-    }catch (Exception e){
-        System.err.println("You must provide a role out of (CLIENT, SERVER, ROOTSERVER)");
-        System.exit(1);
+      System.err.println("Error parsing properties file with the stack trace:");
+      ex.printStackTrace();
+      System.exit(1);
+    } catch (Exception e) {
+      System.err.println("You must provide a role out of (CLIENT, SERVER, ROOTSERVER)");
+      System.exit(1);
     }
   }
 
@@ -262,7 +262,7 @@ public class PathStoreProperties {
    *
    * @param properties {@link Constants#PROPERTIESFILE}
    * @param key key to get
-   * @param defaultValue the default value is the key does not exist
+   * @param defaultValue the default value if the key does not exist
    * @return trimmed response
    */
   private String getProperty(final Properties properties, final String key, String defaultValue) {

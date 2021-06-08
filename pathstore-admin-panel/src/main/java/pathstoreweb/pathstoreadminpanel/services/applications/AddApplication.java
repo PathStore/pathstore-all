@@ -38,6 +38,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Creates an available application for the user to deploy on the network.
@@ -221,8 +223,12 @@ public class AddApplication implements IService {
 
     query.append("PRIMARY KEY(");
 
-    for (SchemaInfo.Column col : columns)
-      if (col.kind.equals("partition_key")) query.append(col.column_name).append(",");
+    String partitionKeys = columns.stream()
+            .filter(col -> col.kind.equals("partition_key"))
+            .map(col -> col.column_name)
+            .collect(Collectors.joining(","));
+    query.append("(" + partitionKeys + "),");
+
     for (SchemaInfo.Column col : columns)
       if (col.kind.equals("clustering")) query.append(col.column_name).append(",");
 
@@ -351,9 +357,10 @@ public class AddApplication implements IService {
 
     query.append("PRIMARY KEY(pathstore_view_id,");
 
-    for (SchemaInfo.Column col : columns) {
-      if (col.kind.compareTo("regular") != 0) query.append(col.column_name).append(",");
-    }
+    Stream.concat(
+            columns.stream().filter(col -> col.kind.equals("partition_key")),
+            columns.stream().filter(col -> col.kind.equals("clustering"))
+    ).forEach(col -> query.append(col.column_name).append(","));
 
     query.append("pathstore_version) ");
 

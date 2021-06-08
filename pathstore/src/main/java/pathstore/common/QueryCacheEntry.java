@@ -94,7 +94,7 @@ public class QueryCacheEntry implements Serializable {
     this.keyspace = keyspace;
     this.table = table;
     this.clauses = clauses;
-    covers = new ArrayList<>();
+    this.covers = new ArrayList<>();
     this.limit = limit;
 
     // set the expiration time for this entry to the current time plus the CLT / SLT (role

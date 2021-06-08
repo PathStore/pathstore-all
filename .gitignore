@@ -1,1 +1,7 @@
 .idea/
+**/*.iml
+local-input
+
+.DS_Store
+venv/
+
