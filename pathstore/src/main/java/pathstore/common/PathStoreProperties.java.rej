@@ -1,0 +1,9 @@
+diff a/pathstore/src/main/java/pathstore/common/PathStoreProperties.java b/pathstore/src/main/java/pathstore/common/PathStoreProperties.java	(rejected hunks)
+@@ -206,6 +212,7 @@ public class PathStoreProperties {
+           this.CassandraParentPort =
+               Integer.parseInt(this.getProperty(props, CASSANDRA_PARENT_PORT));
+           this.PushSleep = Integer.parseInt(this.getProperty(props, PUSH_SLEEP));
++          this.printLogs = Boolean.parseBoolean(this.getProperty(props, PRINT_LOGS));
+         case ROOTSERVER:
+           this.ExternalAddress = this.getProperty(props, EXTERNAL_ADDRESS);
+           this.NodeID = Integer.parseInt(this.getProperty(props, NODE_ID));

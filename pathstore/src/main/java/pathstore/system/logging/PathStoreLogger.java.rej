@@ -1,0 +1,9 @@
+diff a/pathstore/src/main/java/pathstore/system/logging/PathStoreLogger.java b/pathstore/src/main/java/pathstore/system/logging/PathStoreLogger.java	(rejected hunks)
+@@ -6,6 +6,7 @@ import java.util.Map;
+ import java.util.concurrent.ConcurrentHashMap;
+ import java.util.concurrent.atomic.AtomicInteger;
+ import lombok.RequiredArgsConstructor;
++import pathstore.common.PathStoreProperties;
+ 
+ /**
+  * TODO: Change log levels to a generic setting

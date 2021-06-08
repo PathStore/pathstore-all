@@ -144,19 +144,19 @@ public class PathStoreSession implements Session {
 
     if (statement instanceof Select) {
 
+      Select select = (Select) statement;
+      this.augmentSelect(select);
+
       // We only do select validation as it is the only query that modifies local state. Everything
       // else will fail at the Cassandra level
       try {
-        this.session.execute(statement);
+        this.session.execute(select);
       } catch (Exception e) {
         throw new RuntimeException(
             String.format(
                 "Could not execute the select statement %s as it is invalid",
                 statement.toString()));
       }
-
-      Select select = (Select) statement;
-      this.augmentSelect(select);
 
       table = select.getTable();
 
@@ -339,7 +339,8 @@ public class PathStoreSession implements Session {
 
     return select.where().getClauses().stream()
             .map(Clause::getName)
-            .allMatch(partitionKeys::contains)
+            .collect(Collectors.toList())
+            .containsAll(partitionKeys)
         ? clauses.stream()
             .filter(
                 clause ->
